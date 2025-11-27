@@ -99,6 +99,21 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int IndexOfMAlign { get; set; } = 0;
 
+        [Category("SetupConfig"), DisplayName("WaitTime 1Step (ms)")]
+        [DefaultValue(0)]
+        public int WaitTime1Step { get; set; } = 0;
+
+
+        [Category("SetupConfig"), DisplayName("WaitTime 2Step (ms)")]
+        [DefaultValue(0)]
+        public int WaitTime2Step { get; set; } = 0;
+
+
+        [Category("SetupConfig"), DisplayName("WaitTime 3Step (ms)")]
+        [DefaultValue(0)]
+        public int WaitTime3Step { get; set; } = 0;
+
+
         public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig") { }
 
         /// <summary>

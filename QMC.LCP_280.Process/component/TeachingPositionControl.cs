@@ -135,7 +135,7 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TPC:{Name}] AdjustButtonRow error: {ex.Message}");
+                Log.Write(ex);
             }
             finally
             {
@@ -386,7 +386,7 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TPC:{Name}] ForceApplyAlwaysFlag error: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

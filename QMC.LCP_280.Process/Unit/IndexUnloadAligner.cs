@@ -21,8 +21,10 @@ namespace QMC.LCP_280.Process.Unit
     ///  - 다축(Align/Index 등) Teaching Positions
     ///  - OutputStage 패턴과 유사한 구조 (Axis / Teaching / Lifecycle)
     /// </summary>
-    public class IndexUnloadAligner : BaseUnit<IndexUnloadAlignerConfig>
+    public class IndexUnloadAligner : BaseUnit<IndexUnloadAlignerConfig>, IPatternMarkSource
     {
+        public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
+
         public enum AlarmKeys
         {
             eRotaryNotSafe = 4001,
@@ -53,6 +55,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Unit
         Rotary Rotary { get; set; }
+        OutputStage OutputStage { get; set; }
         #endregion
 
         #region ctor / Initialization
@@ -65,6 +68,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnBindUnit();
             Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+            OutputStage = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage;
         }
 
         public override void AddComponents()
@@ -100,16 +104,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
-                ret = -1;
-            }
-            if (this.RunUnitStatus == UnitStatus.Running)
-            {
                 return 0;
             }
+           
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
@@ -144,6 +146,20 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         private string CameraKey => IndexOutCameraKey; // 통일된 키 사용
+        public PatternMatchingRunner _pmRunner;
+        // Pattern Matching Runner (간소화: Recipe 자동 관리)
+        public PatternMatchingRunner PmRunner
+        {
+            get
+            {
+                if (_pmRunner == null)
+                {
+                    _pmRunner = VisionRunnerHub.GetOrCreate(IndexOutCameraKey);
+                }
+                return _pmRunner;
+            }
+        }
+
         public double PixelSizeXmm { get; set; } = 0.005;
         public double PixelSizeYmm { get; set; } = 0.005;
         public double ImageOriginX { get; set; } = double.NaN;
@@ -152,18 +168,26 @@ namespace QMC.LCP_280.Process.Unit
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
 
         public bool IsStatus_AlignDone { get; set; }
-        public double IsStatus_LastFoundDx { get; set; }
-        public double IsStatus_LastFoundDy { get; set; }
-        
+        public bool IsAlignResult {  get; set; }
+        public double dLastFoundX { get; set; }
+        public double dLastFoundY { get;set; }
+        public double dLastFoundAngle { get; private set; }
+
         private (bool ok, double x, double y, double angle) CenterSearchViaRunner()
         {
+            if (Config.IsSimulation == true 
+                || Config.IsDryRun == true)
+            {
+                return (false, 0, 0, 0);
+            }
+
             var res = VisionRunnerHub.SearchCenterOffset(
-                CameraKey,
-                PixelSizeXmm,
-                PixelSizeYmm,
-                ImageOriginX,
-                ImageOriginY,
-                UseImageCenterAsOrigin);
+            CameraKey,
+            PixelSizeXmm,
+            PixelSizeYmm,
+            ImageOriginX,
+            ImageOriginY,
+            UseImageCenterAsOrigin);
 
             if (!res.ok)
             {
@@ -174,9 +198,14 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Seq
+
+        public double IsStatus_LastAppliedXY { get; set; }
+        public bool IsStatus_AlignDoneXY { get; set; }
+
+
         private int PrepareForAlign(out VisionImage img)
         {
-            int nRtn = 0;
+            int nRet = 0;
             
             img = null;
             int grabRc;
@@ -185,14 +214,22 @@ namespace QMC.LCP_280.Process.Unit
                 // 4) 카메라 그랩
                 if (IndexOutCamera == null)
                 {
-                    Log.Write(UnitName, "Align", "Fail: Camera null");
+                    Log.Write(UnitName, "PrepareForAlign", "Fail: Camera null");
                     return -1;
+                }
+                if (Config.IsSimulation == false
+                                && Config.IsDryRun == false)
+                {
+                    //if (this.InputStageUnit.StageCamera.IsLiveOn)
+                    {
+                        this.IndexOutCamera.StopLive();
+                    }
                 }
                 grabRc = IndexOutCamera.GrabSync(out img);
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, "Align", "Exception: " + ex.Message);
+                Log.Write(UnitName, "PrepareForAlign", "Exception: " + ex.Message);
                 return -1;
             }
 
@@ -201,7 +238,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (grabRc != 0 || img == null || img.RawData == null)
                 {
-                    Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
+                    Log.Write(UnitName, "PrepareForAlign", $"Fail: Grab fail rc={grabRc}");
                     img?.Dispose();
                     img = null;
                     return -1;
@@ -209,8 +246,84 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             IndexOutCamera.LatestImage = img;
-            Log.Write(UnitName, "Align", "Grab OK");
-            return nRtn;
+            Log.Write(UnitName, "PrepareForAlign", "Grab OK");
+            return nRet;
+        }
+
+        public int AlignXY(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            IsStatus_AlignDoneXY = false;
+            IsAlignResult = false;
+            dLastFoundX = 0.0;
+            dLastFoundY = 0.0;
+            dLastFoundAngle = 0.0;
+
+            MaterialDie die = this.Rotary.GetUnloadSocketMaterial();
+            if (die == null || die.Presence != Material.MaterialPresence.Exist)
+            {
+                Log.Write(UnitName, "Align", "Skip: No die on unload socket");
+                return 0;
+            }
+
+
+            if (Config.IsSimulation || this.Config.IsDryRun)
+            {
+                IsAlignResult = true;
+                IsStatus_LastAppliedXY = 0;
+                IsStatus_AlignDoneXY = true;
+                return 0;
+            }
+            try
+            {
+                VisionImage img = null;
+                double dX = 0;
+                double dY = 0;
+                double dAngle = 0;
+                IndexOutCamera.SuspendedImageDisplay = true;
+                IndexOutCamera.GrabSync(out img);
+                var result = PmRunner.Search(img);
+                if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
+                {
+                    int repIdx = 1;// (result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count) ? result.ReferenceIndex : 0;
+                    RaiseMarks(img, result.Matches.ToArray(), repIdx);
+                    IndexOutCamera.SuspendedImageDisplay = false;
+                }
+
+                if (result.Success)
+                {
+                    IsAlignResult = true;
+                    dX = result.X;
+                    dY = result.Y;
+                    dAngle = result.R;
+                }
+                else
+                {
+                    IsAlignResult = false;
+                    dX = 0;
+                    dY = 0;
+                    dAngle = 0;
+                }
+                dLastFoundX = dX;
+                dLastFoundY = dY;
+                dLastFoundAngle = dAngle;
+
+                Log.Write(UnitName, "AlignXY",
+                    $"VisionX={dLastFoundX:F4}, " +
+                    $"VisionY={dLastFoundY:F4}, " +
+                    $"VisionAngle={dLastFoundAngle:F4}");
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                IsStatus_AlignDoneXY = true;
+            }
+            return nRet;
         }
 
         public int RunAlignSocketOnceReady(bool bFineSpeed = false)
@@ -242,11 +355,9 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
                 this.CurrentFunc = RunAlignSocketOnce;
              
-            }
+           
             Log.Write(UnitName, "Align Start");
 
 
@@ -265,50 +376,30 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             var socket = this.Rotary.GetSocket(nIndex);
-            socket.SetState(Rotary.RotarySocketState.Aligning);
+            socket.SetState(Rotary.RotarySocketState.VAligning);
 
-            if (PrepareForAlign(out var _img) != 0)
+            //초기화 후 시작하자.
+            IsStatus_AlignDoneXY = false;
+            IsAlignResult = false;
+
+            nRet = AlignXY();
+            if (nRet != 0)
             {
-                Log.Write(UnitName, "Fail: Prepare for align");
-                return -1;
+                Log.Write(UnitName, "RunAlignSocketOnce", "Fail: Prepare for align");
+                die.UnloadAlignOffsetX = 0.0;
+                die.UnloadAlignOffsetY = 0.0;
+                die.UnloadAlignOffsetT = 0.0;
+                //우선 실패해도 그냥 진행하자.
+                //return -1;
+                nRet = 0;
             }
 
-            var res = CenterSearchViaRunner();
-            if (!res.ok)
-            {
-                if (!Config.IsSimulation && !Config.IsDryRun)
-                {
-                    PostAlarm((int)AlarmKeys.eVisionSearch);
-                    Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
-                    return -1;
-                }
-            }
-
-            IsStatus_LastFoundDx = res.x;
-            IsStatus_LastFoundDy = res.y;
-            double dx = IsStatus_LastFoundDx;
-            double dy = IsStatus_LastFoundDy;
-
-            if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
-            {
-                Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
-                IsStatus_AlignDone = true;
-                return 0;
-            }
-            if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
-            {
-                Log.Write(UnitName, "Align",
-                    $"Fail: Over limit dx={dx:F4} dy={dy:F4} limit={MaxXYOffsetMm}");
-                return -1;
-            }
-
-            die.UnloadAlignOffsetX = dx;
-            die.UnloadAlignOffsetY = dy;
-            die.UnloadAlignOffsetT = res.angle;
-            Log.Write(UnitName, "Align", $"OK: dx={dx:F4} dy={dy:F4} dAngle={res.angle:F3}");
+            die.UnloadAlignOffsetX = dLastFoundX;
+            die.UnloadAlignOffsetY = dLastFoundY;
+            die.UnloadAlignOffsetT = dLastFoundAngle;
             
             die.State = DieProcessState.Inspected;
-            socket.SetState(Rotary.RotarySocketState.Aligned);
+            socket.SetState(Rotary.RotarySocketState.VAligned);
 
             return nRet;
         }
@@ -327,6 +418,92 @@ namespace QMC.LCP_280.Process.Unit
 
         }
 
+        // 클래스 내부에 추가
+        public void ResetForNewRun(bool waitRotaryIdle = true, bool clearVisionResult = true)
+        {
+            // 1) 상태/플래그 초기화
+            IsStatus_AlignDone = false;
+            IsAlignResult = false;
+            IsStatus_AlignDoneXY = false;
+            dLastFoundX = 0; 
+            dLastFoundY = 0;
+            dLastFoundAngle = 0;
+            
+            // 2) 비전 리소스 정리(선택)
+            if (clearVisionResult && IndexOutCamera != null)
+            {
+                try
+                {
+                    var img = IndexOutCamera.LatestImage;
+                    img?.Dispose();
+                    IndexOutCamera.LatestImage = null;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, $"[ResetForNewRun] clear vision failed: {ex.Message}");
+                }
+            }
+        }
+
         #endregion
+
+        PointD GetPixelToMmScale(double dX, double dY)
+        {
+            double mmPerPixelX = (dX - IndexOutCamera.CameraConfig.Resolution.Width / 2) * IndexOutCamera.CameraConfig.Scale.X;
+            double mmPerPixelY = (dY - IndexOutCamera.CameraConfig.Resolution.Height / 2) * IndexOutCamera.CameraConfig.Scale.Y;
+            return new PointD(mmPerPixelX, mmPerPixelY);
+        }
+
+
+        private void RaiseMarks(VisionImage img,
+                            QMC.Common.Vision.Tools.PatternMatchingResult.PatternMatchingResultValue[] matches,
+                            int representativeIndex)
+        {
+            int trainW = 0, trainH = 0;
+            try
+            {
+                var ti = PmRunner?.Parameters?.TrainImages?
+                         .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
+            }
+            catch { }
+
+            var e = new PatternMarksFoundEventArgs
+            {
+                Image = img,
+                RepresentativeIndex = representativeIndex
+            };
+            foreach (var m in matches)
+            {
+                e.Marks.Add(new PatternMatchInfo
+                {
+                    X = m.X,
+                    Y = m.Y,
+                    AngleDeg = m.R,
+                    Score = m.Score,
+                    TrainW = trainW,
+                    TrainH = trainH
+                });
+            }
+            try { MarksFound?.Invoke(this, e); } catch { }
+        }
+
+        private void TrySearchAndRaiseMarks()
+        {
+            try
+            {
+                if (PmRunner == null) return;
+                var res = PmRunner.Search(false); // 내부 AcquireImage 사용
+                if (!res.Success || res.Matches == null || res.Matches.Count == 0) return;
+
+                var img = Equipment.Instance?.Cameras != null && Equipment.Instance.Cameras.TryGetValue(CameraKey, out var cam)
+                            ? cam?.LatestImage
+                            : null;
+
+                int repIdx = (res.ReferenceIndex >= 0 && res.ReferenceIndex < res.Matches.Count) ? res.ReferenceIndex : 0;
+                RaiseMarks(img, res.Matches.ToArray(), repIdx);
+            }
+            catch { }
+        }
     }
 }

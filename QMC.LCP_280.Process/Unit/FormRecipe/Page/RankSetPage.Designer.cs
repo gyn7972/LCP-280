@@ -71,10 +71,11 @@
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel4, 1, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1250, 700);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1875, 1050);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // tableLayoutPanel2
@@ -84,12 +85,13 @@
             this.tableLayoutPanel2.Controls.Add(this.lbSetNameValue, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 1);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(4, 4);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 2;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5.18732F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 94.81268F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(964, 694);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(1447, 1042);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // lbSetNameValue
@@ -100,10 +102,10 @@
             this.lbSetNameValue.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lbSetNameValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
             this.lbSetNameValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbSetNameValue.Location = new System.Drawing.Point(3, 3);
-            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(3);
+            this.lbSetNameValue.Location = new System.Drawing.Point(4, 4);
+            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(4);
             this.lbSetNameValue.Name = "lbSetNameValue";
-            this.lbSetNameValue.Size = new System.Drawing.Size(958, 30);
+            this.lbSetNameValue.Size = new System.Drawing.Size(1439, 46);
             this.lbSetNameValue.TabIndex = 22;
             this.lbSetNameValue.Text = " - ";
             this.lbSetNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -116,11 +118,12 @@
             this.tableLayoutPanel3.Controls.Add(this.panel2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.dataGridRank, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 39);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(4, 58);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(958, 652);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(1439, 980);
             this.tableLayoutPanel3.TabIndex = 0;
             // 
             // panel2
@@ -128,10 +131,11 @@
             this.panel2.Controls.Add(this.tableLayoutPanel6);
             this.panel2.Controls.Add(this.groupBox1);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(3, 3);
+            this.panel2.Location = new System.Drawing.Point(4, 4);
+            this.panel2.Margin = new System.Windows.Forms.Padding(4);
             this.panel2.Name = "panel2";
-            this.panel2.Padding = new System.Windows.Forms.Padding(3);
-            this.panel2.Size = new System.Drawing.Size(202, 646);
+            this.panel2.Padding = new System.Windows.Forms.Padding(4);
+            this.panel2.Size = new System.Drawing.Size(305, 972);
             this.panel2.TabIndex = 2;
             // 
             // tableLayoutPanel6
@@ -142,15 +146,16 @@
             this.tableLayoutPanel6.Controls.Add(this.btnOpen, 0, 1);
             this.tableLayoutPanel6.Controls.Add(this.btnNew, 0, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 510);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(4, 768);
+            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.Padding = new System.Windows.Forms.Padding(5, 3, 5, 3);
+            this.tableLayoutPanel6.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.tableLayoutPanel6.RowCount = 3;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(196, 133);
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(297, 200);
             this.tableLayoutPanel6.TabIndex = 1;
             // 
             // btnSave
@@ -164,9 +169,10 @@
             this.btnSave.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSave.ForeColor = System.Drawing.Color.Black;
             this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSave.Location = new System.Drawing.Point(8, 90);
+            this.btnSave.Location = new System.Drawing.Point(12, 136);
+            this.btnSave.Margin = new System.Windows.Forms.Padding(4);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(180, 37);
+            this.btnSave.Size = new System.Drawing.Size(273, 56);
             this.btnSave.TabIndex = 2;
             this.btnSave.TabStop = false;
             this.btnSave.Text = "Save";
@@ -184,9 +190,10 @@
             this.btnOpen.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnOpen.ForeColor = System.Drawing.Color.Black;
             this.btnOpen.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnOpen.Location = new System.Drawing.Point(8, 48);
+            this.btnOpen.Location = new System.Drawing.Point(12, 72);
+            this.btnOpen.Margin = new System.Windows.Forms.Padding(4);
             this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(180, 36);
+            this.btnOpen.Size = new System.Drawing.Size(273, 56);
             this.btnOpen.TabIndex = 1;
             this.btnOpen.TabStop = false;
             this.btnOpen.Text = "Open";
@@ -204,9 +211,10 @@
             this.btnNew.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnNew.ForeColor = System.Drawing.Color.Black;
             this.btnNew.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnNew.Location = new System.Drawing.Point(8, 6);
+            this.btnNew.Location = new System.Drawing.Point(12, 8);
+            this.btnNew.Margin = new System.Windows.Forms.Padding(4);
             this.btnNew.Name = "btnNew";
-            this.btnNew.Size = new System.Drawing.Size(180, 36);
+            this.btnNew.Size = new System.Drawing.Size(273, 56);
             this.btnNew.TabIndex = 0;
             this.btnNew.TabStop = false;
             this.btnNew.Text = "New";
@@ -218,10 +226,11 @@
             this.groupBox1.Controls.Add(this.tableLayoutPanel5);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.Location = new System.Drawing.Point(4, 4);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 10, 5, 5);
-            this.groupBox1.Size = new System.Drawing.Size(196, 117);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(8, 15, 8, 8);
+            this.groupBox1.Size = new System.Drawing.Size(297, 176);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Rank";
@@ -233,12 +242,13 @@
             this.tableLayoutPanel5.Controls.Add(this.btnMaxRankUpdate, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel7, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(5, 28);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(8, 41);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 60F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(186, 84);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(281, 127);
             this.tableLayoutPanel5.TabIndex = 0;
             // 
             // btnMaxRankUpdate
@@ -252,9 +262,10 @@
             this.btnMaxRankUpdate.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnMaxRankUpdate.ForeColor = System.Drawing.Color.Black;
             this.btnMaxRankUpdate.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMaxRankUpdate.Location = new System.Drawing.Point(3, 43);
+            this.btnMaxRankUpdate.Location = new System.Drawing.Point(4, 64);
+            this.btnMaxRankUpdate.Margin = new System.Windows.Forms.Padding(4);
             this.btnMaxRankUpdate.Name = "btnMaxRankUpdate";
-            this.btnMaxRankUpdate.Size = new System.Drawing.Size(180, 38);
+            this.btnMaxRankUpdate.Size = new System.Drawing.Size(273, 59);
             this.btnMaxRankUpdate.TabIndex = 1;
             this.btnMaxRankUpdate.TabStop = false;
             this.btnMaxRankUpdate.Text = "Update";
@@ -268,11 +279,12 @@
             this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.33333F));
             this.tableLayoutPanel7.Controls.Add(this.lbStatusCaption, 0, 0);
             this.tableLayoutPanel7.Controls.Add(this.nudMaxRank, 1, 0);
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(4, 4);
+            this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
             this.tableLayoutPanel7.RowCount = 1;
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(180, 34);
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(270, 51);
             this.tableLayoutPanel7.TabIndex = 0;
             // 
             // lbStatusCaption
@@ -281,10 +293,10 @@
             this.lbStatusCaption.BorderWidth = 1;
             this.lbStatusCaption.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lbStatusCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbStatusCaption.Location = new System.Drawing.Point(0, 3);
-            this.lbStatusCaption.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.lbStatusCaption.Location = new System.Drawing.Point(0, 4);
+            this.lbStatusCaption.Margin = new System.Windows.Forms.Padding(0, 4, 0, 4);
             this.lbStatusCaption.Name = "lbStatusCaption";
-            this.lbStatusCaption.Size = new System.Drawing.Size(84, 28);
+            this.lbStatusCaption.Size = new System.Drawing.Size(126, 43);
             this.lbStatusCaption.TabIndex = 20;
             this.lbStatusCaption.Text = "Max Rank";
             this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -293,7 +305,8 @@
             // 
             this.nudMaxRank.Dock = System.Windows.Forms.DockStyle.Fill;
             this.nudMaxRank.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.nudMaxRank.Location = new System.Drawing.Point(87, 3);
+            this.nudMaxRank.Location = new System.Drawing.Point(130, 4);
+            this.nudMaxRank.Margin = new System.Windows.Forms.Padding(4);
             this.nudMaxRank.Maximum = new decimal(new int[] {
             50,
             0,
@@ -305,7 +318,7 @@
             0,
             0});
             this.nudMaxRank.Name = "nudMaxRank";
-            this.nudMaxRank.Size = new System.Drawing.Size(90, 29);
+            this.nudMaxRank.Size = new System.Drawing.Size(136, 39);
             this.nudMaxRank.TabIndex = 21;
             this.nudMaxRank.Value = new decimal(new int[] {
             1,
@@ -319,14 +332,17 @@
             this.dataGridRank.AllowUserToResizeRows = false;
             this.dataGridRank.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridRank.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridRank.Location = new System.Drawing.Point(211, 3);
+            this.dataGridRank.Location = new System.Drawing.Point(317, 4);
+            this.dataGridRank.Margin = new System.Windows.Forms.Padding(4);
             this.dataGridRank.MultiSelect = false;
             this.dataGridRank.Name = "dataGridRank";
             this.dataGridRank.RowHeadersVisible = false;
+            this.dataGridRank.RowHeadersWidth = 62;
             this.dataGridRank.RowTemplate.Height = 23;
-            this.dataGridRank.Size = new System.Drawing.Size(744, 646);
+            this.dataGridRank.Size = new System.Drawing.Size(1118, 972);
             this.dataGridRank.TabIndex = 0;
             this.dataGridRank.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridRank_CellEndEdit);
+            this.dataGridRank.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.dataGridRank_CellPainting);
             this.dataGridRank.SelectionChanged += new System.EventHandler(this.dataGridRank_SelectionChanged);
             // 
             // tableLayoutPanel4
@@ -336,12 +352,13 @@
             this.tableLayoutPanel4.Controls.Add(this.pcvEdit, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.panel1, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(973, 3);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(1459, 4);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 2;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 53.17003F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 46.82997F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(274, 694);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(412, 1042);
             this.tableLayoutPanel4.TabIndex = 1;
             // 
             // pcvEdit
@@ -349,9 +366,10 @@
             this.pcvEdit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pcvEdit.FastBuild = true;
             this.pcvEdit.GroupName = "Editor";
-            this.pcvEdit.Location = new System.Drawing.Point(3, 3);
+            this.pcvEdit.Location = new System.Drawing.Point(6, 6);
+            this.pcvEdit.Margin = new System.Windows.Forms.Padding(6);
             this.pcvEdit.Name = "pcvEdit";
-            this.pcvEdit.Size = new System.Drawing.Size(268, 363);
+            this.pcvEdit.Size = new System.Drawing.Size(400, 542);
             this.pcvEdit.SuppressResizeInvalidation = true;
             this.pcvEdit.TabIndex = 0;
             this.pcvEdit.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
@@ -361,9 +379,10 @@
             // 
             this.panel1.Controls.Add(this.btnModify);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 372);
+            this.panel1.Location = new System.Drawing.Point(4, 558);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(268, 319);
+            this.panel1.Size = new System.Drawing.Size(404, 480);
             this.panel1.TabIndex = 1;
             // 
             // btnModify
@@ -376,9 +395,10 @@
             this.btnModify.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnModify.ForeColor = System.Drawing.Color.Black;
             this.btnModify.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnModify.Location = new System.Drawing.Point(143, 3);
+            this.btnModify.Location = new System.Drawing.Point(214, 4);
+            this.btnModify.Margin = new System.Windows.Forms.Padding(4);
             this.btnModify.Name = "btnModify";
-            this.btnModify.Size = new System.Drawing.Size(122, 42);
+            this.btnModify.Size = new System.Drawing.Size(183, 63);
             this.btnModify.TabIndex = 1;
             this.btnModify.TabStop = false;
             this.btnModify.Text = "Modify";
@@ -387,11 +407,12 @@
             // 
             // RankSetPage
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.tableLayoutPanel1);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "RankSetPage";
-            this.Size = new System.Drawing.Size(1250, 700);
+            this.Size = new System.Drawing.Size(1875, 1050);
             this.Load += new System.EventHandler(this.RankSetPage_Load);
             this.VisibleChanged += new System.EventHandler(this.RankSetPage_VisibleChanged);
             this.tableLayoutPanel1.ResumeLayout(false);

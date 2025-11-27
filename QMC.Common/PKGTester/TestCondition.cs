@@ -21,19 +21,24 @@ namespace QMC.Common.PKGTester
         // Source
         public double SourceValue { get; set; }
         public double SourceTime { get; set; }
-        public double SourceLimit { get; set; }
+        public double WaitTime { get; set; }
+        public double OffTime { get; set; }
 
         // Measure
         public double MeasureTime { get; set; }
+        public double MeasureLimit { get; set; }
+        public double MeasureLow { get; set; }
+        public double MeasureHigh { get; set; }
+
 
         // User Define
         public string Expression { get; set; }
 
         // Data Calibration
-        public bool[] UseGain { get; private set; } = new bool[8];
-        public bool[] UseOffset { get; private set; } = new bool[8];
-        public double[] Gain { get; private set; } = new double[8];
-        public double[] Offset { get; private set; } = new double[8];
+        public bool[] UseGain { get; set; } = new bool[8];
+        public bool[] UseOffset { get; set; } = new bool[8];
+        public double[] Gain { get; set; } = new double[8];
+        public double[] Offset { get; set; } = new double[8];
         #endregion
 
         #region Constructor
@@ -49,9 +54,13 @@ namespace QMC.Common.PKGTester
         {
             Type = TestItemType.None;
             SourceValue = 0;
-            SourceTime = 1;
-            SourceLimit = 0;
-            MeasureTime = 1;
+            SourceTime = 0;
+            WaitTime = 0;
+            OffTime = 0;
+            MeasureLimit = 0;
+            MeasureTime = 0;
+            MeasureLow = 0;
+            MeasureHigh = 0;
 
             Expression = "";
 
@@ -73,6 +82,8 @@ namespace QMC.Common.PKGTester
                 case TestItemCategory.Optical:
                     {
                         // Optical Item
+                        if (MeasureLow > MeasureHigh)
+                            return false;
                     }
                     break;
                 case TestItemCategory.Electrical:
@@ -82,9 +93,15 @@ namespace QMC.Common.PKGTester
                             return false;
                         if (SourceTime <= 0)
                             return false;
-                        if (SourceLimit < 0)
+                        if (WaitTime < 0)
+                            return false;
+                        if (OffTime < 0)
+                            return false;
+                        if (MeasureLimit < 0)
                             return false;
                         if (MeasureTime <= 0)
+                            return false;
+                        if (MeasureLow > MeasureHigh)
                             return false;
                     }
                     break;
@@ -92,6 +109,8 @@ namespace QMC.Common.PKGTester
                     {
                         // User Define Item
                         if (string.IsNullOrWhiteSpace(Expression))
+                            return false;
+                        if (MeasureLow > MeasureHigh)
                             return false;
                     }
                     break;
@@ -118,9 +137,10 @@ namespace QMC.Common.PKGTester
                 case TestItemCategory.Electrical:
                     {
                         pc.Add("Source");
-                        pc.Add("Source Value", GetSourceUnitFromType(), SourceValue);
-                        pc.Add("Source Time", "ms", SourceTime);
-                        pc.Add("Source Limit", GetSourceLimitUnitFromType(), SourceLimit);
+                        pc.Add("App Value", GetSourceUnitFromType(), SourceValue);
+                        pc.Add("Apply Time", "ms", SourceTime);
+                        pc.Add("Wait Time", "ms", WaitTime);
+                        pc.Add("Off Time", "ms", OffTime);
                     }
                     break;
             }
@@ -132,6 +152,23 @@ namespace QMC.Common.PKGTester
                     {
                         pc.Add("Measure");
                         pc.Add("Measure Time", "ms", MeasureTime);
+                        pc.Add("Measure Limit", GetMeasureUnitFromType(), MeasureLimit);
+                        pc.Add("Measure Low", GetMeasureUnitFromType(), MeasureLow);
+                        pc.Add("Measure High", GetMeasureUnitFromType(), MeasureHigh);
+                    }
+                    break;
+                case TestItemCategory.Optical:
+                    {
+                        pc.Add("Measure");
+                        pc.Add("Measure Low", GetMeasureUnitFromType(), MeasureLow);
+                        pc.Add("Measure High", GetMeasureUnitFromType(), MeasureHigh);
+                    }
+                    break;
+                case TestItemCategory.UserDefined:
+                    {
+                        pc.Add("Measure");
+                        pc.Add("Measure Low", GetMeasureUnitFromType(), MeasureLow);
+                        pc.Add("Measure High", GetMeasureUnitFromType(), MeasureHigh);
                     }
                     break;
             }
@@ -198,10 +235,10 @@ namespace QMC.Common.PKGTester
                 {
                     case TestItemCategory.Electrical:
                         {
-                            SourceValue = pc.GetValue<double>("Source Value");
-                            SourceTime = pc.GetValue<double>("Source Time");
-                            SourceLimit = pc.GetValue<double>("Source Limit");
-                            MeasureTime = pc.GetValue<double>("Measure Time");
+                            SourceValue = pc.GetValue<double>("App Value");
+                            SourceTime = pc.GetValue<double>("Apply Time");
+                            WaitTime = pc.GetValue<double>("Wait Time");
+                            OffTime = pc.GetValue<double>("Off Time");
                         }
                         break;
                 }
@@ -212,6 +249,21 @@ namespace QMC.Common.PKGTester
                     case TestItemCategory.Electrical:
                         {
                             MeasureTime = pc.GetValue<double>("Measure Time");
+                            MeasureLimit = pc.GetValue<double>("Measure Limit");
+                            MeasureLow = pc.GetValue<double>("Measure Low");
+                            MeasureHigh = pc.GetValue<double>("Measure High");
+                        }
+                        break;
+                    case TestItemCategory.Optical:
+                        {
+                            MeasureLow = pc.GetValue<double>("Measure Low");
+                            MeasureHigh = pc.GetValue<double>("Measure High");
+                        }
+                        break;
+                    case TestItemCategory.UserDefined:
+                        {
+                            MeasureLow = pc.GetValue<double>("Measure Low");
+                            MeasureHigh = pc.GetValue<double>("Measure High");
                         }
                         break;
                 }
@@ -294,7 +346,7 @@ namespace QMC.Common.PKGTester
                     return "";
             }
         }
-        private string GetSourceLimitUnitFromType()
+        private string GetMeasureUnitFromType()
         {
             switch (Type)
             {
@@ -534,27 +586,28 @@ namespace QMC.Common.PKGTester
                 return false; // 괄호 짝이 맞지 않음
 
             // 정규식 시뮬레이션하여 오류 발생하는 지 확인
-            try
-            {
-                List<string> assignItems = new List<string>();
-                foreach (var item in Items)
-                {
-                    var key = item.Name;
-                    var pattern = $@"\b{Regex.Escape(key)}\b";
-                    if (Regex.IsMatch(expression, pattern))
-                    {
-                        assignItems.Add(key);
-                        expression = Regex.Replace(expression, pattern, "0");
-                    }
-                }
+            // 서울 바이오 타입으로 여기 패스 하자.
+            //try
+            //{
+            //    List<string> assignItems = new List<string>();
+            //    foreach (var item in Items)
+            //    {
+            //        var key = item.Name;
+            //        var pattern = $@"\b{Regex.Escape(key)}\b";
+            //        if (Regex.IsMatch(expression, pattern))
+            //        {
+            //            assignItems.Add(key);
+            //            expression = Regex.Replace(expression, pattern, "0");
+            //        }
+            //    }
 
-                var computeObj = evaluator.Compute(expression, "");
-                double computedValue = Convert.ToDouble(computeObj);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            //    var computeObj = evaluator.Compute(expression, "");
+            //    double computedValue = Convert.ToDouble(computeObj);
+            //}
+            //catch (Exception)
+            //{
+            //    return false;
+            //}
 
             return true;
         }

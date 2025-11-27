@@ -33,7 +33,9 @@ namespace QMC.LCP_280.Process
         public const string EjectorZ        = "Ejector Z Axis";          // 22
         public const string BinFeederY      = "Bin Feeder Y Axis";       // 23
         public const string BinLifterZ      = "Bin Lifter Z Axis";       // 24
-        public const string IndexT          = "Index T Axis";            // 25
+        public const string IndexPlaceZ = "Index Place Z Axis";            // 25
+        public const string IndexT          = "Index T Axis";            // 26
+        
 
         /// <summary>
         /// AxisNo 순서를 그대로 반영한 배열. 인덱스 = AxisNo.
@@ -65,7 +67,8 @@ namespace QMC.LCP_280.Process
             EjectorZ,       // 22
             BinFeederY,     // 23
             BinLifterZ,     // 24
-            IndexT          // 25
+            IndexPlaceZ,     //25
+            IndexT,          // 26
         };
     }
 }

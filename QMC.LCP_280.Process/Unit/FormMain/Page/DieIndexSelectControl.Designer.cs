@@ -14,10 +14,23 @@
         {
             if (disposing)
             {
+                if (_rotary != null)
+                {
+                    _rotary.LoadIndexChanged -= Rotary_LoadIndexChanged;
+                    _rotary = null;
+                }
+
+                components?.Dispose();
                 _toolTip?.Dispose();
                 _hoverTimer?.Dispose();
             }
             base.Dispose(disposing);
+            //if (disposing)
+            //{
+            //    _toolTip?.Dispose();
+            //    _hoverTimer?.Dispose();
+            //}
+            //base.Dispose(disposing);
         }
 
         private void InitializeComponent()

@@ -69,6 +69,8 @@ namespace QMC.LCP_280.Process.Component
                 //if (!il.ValidateAxisForHome(axis, out reason))
                 //    return (false, reason);
 
+                double dSafe0 = 0.0;
+
                 if (!axis.CheckHomeInterlocks(out var reason2))
                     return (false, reason2);
 
@@ -392,9 +394,12 @@ namespace QMC.LCP_280.Process.Component
                             // 1) InputDieTransfer SafeZone 확인
                             if (eq.Units != null && eq.Units.TryGetValue("InputDieTransfer", out var uIdt) && uIdt is InputDieTransfer intransfer)
                             {
-                                var safeZoneName = nameof(InputDieTransferConfig.TeachingPositionName.SafetyZone);
-                                if (!intransfer.InPosTeaching(safeZoneName))
-                                    return (false, "InputDieTransfer Not in Safety Zone");
+                                if (intransfer.AxisPlaceZ.GetPosition() != dSafe0)
+                                {
+                                    var safeZoneName = nameof(InputDieTransferConfig.TeachingPositionName.SafetyZone);
+                                    if (!intransfer.InPosTeaching(safeZoneName))
+                                        return (false, "InputDieTransfer Not in Safety Zone");
+                                }
                             }
                             else
                             {
@@ -404,9 +409,12 @@ namespace QMC.LCP_280.Process.Component
                             // 2) OutputDieTransfer SafeZone 확인
                             if (eq.Units != null && eq.Units.TryGetValue("OutputDieTransfer", out var uOdt) && uOdt is OutputDieTransfer outTransfer)
                             {
-                                var safeOut = nameof(OutputDieTransferConfig.TeachingPositionName.SafetyZone);
-                                if (!outTransfer.InPosTeaching(safeOut))
-                                    return (false, "OutputDieTransfer Not in Safety Zone");
+                                if (outTransfer.AxisOutputPickZ.GetPosition() != dSafe0)
+                                {
+                                    var safeOut = nameof(OutputDieTransferConfig.TeachingPositionName.SafetyZone);
+                                    if (!outTransfer.InPosTeaching(safeOut))
+                                        return (false, "OutputDieTransfer Not in Safety Zone");
+                                }
                             }
                             else
                             {
@@ -427,9 +435,12 @@ namespace QMC.LCP_280.Process.Component
                                 }
                                 if (uIla is IndexLoadAligner indexAligner)
                                 {
-                                    var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
-                                    if (!outTransfer.InPosTeaching(safeOut))
-                                        return (false, "OutputDieTransfer Not in Safety Zone");
+                                    if (indexAligner.AxisIndexZ.GetPosition() != dSafe0)
+                                    {
+                                        var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                                        if (!indexAligner.InPosTeaching(safeOut))
+                                            return (false, "OutputDieTransfer Not in Safety Zone");
+                                    }
                                 }
                                 else
                                 {
@@ -457,9 +468,19 @@ namespace QMC.LCP_280.Process.Component
                             //if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIp) && uIp is IndexChipProbeController indexProbe)
                             if (eq.Units != null && eq.Units.TryGetValue("IndexChipProbeController", out var uIp) && uIp is IndexChipProbeController indexProbe)
                             {
-                                var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
-                                if (!outTransfer.InPosTeaching(safeOut))
-                                    return (false, "IndexChipProbeController Not in Safety Zone");
+                                if (indexProbe.AxisProbeZ.GetPosition() != dSafe0)
+                                {
+                                    var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
+                                    if (!indexProbe.InPosTeaching(safeOut))
+                                        return (false, "IndexChipProbeController Not in Safety Zone");
+                                }
+
+                                if (indexProbe.AxisProbeCardZ.GetPosition() != dSafe0)
+                                {
+                                    var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
+                                    if (!indexProbe.InPosTeaching(safeOut))
+                                        return (false, "IndexChipProbeController Not in Safety Zone");
+                                }
                             }
                             else
                             {

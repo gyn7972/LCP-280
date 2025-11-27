@@ -19,6 +19,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using static System.Net.WebRequestMethods;
+using File = System.IO.File;
 
 namespace QMC.LCP_280.Process
 {
@@ -240,6 +242,33 @@ namespace QMC.LCP_280.Process
         private readonly HashSet<VisionImageViewer> _viewers = new HashSet<VisionImageViewer>();
         private readonly Dictionary<VisionImageViewer, ViewerDisplayOptions> _viewerOptions = new Dictionary<VisionImageViewer, ViewerDisplayOptions>();
         #endregion
+
+        public MultiPatternMatchingParameters Parameters
+        {
+            get
+            {
+                // 잠금은 필요 최소화 (읽기 용도)
+                lock (_sync)
+                    return _parameters;
+            }
+        }
+
+        /// <summary>
+        /// 첫 번째 학습(Train) 이미지의 Width/Height 반환 (없으면 0,0)
+        /// </summary>
+        public (int width, int height) GetFirstTrainImageSize()
+        {
+            try
+            {
+                var ti = _parameters?.TrainImages?
+                    .FirstOrDefault(t => t != null && t.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                if (ti == null) return (0, 0);
+                return (ti.Header.Width, ti.Header.Height);
+            }
+            catch { return (0, 0); }
+        }
+
+
 
         #region Ctor
         public PatternMatchingRunner(Camera camera, VisionImageViewer viewer, RunnerOptions options)
@@ -463,6 +492,11 @@ namespace QMC.LCP_280.Process
             var cameraSem = _cameraSemaphore;
             if (global != null) global.Wait(ct);
             cameraSem?.Wait(ct);
+
+            //string path = string.Empty;
+            //path = string.Format("{0}{1}\\{2}", ConfigManager.GetConfigPath(), "Image", System.DateTime.Now.ToString("yyyy-MM-dd-ss")+ ".bmp");
+            //externalImage.Save(path, VisionImage.FileFilter.bmp);
+
             try
             {
                 lock (_sync)

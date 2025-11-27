@@ -22,22 +22,6 @@ namespace QMC.Common
 
         private Timer timerBlink;                      // BUZZER 인풋 깜빡임
 
-        /// <summary>디자이너 리소스 정리</summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _refreshTimer?.Stop();
-                _refreshTimer?.Dispose();
-                if (timerBlink != null)
-                {
-                    timerBlink.Stop();
-                    timerBlink.Dispose();
-                }
-            }
-            base.Dispose(disposing);
-        }
-
         #region Windows Form Designer generated code
         private void InitializeComponent()
         {

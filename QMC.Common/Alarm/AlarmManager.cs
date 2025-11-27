@@ -74,6 +74,10 @@ namespace QMC.Common.Alarm
                     // UI 폼이 없이 알람 발생.
                     PostAlarm?.Invoke(alarm);
 
+                    //var eq = EquipmentLocator.Instance;
+                    //eq.EqState = EquipmentState.Error;
+                    //var state = eq?.EqState ?? EquipmentState.Unknown;
+
                     //Test임.
                     //var mb = new MessageBoxOk();
                     //mb.Text = "알람 발생";
@@ -116,7 +120,8 @@ namespace QMC.Common.Alarm
         /// <param name="alarm">해제할 알람</param>
         public void ClearAlarm(AlarmInfo alarm)
         {
-            if (alarm == null) return;
+            if (alarm == null) 
+                return;
 
             lock (_lock)
             {
@@ -162,6 +167,7 @@ namespace QMC.Common.Alarm
             lock (_lock)
             {
                 m_Alarms.Clear();
+                EquipmentLocator.Instance.EqState = EquipmentState.Stopped;
             }
         }
     }

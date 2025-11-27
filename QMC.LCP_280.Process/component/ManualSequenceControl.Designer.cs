@@ -42,12 +42,12 @@ namespace QMC.LCP_280.Process.Component
             // _lstSteps
             // 
             this._lstSteps.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._lstSteps.Font = new System.Drawing.Font("±¼¸²", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this._lstSteps.FormattingEnabled = true;
-            this._lstSteps.ItemHeight = 12;
-            this._lstSteps.Location = new System.Drawing.Point(2, 52);
-            this._lstSteps.Margin = new System.Windows.Forms.Padding(2);
+            this._lstSteps.ItemHeight = 24;
+            this._lstSteps.Location = new System.Drawing.Point(3, 78);
             this._lstSteps.Name = "_lstSteps";
-            this._lstSteps.Size = new System.Drawing.Size(296, 146);
+            this._lstSteps.Size = new System.Drawing.Size(444, 219);
             this._lstSteps.TabIndex = 5;
             // 
             // tableLayoutPanel1
@@ -58,11 +58,12 @@ namespace QMC.LCP_280.Process.Component
             this.tableLayoutPanel1.Controls.Add(this._lstSteps, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 75F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(300, 200);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(450, 300);
             this.tableLayoutPanel1.TabIndex = 7;
             // 
             // tableLayoutPanel2
@@ -77,11 +78,12 @@ namespace QMC.LCP_280.Process.Component
             this.tableLayoutPanel2.Controls.Add(this._btnNext, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnRun, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(4, 4);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(294, 44);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(442, 67);
             this.tableLayoutPanel2.TabIndex = 8;
             // 
             // btnPlay
@@ -95,13 +97,15 @@ namespace QMC.LCP_280.Process.Component
             this.btnPlay.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnPlay.ForeColor = System.Drawing.Color.Black;
             this.btnPlay.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnPlay.Location = new System.Drawing.Point(221, 3);
+            this.btnPlay.Location = new System.Drawing.Point(334, 4);
+            this.btnPlay.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnPlay.Name = "btnPlay";
-            this.btnPlay.Size = new System.Drawing.Size(71, 40);
+            this.btnPlay.Size = new System.Drawing.Size(104, 59);
             this.btnPlay.TabIndex = 21;
             this.btnPlay.TabStop = false;
             this.btnPlay.Text = "Play";
             this.btnPlay.UseVisualStyleBackColor = false;
+            this.btnPlay.Visible = false;
             this.btnPlay.Click += new System.EventHandler(this._btnPlay_Click);
             // 
             // btnStop
@@ -115,9 +119,10 @@ namespace QMC.LCP_280.Process.Component
             this.btnStop.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStop.ForeColor = System.Drawing.Color.Black;
             this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStop.Location = new System.Drawing.Point(148, 3);
+            this.btnStop.Location = new System.Drawing.Point(224, 4);
+            this.btnStop.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(71, 40);
+            this.btnStop.Size = new System.Drawing.Size(102, 59);
             this.btnStop.TabIndex = 20;
             this.btnStop.TabStop = false;
             this.btnStop.Text = "Stop";
@@ -135,13 +140,15 @@ namespace QMC.LCP_280.Process.Component
             this._btnNext.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this._btnNext.ForeColor = System.Drawing.Color.Black;
             this._btnNext.ImageSize = new System.Drawing.Size(45, 45);
-            this._btnNext.Location = new System.Drawing.Point(75, 3);
+            this._btnNext.Location = new System.Drawing.Point(114, 4);
+            this._btnNext.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this._btnNext.Name = "_btnNext";
-            this._btnNext.Size = new System.Drawing.Size(71, 40);
+            this._btnNext.Size = new System.Drawing.Size(102, 59);
             this._btnNext.TabIndex = 19;
             this._btnNext.TabStop = false;
             this._btnNext.Text = "Next ¢º";
             this._btnNext.UseVisualStyleBackColor = false;
+            this._btnNext.Visible = false;
             this._btnNext.Click += new System.EventHandler(this._btnNext_Click);
             // 
             // btnRun
@@ -155,9 +162,10 @@ namespace QMC.LCP_280.Process.Component
             this.btnRun.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnRun.ForeColor = System.Drawing.Color.Black;
             this.btnRun.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnRun.Location = new System.Drawing.Point(2, 3);
+            this.btnRun.Location = new System.Drawing.Point(4, 4);
+            this.btnRun.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnRun.Name = "btnRun";
-            this.btnRun.Size = new System.Drawing.Size(71, 40);
+            this.btnRun.Size = new System.Drawing.Size(102, 59);
             this.btnRun.TabIndex = 18;
             this.btnRun.TabStop = false;
             this.btnRun.Text = "Run";
@@ -166,12 +174,11 @@ namespace QMC.LCP_280.Process.Component
             // 
             // ManualSequenceControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ManualSequenceControl";
-            this.Size = new System.Drawing.Size(300, 200);
+            this.Size = new System.Drawing.Size(450, 300);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.ResumeLayout(false);

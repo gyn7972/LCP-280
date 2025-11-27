@@ -5,6 +5,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,6 +45,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eAlignTAxesMoving;
             alarm.Title = "IndexLoadAligner T-Axis Axis Moving";
             alarm.Cause = "IndexLoadAligner T 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
@@ -120,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_isSafetyMoving)
                     return true;
-                if (this.Rotary.IsAxisMoving(AxisNames.IndexT))
+                if (this.Rotary.IsIndexMoving())
                 {
                     AxisIndexZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
@@ -150,10 +152,16 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
-            while(this.IsAlignZSafetyPos() == false)
+
+            // ??? 이건 막아야 겠는데?
+            while (this.IsPositionAlignZSafety() == false)
             {
+                if (IsStop)
+                {
+                    return 0;
+                }
                 Thread.Sleep(1);
             }
             return task.Result;
@@ -182,7 +190,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -226,7 +234,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -244,7 +252,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -259,14 +267,12 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionAlignUp(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
-            int teachingIdx;
-            if (nIndex >= 1 && nIndex <= 8)
+            // nIndex 처리
+            int teachingIdx = 0;
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
                 Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Invalid index {nIndex}. Range 0~7 or 1~8");
@@ -289,6 +295,15 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            while (IsAlignZIndexUp() == false)
+            {
+                if (IsStop)
+                {
+                    return 0;
+                }
+                Thread.Sleep(1);
+            }
+
             //nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index1_Up, isFine);
             //if(nRet != 0)
             //{
@@ -301,7 +316,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -336,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -355,7 +370,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -370,14 +385,12 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionAlignZReady(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
-            int teachingIdx;
-            if (nIndex >= 1 && nIndex <= 8)
+            // nIndex 처리
+            int teachingIdx = 0;
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
                 Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Invalid index {nIndex}. Range 0~7 or 1~8");
@@ -406,7 +419,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -441,7 +454,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -459,7 +472,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -473,12 +486,26 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionAlignTForward(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward, isFine);
+            int nRet = 0;
+            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward, isFine);
+            if(nRet != 0)
+            {
+                return -1;
+            }
+            while (IsAlignTForward() == false)
+            {
+                if(IsStop)
+                {
+                    return 0;
+                }
+                Thread.Sleep(1);
+            }
+            return nRet;
         }
         private int IsMoveInterLockAlignTForward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -504,7 +531,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(5);
+                    Thread.Sleep(2);
                 }
                 return coreTask.Result;
             }, ct);
@@ -521,7 +548,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -535,12 +562,27 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionAlignTBackward(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward, isFine);
+            int nRet = 0;
+            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward, isFine);
+            if (nRet != 0)
+            {
+                return -1;
+            }
+            while (IsAlignTBackward() == false)
+            {
+                if (IsStop)
+                {
+                    return 0;
+                }
+                Thread.Sleep(1);
+            }
+            return nRet;
+            //return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward, isFine);
         }
         private int IsMoveInterLockAlignTBackward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -566,7 +608,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(5);
+                    Thread.Sleep(2);
                 }
                 return coreTask.Result;
             }, ct);
@@ -609,7 +651,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTReady()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -635,7 +677,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(5);
+                    Thread.Sleep(2);
                 }
                 return coreTask.Result;
             }, ct);
@@ -679,11 +721,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsAlignZIndexUp(int nIndex)
         {
             // 기존 이동 로직과 동일한 인덱스 보정 규칙 유지
-            int teachingIdx;
-            if (nIndex >= 1 && nIndex <= 8)
+            // nIndex 처리
+            int teachingIdx = 0;
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1;
+            }
             else
                 return false;
 
@@ -700,70 +743,63 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsAlignZIndexReady(int nIndex)
         {
-            int teachingIdx;
-            if (nIndex >= 1 && nIndex <= 8)
+            // nIndex 처리
+            int teachingIdx = 0;
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1;
+            }
             else
                 return false;
 
             string tpName = $"AlignZ_Index{teachingIdx}_Ready";
-
             // Z축만 판정 (축별 확인)
-            if (AxisIndexZ == null) return true;
+            if (AxisIndexZ == null) 
+                return true;
+
             var tp = Config.GetTeachingPosition(tpName);
-            if (tp == null) return false;
+            if (tp == null) 
+                return false;
 
             double target = GetTP(tpName, AxisNames.IndexZ);
             try { return AxisIndexZ.InPosition(target); } catch { return false; }
         }
 
-        public bool IsAlignZSafetyPos(double fallbackTolerance = 0.01,
-                                      bool useAxisInposTolerance = true,
-                                      bool treatMissingAsSafe = true)
+        public bool IsPositionAlignZSafety()
         {
+            const string tpName = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
             if (AxisIndexZ == null)
-                return treatMissingAsSafe;
+                return true;
 
-            var cfg = IndexLoadAlignerConfig;
-            if (cfg == null) return false;
-
-            // 우선순위: SafetyPos → SafetyZone
-            string[] candidates =
+            // 현재 실제 위치 읽기
+            double currentPos;
+            try
             {
-                "SafetyPos",
-                IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidates)
+                currentPos = AxisIndexZ.GetPosition();
+            }
+            catch (Exception ex)
             {
-                var tp = cfg.GetTeachingPosition(name);
-                if (tp == null) continue;
-
-                // IndexZ 좌표가 실제 존재하는 티칭만 사용
-                if (tp.AxisPositions != null &&
-                    tp.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.IndexZ, System.StringComparison.OrdinalIgnoreCase)))
-                {
-                    foundName = name;
-                    break;
-                }
+                Log.Write(ex);
+                return false;
+            }
+            // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
+            // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
+            const double zeroTolerance = 0.007;
+            if (Math.Abs(currentPos) <= zeroTolerance)
+            {
+                return true;
             }
 
-            if (foundName == null)
-                return treatMissingAsSafe;
-
-            var tpFound = cfg.GetTeachingPosition(foundName);
-            if (tpFound == null) return false;
-
-            double target = tpFound.GetAxisPosition(AxisNames.IndexZ, 0.0);
-            double cur = AxisIndexZ.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisIndexZ.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            return System.Math.Abs(cur - target) <= tol;
+            double target = GetTP(tpName, AxisNames.IndexZ);
+            try
+            {
+                return AxisIndexZ.InPosition(target);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
         }
         #endregion
 
@@ -820,16 +856,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
-                ret = -1;
-            }
-            if (this.RunUnitStatus == UnitStatus.Running)
-            {
                 return 0;
             }
+           
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
@@ -863,6 +897,34 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Seq 단위 동작 함수
+        
+        /// <summary>
+        /// Rotary(인덱스) 정지까지 대기. 
+        /// - 성공: 0, 타임아웃/오류: -1, Auto 중 Stop 신호: 0
+        /// </summary>
+        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 2)
+        {
+            var sw = Stopwatch.StartNew();
+            while (true)
+            {
+                // Auto 모드에서 Stop 신호 시 즉시 반환
+                if (RunMode == UnitRunMode.Auto && IsStop)
+                    return 0;
+
+                // 즉시 확인 API 사용(알람 미발행)
+                if(this.Rotary.IsIndexMoving() == false)
+                {
+                    return 0;
+                }
+
+                if (timeoutMs >= 0 && sw.ElapsedMilliseconds >= timeoutMs)
+                {
+                    Log.Write(UnitName, nameof(WaitForRotaryIdle), $"Timeout waiting Rotary idle ({timeoutMs} ms)");
+                    return -1;
+                }
+                Thread.Sleep(pollMs);
+            }
+        }
 
         /// <summary>
         /// Rotary(인덱스)가 정지 상태인지 즉시 확인.
@@ -871,7 +933,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && this.Rotary.IsIndexMoving())
             {
                 //AxisIndexZ.EmgStop();
                 //AxisAlignT.EmgStop();
@@ -888,28 +950,30 @@ namespace QMC.LCP_280.Process.Unit
             int bRtn = 0;
             try
             {
-                if (RunMode == UnitRunMode.Manual)
+                this.CurrentFunc = RunAlignSocketOnceReady;
+                LogSequence("Start");
+               
+                while (IsRotaryIdle() != 0)
                 {
-                    this.CurrentFunc = RunAlignSocketOnceReady;
-                    LogSequence("Start");
+                    if (IsStop)
+                    {
+                        return 0;
+                    }
+                    Thread.Sleep(1);
                 }
-                int nIndex = GetAlignIndexNo();
-                bRtn = IsRotaryIdle();
-                if(bRtn != 0) { return 0; }
 
-                // 2) T Ready
+                int nIndex = GetAlignIndexNo();
                 bRtn = MovePositionAlignTReady(bFineSpeed);
                 if (bRtn != 0)
                 {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                    Log.Write(UnitName, "RunAlignSocketOnceReady", "Fail: MovePositionAlignTReady");
                     return -1;
                 }
 
-                // 3) Z Up
-                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
+                bRtn = MovePositionSafetyZ(bFineSpeed);
                 if (bRtn != 0)
                 {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignZReady");
+                    Log.Write(UnitName, "RunAlignSocketOnceReady", "Fail: MovePositionAlignZReady");
                     return -1;
                 }
             }
@@ -933,12 +997,9 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int bRtn = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = RunAlignSocketOnce;
-                LogSequence("Start");
-            }
-
+            this.CurrentFunc = RunAlignSocketOnce;
+            LogSequence("Start");
+            
             int nIndex = GetAlignIndexNo();
             try
             {
@@ -958,15 +1019,22 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
+				//bRtn = WaitForRotaryIdle();
+                //if (bRtn != 0)
+                //    return bRtn;
+                    
                 //bRtn = IsRotaryIdle();
                 while(IsRotaryIdle() != 0)
                 {
+                    if(IsStop)
+                    { 
+                        return 0; 
+                    }
                     Thread.Sleep(1);
                 }
                
-
                 var socket = this.Rotary.GetSocket(nIndex);
-                socket.SetState(Rotary.RotarySocketState.Aligning);
+                socket.SetState(Rotary.RotarySocketState.MAligning);
 
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
@@ -989,15 +1057,37 @@ namespace QMC.LCP_280.Process.Unit
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
                 {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward");
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward1");
                     return -1;
                 }
-                
+
+                WaitByTime(Config.WaitTime1Step);
+
+
                 // 5) T Backward
                 bRtn = MovePositionAlignTBackward(bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
+                    return -1;
+                }
+
+                WaitByTime(Config.WaitTime2Step);
+
+
+                //bRtn = MovePositionAlignTForward(bFineSpeed);
+                //if (bRtn != 0)
+                //{
+                //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
+                //    return -1;
+                //}
+
+                //WaitByTime(Config.WaitTime3Step);
+
+                bRtn = MovePositionSafetyZ(bFineSpeed);
+                if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
                     return -1;
                 }
 
@@ -1008,17 +1098,20 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                bRtn = MovePositionSafetyZ(bFineSpeed);
-                if (bRtn != 0)
-                {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
-                    return -1;
-                }
+                //while (IsPositionAlignZSafety() == false)
+                //{
+                //    if (IsStop)
+                //    {
+                //        return 0;
+                //    }
+                //    Thread.Sleep(1);
+                //}
 
                 die.State = DieProcessState.Inspecting;
+                socket.SetState(Rotary.RotarySocketState.MAligned);
 
-                socket.SetState(Rotary.RotarySocketState.Aligned);
-
+                CompleteLoadAligner = true;
+                LogSequence("End");
             }
             catch (Exception ex)
             {
@@ -1027,23 +1120,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                // 6) T Ready
-                bRtn = MovePositionAlignTReady(bFineSpeed);
-                // 7) Z Ready
-                //bRtn += MovePositionAlignZReady(nIndex, bFineSpeed);
-                //if(bRtn == 0)
-                //{
-                //    CompleteLoadAligner = true;
-                //}
-                // 7) Z Ready
-                bRtn += MovePositionSafetyZ(bFineSpeed);
+                if(IsAlignTReady() == false)
+                {
+                    bRtn = MovePositionAlignTReady(bFineSpeed);
+                }
+                if(IsPositionAlignZSafety() == false)
+                {
+                    bRtn += MovePositionSafetyZ(bFineSpeed);
+                }
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
                 }
-                
                 CompleteLoadAligner = true;
-                LogSequence("End");
             }
 
             return bRtn;
@@ -1051,14 +1140,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
-            if(RunMode == UnitRunMode.Manual)
-            {
                 if (this.CurrentFunc == null)
                     return;
 
                 Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
 
-            }
         }
 
         public int GetAlignIndexNo()
@@ -1097,7 +1183,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (IsAlignZSafetyPos() == false)
+            if (IsPositionAlignZSafety() == false)
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
@@ -1121,5 +1207,34 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        // 클래스 내부에 추가
+        public void ResetForNewRun(bool moveToSafeReady = true)
+        {
+            // 1) 런타임/시퀀스 플래그 초기화
+            _isSafetyMoving = false;
+            CompleteLoadAligner = false;
+            this.CurrentFunc = null;
+
+            // 2) 안전 위치 복귀(선택)
+            if (moveToSafeReady)
+            {
+                try
+                {
+                    while (IsRotaryIdle() != 0)
+                    {
+                        if (IsStop)
+                        {
+                            return;
+                        }
+                        Thread.Sleep(1);
+                    }
+                    EnsureReady(); // IndexZ: SafetyZone, AlignT: Ready
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, $"[ResetForNewRun] EnsureReady failed: {ex.Message}");
+                }
+            }
+        }
     }
 }

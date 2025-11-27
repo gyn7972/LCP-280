@@ -19,6 +19,7 @@ using QMC.Common.Spectrometer;
 using QMC.Common.StrainGage;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Component.ProcessData;
 using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Concurrent;
@@ -70,7 +71,15 @@ namespace QMC.LCP_280.Process
                     lock (_lock)
                     {
                         if (_instance == null)
+                        {
                             _instance = new Equipment();
+                            try
+                            {
+                                // UI가 EquipmentLocator.Instance를 사용할 때 같은 인스턴스를 보도록 연결
+                                EquipmentLocator.Initialize(_instance);
+                            }
+                            catch { /* 로깅 선택 */ }
+                        }
                     }
                 }
                 return _instance;
@@ -239,6 +248,13 @@ namespace QMC.LCP_280.Process
 
         // PKG Tester
         public PKGTester Tester { get; private set; }
+        // 1) 결과 저장 매니저 추가
+        private ResultWriterManager _resultWriterManager;
+        public ResultWriterManager ResultWriterManager
+        {
+            get { return _resultWriterManager; }
+        }
+
 
         // Strain Gage
         public Dictionary<string, StrainGage> StrainGages { get; } = new Dictionary<string, StrainGage>(StringComparer.OrdinalIgnoreCase);
@@ -267,6 +283,14 @@ namespace QMC.LCP_280.Process
         // [ADD] Dispose 재진입 방지
         private bool _disposed;
 
+        // [ADD] 워밍업 플래그
+        private volatile bool _threadPoolWarmed = false; // 워밍업 수행 여부 플래그
+
+
+        //재현성및 1:1모드
+        public bool bIndexCal { get; set; } = true;
+
+
         #endregion
 
         #region Constructor & Initialization
@@ -283,6 +307,19 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                // [ADD] ThreadPool 워밍업 및 최소 스레드 수 상향 (Task.Run 첫 호출 지연 감소)
+                try
+                {
+                    WarmupThreadPoolIfNeeded();
+                }
+                catch { }
+
+                // 보강: Locator 초기화
+                if (!EquipmentLocator.IsInitialized)
+                {
+                    EquipmentLocator.Initialize(this);
+                }
+
                 Units = new ConcurrentDictionary<string, IUnit>();
                 _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
                 EqState = EquipmentState.Stopped;
@@ -290,7 +327,9 @@ namespace QMC.LCP_280.Process
                 ConfigManager = new EquipmentConfigManager();
                 EquipmentConfig = new EquipmentConfig();
                 EquipmentRecipe = new EquipmentRecipe();
-                
+
+                _resultWriterManager = new ResultWriterManager();
+
                 OnStateChanged(EquipmentState.Initializing);
 
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
@@ -355,11 +394,11 @@ namespace QMC.LCP_280.Process
                 {
                     var mb = new MessageBoxOk();
 
-                    if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath) != 0)
+                    if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile) != 0)
                     {
                         mb.ShowDialog("Error!", $"Failed to load test condition set.");
                     }
-                    if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath) != 0)
+                    if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
                     {
                         mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
                     }
@@ -530,7 +569,7 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public async Task<bool> StartAllUnitsAsync()
         {
-            if (EqState == EquipmentState.Running)
+            if (EqState == EquipmentState.AutoRunning)
             {
                 Log.Write("Equipment", "설비가 이미 실행 중입니다.");
                 return true;
@@ -557,7 +596,7 @@ namespace QMC.LCP_280.Process
 
                 if (results.All(r => r))
                 {
-                    OnStateChanged(EquipmentState.Running);
+                    OnStateChanged(EquipmentState.AutoRunning);
                     Log.Write("Equipment", "설비 전체 시작 완료");
                     return true;
                 }
@@ -758,7 +797,7 @@ namespace QMC.LCP_280.Process
                     try
                     {
                         (unitObj as BaseUnit)?.Start(); // 초기화/실행 진입
-                        SetAndRaiseUnitState(unitName, UnitStatus.Running);
+                        SetAndRaiseUnitState(unitName, UnitStatus.AutoRunning);
 
                         // 이거 안해도 되는거 같은데.
                         // 이거 안해야 하는거 같다.
@@ -1035,7 +1074,7 @@ namespace QMC.LCP_280.Process
             }
 
             if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
-                return exec.IsRunning ? UnitStatus.Running : UnitStatus.Stopped;
+                return exec.IsRunning ? UnitStatus.AutoRunning : UnitStatus.Stopped;
 
             return UnitStatus.Unknown;
 
@@ -1075,7 +1114,7 @@ namespace QMC.LCP_280.Process
             if (string.IsNullOrWhiteSpace(unitName))
                 return;
 
-            // 보호 유닛 상태 보호: 종료(Dispose) 중이 아닐 때는 Stopping/Stopped 전환 무시
+            // 보호 유닛 상태 보호: 종료(프로세스 종료/Dispose) 중 표시
             if (IsProtectedUnit(unitName) && !_isShuttingDown)
             {
                 if (newState == UnitStatus.Stopping || newState == UnitStatus.Stopped)
@@ -1096,25 +1135,35 @@ namespace QMC.LCP_280.Process
                 {
                     case UnitStatus.Starting:
                         bu.RunUnitStatus = UnitStatus.Starting;
+                        EqState = EquipmentState.Starting;
                         break;
-                    case UnitStatus.Running:
-                        bu.RunUnitStatus = UnitStatus.Running;
-                        //bu.IsRunning = true;
+                    case UnitStatus.AutoRunning:
+                        bu.RunUnitStatus = UnitStatus.AutoRunning;
+                        EqState = EquipmentState.AutoRunning;
+                        break;
+                    case UnitStatus.ManualRunning:
+                        bu.RunUnitStatus = UnitStatus.ManualRunning;
+                        EqState = EquipmentState.ManualRunning;
                         break;
                     case UnitStatus.Stopping:
                         bu.RunUnitStatus = UnitStatus.Stopping;
+                        EqState = EquipmentState.Stopping;
                         break;
                     case UnitStatus.CycleStop:
                         bu.RunUnitStatus = UnitStatus.CycleStop;
+                        EqState = EquipmentState.CycleStop;
                         break;
                     case UnitStatus.Stopped:
                         bu.RunUnitStatus = UnitStatus.Stopped;
+                        EqState = EquipmentState.Stopped;
                         break;
                     case UnitStatus.Error:
                         bu.RunUnitStatus = UnitStatus.Error;
+                        EqState = EquipmentState.Error;
                         break;
                     case UnitStatus.Unknown:
                         bu.RunUnitStatus = UnitStatus.Unknown;
+                        EqState = EquipmentState.Unknown;
                         //bu.IsRunning = false;
                         break;
                 }
@@ -1123,7 +1172,7 @@ namespace QMC.LCP_280.Process
             // 2) 실행정보 반영
             if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
             {
-                bool running = (newState == UnitStatus.Running || newState == UnitStatus.Starting);
+                bool running = (newState == UnitStatus.AutoRunning || newState == UnitStatus.Starting);
                 if (exec.IsRunning != running)
                 {
                     exec.IsRunning = running;
@@ -1422,7 +1471,7 @@ namespace QMC.LCP_280.Process
                         if (st.IO.ServoOn) continue;
                         int rc = axis.Servo(true);
                         if (rc != 0) Log.Write("Equipment", $"[ServoOn] Axis='{axis.Name}' 실패 rc={rc}");
-                        Thread.Sleep(0);
+                        Thread.Sleep(1);
                     }
                     catch (Exception ex) { Log.Write(ex); }
                 }
@@ -1606,7 +1655,7 @@ namespace QMC.LCP_280.Process
             {
                 var lightConfigs = new[]
                 {
-                    new { Name = "Light", Model = LeesOsLightControllerModel.LPD_12024_8CH, PortName = "COM3" }
+                    new { Name = "Light", Model = LeesOsLightControllerModel.LPD_12024_8CH, PortName = "COM1" }
                 };
 
                 foreach (var config in lightConfigs)
@@ -1652,7 +1701,8 @@ namespace QMC.LCP_280.Process
                         }
 
                         // 3) 컨트롤러 초기화
-                        ret = lightController.Initialize();
+                        //ret = lightController.Initialize();
+                        ret = lightController.Connect();
                         if (ret != 0)
                         {
                             var mb = new MessageBoxOk();
@@ -1665,6 +1715,9 @@ namespace QMC.LCP_280.Process
                         }
 
                         LightControllers[config.Name] = lightController;
+
+                        LightControllers[config.Name].SetAllChannelsOn();
+
                         Console.WriteLine($"[LightController] {config.Name} ready with {lightController.Channels.Count} channels");
                     }
                     catch (Exception ex)
@@ -1802,11 +1855,56 @@ namespace QMC.LCP_280.Process
                 var currentRecipe = EquipmentRecipe?.CurrentRecipe;
                 if (currentRecipe != null)
                 {
-                    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath);
-                    Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath);
+                    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile);
+
+                    // 1) 레시피의 스펙 파일 경로 추출
+                    var specPath = currentRecipe.BinningSpecSheetFile;
+
+                    // 2) Excel/BIN → ExcelBinningModel 로드
+                    ExcelBinningModel excelModel = null;
+                    if (!string.IsNullOrWhiteSpace(specPath) && File.Exists(specPath))
+                    {
+                        var ext = Path.GetExtension(specPath).ToLowerInvariant();
+                        if (ext == ".xlsx" || ext == ".xls")
+                        {
+                            excelModel = QMC.Common.PKGTester.DataBinningExcelLoader.Load(specPath);
+                        }
+                        else if (ext == ".bin")
+                        {
+                            excelModel = DataBinningBinLoader.LoadBIN(specPath);
+                        }
+                    }
+
+                    // 3) 변환 후 검사 엔진에 주입(기존 분류기 유지)
+                    if (excelModel != null)
+                    {
+                        var sheet = ExcelBinningModelConverter.ToSpecSheet(excelModel);
+                        if (!Tester.BinningSpecSheet.CopyFrom(sheet))
+                        {
+                            var mb = new MessageBoxOk();
+                            mb.ShowDialog("Error!", "Failed to apply binning spec (from ExcelBinningModel).");
+                        }
+                    }
+                    else
+                    {
+                        // 폴백: 기존 방식(레거시 파일일 수 있음)
+                        if (Tester.LoadBinningSpecSheet(specPath) != 0)
+                        {
+                            var mb = new MessageBoxOk();
+                            mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                        }
+                    }
                 }
+
+                //var currentRecipe = EquipmentRecipe?.CurrentRecipe;
+                //if (currentRecipe != null)
+                //{
+                //    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile);
+                //    Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile);
+                //}
             }
-            catch (Exception ex) { Log.Write(ex); }
+            catch (Exception ex) 
+            { Log.Write(ex); }
         }
 
         private void InitializeStrainGages()
@@ -1856,98 +1954,76 @@ namespace QMC.LCP_280.Process
             Units.TryGetValue(name, out var unit);
             return unit as BaseUnit;
         }
-        #endregion // Motion/IO Bootstrap
+
+        // 안전한 ThreadPool 워밍업 헬퍼
+        // - 이미 워밍업된 경우 재실행하지 않음
+        // - EqState가 AutoRunning인 경우에는 ThreadPool 최소 스레드 변경을 피하고 가벼운 no-op 태스크만 큐잉
+        // - 최소 스레드는 오직 증가만 수행(감소하지 않음)
+        private void WarmupThreadPoolIfNeeded()
+        {
+            if (_threadPoolWarmed) return;
+
+            try
+            {
+                // 만약 이미 설비가 AutoRunning 상태라면 시스템에 영향을 줄 수 있으므로 최소 스레드 변경은 하지 않음
+                if (EqState == EquipmentState.AutoRunning)
+                {
+                    // 가벼운 워밍업: 소수의 no-op 작업만 큐잉하여 스레드풀 진입 비용을 줄임
+                    int warmCount = Math.Max(1, Environment.ProcessorCount);
+                    var warmTasks = new Task[warmCount];
+                    for (int i = 0; i < warmCount; i++)
+                    {
+                        warmTasks[i] = Task.Run(() => { /* no-op short work */ Thread.Sleep(1); });
+                    }
+                    try { Task.WaitAll(warmTasks, 1000); } catch { }
+                    _threadPoolWarmed = true;
+                    return;
+                }
+
+                int minW, minIO;
+                ThreadPool.GetMinThreads(out minW, out minIO);
+
+                int target = Math.Max(minW, Math.Max(8, Environment.ProcessorCount * 4));
+                int targetIO = Math.Max(minIO, Math.Max(8, Environment.ProcessorCount * 4));
+
+                // 안전: 기존 값보다 작으면 절대 설정하지 않음(기동 중 다운그레이드 방지)
+                if (target > minW || targetIO > minIO)
+                {
+                    try
+                    {
+                        ThreadPool.SetMinThreads(target, targetIO);
+                    }
+                    catch (Exception ex)
+                    {
+                        try { Log.Write(ex); } catch { }
+                    }
+                }
+
+                // 워밍업 태스크를 사용해 스레드풀을 미리 기동
+                var warmups = new Task[Math.Max(1, Environment.ProcessorCount)];
+                for (int i = 0; i < warmups.Length; i++)
+                    warmups[i] = Task.Run(() => { /* no-op */ Thread.Sleep(1); });
+
+                try { Task.WaitAll(warmups, 2000); } catch { /* timeout 무시 */ }
+
+                _threadPoolWarmed = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        #endregion
 
         // ===== 메인 설비 Config / Recipe 로드 추가 =====
         public  EquipmentConfig EquipmentConfig { get;  set; }
         public  EquipmentRecipe EquipmentRecipe { get;  set; }
         public string ICurrentRecipe { get; set; }
 
-        //private void LoadEquipmentConfigAndMainRecipe()
-        //{
-        //    try
-        //    {
-        //        // (1) 설비 Config
-        //        EquipmentConfig = EquipmentConfig.LoadOrCreate();
-        //        _CurrentRecipeName = EquipmentConfig?.CurrentRecipeName ?? "LCP_RECIPE";
 
-        //        // (2) 메인 Measurement Recipe
-        //        MeasurementRecipe loaded = null;
-        //        try
-        //        {
-        //            //var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName) as QMC.Common.BaseRecipe;
-        //            var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName);
-        //            loaded = obj as MeasurementRecipe;
-        //        }
-        //        catch (Exception rex)
-        //        {
-        //            OnErrorOccurred("MeasurementRecipe 로드 실패: " + rex.Message);
-        //        }
+        public bool m_bBuzzerOff { get; set; } = false;
 
-        //        if (loaded == null)
-        //        {
-        //            // 실패 시 기본 생성
-        //            loaded = new MeasurementRecipe(_CurrentRecipeName);
-        //            loaded.Reset();
-        //            try { loaded.Save(); } catch { }
-        //        }
-
-        //        CurrentRecipe = loaded;
-
-        //        Console.WriteLine($"[Recipe] Main Recipe='{CurrentRecipe.Name}' 로드 완료");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnErrorOccurred("LoadEquipmentConfigAndMainRecipe 실패: " + ex.Message);
-        //    }
-        //}
-        //// 메인 Recipe 교체/저장 편의 메서드 (필요 시 UI에서 호출)
-        //public static bool ChangeCurrentRecipe(string newName)
-        //{
-        //    if (string.IsNullOrWhiteSpace(newName))
-        //        return false;
-        //    try
-        //    {
-        //        var sanitized = newName.Trim();
-        //        var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), sanitized) as MeasurementRecipe;
-        //        if (obj == null)
-        //        {
-        //            obj = new MeasurementRecipe(sanitized);
-        //            obj.Reset();
-        //            obj.Save();
-        //        }
-        //        CurrentRecipe = obj;
-        //        _CurrentRecipeName = sanitized;
-
-        //        if (EquipmentConfig == null)
-        //            EquipmentConfig = EquipmentConfig.LoadOrCreate();
-        //        EquipmentConfig.CurrentRecipeName = sanitized;
-        //        EquipmentConfig.Save();
-
-        //        Console.WriteLine($"[Recipe] 변경 및 저장: {sanitized}");
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //OnErrorOccurred("ChangeCurrentRecipe 오류: " + ex.Message);
-        //        Log.Write(ex);
-        //        return false;
-        //    }
-        //}
-        //public static bool SaveCurrentRecipe()
-        //{
-        //    try
-        //    {
-        //        CurrentRecipe?.Save();
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //OnErrorOccurred("SaveCurrentRecipe 오류: " + ex.Message);
-        //        Log.Write(ex);
-        //        return false;
-        //    }
-        //}
     }
 
     #region Supporting Classes and Enums

@@ -1,9 +1,9 @@
 ﻿using QMC.Common.DIO;
 using System;
+using System.ComponentModel;
 using System.Drawing;
-using System.Windows.Forms;
-using System.Threading;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace QMC.Common
 {
@@ -14,13 +14,20 @@ namespace QMC.Common
         private bool _lampYellowOn;
         private bool _lampGreenOn;
 
-        private bool _buzzerInput;              // 알람/문제 발생시 true (깜빡임 유지)
+        private bool _buzzerInput;               // 알람/문제 발생시 true (깜빡임 유지)
         private bool _buzzerSoundEnabled = true; // 소리 ON/OFF 상태
 
-        private bool _blinkPhase;               // 깜빡임 위상
+        private bool _blinkPhase;                // 깜빡임 위상
 
-        private System.Windows.Forms.Timer _refreshTimer;            // I/O 상태 갱신 타이머
-        private object _equipmentStatusUnit;    // EquipmentStatus 유닛 캐시
+        private System.Windows.Forms.Timer _refreshTimer; // I/O 상태 갱신 타이머
+
+        // EquipmentStatus 유닛 캐시(반사 사용)
+        private object _equipmentStatusUnit;
+
+        // 리플렉션 MethodInfo 캐시 (오버헤드 절감)
+        private MethodInfo _miGetSnapshot;
+        private MethodInfo _miSetOutput;
+        private MethodInfo _miApplyTowerPattern;
 
         // 외부 통지 이벤트(Operator_Main 등에서 실제 MUTE 출력 처리)
         public event EventHandler<bool> BuzzerSoundToggled;
@@ -39,22 +46,93 @@ namespace QMC.Common
             _refreshTimer.Tick += OnRefreshTimerTick;
         }
 
+        // 외부에서 직접 EquipmentStatus 주입
+        public void AttachEquipmentStatus(object equipmentStatusUnit)
+        {
+            _equipmentStatusUnit = equipmentStatusUnit;
+            CacheEquipmentStatusMethods();
+            if (Visible && _refreshTimer != null && !_refreshTimer.Enabled)
+                _refreshTimer.Start();
+        }
+
+        // 연결 해제
+        public void DetachEquipmentStatus()
+        {
+            _equipmentStatusUnit = null;
+            _miGetSnapshot = null;
+            _miSetOutput = null;
+            _miApplyTowerPattern = null;
+            if (_refreshTimer != null && _refreshTimer.Enabled)
+                _refreshTimer.Stop();
+        }
+
+        private bool IsDesignModeSafe()
+        {
+            return LicenseManager.UsageMode == LicenseUsageMode.Designtime
+                   || (this.Site?.DesignMode ?? false)
+                   || this.DesignMode;
+        }
+
+        private void EnsureRefreshTimer()
+        {
+            if (_refreshTimer == null)
+            {
+                _refreshTimer = new System.Windows.Forms.Timer();
+                _refreshTimer.Interval = 100;
+                _refreshTimer.Tick += OnRefreshTimerTick;
+            }
+        }
+
         // 컨트롤이 표시될 때 타이머 시작
         protected override void OnVisibleChanged(EventArgs e)
         {
             base.OnVisibleChanged(e);
-            if (Visible)
+
+            // 디자인 모드/Dispose 상태에서는 아무것도 하지 않음
+            if (IsDisposed || Disposing || IsDesignModeSafe())
+                return;
+
+            try
             {
-                InitializeEquipmentStatus();
-                _refreshTimer.Start();
+                if (Visible)
+                {
+                    // 장비 유닛 캐시 시도
+                    if (_equipmentStatusUnit == null)
+                        InitializeEquipmentStatus();
+
+                    // 타이머 보장 후 시작
+                    EnsureRefreshTimer();
+                    if (!_refreshTimer.Enabled)
+                        _refreshTimer.Start();
+                }
+                else
+                {
+                    if (_refreshTimer != null && _refreshTimer.Enabled)
+                        _refreshTimer.Stop();
+                }
             }
-            else
+            catch
             {
-                _refreshTimer.Stop();
+                // 표시 전환 중 예외는 무시(디자이너/수명 주기 중간 단계 보호)
             }
         }
 
-        // EquipmentStatus 유닛 초기화 및 캐싱
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_refreshTimer != null)
+                {
+                    try { _refreshTimer.Stop(); } catch { }
+                    try { _refreshTimer.Tick -= OnRefreshTimerTick; } catch { }
+                    try { _refreshTimer.Dispose(); } catch { }
+                    _refreshTimer = null;
+                }
+            }
+            base.Dispose(disposing);
+        }
+
+        // EquipmentStatus 유닛 초기화 및 캐싱 (fallback)
         private void InitializeEquipmentStatus()
         {
             try
@@ -70,12 +148,30 @@ namespace QMC.Common
                     if (units != null && units.Contains("EquipmentStatus"))
                     {
                         _equipmentStatusUnit = units["EquipmentStatus"];
+                        CacheEquipmentStatusMethods();
                     }
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"InitializeEquipmentStatus Error: {ex.Message}");
+            }
+        }
+
+        // 반사 MethodInfo 캐싱
+        private void CacheEquipmentStatusMethods()
+        {
+            try
+            {
+                if (_equipmentStatusUnit == null) return;
+                var t = _equipmentStatusUnit.GetType();
+                _miGetSnapshot = _miGetSnapshot ?? t.GetMethod("GetSnapshot", BindingFlags.Instance | BindingFlags.Public);
+                _miSetOutput = _miSetOutput ?? t.GetMethod("SetOutput", BindingFlags.Instance | BindingFlags.Public);
+                _miApplyTowerPattern = _miApplyTowerPattern ?? t.GetMethod("ApplyTowerPattern", BindingFlags.Instance | BindingFlags.Public);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CacheEquipmentStatusMethods Error: {ex.Message}");
             }
         }
 
@@ -90,60 +186,46 @@ namespace QMC.Common
                     if (_equipmentStatusUnit == null) return;
                 }
 
-                // GetSnapshot 메서드 호출
-                var getSnapshotMethod = _equipmentStatusUnit.GetType().GetMethod("GetSnapshot");
-                if (getSnapshotMethod != null)
+                // GetSnapshot 호출
+                if (_miGetSnapshot == null) 
+                    CacheEquipmentStatusMethods();
+
+                var snapshot = _miGetSnapshot?.Invoke(_equipmentStatusUnit, null);
+                if (snapshot == null) 
+                    return;
+
+                // 타워램프 출력 상태 읽기
+                bool redOn = false, yellowOn = false, greenOn = false;
+                var outputsProperty = snapshot.GetType().GetProperty("Outputs");
+                if (outputsProperty != null)
                 {
-                    var snapshot = getSnapshotMethod.Invoke(_equipmentStatusUnit, null);
-                    if (snapshot != null)
+                    var outputs = outputsProperty.GetValue(snapshot) as System.Collections.Generic.Dictionary<string, bool>;
+                    if (outputs != null)
                     {
-                        // 타워램프 상태 업데이트
-                        bool redOn = false;
-                        bool yellowOn = false;
-                        bool greenOn = false;
-
-                        var outputsProperty = snapshot.GetType().GetProperty("Outputs");
-                        if (outputsProperty != null)
-                        {
-                            var outputs = outputsProperty.GetValue(snapshot) as System.Collections.Generic.Dictionary<string, bool>;
-                            if (outputs != null)
-                            {
-                                outputs.TryGetValue("TL_RED", out redOn);
-                                outputs.TryGetValue("TL_YELLOW", out yellowOn);
-                                outputs.TryGetValue("TL_GREEN", out greenOn);
-                            }
-                        }
-
-                        UpdateLampInputs(redOn, yellowOn, greenOn);
-
-                        // 부저 상태 업데이트
-                        bool buzzerOn = false;
-                        var outputs2 = outputsProperty?.GetValue(snapshot) as System.Collections.Generic.Dictionary<string, bool>;
-                        outputs2?.TryGetValue("BUZZER", out buzzerOn);
-                        UpdateBuzzerInput(buzzerOn);
-
-                        // EMG 상태 확인
-                        var anyEmgProperty = snapshot.GetType().GetProperty("AnyEmg");
-                        if (anyEmgProperty != null)
-                        {
-                            bool anyEmg = (bool)anyEmgProperty.GetValue(snapshot);
-                            if (anyEmg)
-                            {
-                                // EMG 발생 시 UI 표시
-                                if (this.BackColor != Color.LightCoral)
-                                {
-                                    this.BackColor = Color.LightCoral; // 비상 상태 표시
-                                }
-                            }
-                            else
-                            {
-                                if (this.BackColor != SystemColors.Control)
-                                {
-                                    this.BackColor = SystemColors.Control; // 정상 상태
-                                }
-                            }
-                        }
+                        outputs.TryGetValue("TL_RED", out redOn);
+                        outputs.TryGetValue("TL_YELLOW", out yellowOn);
+                        outputs.TryGetValue("TL_GREEN", out greenOn);
                     }
+                }
+                UpdateLampInputs(redOn, yellowOn, greenOn);
+
+                // 부저 상태 업데이트
+                bool buzzerOn = false;
+                var outputs2 = outputsProperty?.GetValue(snapshot) as System.Collections.Generic.Dictionary<string, bool>;
+                outputs2?.TryGetValue("BUZZER", out buzzerOn);
+                
+                if(EquipmentLocator.Instance.m_bBuzzerOff)
+                {
+                    buzzerOn = false;
+                }
+                UpdateBuzzerInput(buzzerOn);
+
+                // EMG 상태 확인
+                var anyEmgProperty = snapshot.GetType().GetProperty("AnyEmg");
+                if (anyEmgProperty != null)
+                {
+                    bool anyEmg = (bool)anyEmgProperty.GetValue(snapshot);
+                    this.BackColor = anyEmg ? Color.LightCoral : SystemColors.Control;
                 }
             }
             catch (Exception ex)
@@ -190,20 +272,12 @@ namespace QMC.Common
             _lampYellowOn = yellowOn;
             _lampGreenOn = greenOn;
 
-            // UI 업데이트 (InvokeRequired 체크 추가)
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => UpdateLampUI()));
-            }
-            else
-            {
-                UpdateLampUI();
-            }
+            if (InvokeRequired) BeginInvoke(new Action(UpdateLampUI));
+            else UpdateLampUI();
         }
 
         private void UpdateLampUI()
         {
-            // btnLampRed, btnLampYellow, btnLampGreen이 null이 아닌지 확인
             if (btnLampRed != null)
             {
                 btnLampRed.Image = _lampRedOn ? Properties.Resources.ico_circle_red_14 : Properties.Resources.ico_circle_off_14;
@@ -268,11 +342,9 @@ namespace QMC.Common
             {
                 if (_equipmentStatusUnit != null)
                 {
-                    var setOutputMethod = _equipmentStatusUnit.GetType().GetMethod("SetOutput");
-                    if (setOutputMethod != null)
-                    {
-                        setOutputMethod.Invoke(_equipmentStatusUnit, new object[] { "BUZZER", _buzzerSoundEnabled });
-                    }
+                    if (_miSetOutput == null) 
+                        CacheEquipmentStatusMethods();
+                    _miSetOutput?.Invoke(_equipmentStatusUnit, new object[] { "BUZZER", _buzzerSoundEnabled });
                 }
             }
             catch (Exception ex)
@@ -282,6 +354,16 @@ namespace QMC.Common
 
             // 외부로 통지
             BuzzerSoundToggled?.Invoke(this, _buzzerSoundEnabled);
+
+            if(EquipmentLocator.Instance.m_bBuzzerOff == true)
+            {
+                EquipmentLocator.Instance.m_bBuzzerOff = false;
+            }
+            else
+            {
+                EquipmentLocator.Instance.m_bBuzzerOff = true;
+            }
+            //EquipmentLocator.Instance.m_bBuzzerOff = true;
         }
 
         private void timerBlink_Tick(object sender, EventArgs e)
@@ -299,37 +381,45 @@ namespace QMC.Common
         {
             try
             {
-                if (_equipmentStatusUnit != null)
-                {
-                    var applyPatternMethod = _equipmentStatusUnit.GetType().GetMethod("ApplyTowerPattern");
-                    if (applyPatternMethod != null)
-                    {
-                        // enum 값 매핑
-                        object enumValue = null;
-                        switch (pattern.ToLower())
-                        {
-                            case "idle":
-                                enumValue = 0;
-                                break;
-                            case "running":
-                                enumValue = 1;
-                                break;
-                            case "warning":
-                                enumValue = 2;
-                                break;
-                            case "alarm":
-                                enumValue = 3;
-                                break;
-                            case "alloff":
-                                enumValue = 4;
-                                break;
-                        }
+                if (_equipmentStatusUnit == null) return;
 
-                        if (enumValue != null)
+                if (_miApplyTowerPattern == null) CacheEquipmentStatusMethods();
+                if (_miApplyTowerPattern == null) return;
+
+                // enum 동적 파싱(TowerLampPattern) - 이름 기반
+                var param = _miApplyTowerPattern.GetParameters();
+                if (param == null || param.Length != 1) return;
+
+                var enumType = param[0].ParameterType;
+                object enumValue = null;
+
+                var name = (pattern ?? "").Trim();
+                if (name.Length > 0)
+                {
+                    foreach (var en in Enum.GetNames(enumType))
+                    {
+                        if (string.Equals(en, name, StringComparison.OrdinalIgnoreCase))
                         {
-                            applyPatternMethod.Invoke(_equipmentStatusUnit, new object[] { enumValue });
+                            enumValue = Enum.Parse(enumType, en, true);
+                            break;
                         }
                     }
+                    if (enumValue == null)
+                    {
+                        switch (name.ToLowerInvariant())
+                        {
+                            case "idle": enumValue = Enum.Parse(enumType, "Idle", true); break;
+                            case "running": enumValue = Enum.Parse(enumType, "Running", true); break;
+                            case "warning": enumValue = Enum.Parse(enumType, "Warning", true); break;
+                            case "alarm": enumValue = Enum.Parse(enumType, "Alarm", true); break;
+                            case "alloff": enumValue = Enum.Parse(enumType, "AllOff", true); break;
+                        }
+                    }
+                }
+
+                if (enumValue != null)
+                {
+                    _miApplyTowerPattern.Invoke(_equipmentStatusUnit, new object[] { enumValue });
                 }
             }
             catch (Exception ex)

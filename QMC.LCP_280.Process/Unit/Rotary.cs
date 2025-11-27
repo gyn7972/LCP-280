@@ -1,4 +1,4 @@
-using QMC.Common;
+ï»¿using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
@@ -18,6 +18,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // 
 
@@ -25,10 +26,7 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class Rotary : BaseUnit<RotaryConfig>
     {
-        // === Load ÀÎµ¦½º º¯°æ ÀÌº¥Æ® (UI ¿¬µ¿¿ë) ===
-        public delegate void LoadIndexChangedHandler(object sender, int loadIndex0Based);
-        public event LoadIndexChangedHandler LoadIndexChanged;
-        
+        #region Alarm
         public enum AlarmKeys
         {
             eIndexRotary = 4800,
@@ -41,16 +39,15 @@ namespace QMC.LCP_280.Process.Unit
             RotaryIndexMoveError,
             eOutputDieTransferTimeout,
             eRotaryVaccum,
+            ExecuteUnitActionError,
         }
-
-        #region InitAlarm
         protected override void InitAlarm()
         {
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
             alarm.Title = "Rorary Not safety Pos.";
-            alarm.Cause = "Rorary°¡ ¾ÈÀü À§Ä¡°¡ ¾Æ´Õ´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "Roraryê°€ ì•ˆì „ ìœ„ì¹˜ê°€ ì•„ë‹™ë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -58,7 +55,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.InputDieTransferPlaceZError;
             alarm.Title = "InputDieTraansferPlaceZ Not safety Pos.";
-            alarm.Cause = "InputDieTraansferPlaceZ°¡ ¾ÈÀü À§Ä¡°¡ ¾Æ´Õ´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "InputDieTraansferPlaceZê°€ ì•ˆì „ ìœ„ì¹˜ê°€ ì•„ë‹™ë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -66,7 +63,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
             alarm.Title = "IndexLoadAlignerZ Not safety Pos.";
-            alarm.Cause = "IndexLoadAlignerZ°¡ ¾ÈÀü À§Ä¡°¡ ¾Æ´Õ´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "IndexLoadAlignerZê°€ ì•ˆì „ ìœ„ì¹˜ê°€ ì•„ë‹™ë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -74,7 +71,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
             alarm.Title = "IndexChipProbeControllerZ Not safety Pos.";
-            alarm.Cause = "IndexChipProbeControllerZ°¡ ¾ÈÀü À§Ä¡°¡ ¾Æ´Õ´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "IndexChipProbeControllerZê°€ ì•ˆì „ ìœ„ì¹˜ê°€ ì•„ë‹™ë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -82,7 +79,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.OutputDieTransferPickZError;
             alarm.Title = "OutputDieTransferPlaceZ Not safety Pos.";
-            alarm.Cause = "OutputDieTransferPlaceZ°¡ ¾ÈÀü À§Ä¡°¡ ¾Æ´Õ´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "OutputDieTransferPlaceZê°€ ì•ˆì „ ìœ„ì¹˜ê°€ ì•„ë‹™ë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -90,7 +87,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.InputDieTransferTimeout;
             alarm.Title = "InputDieTransfer Timeout";
-            alarm.Cause = "InputDieTransfer Place µ¿ÀÛÀÌ Timeout µÇ¾ú½À´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "InputDieTransfer Place ë™ì‘ì´ Timeout ë˜ì—ˆìŠµë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -98,7 +95,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.RotaryIndexMoveError;
             alarm.Title = "Rotary Index Move Error";
-            alarm.Cause = "Rotary Index Move Áß Error°¡ ¹ß»ıÇÏ¿´½À´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "Rotary Index Move ì¤‘ Errorê°€ ë°œìƒí•˜ì˜€ìŠµë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -106,7 +103,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;  
             alarm.Title = "OutputDieTransfer Timeout";
-            alarm.Cause = "OutputDieTransfer Place µ¿ÀÛÀÌ Timeout µÇ¾ú½À´Ï´Ù. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "OutputDieTransfer Place ë™ì‘ì´ Timeout ë˜ì—ˆìŠµë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -114,11 +111,18 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryVaccum;
             alarm.Title = "Rotary Vaccum Error";
-            alarm.Cause = "Rotary Vaccum Error. Æ÷Áö¼Ç È®ÀÎ ÈÄ ´Ù½Ã ½ÃÀÛ ÇÏ½Ê½Ã¿ä.";
+            alarm.Cause = "Rotary Vaccum Error. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.ExecuteUnitActionError;
+            alarm.Title = "Execute Unit Action Error";
+            alarm.Cause = "Unit Action ì‹¤í–‰ ì¤‘ Errorê°€ ë°œìƒí•˜ì˜€ìŠµë‹ˆë‹¤. í¬ì§€ì…˜ í™•ì¸ í›„ ë‹¤ì‹œ ì‹œì‘ í•˜ì‹­ì‹œìš”.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
 
@@ -128,41 +132,52 @@ namespace QMC.LCP_280.Process.Unit
         IndexChipProbeController IndexChipProbeController { get; set; }
         IndexUnloadAligner IndexUnloadAligner { get; set; }
         OutputDieTransfer OutputDieTransfer { get; set; }
+        InputStage InputStage { get; set; } // ì¶”ê°€: InputStage ì°¸ì¡°
         #endregion
 
+        #region Axis
         private MotionAxis _axisT;
-        public MotionAxis AxisT => _axisT;
+        private MotionAxis _axisPlaceZ;
+        public MotionAxis AxisIndexT => _axisT;
+        public MotionAxis AxisPlaceZ => _axisPlaceZ;
         private DateTime _moveStartTime;
+        #endregion
+
+        #region Event UI ì—°ë™
+        // === Load ì¸ë±ìŠ¤ ë³€ê²½ ì´ë²¤íŠ¸ (UI ì—°ë™ìš©) ===
+        public delegate void LoadIndexChangedHandler(object sender, int loadIndex0Based);
+        public event LoadIndexChangedHandler LoadIndexChanged;
+        #endregion
 
         // Safe
         private static readonly string[] SafeNames = new[] { "SafetyZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
-
-
-        #region Socket State °ü¸® (°£´Ü/°¡µ¶¼º Áß½É)
-        // ¼ÒÄÏ »óÅÂ Á¤ÀÇ
+        #region Socket State ê´€ë¦¬ (ê°„ë‹¨/ê°€ë…ì„± ì¤‘ì‹¬)
+        // ì†Œì¼“ ìƒíƒœ ì •ì˜
         public enum RotarySocketState
         {
             Empty,
             Loading,
             Loaded,
-            Aligning,
-            Aligned,
+            MAligning,
+            MAligned,
             Probing,
             Probed,
-            Unloading,      // UnloadAlign µ¿ÀÛ(¾ğ·Î´õ ¾ó¶óÀÎ °øÁ¤)
-            Outputting,     // OutputDieTransfer ÇÈ/¹èÃâ °øÁ¤ (»õ·Î Ãß°¡)
+            VAligning,
+            VAligned,
+            Unloading,      // UnloadAlign ë™ì‘(ì–¸ë¡œë” ì–¼ë¼ì¸ ê³µì •)
+            Unloaded,     // OutputDieTransfer í”½/ë°°ì¶œ ê³µì • (ìƒˆë¡œ ì¶”ê°€)
             Completed,
             Error
         }
 
-        // ¼ÒÄÏ Á¤º¸ ±¸Á¶
+        // ì†Œì¼“ ì •ë³´ êµ¬ì¡°
         public class SocketInfo
         {
             public int No { get; private set; }                // 0~7
-            public double CenterAngleDeg { get; private set; } // ±âÁØ Áß½É °¢µµ(±âº» 0,45,90,...)
-            public RotarySocketState State;                    // ÇöÀç »óÅÂ
+            public double CenterAngleDeg { get; private set; } // ê¸°ì¤€ ì¤‘ì‹¬ ê°ë„(ê¸°ë³¸ 0,45,90,...)
+            public RotarySocketState State;                    // í˜„ì¬ ìƒíƒœ
             public DateTime LastUpdated;
-            public object Tag;                                 // ÇÊ¿ä ½Ã ÀÓ½Ã µ¥ÀÌÅÍ(Chip ID µî)
+            public object Tag;                                 // í•„ìš” ì‹œ ì„ì‹œ ë°ì´í„°(Chip ID ë“±)
             public bool UseSocket;
             private MaterialDie _material;
             public void SetMaterialDie(MaterialDie die) => _material = die;
@@ -173,7 +188,6 @@ namespace QMC.LCP_280.Process.Unit
                 CenterAngleDeg = angleDeg;
                 State = RotarySocketState.Empty;
                 LastUpdated = DateTime.Now;
-                
             }
 
             public void SetState(RotarySocketState st)
@@ -186,15 +200,15 @@ namespace QMC.LCP_280.Process.Unit
         private SocketInfo[] _sockets;
         private readonly object _socketLock = new object();
 
-        // °¢ ¼ÒÄÏ Áß½É°¢ (±âº»: 360 / IndexCount * i). Teaching ¿ÀÇÁ¼Â º¸Á¤¿ë
-        private double _angleOffsetDeg = 0.0; // ÇÊ¿ä ½Ã Teaching PositionÀ¸·Î ¼Â¾÷ °¡´É
+        // ê° ì†Œì¼“ ì¤‘ì‹¬ê° (ê¸°ë³¸: 360 / IndexCount * i). Teaching ì˜¤í”„ì…‹ ë³´ì •ìš©
+        private double _angleOffsetDeg = 0.0; // í•„ìš” ì‹œ Teaching Positionìœ¼ë¡œ ì…‹ì—… ê°€ëŠ¥
 
-        // (Å¬·¡½º »ó´Ü SocketInfo Á¤ÀÇ ¾Æ·¡ È¤Àº °°Àº Region ³»ºÎ ÀûÀıÇÑ À§Ä¡¿¡ Ãß°¡)
+        // (í´ë˜ìŠ¤ ìƒë‹¨ SocketInfo ì •ì˜ ì•„ë˜ í˜¹ì€ ê°™ì€ Region ë‚´ë¶€ ì ì ˆí•œ ìœ„ì¹˜ì— ì¶”ê°€)
         private void RefreshSocketUsage()
         {
             if (_sockets == null) 
                 return;
-            // Config °ª ¡ê ¼ÒÄÏ ÀÎµ¦½º ¸ÅÇÎ
+            // Config ê°’ â†” ì†Œì¼“ ì¸ë±ìŠ¤ ë§¤í•‘
             for (int i = 0; i < _sockets.Length; i++)
             {
                 bool use = false;
@@ -210,17 +224,16 @@ namespace QMC.LCP_280.Process.Unit
                     case 7: use = Config.UseSocket8; break;
                 }
                 _sockets[i].UseSocket = use;
-                // ºñÈ°¼º ¼ÒÄÏÀÌ¸é »óÅÂ¸¦ Empty ·Î À¯Áö (¶Ç´Â Completed ·Î Ç¥½ÃÇØ ÆÄÀÌÇÁ¶óÀÎ ÁøÇà °¡¼Ó °¡´É)
+                // ë¹„í™œì„± ì†Œì¼“ì´ë©´ ìƒíƒœë¥¼ Empty ë¡œ ìœ ì§€ (ë˜ëŠ” Completed ë¡œ í‘œì‹œí•´ íŒŒì´í”„ë¼ì¸ ì§„í–‰ ê°€ì† ê°€ëŠ¥)
                 if (!use)
                 {
-                    // ÆÄÀÌÇÁ¶óÀÎ ·ÎÁ÷ÀÌ Empty ¸¦ È¸Àü ÇÊ¿ä Á¶°ÇÀ¸·Î ¿ÀÇØÇÏÁö ¾Êµµ·Ï Completed ·Î µÎ°í ½Í´Ù¸é ¾Æ·¡ ÇÑ ÁÙ ±³Ã¼:
+                    // íŒŒì´í”„ë¼ì¸ ë¡œì§ì´ Empty ë¥¼ íšŒì „ í•„ìš” ì¡°ê±´ìœ¼ë¡œ ì˜¤í•´í•˜ì§€ ì•Šë„ë¡ Completed ë¡œ ë‘ê³  ì‹¶ë‹¤ë©´ ì•„ë˜ í•œ ì¤„ êµì²´:
                     //_sockets[i].SetState(RotarySocketState.Completed);
                     _sockets[i].SetState(RotarySocketState.Empty);
                     _sockets[i].SetMaterialDie(null);
                 }
             }
         }
-
         private void InitSockets()
         {
             int cnt = GetIndexCount();
@@ -230,7 +243,18 @@ namespace QMC.LCP_280.Process.Unit
             {
                 _sockets[i] = new SocketInfo(i, i * step);
             }
-            RefreshSocketUsage(); // ¡ç Ãß°¡: Config ±â¹İ ¼ÒÄÏ »ç¿ë¿©ºÎ ¹İ¿µ
+            RefreshSocketUsage(); // â† ì¶”ê°€: Config ê¸°ë°˜ ì†Œì¼“ ì‚¬ìš©ì—¬ë¶€ ë°˜ì˜
+        }
+
+        public void ClearSockets()
+        {
+            int cnt = GetIndexCount();
+            for (int i = 0; i < cnt; i++)
+            {
+                _sockets[i].SetState(RotarySocketState.Empty);
+                _sockets[i].SetMaterialDie(null);
+            }
+            RefreshSocketUsage(); // â† ì¶”ê°€: Config ê¸°ë°˜ ì†Œì¼“ ì‚¬ìš©ì—¬ë¶€ ë°˜ì˜
         }
 
         private static double NormalizeAngle(double deg)
@@ -245,60 +269,60 @@ namespace QMC.LCP_280.Process.Unit
 
         /*
          * GetLoadIndexNo()
-         *  - ¸Å¿ì Áß¿ä: "ÇöÀç Load À§Ä¡(±â°è °íÁ¤ ½ºÅ×ÀÌ¼Ç)¿¡ ¹°¸®ÀûÀ¸·Î ¼­ ÀÖ´Â ¼ÒÄÏ ¹øÈ£(0~7)" ¸¦ ¹İÈ¯
-         *  - ´Ù¸¥ Unit µé(¿¹: InputDieTransfer, Align, Probe µî)ÀÌ ÀÌ °ªÀ» ±â¹İÀ¸·Î
-         *    'ÇöÀç ³ª¿¡°Ô ¿Â ¼ÒÄÏÀÌ ¸î ¹ø ¼ÒÄÏÀÎ°¡?' ¸¦ ÆÇ´ÜÇÏ´Â ±¸Á¶
-         *  - µû¶ó¼­ ÀÌ ÇÔ¼ö´Â '½ºÅ×ÀÌ¼Ç À§Ä¡ Index' °¡ ¾Æ´Ï¶ó '¹°¸® ¼ÒÄÏ ID' ¸¦ ¹İÈ¯ÇØ¾ß ÇÑ´Ù.
-         *  - Load À§Ä¡ ÀÚÃ¼´Â ±â±¸ÀûÀ¸·Î °íÁ¤µÇ¾î ÀÖ°í È¸ÀüÀº ¼ÒÄÏÀÌ µ¹¾Æ¿À¹Ç·Î
-         *    ¼­º¸ °¢µµ -> ¼ÒÄÏID ¸ÅÇÎÀ» ÅëÇØ °è»êÇÑ´Ù.
-         *  - (ÁÖÀÇ) ¾Æ·¡ °è»ê½ÄÀÇ ¹æÇâ(360 - dPos)Àº ½ÇÁ¦ È¸Àü ¹æÇâ(½Ã°è/¹İ½Ã°è)¿¡ µû¶ó Á¶Á¤ °¡´É
+         *  - ë§¤ìš° ì¤‘ìš”: "í˜„ì¬ Load ìœ„ì¹˜(ê¸°ê³„ ê³ ì • ìŠ¤í…Œì´ì…˜)ì— ë¬¼ë¦¬ì ìœ¼ë¡œ ì„œ ìˆëŠ” ì†Œì¼“ ë²ˆí˜¸(0~7)" ë¥¼ ë°˜í™˜
+         *  - ë‹¤ë¥¸ Unit ë“¤(ì˜ˆ: InputDieTransfer, Align, Probe ë“±)ì´ ì´ ê°’ì„ ê¸°ë°˜ìœ¼ë¡œ
+         *    'í˜„ì¬ ë‚˜ì—ê²Œ ì˜¨ ì†Œì¼“ì´ ëª‡ ë²ˆ ì†Œì¼“ì¸ê°€?' ë¥¼ íŒë‹¨í•˜ëŠ” êµ¬ì¡°
+         *  - ë”°ë¼ì„œ ì´ í•¨ìˆ˜ëŠ” 'ìŠ¤í…Œì´ì…˜ ìœ„ì¹˜ Index' ê°€ ì•„ë‹ˆë¼ 'ë¬¼ë¦¬ ì†Œì¼“ ID' ë¥¼ ë°˜í™˜í•´ì•¼ í•œë‹¤.
+         *  - Load ìœ„ì¹˜ ìì²´ëŠ” ê¸°êµ¬ì ìœ¼ë¡œ ê³ ì •ë˜ì–´ ìˆê³  íšŒì „ì€ ì†Œì¼“ì´ ëŒì•„ì˜¤ë¯€ë¡œ
+         *    ì„œë³´ ê°ë„ -> ì†Œì¼“ID ë§¤í•‘ì„ í†µí•´ ê³„ì‚°í•œë‹¤.
+         *  - (ì£¼ì˜) ì•„ë˜ ê³„ì‚°ì‹ì˜ ë°©í–¥(360 - dPos)ì€ ì‹¤ì œ íšŒì „ ë°©í–¥(ì‹œê³„/ë°˜ì‹œê³„)ì— ë”°ë¼ ì¡°ì • ê°€ëŠ¥
          */
         public int GetLoadIndexNo()
         {
-            // 1. Ãà °´Ã¼ È®ÀÎ
-            if (AxisT == null)
+            // 1. ì¶• ê°ì²´ í™•ì¸
+            if (AxisIndexT == null)
             {
                 return 0;
             }
 
-            // 2. ¿ø½Ã À§Ä¡ ÀĞ±â (³í¸® ´ÜÀ§: ½Ã¹Ä·¹ÀÌ¼ÇÀº ±×´ë·Î, ½Ç±â´Â *1000 ½ºÄÉÀÏ »ç¿ë Áß)
-            double rawLogicalPosition = AxisT.GetPosition();
+            // 2. ì›ì‹œ ìœ„ì¹˜ ì½ê¸° (ë…¼ë¦¬ ë‹¨ìœ„: ì‹œë®¬ë ˆì´ì…˜ì€ ê·¸ëŒ€ë¡œ, ì‹¤ê¸°ëŠ” *1000 ìŠ¤ì¼€ì¼ ì‚¬ìš© ì¤‘)
+            double rawLogicalPosition = AxisIndexT.GetPosition();
             double dPos = 0.0;
 
             if (Config.IsSimulation)
             {
-                // ½Ã¹Ä·¹ÀÌ¼Ç ¸ğµå: ÀÌ¹Ì degree ´ÜÀ§¶ó°í °¡Á¤
+                // ì‹œë®¬ë ˆì´ì…˜ ëª¨ë“œ: ì´ë¯¸ degree ë‹¨ìœ„ë¼ê³  ê°€ì •
                 dPos = rawLogicalPosition;
             }
             else
             {
-                // ½Ç±â: ±âÁ¸ ÄÚµå °ü·Ê À¯Áö (Ãà °ª * 1000 ¡æ degree ·Î »ç¿ë)
+                // ì‹¤ê¸°: ê¸°ì¡´ ì½”ë“œ ê´€ë¡€ ìœ ì§€ (ì¶• ê°’ * 1000 â†’ degree ë¡œ ì‚¬ìš©)
                 dPos = rawLogicalPosition * 1000.0;
             }
 
-            // 3. (¼±ÅÃ) ¹æÇâ ¹İÀü ÇÊ¿ä ½Ã ¼³Á¤
-            //    - ÇöÀç Àåºñ¿¡¼­ CCW(¹İ½Ã°è) Áõ°¡°¡ 0¡æ1¡æ2 ·Î ÁøÇàµÈ´Ù¸é true À¯Áö
-            //    - ¸¸¾à Áõ°¡ ¹æÇâÀÌ ¹İ´ë¶ó¸é false ·Î ¹Ù²Ù°Å³ª Config ÇÃ·¡±×·Î Ä¡È¯
+            // 3. (ì„ íƒ) ë°©í–¥ ë°˜ì „ í•„ìš” ì‹œ ì„¤ì •
+            //    - í˜„ì¬ ì¥ë¹„ì—ì„œ CCW(ë°˜ì‹œê³„) ì¦ê°€ê°€ 0â†’1â†’2 ë¡œ ì§„í–‰ëœë‹¤ë©´ true ìœ ì§€
+            //    - ë§Œì•½ ì¦ê°€ ë°©í–¥ì´ ë°˜ëŒ€ë¼ë©´ false ë¡œ ë°”ê¾¸ê±°ë‚˜ Config í”Œë˜ê·¸ë¡œ ì¹˜í™˜
             bool invertDirection = true;
             if (invertDirection)
             {
                 dPos = 360.0 - dPos;
             }
 
-            // 4. ±â°èÀû 0Á¡ º¸Á¤ (Teaching µîÀ¸·Î ¼¼ÆÃµÈ _angleOffsetDeg Àû¿ë)
+            // 4. ê¸°ê³„ì  0ì  ë³´ì • (Teaching ë“±ìœ¼ë¡œ ì„¸íŒ…ëœ _angleOffsetDeg ì ìš©)
             dPos = NormalizeAngle(dPos - _angleOffsetDeg);
 
-            // 5. ÀÎµ¦½º °è»ê ÁØºñ
-            int count = GetIndexCount();          // ¿¹: 8
-            double step = 360.0 / count;          // ¿¹: 45µµ
+            // 5. ì¸ë±ìŠ¤ ê³„ì‚° ì¤€ë¹„
+            int count = GetIndexCount();          // ì˜ˆ: 8
+            double step = 360.0 / count;          // ì˜ˆ: 45ë„
 
-            // 6. Áß¾Ó ±âÁØ ¶ó¿îµù: °æ°è ±ÙÃ³(¿¹ 44.9 / 45.1) ¾ÈÁ¤È­ À§ÇØ half-step ÀÌµ¿ ÈÄ Floor
+            // 6. ì¤‘ì•™ ê¸°ì¤€ ë¼ìš´ë”©: ê²½ê³„ ê·¼ì²˜(ì˜ˆ 44.9 / 45.1) ì•ˆì •í™” ìœ„í•´ half-step ì´ë™ í›„ Floor
             double shifted = dPos + (step / 2.0);
 
-            // 7. ÀÓ½Ã ÀÎµ¦½º »êÃâ
+            // 7. ì„ì‹œ ì¸ë±ìŠ¤ ì‚°ì¶œ
             int index = (int)Math.Floor(shifted / step);
 
-            // 8. ¹üÀ§ Á¤±ÔÈ­ (wrap)
+            // 8. ë²”ìœ„ ì •ê·œí™” (wrap)
             if (index >= count)
             {
                 index -= count;
@@ -308,10 +332,9 @@ namespace QMC.LCP_280.Process.Unit
                 index += count;
             }
 
-            // 9. °á°ú(¹°¸® ¼ÒÄÏ ID: 0 ~ count-1)
+            // 9. ê²°ê³¼(ë¬¼ë¦¬ ì†Œì¼“ ID: 0 ~ count-1)
             return index;
         }
-
         public int GetTrashCanIndexNo()
         {
             int loadIndex = this.GetLoadIndexNo();
@@ -319,15 +342,18 @@ namespace QMC.LCP_280.Process.Unit
             int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
             return probeIndex;
         }
-
         public int GetIndexCount()
         {
             return 8;
         }
-
         private MaterialDie EnsureSocketDie(SocketInfo s)
         {
-            if (s == null) return null;
+            if (s == null)
+            {
+                Log.Write(UnitName, "EnsureSocketDie", "SocketInfo Null");
+                return null;
+            }
+
             var d = s.GetMaterialDie();
             if (d == null)
             {
@@ -340,8 +366,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return d;
         }
-
-
         #endregion
 
         #region Socket Public Accessors
@@ -351,26 +375,23 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_sockets == null) return null;
                 if (no < 0 || no >= _sockets.Length) return null;
-                return _sockets[no]; // ÂüÁ¶ ¹İÈ¯ (UI°¡ »óÅÂ º¯È­¸¦ Áï½Ã ¹İ¿µ °¡´É)
+                return _sockets[no]; // ì°¸ì¡° ë°˜í™˜ (UIê°€ ìƒíƒœ ë³€í™”ë¥¼ ì¦‰ì‹œ ë°˜ì˜ ê°€ëŠ¥)
             }
         }
-
         public void SetSocket(int no, SocketInfo socketInfo)
         {
             _sockets[no] = socketInfo;
         }
-
         public SocketInfo[] GetAllSockets()
         {
             lock (_socketLock)
             {
                 if (_sockets == null) return new SocketInfo[0];
-                // ¿øº» ÂüÁ¶ ¹è¿­ ±×´ë·Î ¹İÈ¯ (º¯°æ °¨Áö ÇÊ¿äÇÏ¸é ToArray()·Î º¹»ç °¡´É)
+                // ì›ë³¸ ì°¸ì¡° ë°°ì—´ ê·¸ëŒ€ë¡œ ë°˜í™˜ (ë³€ê²½ ê°ì§€ í•„ìš”í•˜ë©´ ToArray()ë¡œ ë³µì‚¬ ê°€ëŠ¥)
                 return _sockets;
             }
         }
         #endregion
-
 
         public override void SetMaterial(Material m)
         {
@@ -389,22 +410,9 @@ namespace QMC.LCP_280.Process.Unit
             lock (_socketLock)
             {
                 var s = _sockets[idx];
-                EnsureSocketDie(s); // ¡ç ÇÃ·¹ÀÌ½ºÈ¦´õ º¸Àå
+                EnsureSocketDie(s); // â† í”Œë ˆì´ìŠ¤í™€ë” ë³´ì¥
                 return s;
             }
-
-            //ÀÚµ¿ »ı¼º Á¦°Å + ºó ¼ÒÄÏ ÆÇ´Ü ÇïÆÛ Ãß°¡
-            //int idx = GetLoadIndexNo();
-            //lock (_socketLock)
-            //{
-            //    var die = _sockets[idx].GetMaterialDie();
-            //    if (die == null)
-            //    {
-            //        _sockets[idx].SetMaterialDie(new MaterialDie());
-            //    }
-
-            //    return _sockets[idx];
-            //}
         }
         public MaterialDie GetMAlignSocketMaterial()
         {
@@ -457,18 +465,6 @@ namespace QMC.LCP_280.Process.Unit
             OutputDieTransfer.SetMaterial(die);
 
             socket.SetMaterialDie(null);
-            // null ´ëÀÔ ´ë½Å »õ ÇÃ·¹ÀÌ½ºÈ¦´õ·Î ±³Ã¼ (±âÁ¸ ·ÎÁ÷°ú ½ÃÄö½º °¡Á¤ À¯Áö)
-            //socket.SetMaterialDie(new MaterialDie
-            //{
-            //    Presence = Material.MaterialPresence.Unknown,
-            //    ProcessSatate = Material.MaterialProcessSatate.Unknown
-            //});
-
-            //±âÁ¸ÄÚµå
-            //var socket = GetUnloadSocketInfo();
-            //var die = socket.GetMaterialDie();
-            //OutputDieTransfer.SetMaterial(die);
-            //socket.SetMaterialDie(null);
         }
         private SocketInfo GetUnloadSocketInfo()
         {
@@ -478,9 +474,6 @@ namespace QMC.LCP_280.Process.Unit
                 return _sockets[idx];
             }
         }
-
-
-        //
         public MaterialDie GetTrashCanSocketMaterial()
         {
             var socket = GetTrashCanSocketInfo();
@@ -492,24 +485,11 @@ namespace QMC.LCP_280.Process.Unit
             lock (_socketLock)
             {
                 var s = _sockets[idx];
-                EnsureSocketDie(s); // ¡ç ÇÃ·¹ÀÌ½ºÈ¦´õ º¸Àå
+                EnsureSocketDie(s); // â† í”Œë ˆì´ìŠ¤í™€ë” ë³´ì¥
                 return s;
             }
-            //ÀÚµ¿ »ı¼º Á¦°Å + ºó ¼ÒÄÏ ÆÇ´Ü ÇïÆÛ Ãß°¡
-            //int idx = GetTrashCanIndexNo();
-            //lock (_socketLock)
-            //{
-            //    var die = _sockets[idx].GetMaterialDie();
-            //    if (die == null)
-            //    {
-            //        _sockets[idx].SetMaterialDie(new MaterialDie());
-            //    }
-
-            //    return _sockets[idx];
-            //}
         }
-
-        // ºó ¼ÒÄÏ ÆÇ´Ü(Áß¾ÓÈ­)
+        // ë¹ˆ ì†Œì¼“ íŒë‹¨(ì¤‘ì•™í™”)
         public bool IsLoadSocketEmpty()
         {
             var s = GetLoadSocketInfo();
@@ -519,13 +499,76 @@ namespace QMC.LCP_280.Process.Unit
                 || d.Presence == Material.MaterialPresence.Unknown;
         }
 
+        protected virtual void OnLoadIndexChanged(int loadIndex0Based)
+        {
+            LoadIndexChangedHandler handler = this.LoadIndexChanged;
+            if (handler != null)
+            {
+                handler(this, loadIndex0Based);
+            }
+        }
+
+        /// <summary>
+        /// ì†Œì¼“ ë°ì´í„°(ë¨¸í‹°ë¦¬ì–¼/íƒœê·¸/ìƒíƒœ)ë¥¼ í´ë¦¬ì–´í•©ë‹ˆë‹¤.
+        /// socketNo = -1 ì´ë©´ ì „ì²´ ì†Œì¼“ì„ ëŒ€ìƒ, 0~7ì´ë©´ í•´ë‹¹ ì†Œì¼“ë§Œ ëŒ€ìƒì…ë‹ˆë‹¤.
+        /// offIo = true ì‹œ ì‹¤ê¸°ì—ì„œ í•´ë‹¹ ì†Œì¼“ IO(Vac/Blow/Vent)ë¥¼ ëª¨ë‘ OFF í•©ë‹ˆë‹¤.
+        /// resetState = true ì‹œ ì†Œì¼“ ìƒíƒœë¥¼ Empty ë¡œ ë³€ê²½í•©ë‹ˆë‹¤.
+        /// ë°˜í™˜: 0=ì„±ê³µ, -1=íŒŒë¼ë¯¸í„° ì˜¤ë¥˜
+        /// </summary>
+        public int ClearSocketData(int socketNo = -1, bool offIo = true, bool resetState = true)
+        {
+            if (_sockets == null || _sockets.Length == 0)
+                return 0;
+
+            bool clearAll = (socketNo < 0);
+            if (!clearAll && (socketNo >= _sockets.Length))
+                return -1;
+
+            try
+            {
+                bool sim = (Config?.IsSimulation == true) || (Config?.IsDryRun == true) || (Config?.IsUnitDryRun == true);
+
+                lock (_socketLock)
+                {
+                    int start = clearAll ? 0 : socketNo;
+                    int end = clearAll ? _sockets.Length - 1 : socketNo;
+
+                    for (int i = start; i <= end; i++)
+                    {
+                        var s = _sockets[i];
+                        if (s == null) continue;
+
+                        // ë°ì´í„° í´ë¦¬ì–´
+                        s.SetMaterialDie(null);
+                        s.Tag = null;
+
+                        if (resetState)
+                            s.SetState(RotarySocketState.Empty);
+
+                        // í•´ë‹¹ ì†Œì¼“ IO ì•ˆì „ OFF
+                        if (offIo && !sim)
+                        {
+                            try { SetVacuum(i, false); } catch { }
+                            try { SetBlow(i, false); } catch { }
+                            try { SetVent(i, false); } catch { }
+                        }
+                    }
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"[ClearSocketData] ì‹¤íŒ¨: {ex.Message}");
+                return -1;
+            }
+        }
 
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
         {
 
             AddComponents();
         }
-
         public override void AddComponents()
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
@@ -539,11 +582,10 @@ namespace QMC.LCP_280.Process.Unit
             il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T?? Home ??? ?? ???? ????????.");
             il.AddGlobalRule("EquipStateRunningBlock", () =>
             {
-                return Equipment.Instance != null && Equipment.Instance.EqState == EquipmentState.Running
-                    ? "??????? ????? ?¥å??? ???? ????? ???????." : null;
+                return Equipment.Instance != null && Equipment.Instance.EqState == EquipmentState.AutoRunning
+                    ? "??????? ????? ?Îµ??? ???? ????? ???????." : null;
             });
         }
-
         protected override void OnBindUnit()
         {
             base.OnBindUnit();
@@ -552,8 +594,8 @@ namespace QMC.LCP_280.Process.Unit
             IndexChipProbeController = Equipment.Instance.GetUnit(UnitKeys.IndexChipProbeController) as IndexChipProbeController;
             IndexUnloadAligner = Equipment.Instance.GetUnit(UnitKeys.IndexUnloadAligner) as IndexUnloadAligner;
             OutputDieTransfer = Equipment.Instance.GetUnit(UnitKeys.OutputDieTransfer) as OutputDieTransfer;
+            InputStage = Equipment.Instance.GetUnit(UnitKeys.InputStage) as InputStage; // ì¶”ê°€: ë°”ì¸ë”©
         }
-
         private void BindAxes()
         {
             //AxisNames.IndexT
@@ -564,34 +606,11 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            const string unitName = "Unit"; // Equipment???? ?? ??? ?? ????? ?????? ??????? ??
+            const string unitName = "Unit"; 
             BindAxis(mgr, unitName, AxisNames.IndexT, ref _axisT);
-
+            BindAxis(mgr, unitName, AxisNames.IndexPlaceZ, ref _axisPlaceZ);
         }
-        public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
-        {
-            bool bRet = base.IsInterlockOK(baseComponent, e);
-            if (baseComponent == this.AxisT)
-            {
-                if (this.InputDieTransfer.IsPositionPlaceZSafety() == false)
-                {
-                    AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.InputDieTransferPlaceZError);
-                    return false;
-                }
-
-                // Todo: IndexZ, ProbeZ, ProbeCardZ ÀÎÅÍ¶ô È®ÀÎ
-
-                if (this.OutputDieTransfer.IsPositionPickZSafety() == false)
-                {
-                    AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.OutputDieTransferPickZError);
-                    return false;
-                }
-            }
-            return bRet;
-        }
-
+        
         #region Teaching
         public void TeachCurrentPosition(string name, string description = null)
         {
@@ -599,7 +618,6 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var kv in Axes) pos[kv.Key] = kv.Value.GetPosition();
             Config.SetTeachingPosition(new TeachingPosition(name, pos, description));
         }
-
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
             var tp = Config.GetTeachingPosition(name); 
@@ -612,7 +630,7 @@ namespace QMC.LCP_280.Process.Unit
 
             int nRtn = 0;
 
-            //Todo : ÀÎÅÍ¶ô È®ÀÎ ÈÄ ÀÌµ¿ ÇÏµµ·Ï ¼öÁ¤.
+            //Todo : ì¸í„°ë½ í™•ì¸ í›„ ì´ë™ í•˜ë„ë¡ ìˆ˜ì •.
             //nRtn =  _axisT.MoveAbs(t,
             //    vel > 0 ? vel : _axisT.Config.MaxVelocity,
             //    acc > 0 ? acc : _axisT.Config.RunAcc,
@@ -622,34 +640,17 @@ namespace QMC.LCP_280.Process.Unit
             return nRtn; 
         }
 
-        //public bool InPosTeaching(string name)
-        //{
-        //    double t = Config.GetPositionWithOffset(name);
-        //    return InPos(_axisT, t);
-        //}
-
-        public void ApplyOffset(string name, double deltaT) => Config.SetOffset(name, deltaT);
-        #endregion
-
-        #region Axis helpers
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
-
         #region Index Move (with Interlock)
         public bool TryMoveIndexPrev(out string reason)
         {
             return TryMoveIndexStep(-1, out reason);
         }
-
         public bool TryMoveIndexNext(out string reason)
         {
             return TryMoveIndexStep(+1, out reason);
         }
-
         private bool TryMoveIndexStep(int step, out string reason)
         {
-            bool bRtn = false;
-
             reason = null;
             var axis = _axisT;
             if (axis == null)
@@ -658,29 +659,26 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
             }
 
-            if(RunUnitStatus != UnitStatus.Running)
-            {
-                // 1) Safe-Zone check.
-                if (!VerifyAllUnitsSafe(out reason))
-                {
-                    Log.Write("Rotary", $"Index Move Blocked: {reason}");
-                    return false;
-                }
-            }
+            //// 1) Safe-Zone check.
+            //if (VerifyAllUnitsSafe(out reason) == false)
+            //{
+            //    Log.Write("Rotary", $"Index Move Blocked: {reason}");
+            //    return false;
+            //}
 
             // 3) Move Check.
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
             if (rc != 0)
             {
-                reason = $"Index ??? ????(rc={rc})";
+                reason = $"Index ì´ë™ ì‹œì‘ ì‹¤íŒ¨(rc={rc})";
                 return false;
             }
 
             _moveStartTime = DateTime.Now;
-
-            // (º¯°æ) ÀÌµ¿ ¿Ï·á ÈÄ¿¡ ÀÌº¥Æ® ¹ß»ıÇÏµµ·Ï ºñµ¿±â Ã³¸®
+            // (ë³€ê²½) ì´ë™ ì™„ë£Œ í›„ì— ì´ë²¤íŠ¸ ë°œìƒí•˜ë„ë¡ ë¹„ë™ê¸° ì²˜ë¦¬
             Task.Run(() =>
             {
+                // Done + InPosition ë™ì‹œ í™•ì¸(ê°€ëŠ¥í•˜ë©´ ëª©í‘œê° ê¸°ë°˜, ì‹¤íŒ¨ ì‹œ ê¸°ì¡´ ë°©ì‹ fallback)
                 int wrc = WaitIndexMoveDone();
                 if (wrc == 0)
                 {
@@ -698,313 +696,193 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
                 }
             });
-
             return true;
         }
+        //private bool TryMoveIndexStep(int step, out string reason)
+        //{
+        //    bool bRtn = false;
 
-        // ÀÎµ¦½º ÀÌµ¿ ¿Ï·á ´ë±â (¼º°ø:0, Å¸ÀÓ¾Æ¿ô:-1)
-        public int WaitIndexMoveDone(int timeoutMs = -1, int pollMs = 5)
+        //    reason = null;
+        //    var axis = _axisT;
+        //    if (axis == null)
+        //    {
+        //        reason = "TAxis Null.";
+        //        return false;
+        //    }
+
+        //    if(RunUnitStatus != UnitStatus.AutoRunning)
+        //    {
+        //        // 1) Safe-Zone check.
+        //        if (!VerifyAllUnitsSafe(out reason))
+        //        {
+        //            Log.Write("Rotary", $"Index Move Blocked: {reason}");
+        //            return false;
+        //        }
+        //    }
+
+        //    // 3) Move Check.
+        //    int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
+        //    if (rc != 0)
+        //    {
+        //        reason = $"Index (rc={rc})";
+        //        return false;
+        //    }
+
+        //    _moveStartTime = DateTime.Now;
+
+        //    // (ë³€ê²½) ì´ë™ ì™„ë£Œ í›„ì— ì´ë²¤íŠ¸ ë°œìƒí•˜ë„ë¡ ë¹„ë™ê¸° ì²˜ë¦¬
+        //    Task.Run(() =>
+        //    {
+        //        int wrc = WaitIndexMoveDone();
+        //        if (wrc == 0)
+        //        {
+        //            try
+        //            {
+        //                OnLoadIndexChanged(GetLoadIndexNo());
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Log.Write("Rotary", $"LoadIndexChanged dispatch fail: {ex.Message}");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
+        //        }
+        //    });
+
+        //    return true;
+        //}
+
+        // ì¸ë±ìŠ¤ ì´ë™ ì™„ë£Œ ëŒ€ê¸° (ì„±ê³µ:0, íƒ€ì„ì•„ì›ƒ:-1)
+        public int WaitIndexMoveDone(int timeoutMs = -1, int pollMs = 2)
         {
-            if (AxisT == null) 
+            if (AxisIndexT == null)
                 return -1;
 
-            if (timeoutMs <= 0)
+            if (AxisIndexT.WaitMoveDone(-1) == 0)
             {
-                // Setup ¾øÀ¸¸é ±âº» 20000
-                timeoutMs = (AxisT.Setup != null && AxisT.Setup.MoveTimeoutMs > 0)
-                    ? AxisT.Setup.MoveTimeoutMs
-                    : 20000;
-            }
-            Thread.Sleep(100);
-            var start = DateTime.Now;
-            while (true)
-            {
-                // ÀÌµ¿ ÁßÀÌ¸é °è¼Ó ´ë±â
-                if (!IsAxisMoving(AxisNames.IndexT))
-                {
-                    return 0; // ¿Ï·á
-                }
+                //Log.Write(UnitName, "MoveAxisWithSafety",
+                //    $"WaitMoveDone Timeout axis={AxisIndexT.Name}");
 
-                if ((DateTime.Now - start).TotalMilliseconds > timeoutMs)
-                {
-                    Log.Write(UnitName, $"Index Move Timeout (>{timeoutMs} ms)");
-                    return -1;
-                }
-                Thread.Sleep(pollMs);
+                Thread.Sleep(pollMs); //ì„ì˜ë¡œ 50ë§Œ ì¤˜ë³´ì.
+                return 0;
             }
+            return -1;
+
+            //if (timeoutMs <= 0)
+            //{
+            //    // Setup ì—†ìœ¼ë©´ ê¸°ë³¸ 20000
+            //    timeoutMs = (AxisIndexT.Setup != null && AxisIndexT.Setup.MoveTimeoutMs > 0)
+            //        ? AxisIndexT.Setup.MoveTimeoutMs
+            //        : 20000;
+            //}
+
+            //// ê°ë„ í—ˆìš©ì˜¤ì°¨(ì¶• ì„¤ì • ìš°ì„ , ì—†ìœ¼ë©´ ê¸°ë³¸ 0.05Â°)
+            //double tolDeg = (AxisIndexT.Config != null && AxisIndexT.Config.InposTolerance > 0)
+            //              ? AxisIndexT.Config.InposTolerance
+            //              : 0.05;
+
+            //// 8ë¶„í• (45Â°) ê¸°ì¤€
+            //int count = GetIndexCount();     // 8
+            //double step = 360.0 / count;     // 45.0
+
+            //// ì•ˆì • ìƒ˜í”Œ(ì •ì§€ + ì•µì»¤ ê·¼ì ‘) 2íšŒ
+            //int stableSamples = 2;
+            //int stable = 0;
+
+            //Thread.Sleep(1);
+            //var start = DateTime.Now;
+            //pollMs = 3;
+            //while (true)
+            //{
+            //    if ((DateTime.Now - start).TotalMilliseconds > timeoutMs)
+            //    {
+            //        Log.Write(UnitName, $"Index Move Timeout (>{timeoutMs} ms)");
+            //        return -1;
+            //    }
+            //    if (AxisIndexT.WaitMoveDone(-1) == 0)
+            //    {
+            //        //Log.Write(UnitName, "MoveAxisWithSafety",
+            //        //    $"WaitMoveDone Timeout axis={AxisIndexT.Name}");
+
+            //        Thread.Sleep(5); //ì„ì˜ë¡œ 50ë§Œ ì¤˜ë³´ì.
+            //        return 0;
+            //    }
+            //    Thread.Sleep(pollMs);
+            //}
         }
 
-        public int PollIntervalMs { get; set; } = 30;
-        private int WaitUntil(Func<bool> cond, int timeoutMs)
+        private readonly object _lock = new object();
+
+        public bool  IsIndexMoving()
         {
-            int nRtn = 0;
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeoutMs)
+            var ax = AxisIndexT;
+            if (ax == null) return false;
+
+            //lock (_lock)
             {
-                if (cond()) return nRtn;
-                Thread.Sleep(PollIntervalMs);
-            }
+                // 1) ë“œë¼ì´ë²„ ìƒíƒœ ê¸°ë°˜ 1ì°¨ íŒì •
+                //bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+                //bool driverMoving = ax.Status.State.InpositionDone;
+                //bool driverMoving = ax.Status.State.InpositionDone;
+                bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+                //driverMoving = !driverMoving;
 
-            nRtn = 0;
-            return nRtn;
-        }
-        private bool VerifyAllUnitsSafe(out string reason)
-        {
-            reason = null;
-            var eq = Equipment.Instance;
-            if (eq == null || eq.Units == null) 
-                return true;
+                return driverMoving;
 
-            // InputDieTransfer
-            if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
-            {
-                if (!IsUnitAxisInSafetyZone(u3, AxisNames.LeftPlaceZ, out var r))
+                // 2) ìœ„ì¹˜ ë³€í™” ê¸°ë°˜ 2ì°¨ íŒì •(ë‚´ë¶€ íŠœë‹ê°’ ì‚¬ìš©)
+                const int samples = 3;         // ìƒ˜í”Œ ê°œìˆ˜
+                const int intervalMs = 5;      // ìƒ˜í”Œ ê°„ê²©(ms)
+                double tol = (ax.Config != null && ax.Config.InposTolerance > 0) ? ax.Config.InposTolerance : 0.01;
+                double threshold = tol * 1.0;  // ìœ„ì¹˜ ë³€í™”ëŸ‰ ì„ê³„ê°’(ê¸°ë³¸: InposTolerance * 2)
+
+                double prev = double.NaN;
+                double maxDelta = 0.0;
+
+                for (int i = 0; i < samples; i++)
                 {
-                    AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.InputDieTransferPlaceZError);
-                    reason = "InputDieTransfer Not in Safety Zone";
-                    return false;
-                }
-            }
-
-            // IndexLoadAligner
-            if (eq.Units.TryGetValue("IndexLoadAligner", out var u2))
-            {
-                if (!IsUnitInSafeByConnectedAxes(u2))
-                {
-                    AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
-                    reason = "IndexLoadAligner Not in Safety Zone";
-                    return false;
-                }
-            }
-
-            // IndexChipProbeController
-            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1))
-            {
-                if (!IsUnitInSafeByConnectedAxes(u1))
-                {
-                    AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
-                    reason = "IndexChipProbeController Not in Safety Zone";
-                    return false;
-                }
-            }
-
-            // OutputDieTransfer
-            if (eq.Units.TryGetValue("OutputDieTransfer", out var u4))
-            {
-                if (!IsUnitAxisInSafetyZone(u4, AxisNames.RightPickZ, out var r4))
-                {
-                    AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.OutputDieTransferPickZError);
-                    reason = "OutputDieTransfer Not in Safety Zone";
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private bool IsUnitInSafeByConnectedAxes(object unit)
-        {
-            if (unit == null) 
-                return true;
-
-            // Config(BaseConfig) È¹µæ
-            var t = unit.GetType();
-            var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
-            var cfg = propConfig?.GetValue(unit) as BaseConfig;
-            if (cfg?.TeachingPositions == null) return true;
-
-
-            // À¯´Ö º¸À¯ Ãà »çÀü(Dictionary<string, MotionAxis>) È¹µæ
-            var propAxes = t.GetProperty("Axes");
-            var unitAxes = propAxes?.GetValue(unit) as System.Collections.Generic.IDictionary<string, MotionAxis>;
-
-            foreach (var safeName in SafeNames)
-            {
-                var tp = cfg.TeachingPositions.FirstOrDefault(p => string.Equals(p.Name, safeName, StringComparison.OrdinalIgnoreCase));
-                if (tp == null) continue;
-
-                // TeachingPositionÀÇ ¹ÙÀÎµùµÈ Ãà »çÀü (Dictionary<string, MotionAxis>) ¸®ÇÃ·º¼ÇÀ¸·Î Á¢±Ù
-                System.Collections.Generic.IDictionary<string, MotionAxis> tpAxes = null;
-                try
-                {
-                    var tpAxesProp = tp.GetType().GetProperty("Axes");
-                    tpAxes = tpAxesProp?.GetValue(tp) as System.Collections.Generic.IDictionary<string, MotionAxis>;
-                }
-                catch { /* ignore */ }
-
-                bool ok = true;
-                int checkedAny = 0;
-
-                foreach (var kv in tp.AxisPositions)
-                {
-                    string axisKey = kv.Key;
-                    double target = kv.Value;
-
-                    MotionAxis axis = null;
-
-                    // 1) TeachingPosition¿¡ ¹ÙÀÎµùµÈ Ãà ¿ì¼±
-                    if (tpAxes != null)
-                    {
-                        tpAxes.TryGetValue(axisKey, out axis);
-                    }
-
-                    // 2) À¯´Ö º¸À¯ Ãà¿¡¼­ Å°/ÀÌ¸§À¸·Î °Ë»ö
-                    if (axis == null && unitAxes != null)
-                    {
-                        if (!unitAxes.TryGetValue(axisKey, out axis))
-                        {
-                            axis = unitAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase));
-                        }
-                    }
-
-                    // ¿¬°áµÇÁö ¾ÊÀº ÃàÀº ºñ±³ ´ë»ó¿¡¼­ Á¦¿Ü
-                    if (axis == null) continue;
-
-                    checkedAny++;
+                    double pos;
                     try
                     {
-                        if (!axis.InPosition(target))
-                        {
-                            ok = false;
-                            break;
-                        }
+                        //pos = ax.GetPosition(); // deg ë‹¨ìœ„
+                        pos = ax.Status.PV.ActualPosition;
                     }
                     catch
                     {
-                        ok = false;
-                        break;
+                        // ìœ„ì¹˜ ì½ê¸° ì‹¤íŒ¨ ì‹œ ë“œë¼ì´ë²„ Moving ê°’ìœ¼ë¡œ ë³´ìˆ˜ì  íŒë‹¨
+                        return driverMoving;
                     }
+
+                    // ê°ë„ ë˜í•‘(0~360)
+                    pos = NormalizeAngle(pos);
+
+                    if (!double.IsNaN(prev))
+                    {
+                        double diff = Math.Abs(pos - prev);
+                        if (diff > 180.0) diff = 360.0 - diff; // ì›í˜• ìµœì†Œ ì°¨ì´
+                        if (diff > maxDelta) maxDelta = diff;
+                    }
+
+                    prev = pos;
+
+                    if (i < samples - 1)
+                        Thread.Sleep(intervalMs);
                 }
 
-                // ¹ÙÀÎµùµÈ ÃàÀÌ ÇÏ³ªµµ ¾øÀ¸¸é ¾ÈÀüÀ¸·Î °£ÁÖ(ÇÊ¿ä ½Ã false·Î º¯°æ °¡´É)
-                if (ok && (checkedAny == 0 || checkedAny > 0))
-                    return true;
+                bool positionChanging = maxDelta > threshold;
+
+                // ìµœì¢…: ë“œë¼ì´ë²„ Moving OR ìœ„ì¹˜ ë³€í™” ê°ì§€ â†’ ì´ë™ ì¤‘ìœ¼ë¡œ ê°„ì£¼
+                return driverMoving || positionChanging;
             }
-
-            return false;
-        }
-
-        // ÁöÁ¤ Ãà¸¸ SafetyZone TeachingPositionÀ¸·Î È®ÀÎ
-        private bool IsUnitAxisInSafetyZone(object unit, string axisName, out string reason)
-        {
-            reason = null;
-            if (unit == null) { reason = "Unit null"; return false; }
-
-            var t = unit.GetType();
-            var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
-            var cfg = propConfig?.GetValue(unit) as BaseConfig;
-            if (cfg?.TeachingPositions == null)
-            {
-                reason = "TeachingPositions not found";
-                return false;
-            }
-
-            // À¯´Ö º¸À¯ Ãà »çÀü
-            var propAxes = t.GetProperty("Axes");
-            var unitAxes = propAxes?.GetValue(unit) as System.Collections.Generic.IDictionary<string, MotionAxis>;
-
-            foreach (var safeName in SafeNames)
-            {
-                var tp = cfg.TeachingPositions.FirstOrDefault(p => string.Equals(p.Name, safeName, StringComparison.OrdinalIgnoreCase));
-                if (tp == null) continue;
-
-                // ¸ñÇ¥ À§Ä¡ Ã£±â (Ãà Å° ÄÉÀÌ½º ¹«½Ã)
-                double target;
-                bool hasTarget = false;
-                if (tp.AxisPositions.TryGetValue(axisName, out target))
-                {
-                    hasTarget = true;
-                }
-                else
-                {
-                    var kv = tp.AxisPositions.FirstOrDefault(k => string.Equals(k.Key, axisName, StringComparison.OrdinalIgnoreCase));
-                    if (kv.Key != null)
-                    {
-                        target = kv.Value;
-                        hasTarget = true;
-                    }
-                }
-
-                if (!hasTarget)
-                {
-                    reason = $"SafetyZone target not found for '{axisName}'";
-                    return false;
-                }
-
-                // TeachingPosition¿¡ ¹ÙÀÎµùµÈ Ãà »çÀü
-                System.Collections.Generic.IDictionary<string, MotionAxis> tpAxes = null;
-                try
-                {
-                    var tpAxesProp = tp.GetType().GetProperty("Axes");
-                    tpAxes = tpAxesProp?.GetValue(tp) as System.Collections.Generic.IDictionary<string, MotionAxis>;
-                }
-                catch { /* ignore */ }
-
-                MotionAxis axis = null;
-                // 1) TeachingPosition ¹ÙÀÎµù¿¡¼­ ¿ì¼± °Ë»ö
-                if (tpAxes != null)
-                {
-                    if (!tpAxes.TryGetValue(axisName, out axis))
-                    {
-                        axis = tpAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
-                    }
-                }
-
-                // 2) À¯´Ö º¸À¯ Ãà¿¡¼­ °Ë»ö
-                if (axis == null && unitAxes != null)
-                {
-                    if (!unitAxes.TryGetValue(axisName, out axis))
-                    {
-                        axis = unitAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
-                    }
-                }
-
-                if (axis == null)
-                {
-                    reason = $"Axis not bound: '{axisName}'";
-                    return false;
-                }
-
-                try
-                {
-                    if (!axis.InPosition(target))
-                    {
-                        reason = $"'{axisName}' not in SafetyZone";
-                        return false;
-                    }
-                }
-                catch
-                {
-                    reason = $"'{axisName}' safety check failed";
-                    return false;
-                }
-
-                // ÁöÁ¤ Ãà¸¸ È®ÀÎ ¼º°ø
-                return true;
-            }
-
-            reason = "SafetyZone TeachingPosition not found";
-            return false;
-        }
-
-        private bool IsUnitInSafe(System.Func<string, bool> inPosTeaching)
-        {
-            for (int i = 0; i < SafeNames.Length; i++)
-                if (inPosTeaching(SafeNames[i])) return true;
-            return false;
+            
         }
         #endregion
 
+        #region I/O Binding
         private Vacuum[] _vacuum = new Vacuum[8];              // Vacuum + OK sensor
         public Vacuum[] _blow = new Vacuum[8];
         public Vacuum[] _vent = new Vacuum[8];
-
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
@@ -1130,8 +1008,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
         }
-
-        // === Domain Control (??? ????) ===
+        // === Domain Control ===
         public bool SetVacuum(int nNo, bool on)
         {
             if (_vacuum[nNo] == null) return false;
@@ -1139,7 +1016,6 @@ namespace QMC.LCP_280.Process.Unit
             else _vacuum[nNo].Off();
             return true;
         }
-
         public bool SetBlow(int nNo, bool on)
         {
             if (_blow[nNo] == null) return false;
@@ -1147,7 +1023,6 @@ namespace QMC.LCP_280.Process.Unit
             else _blow[nNo].Off();
             return true;
         }
-
         public bool SetVent(int nNo, bool on)
         {
             if (_vent[nNo] == null) return false;
@@ -1155,7 +1030,6 @@ namespace QMC.LCP_280.Process.Unit
             else _vent[nNo].Off();
             return true;
         }
-
         public bool SetTrashEjector(bool on)
         {
             bool bRet = false;
@@ -1171,7 +1045,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRet;
         }
-
         public bool SetTrashVacuum(bool on)
         {
             bool bRet = false;
@@ -1187,7 +1060,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRet;
         }
-
         public bool IsVacuumOK(int slotIndex)
         {
             if (FLOW == null)
@@ -1213,15 +1085,36 @@ namespace QMC.LCP_280.Process.Unit
             return this.ReadInput(FLOW[slotIndex]);
         }
 
-        // === Rotary Vacuum »óÅÂ ´ë±â °ø¿ë À¯Æ¿ ===
-        // expectOn: true=ON µÉ ¶§±îÁö, false=OFF µÉ ¶§±îÁö ´ë±â
-        // timeoutMs/pollMs: Å¸ÀÓ¾Æ¿ô/Æú¸µ °£°İ
+        public bool IsOutVacummOn(int slotIndex)
+        {
+            bool bRet = false;
+
+            switch (slotIndex)
+            {
+                //case 0: bRet = this.IsOutputOn("RotatyVac1"); break;
+                case 0: bRet = this.IsOutputOn(VAC1); break;
+                case 1: bRet = this.IsOutputOn(VAC2); break;
+                case 2: bRet = this.IsOutputOn(VAC3); break;
+                case 3: bRet = this.IsOutputOn(VAC4); break;
+                case 4: bRet = this.IsOutputOn(VAC5); break;
+                case 5: bRet = this.IsOutputOn(VAC6); break;
+                case 6: bRet = this.IsOutputOn(VAC7); break;
+                case 7: bRet = this.IsOutputOn(VAC8); break;
+            }
+            
+
+            return bRet;
+        }
+
+        // === Rotary Vacuum ìƒíƒœ ëŒ€ê¸° ê³µìš© ìœ í‹¸ ===
+        // expectOn: true=ON ë  ë•Œê¹Œì§€, false=OFF ë  ë•Œê¹Œì§€ ëŒ€ê¸°
+        // timeoutMs/pollMs: íƒ€ì„ì•„ì›ƒ/í´ë§ ê°„ê²©
         public int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
 
-            //Todo: 2025-10-10 GYN: Vacuum ÇØ°á µÇ¸é return Áö¿ì±â.
+            //Todo: 2025-10-10 GYN: Vacuum í•´ê²° ë˜ë©´ return ì§€ìš°ê¸°.
             return 0;
 
             var sw = Stopwatch.StartNew();
@@ -1234,13 +1127,12 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(pollMs);
             }
 
-            // Å¸ÀÓ¾Æ¿ô Ã³¸®
+            // íƒ€ì„ì•„ì›ƒ ì²˜ë¦¬
             PostAlarm((int)AlarmKeys.eRotaryVaccum);
             Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
             return -1;
         }
 
-        #region Pressure
         public bool AirTankPressureOk()
         {
             return this.ReadInput(AIR_TANK_PRESSURE);
@@ -1277,43 +1169,56 @@ namespace QMC.LCP_280.Process.Unit
         #region Lifecycle
         public override int OnRun()
         {
-            int nRtn = 0;
+            //TaktStart("OnRun");
+            try
+            {
+                int nRtn = 0;
 
-            if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
-            {
-                this.State = ProcessState.Stop;
-                return -1;
-            }
+                if (this.RunUnitStatus == UnitStatus.Stopped ||
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
+                }
 
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    nRtn = OnRunReady();
-                    break;
-                case ProcessState.Work:
-                    nRtn = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    nRtn = OnRunComplete();
-                    break;
-                default:
-                    this.State = ProcessState.Ready;
-                    break;
+                switch (State)
+                {
+                    case ProcessState.Ready:
+                        nRtn = OnRunReady();
+                        break;
+                    case ProcessState.Work:
+                        nRtn = OnRunWork();
+                        break;
+                    case ProcessState.Complete:
+                        nRtn = OnRunComplete();
+                        break;
+                    default:
+                        this.State = ProcessState.Ready;
+                        break;
+                }
+
+                if (nRtn != 0)
+                {
+                    this.State = ProcessState.Stop;
+                    this.OnStop();
+                }
+                return nRtn;
             }
-            if (this.RunUnitStatus == UnitStatus.Running)
+            catch (Exception ex)
             {
-                return 0;
-            }
-            if (nRtn != 0)
-            {
+                Log.Write(ex);
                 this.State = ProcessState.Stop;
                 this.OnStop();
+                return -1;
             }
-            return nRtn;
+            finally
+            {
+              //  TaktEnd("OnRun");
+            }
+                
         }
-
         protected override int OnStart()
         {
             return base.OnStart();
@@ -1329,168 +1234,396 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunReady() 
         {
-            int nRet = 0;
-            if (IsAxisMoving(AxisNames.IndexT))
+            TaktStart("OnRunReady");
+            try
             {
-                return 0;
-            }
+                int nRet = 0;
+                if (IsIndexMoving())
+                {
+                    return 0;
+                }
 
-            nRet = ExecuteUnitActionReady();
-            if (nRet != 0)
+                nRet = ExecuteUnitActionReady();
+                if (nRet != 0)
+                {
+                    AxisIndexT.EmgStop();
+                    PostAlarm((int)AlarmKeys.ExecuteUnitActionError);
+                    Log.Write(UnitName, "[ExecuteUnitActionReady] Failed");
+                    return -1;
+                }
+
+                State = ProcessState.Work;
+                return nRet;
+            }
+            catch (Exception ex)
             {
-                Log.Write(UnitName, "[ExecuteUnitActionReady] Failed");
+                Log.Write(ex);
+                this.State = ProcessState.Stop;
+                this.OnStop();
                 return -1;
             }
-
-            State = ProcessState.Work;
-            return nRet;
-
+            finally
+            {
+                TaktEnd("OnRunReady");
+            }
         }
         protected override int OnRunWork() 
         {
-            int nRet = 0;
-
-            int nIndex = GetLoadIndexNo();
-            bool useSocket = this.Config.GetUseSocket(nIndex);
-
-            // === INPUT (Load À§Ä¡) Ã³¸® ¿µ¿ª (DryRun ´Ü¼øÈ­) =========================
-            RequestInputDieTrDie = false;
-
-            if (Config.IsUnitDryRun)
+            TaktStart("OnRunWork");
+            try
             {
-                // DryRun: InputDieTransfer ¿ÍÀÇ ÀÎÅÍÆäÀÌ½º ¾øÀÌ Áï½Ã ¼ÒÄÏ¿¡ Die Á¸Àç »óÅÂ¸¦ ½Ã¹Ä·¹ÀÌ¼Ç
-                var socket = GetLoadSocketInfo();
-                var die = socket.GetMaterialDie();
-                if (die == null)
+                int nRet = 0;
+
+                // ì¸ë±ìŠ¤ ì´ë™ ì¤‘ì´ë©´ ëŒ€ê¸°
+                if (IsIndexMoving())
                 {
-                    die = new MaterialDie();
-                    socket.SetMaterialDie(die);
+                    return 0;
                 }
-                if (useSocket)
+
+                int nIndex = GetLoadIndexNo();
+                bool useSocket = this.Config.GetUseSocket(nIndex);
+
+                // === INPUT (Load ìœ„ì¹˜) ì²˜ë¦¬ ì˜ì—­ (DryRun ë‹¨ìˆœí™”) =========================
+                RequestInputDieTrDie = false;
+                //if (true)
+                //{
+                //    if (this.InputDieTransfer != null)
+                //    {
+                //        var die = GetLoadSocketMaterial();
+                //        if (die != null)
+                //        {
+                //            if (die.Presence != Material.MaterialPresence.Exist)
+                //            {
+                //                if (useSocket)
+                //                {
+                //                    RequestInputDieTrDie = true;
+                //                }
+                //            }
+                //        }
+                //    }
+                //}
+                if (true)
                 {
-                    // Á¸ÀçÇÏÁö ¾ÊÀ¸¸é ¹Ù·Î Ã¤¿ö ³ÖÀ½
-                    if (die.Presence != Material.MaterialPresence.Exist)
+                    if (this.InputDieTransfer != null)
                     {
-                        die.Presence = Material.MaterialPresence.Exist;
-                        die.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                        socket.SetState(RotarySocketState.Loaded);
-                    }
-                }
-                // DryRun¿¡¼­´Â InputDieTransfer »óÅÂ/Complete ¿©ºÎ¸¦ º¸Áö ¾ÊÀ½
-            }
-            else
-            {
-                if (this.InputDieTransfer != null 
-                 && this.InputDieTransfer.State == ProcessState.Complete)
-                {
-                    var die = GetLoadSocketMaterial();
-                    if (die != null)
-                    {
-                        if (die.Presence != Material.MaterialPresence.Exist)
+                        var die = GetLoadSocketMaterial();
+                        if (die != null)
                         {
-                            if (useSocket)
+                            if (die.Presence != Material.MaterialPresence.Exist)
                             {
-                                RequestInputDieTrDie = true;
+                                if (useSocket)
+                                {
+                                    // ë³€ê²½: InputStageì— ê³µê¸‰ ê°€ëŠ¥í•œ Dieê°€ ìˆëŠ” ê²½ìš°ì—ë§Œ ìš”ì²­ ì‹ í˜¸ ì„¤ì •
+                                    bool hasNextDie = true;
+                                    try
+                                    {
+                                        hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage ë¯¸ë°”ì¸ë”© ì‹œ ê¸°ì¡´ ë™ì‘ ìœ ì§€
+
+                                        if(hasNextDie == false)
+                                        {
+                                            var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
+                                            //if (hasDie != null)
+                                            if (hasDie != null && (hasDie.State == DieProcessState.Mapped 
+                                                || hasDie.State == DieProcessState.Picked))
+                                            {
+                                                hasNextDie = true;
+                                            }
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        hasNextDie = true;
+                                    }
+
+                                    if (hasNextDie)
+                                    {
+                                        this.SetVent(nIndex, false);
+                                        Thread.Sleep(1);
+                                        this.SetBlow(nIndex, false);
+                                        Thread.Sleep(1);
+                                        this.SetVacuum(nIndex, true);
+
+                                        RequestInputDieTrDie = true;
+                                    }
+                                    else
+                                    {
+                                        RequestInputDieTrDie = false; // ëª…ì‹œì ìœ¼ë¡œ ìš”ì²­ ì•ˆ í•¨
+                                        // í•„ìš” ì‹œ ë¡œê·¸:
+                                        // Log.Write(UnitName, "[OnRunWork] InputStageì— ë‚¨ì€ Die ì—†ìŒ â†’ Load ìš”ì²­ ìŠ¤í‚µ");
+                                    }
+                                }
                             }
                         }
                     }
                 }
                 else
                 {
-                    // 2) (±âÁ¸ ·ÎÁ÷ ±³Ã¼) : "»ç¿ë ÁßÀÎ ÇöÀç Load ¼ÒÄÏÀÌ ºñ¾îÀÖÀ¸¸é Àı´ë µ¹Áö ¾Ê´Â´Ù"
-                    // (ÁÖÀÇ) ´Ù¸¥ ¼ÒÄÏÀÌ ºñ¾îÀÖ¾îµµ 'ÇöÀç Load À§Ä¡ ¼ÒÄÏ' ÀÌ ÀÌ¹Ì ·ÎµùµÇ¾î ÀÖ´Ù¸é °øÁ¤/È¸Àü ÁøÇà.
-                    // ¿ä±¸»çÇ×: "¼ÒÄÏÀ» »ç¿ëÁßÀÎµ¥(ÇöÀç À§Ä¡) ·Îµù ¾ÈµÇ¾î ÀÖÀ¸¸é µ¹¸é ¾ÈµÅ" ¿¡ ¸ÂÃá ÃÖ¼Ò Á¦ÇÑ.
-                    //var loadSock = GetLoadSocketInfo();
-                    //var loadDie = loadSock.GetMaterialDie();
-                    //bool needLoad = useSocket &&
-                    //                (loadDie == null || loadDie.Presence != Material.MaterialPresence.Exist);
-                    //if (needLoad)
-                    //{
-                    //    RequestInputDieTrDie = true;
-                    //    return 0; // ¾ÆÁ÷ ·Îµù ¾ÈµÊ ¡æ È¸Àü/ÈÄ¼Ó °øÁ¤ ±İÁö
-                    //}
-                    // ¿ä±¸»çÇ×:
-                    // 1) »ç¿ë(Enable)µÈ ¼ÒÄÏ Áß ÇÏ³ª¶óµµ Á¦Ç°(Exist)ÀÌ ÀÖÀ¸¸é ¡æ ÀÌÈÄ °øÁ¤(Align/Probe/Unload)À» ¼øÂ÷ ÁøÇà
-                    // 2) »ç¿ë ¼ÒÄÏ ¸ğµÎ ºñ¾îÀÖÀ¸¸é ¡æ Á¦Ç°ÀÌ ÅõÀÔµÉ ¶§±îÁö ´ë±â (È¸Àü/°øÁ¤ ÁøÇà X)
-                    //if (IsAllUsedSocketsEmpty())
-                    //{
-                    //    // Á¦Ç°ÀÌ ÀüÇô ¾øÀ¸¹Ç·Î ÅõÀÔ ´ë±â.
-                    //    // Load À§Ä¡ ¼ÒÄÏÀÌ »ç¿ë °¡´ÉÇÏ¸é ÅõÀÔ ¿äÃ» ÇÃ·¡±×¸¦ ¿Ã·Á InputDieTransfer °¡ ÁØºñµÉ ¶§ ÇÈ¾÷ÇÏµµ·Ï ÇÔ.
-                    //    if (useSocket)
-                    //        RequestInputDieTrDie = true;
-
-                    //    // ÁøÇàÀ» Áß´ÜÇÏ°í ´ÙÀ½ OnRunWork »çÀÌÅ¬¿¡¼­ ´Ù½Ã °Ë»ç
-                    //    return 0;
-                    //}
+                    if (this.InputDieTransfer != null
+                        && this.InputDieTransfer.State == ProcessState.Complete)
+                    {
+                        var die = GetLoadSocketMaterial();
+                        if (die != null)
+                        {
+                            if (die.Presence != Material.MaterialPresence.Exist)
+                            {
+                                if (useSocket)
+                                {
+                                    RequestInputDieTrDie = true;
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-            if(IsHaveDie() == false && RequestInputDieTrDie == false)
-            {
-                return 0;
-            }
 
-            nRet = ExecuteUnitAction();
-            if (nRet != 0)
-            {
-                // ODT Start ½ÅÈ£°¡ ³²Áö ¾Êµµ·Ï ¹æ¾îÀû ¸®¼Â(½ÇÆĞ ½Ã¿¡µµ)
-                try 
-                { 
-                    OutputDieTransfer?.ReSetPickupStartEvent(); 
-                } 
-                catch (Exception ex)
+
+                if (IsHaveDie() == false && RequestInputDieTrDie == false)
                 {
-                    Log.Write(ex);
+                    return 0;
                 }
 
-                Log.Write(UnitName, "[ExecuteUnitAction] Failed");
-                return -1;
-            }
+                TaktStart("ExecuteUnitAction");
+                try
+                {
+                    Log.Write(UnitName, "[ExecuteUnitAction] ExecuteUnitAction");
+                    nRet = ExecuteUnitAction();
+                }
+                finally
+                {
+                    TaktEnd("ExecuteUnitAction");
+                }
+                if (nRet != 0)
+                {
+                    // ODT Start ì‹ í˜¸ê°€ ë‚¨ì§€ ì•Šë„ë¡ ë°©ì–´ì  ë¦¬ì…‹(ì‹¤íŒ¨ ì‹œì—ë„)
+                    try
+                    {
+                        OutputDieTransfer?.ReSetPickupStartEvent();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
 
-            // ¿©±â ºí·Ï(Load ÅõÀÔ ´ë±â + Unloader ¹èÃâ È®ÀÎ)ÀÌ È®½ÇÈ÷ ¿Ï·áµÈ ´ÙÀ½¿¡¸¸ Rotate
-            bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
-            nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[WaitPostActionSettled] Failed");
-                return -1;
-            }
-            // ÅõÀÔ ¿Ï·áµÇ¾úÀ¸¸é ¿äÃ» ÇÃ·¡±× ³»¸²
-            RequestInputDieTrDie = false;
+                    AxisIndexT.EmgStop();
+                    PostAlarm((int)AlarmKeys.ExecuteUnitActionError);
+                    Log.Write(UnitName, "[ExecuteUnitAction] Failed");
+                    return -1;
+                }
 
-            if(IsStop)
-            {
-                return 0;
-            }
+                // ì—¬ê¸° ë¸”ë¡(Load íˆ¬ì… ëŒ€ê¸° + Unloader ë°°ì¶œ í™•ì¸)ì´ í™•ì‹¤íˆ ì™„ë£Œëœ ë‹¤ìŒì—ë§Œ Rotate
+                bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
+                TaktStart("WaitPostActionSettled");
+                try
+                {
+                    nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
+                    Log.Write(UnitName, "WaitPostActionSettled");
+                }
+                finally
+                {
+                    TaktEnd("WaitPostActionSettled");
+                }
+                if (nRet != 0)
+                {
+                    AxisIndexT.EmgStop();
+                    PostAlarm((int)AlarmKeys.eIndexRotary);
+                    Log.Write(UnitName, "[WaitPostActionSettled] Failed");
+                    return -1;
+                }
+                // íˆ¬ì… ì™„ë£Œë˜ì—ˆìœ¼ë©´ ìš”ì²­ í”Œë˜ê·¸ ë‚´ë¦¼
+                RequestInputDieTrDie = false;
 
-            nRet = Rotate();
+                if (IsStop)
+                {
+                    return 0;
+                }
 
-            // È¸Àü Á÷ÈÄ Start ½ÅÈ£ Àç¼³Á¤(±âÁ¸ µ¿ÀÛ À¯Áö)
-            OutputDieTransfer.ReSetPickupStartEvent();
-            if (nRet != 0)
-            {
-                PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
-                Log.Write(UnitName, "[Rotate] Failed");
+                TaktStart("WaitInterlockSafe");
+                try
+                {
+                    bool bInputTr = false;
+                    bool bOutTr = false;
+                    bool bIndexAlignZ = false;
+                    bool bIndexProbeZ = false;
+                    bool bIndexProbeCardZ = false;
+                    while (true)
+                    {
+                        if (IsStop)
+                            return 0;
+
+                        bInputTr = InputDieTransfer.IsPositionPlaceZSafety();
+                        bOutTr = OutputDieTransfer.IsPositionPickZSafety();
+                        bIndexAlignZ = IndexLoadAligner.IsPositionAlignZSafety();
+                        bIndexProbeZ = IndexChipProbeController.IsPositionProbeZSafety();
+                        bIndexProbeCardZ = IndexChipProbeController.IsPositionProbeCardZSafety();
+
+                        if (bInputTr && bOutTr && bIndexAlignZ
+                            && bIndexProbeZ && bIndexProbeCardZ)
+                        {
+                            break;
+                        }
+                        Thread.Sleep(1);
+                        //if (InputDieTransfer.IsPositionPlaceZSafety() == false)
+                        //{
+                        //    AxisIndexT.EmgStop();
+                        //    PostAlarm((int)AlarmKeys.InputDieTransferPlaceZError);
+                        //    reason = "InputDieTransfer Not in Safety Zone";
+                        //    return false;
+                        //}
+
+                        //// OutputDieTransfer
+                        //if (OutputDieTransfer.IsPositionPickZSafety() == false)
+                        //{
+                        //    AxisIndexT.EmgStop();
+                        //    PostAlarm((int)AlarmKeys.OutputDieTransferPickZError);
+                        //    reason = "OutputDieTransfer Not in Safety Zone";
+                        //    return false;
+                        //}
+
+                        //// IndexLoadAligner
+                        //if (IndexLoadAligner.IsPositionAlignZSafety() == false)
+                        //{
+                        //    AxisIndexT.EmgStop();
+                        //    PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
+                        //    reason = "IndexLoadAligner Not in Safety Zone";
+                        //    return false;
+                        //}
+
+                        //// IndexChipProbeController
+                        //if (IndexChipProbeController.IsPositionProbeZSafety() == false
+                        //    || IndexChipProbeController.IsPositionProbeCardZSafety() == false)
+                        //{
+                        //    AxisIndexT.EmgStop();
+                        //    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
+                        //    reason = "IndexChipProbeController Not in Safety Zone";
+                        //    return false;
+                        //}
+
+                        //Thread.Sleep(1);
+                    }
+                }
+                finally
+                {
+                    TaktEnd("WaitInterlockSafe");
+                }
+
+                TaktStart("Rotate");
+                try
+                {
+                    nRet = Rotate();
+                    Log.Write(UnitName, "[Rotate] Rotate Comp");
+                }
+                finally
+                {
+                    TaktEnd("Rotate");
+                }
+
+                // íšŒì „ ì§í›„ Start ì‹ í˜¸ ì¬ì„¤ì •(ê¸°ì¡´ ë™ì‘ ìœ ì§€)
+                OutputDieTransfer.ReSetPickupStartEvent();
+                if (nRet != 0)
+                {
+                    AxisIndexT.EmgStop();
+                    PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+                    Log.Write(UnitName, "[Rotate] Failed");
+                    return nRet;
+                }
+
+                Log.Write(UnitName, "[Rotate] Complete");
+                State = ProcessState.Complete;
                 return nRet;
             }
-
-            State = ProcessState.Complete;
-            return nRet;
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                this.State = ProcessState.Stop;
+                this.OnStop();
+                return -1;
+            }
+            finally
+            {
+                //OutputDieTransfer.ReSetPickupStartEvent();
+                TaktEnd("OnRunWork");
+            }
         }
         protected override int OnRunComplete() 
         {
-            int nRtn = 0;
-
-            if (IsAxisMoving(AxisNames.IndexT))
+            TaktStart("OnRunComplete");
+            try
             {
-                return 0;
+                int nRtn = 0;
+                State = ProcessState.Work;
+                return nRtn;
             }
-
-            State = ProcessState.None;
-            return nRtn; 
+            finally
+            {
+                TaktEnd("OnRunComplete");
+            }
         }
         #endregion
 
+        #region Interlock
+        public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
+        {
+            bool bRet = base.IsInterlockOK(baseComponent, e);
+            if (baseComponent == this.AxisIndexT)
+            {
+                if (VerifyAllUnitsSafe(out string reason) == false)
+                {
+                    AxisIndexT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                    Log.Write(this, $"Rotary AxisIndexT is not in Safety Position: {reason}");
+                    return false;
+                }
+            }
+            return bRet;
+        }
+        //Index íšŒì „ ì‹œ ë¬´ì¡°ê±´ í™•ì¸ í•¨ìˆ˜.
+        private bool VerifyAllUnitsSafe(out string reason)
+        {
+            reason = null;
 
+            // InputDieTransfer
+            if (InputDieTransfer.IsPositionPlaceZSafety() == false)
+            {
+                AxisIndexT.EmgStop();
+                PostAlarm((int)AlarmKeys.InputDieTransferPlaceZError);
+                reason = "InputDieTransfer Not in Safety Zone";
+                return false;
+            }
+
+            // OutputDieTransfer
+            if (OutputDieTransfer.IsPositionPickZSafety() == false)
+            {
+                AxisIndexT.EmgStop();
+                PostAlarm((int)AlarmKeys.OutputDieTransferPickZError);
+                reason = "OutputDieTransfer Not in Safety Zone";
+                return false;
+            }
+
+            // IndexLoadAligner
+            if (IndexLoadAligner.IsPositionAlignZSafety() == false)
+            {
+                AxisIndexT.EmgStop();
+                PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
+                reason = "IndexLoadAligner Not in Safety Zone";
+                return false;
+            }
+
+            // IndexChipProbeController
+            if (IndexChipProbeController.IsPositionProbeZSafety() == false
+                || IndexChipProbeController.IsPositionProbeCardZSafety() == false)
+            {
+                AxisIndexT.EmgStop();
+                PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
+                reason = "IndexChipProbeController Not in Safety Zone";
+                return false;
+            }
+
+            // IndexPlaceZ í™•ì¸ í•„ìš”. - ì„ ì–¸ì‹œ.
+
+            return true;
+        }
+        #endregion
+
+        #region Auto Seq í•¨ìˆ˜
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
@@ -1500,8 +1633,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(Rotate);
             this.SequencePlayers.Add(ExecuteUnitAction);
         }
-
-        #region Auto Seq ÇÔ¼ö
         public int ExecuteUnitActionReady(bool isFine = false)
         {
             int nRtn = 0;
@@ -1513,11 +1644,6 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = ExecuteUnitActionReadyAsync(isFine);
             while (IsEndTask(task) == false)
             {
-                //if (IsStop) { return 0; }
-
-                ExecuteUnitActionInterlockLoadMAlign();
-                ExecuteUnitActionInterlockProbe();
-                //interlock
                 Thread.Sleep(1);
             }
             return task.Result;
@@ -1592,7 +1718,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public int ExecuteUnitAction(bool isFine = false)
         {
-            int nRtn = 0;
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ExecuteUnitAction;
@@ -1601,14 +1726,9 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = ExecuteUnitActionAsync(isFine);
             while (IsEndTask(task) == false)
             {
-                //if (IsStop) { return 0; }
-
-                ExecuteUnitActionInterlockLoadMAlign();
-                ExecuteUnitActionInterlockProbe();
                 Thread.Sleep(1);
             }
-
-            // ¿¹¿Ü ÀüÆÄ ¹× °á°ú ¹İ¿µ
+            // ì˜ˆì™¸ ì „íŒŒ ë° ê²°ê³¼ ë°˜ì˜
             if (task.IsFaulted)
             {
                 Log.Write(UnitName, "[ExecuteUnitAction] Faulted: " + task.Exception?.GetBaseException().Message);
@@ -1624,355 +1744,301 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
+        //ë³‘ë ¬ë¡œ ë™ì‹œì— ì‹œì‘ë˜ê²Œ ë°”ê¿”ì•¼ ê² ë‹¤. 
+        //ìˆœì°¨ì ìœ¼ë¡œ ëŒë¦¬ë©´ì„œ ëŠë¦¬ë‹¤. 
         protected int OnExecuteUnitAction(bool isFine = false)
         {
-            // Start ½ÅÈ£ ¸®¼ÂÀ» º¸ÀåÇÏ±â À§ÇÑ ÇÃ·¡±×
             bool pickupStartSet = false;
-
             try
             {
-                bool bRet = false;
+                Log.Write(UnitName, "OnExecuteUnitAction", "Start");
 
-                var t1 = (IndexLoadAligner != null)
+                // ====== ë³‘ë ¬ë¡œ ë™ì‹œì— ì‹œì‘ ======
+                var tLoadAlign = (IndexLoadAligner != null)
                     ? Task.Run(() =>
                     {
                         var th = Thread.CurrentThread;
-                        if (th.Name == null)
-                        {
-                            try { th.Name = "RunAlignSocketOnce(LoadAligner)"; } catch { }
-                        }
-                        int ret = 0;
-                        try
-                        {
-                            ret = IndexLoadAligner.RunAlignSocketOnce();
-                        }
-                        catch(Exception ex)
-                        {
-                            Log.Write(ex);
-                            return -1;
-                        }
-                        return ret;
+                        if (th.Name == null) th.Name = "RunAlignSocketOnce(LoadAligner)";
+                        try { return IndexLoadAligner.RunAlignSocketOnce(); }
+                        catch (Exception ex) { Log.Write(ex); return -1; }
                     })
                     : Task.FromResult(0);
 
-                var t2 = (IndexChipProbeController != null)
+                var tProbe = (IndexChipProbeController != null)
                     ? Task.Run(() =>
                     {
                         var th = Thread.CurrentThread;
-                        if (th.Name == null)
-                        {
-                            try { th.Name = "RunInspection(ProbeController)"; } catch { }
-                        }
-                        int ret = 0;
-                        try
-                        {
-                            ret = IndexChipProbeController.RunInspection();
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                            return -1;
-                        }
-                        return ret;
+                        if (th.Name == null) th.Name = "RunInspection(ProbeController)";
+                        try { return IndexChipProbeController.RunInspection(); }
+                        catch (Exception ex) { Log.Write(ex); return -1; }
                     })
                     : Task.FromResult(0);
 
-                var t3 = (IndexUnloadAligner != null)
+                var tUnloadAlign = (IndexUnloadAligner != null)
                     ? Task.Run(() =>
                     {
                         var th = Thread.CurrentThread;
-                        if (th.Name == null)
-                        {
-                            try { th.Name = "RunAlignSocketOnce(UnloadAligner)"; } catch { }
-                        }
-                        int ret = 0;
-                        try
-                        {
-                            ret = IndexUnloadAligner.RunAlignSocketOnce();
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                            return -1;
-                        }
-                        return ret;
+                        if (th.Name == null) th.Name = "RunAlignSocketOnce(UnloadAligner)";
+                        try { return IndexUnloadAligner.RunAlignSocketOnce(); }
+                        catch (Exception ex) { Log.Write(ex); return -1; }
                     })
                     : Task.FromResult(0);
 
-                var t4 = Task.Run(() =>
-                    {
-                        var th = Thread.CurrentThread;
-                        if (th.Name == null)
-                        {
-                            try { th.Name = "RunTrashCanSocketOnce(Rotary)"; } catch { }
-                        }
-                        int ret = 0;
-                        try
-                        {
-                            ret = RunTrashCanSocketOnce();
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                            return -1;
-                        }
-                        return ret;
-                    });
-
-
-                if (Config.IsUnitDryRun)
+                var tTrash = Task.Run(() =>
                 {
-                    // DryRun: OutputDieTransfer ÀıÂ÷ Á¦¿Ü (ÀÌº¥Æ®/´ë±â ½ºÅµ)
-                    // ¼ÒÄÏ »óÅÂ °£´Ü ÀüÀÌ (Loaded -> Aligned -> Probed)
-                    var loadSocket = GetLoadSocketInfo();
-                    if (loadSocket != null && loadSocket.GetMaterialDie() != null)
-                    {
-                        if (loadSocket.State == RotarySocketState.Loaded)
-                        {
-                            loadSocket.SetState(RotarySocketState.Aligned);
-                        }
-                        else if (loadSocket.State == RotarySocketState.Aligned)
-                        {
-                            loadSocket.SetState(RotarySocketState.Probed);
-                        }
-                    }
+                    var th = Thread.CurrentThread;
+                    if (th.Name == null) th.Name = "RunTrashCanSocketOnce(Rotary)";
+                    try { return RunTrashCanSocketOnce(); }
+                    catch (Exception ex) { Log.Write(ex); return -1; }
+                });
 
-                    // 3°³ À¯´Ö ÅÂ½ºÅ© ½ÇÁ¦ ½ÇÇà
-                    Task.WaitAll(t1, t2, t3);
-
-                    int r1d = t1.Result;
-                    int r2d = t2.Result;
-                    int r3d = t3.Result;
-                    if (r1d != 0 || r2d != 0 || r3d != 0)
-                    {
-                        Log.Write(UnitName, $"[DryRun] OnExecuteUnitAction Fail (LoadAligner={r1d}, Probe={r2d}, UnloadAligner={r3d})");
-                        return -1;
-                    }
-
-                    // Unloader À§Ä¡(°£´ÜÈ÷ Load ¹İ´ëÆí) ¼ÒÄÏ ºñ¿ì±â ½Ã¹Ä·¹ÀÌ¼Ç
-                    int unloadIdx = (GetLoadIndexNo() + (GetIndexCount() / 2)) % GetIndexCount();
-                    lock (_socketLock)
-                    {
-                        if (unloadIdx >= 0 && unloadIdx < GetIndexCount())
-                        {
-                            var s = _sockets[unloadIdx];
-                            if (s.GetMaterialDie() != null &&
-                                s.GetMaterialDie().Presence == Material.MaterialPresence.Exist)
-                            {
-                                s.GetMaterialDie().Presence = Material.MaterialPresence.NotExist;
-                                s.SetMaterialDie(null);
-                                s.SetState(RotarySocketState.Empty);
-                            }
-                        }
-                    }
-                    return 0;
-                }
-
-                // ===== ½ÇÁ¦ ¿îÀü (DryRun ¾Æ´Ô): ±âÁ¸ OutputDieTransfer ¿¬µ¿ À¯Áö =====
-                // ¾ğ·Î´õ ¾ó¶óÀÎ ÁØºñ°¡ ³¡³­ ÈÄ ÇÈ¾÷ ½ÃÀÛ ½ÅÈ£
-                t3.Wait();
-                Thread.Sleep(1);
-
-                if (OutputDieTransfer != null)
+                // ====== OutputDieTransfer (ì–¸ë¡œë” ì™„ë£Œ í›„ ì²˜ë¦¬) ======
+                var odtTask = Task.Run(() =>
                 {
-                    // 1) Unloader À§Ä¡ Die Á¸Àç ¿©ºÎ ¼±È®ÀÎ
-                    MaterialDie unloadDie = null;
                     try
                     {
-                        unloadDie = GetUnloadSocketMaterial();
-                    }
-                    catch (Exception ex)
-                    {
-                        unloadDie = null;
-                        Log.Write(ex);
-                    }
+                        // ì–¸ë¡œë”ê°€ ì™„ë£Œëœ í›„ ì§„í–‰
+                        tUnloadAlign.Wait();
+                        int rUnload1 = tUnloadAlign.Result;
+                        if (rUnload1 != 0)
+                            return -1;
 
-                    bool hasDie =
-                        unloadDie != null &&
-                        unloadDie.Presence == Material.MaterialPresence.Exist;
+                        if (OutputDieTransfer == null)
+                            return 0;
 
-                    if (hasDie == true) 
-                    {
-                        // ±âÁ¸: PrepareOutputDieTransferHandshake(); Start Set; Done ´ë±â
-                        // º¯°æ: ÀÜ¿© ½ÅÈ£ ¸®¼Â ¡æ ODT°¡ Start ´ë±â ÁØºñ ¿Ï·áµÉ ¶§±îÁö ´ë±â ¡æ Start ¡æ Done ´ë±â
-                        try
+                        // Unloader ìœ„ì¹˜ì— Die ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
+                        MaterialDie unloadDie = null;
+                        try { unloadDie = GetUnloadSocketMaterial(); }
+                        catch (Exception ex) { Log.Write(ex); }
+
+                        bool hasDie = unloadDie != null &&
+                                      unloadDie.Presence == Material.MaterialPresence.Exist;
+
+                        if (!hasDie)
+                            return 0;
+
+                        // [ADD] Bin1ì´ ì•„ë‹ˆë©´ ì–¸ë¡œë” ìŠ¤í‚µ (Trashë¡œ íšŒì „ë˜ì–´ ë°°ì¶œë¨)
+                        if (!ShouldUnloadToOutput(unloadDie))
                         {
-                            //OutputDieTransfer.ResetPickupHandshake();
+                            Log.Write(UnitName, "[OutputDieTransfer] Skip unload: not Bin1");
+                            return 0;
+                        }
 
-                            this.OutputDieTransfer.SetPickupStartEvent();
-                            pickupStartSet = true;
+                        // í”½ì—… ì‹œì‘ ì´ë²¤íŠ¸
+                        OutputDieTransfer.SetPickupStartEvent();
+                        pickupStartSet = true;
 
-                            var sw = System.Diagnostics.Stopwatch.StartNew();
-                            double timeoutMs = 60000 * 10;
-                            while (true)
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        double timeoutMs = 60000 * 10;
+                        bool done = false;
+
+                        while (sw.ElapsedMilliseconds < timeoutMs)
+                        {
+                            if (IsStop)
                             {
-                                if(IsStop) 
-                                {
-                                    this.OutputDieTransfer.ReSetPickupStartEvent();
-                                    pickupStartSet = false;
-                                    return 0; 
-                                }
-
-                                bRet = OutputDieTransfer.WaitPickupDoneEvent(10);
-                                if (bRet) 
-                                {
-                                    this.OutputDieTransfer.ResetPickupDoneEvent();
-                                    break; 
-                                }
-
-                                if (sw.ElapsedMilliseconds > timeoutMs) 
-                                {
-                                    Log.Write(UnitName, $"[OutputDieTransfer] Waiting for Done... Elapsed {sw.ElapsedMilliseconds}ms");
-                                    break;
-                                }
+                                OutputDieTransfer.ReSetPickupStartEvent();
+                                pickupStartSet = false;
+                                return 0;
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            bRet = false;
-                            Log.Write(ex);
+
+                            if (OutputDieTransfer.WaitPickupDoneEvent(10))
+                            {
+                                OutputDieTransfer.ResetPickupDoneEvent();
+                                done = true;
+                                break;
+                            }
+                            Thread.Sleep(2); // CPU ë¶€í•˜ ì™„í™” (10 â†’ 2ms ë‹¨ì¶•)
                         }
 
-                        if (!bRet)
+                        if (!done)
                         {
-                            AxisT.EmgStop();
+                            AxisIndexT.EmgStop();
                             PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
-                            Log.Write(UnitName, "OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
+                            Log.Write(UnitName, "OutputDieTransfer Timeout");
                             return -1;
                         }
 
-                        // 2) ÇÈ ¼º°ø ¿©ºÎ È®ÀÎ (LastPickSucceeded ÇÃ·¡±× ±â¹İ)
+                        // í”½ ì„±ê³µ ì—¬ë¶€ í™•ì¸
                         if (OutputDieTransfer.LastPickSucceeded)
                         {
-                            // OutputDieTransfer ¿Ï·á ½Ã: OutputDieTransferÀÇ ¼ÒÄÏ Á¤º¸¸¸ »ç¿ëÇÏ¿© ºñ¿ì±â
                             try
                             {
-                                int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
+                                int idx = OutputDieTransfer.GetUnloaderIndexNo();
                                 if (idx >= 0 && idx < GetIndexCount())
                                 {
-                                    lock (_socketLock)
-                                    {
-                                        _sockets[idx].SetMaterialDie(null);
-                                        _sockets[idx].SetState(RotarySocketState.Empty);
-                                    }
-                                    Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
+                                    _sockets[idx].SetMaterialDie(null);
+                                    _sockets[idx].SetState(RotarySocketState.Empty);
+                                    Log.Write(UnitName, string.Format("[OutputDieTransfer] Socket {0} -> Empty", idx + 1));
                                 }
                                 else
                                 {
-                                    Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
+                                    Log.Write(UnitName, string.Format("[OutputDieTransfer] Invalid Unloader Index: {0}", idx));
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Write(ex);
-                            }
+                            catch (Exception ex) { Log.Write(ex); }
                         }
                         else
                         {
-                            // ÇÈ¾÷ µ¿ÀÛÀº ³¡³µÀ¸³ª ¼º°ø ÇÃ·¡±× False ¡æ ¼ÒÄÏ À¯Áö
-                            Log.Write(UnitName, "[OutputDieTransfer] Pick sequence ended but LastPickSucceeded = false. Socket keep.");
+                            Log.Write(UnitName, "[OutputDieTransfer] Pick sequence ended but failed. Socket kept.");
                         }
 
+                        return 0;
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        // OutputDieTransfer°¡ Work »óÅÂ¿¡¼­ Start¸¸ ±â´Ù¸± °¡´É¼º ¡æ Á÷Á¢ Done º¸³» Á¾·á À¯µµ
-                        //OutputDieTransfer.SetPickupDoneEvent();
+                        Log.Write(ex);
+                        return -1;
                     }
-                }
+                });
 
-                //Task.WaitAll(t1, t2, t3);
-                Task.WaitAll(t1, t2, t4);
+                // ====== ëª¨ë“  íƒœìŠ¤í¬ ë³‘ë ¬ ì‹¤í–‰ í›„ ëŒ€ê¸° ======
+                Task.WaitAll(new Task[] { tLoadAlign, tProbe, tUnloadAlign, tTrash, odtTask });
 
-                int r1 = t1.Result;
-                int r2 = t2.Result;
-                int r3 = t3.Result;
-                int r4 = t4.Result;
+                int rLoad = tLoadAlign.Result;
+                int rProbe = tProbe.Result;
+                int rUnload = tUnloadAlign.Result;
+                int rTrash = tTrash.Result;
+                int rOdt = odtTask.Result;
 
-                if (r1 != 0 || r2 != 0 || r3 != 0 || r4 != 0)
+                if (rLoad != 0 || rProbe != 0 || rUnload != 0 || rTrash != 0 || rOdt != 0)
                 {
-                    AxisT.EmgStop();
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3}, TrashCan={r4})");
+                    AxisIndexT.EmgStop();
+                    Log.Write(UnitName,
+                        string.Format("OnExecuteUnitAction Fail (LoadAligner={0}, Probe={1}, UnloadAligner={2}, TrashCan={3}, ODT={4})",
+                            rLoad, rProbe, rUnload, rTrash, rOdt));
                     return -1;
                 }
 
+                Log.Write(UnitName, "OnExecuteUnitAction", "End");
                 return 0;
             }
             catch (Exception ex)
             {
-                AxisT.EmgStop();
+                AxisIndexT.EmgStop();
                 Log.Write(ex);
                 return -1;
             }
             finally
             {
-                // ¾î¶² °æ·Î·Î Á¾·áÇÏ´õ¶óµµ Start ½ÅÈ£°¡ ³²Áö ¾Êµµ·Ï º¸Àå
                 if (pickupStartSet)
                 {
-                    try 
-                    { 
-                        this.OutputDieTransfer.ReSetPickupStartEvent(); 
-                    } 
-                    catch (Exception ex)
-                    {
-                        Log.Write(ex);
-                    }
+                    try { OutputDieTransfer.ReSetPickupStartEvent(); }
+                    catch (Exception ex) { Log.Write(ex); }
                 }
             }
         }
 
+        // Bin í•„í„°: ê²€ì‚¬ ê²°ê³¼ê°€ Bin1ì¼ ë•Œë§Œ ì–¸ë¡œë” ìˆ˜í–‰
+        private bool ShouldUnloadToOutput(MaterialDie die)
+        {
+            //Test
+            return true;
+
+            if (die == null) return false;
+
+            // ê²€ì‚¬ ê²°ê³¼(Binning)ì—ì„œ Bin1 íŒì •
+            var bin = die.TesterResult?.BinningResult;
+            if (bin == null) return false;
+
+            // ìš°ì„ ìˆœìœ„: BinNo == 1
+            if (bin.BinNo == 1)
+                return true;
+
+            // ë³´ì¡°: ë¼ë²¨ì´ "Bin1" ë˜ëŠ” "Bin 1" (ëŒ€ì†Œë¬¸ì ë¬´ì‹œ)
+            var label = bin.BinLabel ?? string.Empty;
+            if (label.Equals("bin1", StringComparison.OrdinalIgnoreCase)
+                || label.Equals("bin 1", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        }
+
+        // [ADD] Trashë¡œ ë²„ë¦´ ë•Œ ìƒíƒœ/ì¡´ì¬ í”Œë˜ê·¸ë¥¼ ì¼ê´€ë˜ê²Œ ì •ë¦¬
+        private void MarkDieDiscarded(MaterialDie die)
+        {
+            if (die == null) return;
+            try
+            {
+                die.State = DieProcessState.Rejected; // íê¸° í‘œì‹(í”„ë¡œì íŠ¸ ê·œì•½ ê·¸ëŒ€ë¡œ ì‚¬ìš©)
+                die.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                die.Presence = Material.MaterialPresence.NotExist; // ë¬¼ë¦¬ì ìœ¼ë¡œ ì—†ìŒ
+            }
+            catch { /* ë°©ì–´ì  */ }
+        }
+
+
         private int RunTrashCanSocketOnce()
         {
             int nRet = 0;
-
             int nIndexTrash = GetTrashCanIndexNo();
 
+            this.SetVacuum(nIndexTrash, false);
+            Thread.Sleep(1);
             this.SetBlow(nIndexTrash, true);
+            Thread.Sleep(1);
             if (SetTrashEjector(true) == false)
             {
-                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "TrashEjector ON fail");
                 return -1;
             }
 
             if (SetTrashVacuum(true) == false)
             {
-                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashVacuum ON fail");
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "TrashVacuum ON fail");
                 SetTrashEjector(false);
                 return -1;
             }
-            //ÀÏÁ¤ ½Ã°£ ´ë±â
-            WaitByTime(GetClearTimeMs()); // ±âº»: 500ms
+            //ì¼ì • ì‹œê°„ ëŒ€ê¸°
+            WaitByTime(GetClearTimeMs()); // ê¸°ë³¸: 500ms
+            
+            // [ADD] Trash ìœ„ì¹˜ ì†Œì¼“ì— ë‚¨ì€ Dieê°€ ìˆìœ¼ë©´ íê¸° ìƒíƒœë¡œ ë§ˆí‚¹ í›„ ì œê±°
+            var trashSock = GetTrashCanSocketInfo();
+            var trashDie = trashSock?.GetMaterialDie();
+            if (trashDie != null && trashDie.Presence == Material.MaterialPresence.Exist)
+            {
+                MarkDieDiscarded(trashDie);
+            }
+            trashSock?.SetMaterialDie(null);
+
+
             if (SetTrashVacuum(false) == false)
             {
-                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashVacuum OFF fail");
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "TrashVacuum OFF fail");
                 SetTrashEjector(false);
                 return -1;
             }
             if (SetTrashEjector(false) == false)
             {
-                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector OFF fail");
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "TrashEjector OFF fail");
                 return -1;
             }
 
             var Socket = GetTrashCanSocketInfo();
-            //Socket.SetMaterialDie(new MaterialDie());
+            // [ADD] ì‹¤ì œ íê¸°ë˜ëŠ” Dieì˜ ìƒíƒœ/ì¡´ì¬ í”Œë˜ê·¸ ì •ë¦¬ í›„ ì œê±°
+            var removedDie = Socket.GetMaterialDie();
+            if (removedDie != null)
+                MarkDieDiscarded(removedDie);
+
             Socket.SetMaterialDie(null);
 
-            //ÀÏÁ¤ ½Ã°£ ´ë±â
-            WaitByTime(1);
+            this.SetVent(nIndexTrash, false);
             this.SetBlow(nIndexTrash, false);
-            Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
+            Thread.Sleep(1);
+            this.SetVacuum(nIndexTrash, true);
+            Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "Clear Comp.");
             return nRet;
         }
-
         private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)
         {
-            var timeout = new TimeoutChecker(timeoutMs, autoStart: true);
+            var timeout = new TimeoutChecker(timeoutMs, autoStart: true); 
             while (true)
             {
-                if (IsStop) { return 0; }
+                if (IsStop) 
+                { 
+                    return 0; 
+                }
 
-                // 1) Load ¼ÒÄÏ ÅõÀÔ ¿Ï·á ´ë±â
+                // 1) Load ì†Œì¼“ íˆ¬ì… ì™„ë£Œ ëŒ€ê¸°
                 bool loadOk = true;
                 if (needLoadWait)
                 {
@@ -1984,16 +2050,6 @@ namespace QMC.LCP_280.Process.Unit
                         socket.SetState(RotarySocketState.Loaded);
                     }
                 }
-
-                //if (needLoadWait)
-                //{
-                //    var socket = GetLoadSocketInfo();
-                //    var die = socket.GetMaterialDie();
-                //    var loadDie = GetLoadSocketMaterial();
-                //    loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
-                //    socket.SetMaterialDie(loadDie);
-                //    socket.SetState(RotarySocketState.Loaded);
-                //}
 
                 if (loadOk)
                     break;
@@ -2025,148 +2081,30 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionRotate();
             if (nRet != 0)
             {
-                AxisT.EmgStop();
+                AxisIndexT.EmgStop();
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
 
-            // 3. È¸Àü ÈÄ ¼ÒÄÏ »óÅÂ ÀüÀÌ (¿¹: Load -> Loading µî)
-            //PostRotateStateTransition();
+            nRet = WaitIndexMoveDone();
+            if (nRet != 0)
+            {
+                AxisIndexT.EmgStop();
+                PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+                Log.Write(UnitName, "Rotate Fail");
+                return -1;
+            }
+
+            //OnLoadIndexChanged(GetLoadIndexNo());
             return nRet;
         }
 
-        //´ÜÀ§ µ¿ÀÛ.
-        public bool IsInterlockOKWidthAllUnit()
-        {
-            bool bRet = true;
-            string reason = null;
-            if (_axisT == null)
-            {
-                reason = "AxisT NULL";
-                return false;
-            }
-
-            bool bRetProbe = false;
-            bool bRetMAlign = false;
-            bool bRetInputTr = false;
-            bool bRetOutputTr = false;
-
-            if (IndexChipProbeController == null)
-            {
-                bRet = true;
-            }
-            else
-            {
-                try
-                {
-                    bRetProbe = IndexChipProbeController.IsProbeSafetyAxisPos();
-                }
-                catch (Exception ex)
-                {
-                    bRetProbe = false;
-                    Log.Write(ex);
-                }
-            }
-
-            if (IndexLoadAligner == null)
-            {
-                bRet = true;
-            }
-            else
-            {
-                try
-                {
-                    bRetMAlign = IndexLoadAligner.IsAlignZSafetyPos();
-                }
-                catch (Exception ex)
-                {
-                    bRetMAlign = false;
-                    Log.Write(ex);
-                }
-            }
-
-            if (InputDieTransfer == null)
-            {
-                bRet = true;
-            }
-            else
-            {
-                try
-                {
-                    bRetInputTr = InputDieTransfer.IsPositionPlaceZSafety();
-                }
-                catch (Exception ex)
-                {
-                    bRetInputTr = false;
-                    Log.Write(ex);
-                }
-            }
-
-            if(OutputDieTransfer == null)
-            {
-                bRet = true;
-            }
-            else
-            {
-                try
-                {
-                    bRetOutputTr = OutputDieTransfer.IsPositionPickZSafety();
-                }
-                catch (Exception ex)
-                {
-                    bRetOutputTr = false;
-                    Log.Write(ex);
-                }
-            }
-
-            if (RunUnitStatus != UnitStatus.Running)
-            {
-                if(RunUnitStatus == UnitStatus.Stopped)
-                {
-                    if (!VerifyAllUnitsSafe(out reason))
-                    {
-                        reason = "Not Safe: " + reason;
-                        return false;
-                    }
-                }
-            }
-
-            if (bRetProbe && bRetMAlign && bRetInputTr && bRetOutputTr)
-            {
-                bRet = true;
-            }
-            else
-            {
-                bRet = false;
-                if (!bRetProbe)
-                {
-                    reason = "Probe Not Safe";
-                    Log.Write(UnitName, "Probe Not Safe");
-                }
-                else if (!bRetMAlign)
-                {
-                    reason = "MAlign Not Safe";
-                    Log.Write(UnitName, "MAlign Not Safe");
-                }
-                else if (!bRetInputTr)
-                {
-                    reason = "InputTr Not Safe";
-                    Log.Write(UnitName, "InputTr Not Safe");
-                }
-                else if (!bRetOutputTr)
-                {
-                    reason = "OutputTr Not Safe";
-                    Log.Write(UnitName, "OutputTr Not Safe");
-                }
-            }
-
-            return bRet;
-        }
-
+        //ë‹¨ìœ„ ë™ì‘.
         public int MovePositionRotate(bool isFine = false)
         {
-            if (IsInterlockOKWidthAllUnit() == false)
+            string strmsg;
+            if(VerifyAllUnitsSafe(out strmsg) == false)
             {
                 Log.Write(UnitName, "MovePositionRotate Interlock Fail");
                 return -1;
@@ -2175,12 +2113,11 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MovePositionAsyncRotate(isFine);
             while (IsEndTask(task) == false)
             {
-                //if (IsInterlockOKWidthAllUnit() == false)
-                //{
-                //    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
-                //    return -1;
-                //}
-
+                if (VerifyAllUnitsSafe(out strmsg) == false)
+                {
+                    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
+                    return -1;
+                }
                 Thread.Sleep(1);
             }
             return task.Result;
@@ -2198,29 +2135,19 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             string reason;
-            if (!TryMoveIndexNext(out reason))
+            if (TryMoveIndexNext(out reason) == false)
             {
-                // Àç½Ãµµ ·çÇÁ(·Î±×¸¸)
+                // ì¬ì‹œë„ ë£¨í”„(ë¡œê·¸ë§Œ)
                 Log.Write(UnitName, $"TryMoveIndexNext Fail: {reason}");
                 Thread.Sleep(50);
                 return -1;
             }
 
             nRet = WaitIndexMoveDone();
-            if (nRet != 0)
-            {
-                // ÇÊ¿ä ½Ã Alarm ¹ß»ı °¡´É
-                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
-                return -1;
-            }
-
-            // ÀÌµ¿ ¿Ï·á ÈÄ ÇöÀç Load ¼ÒÄÏ ¹øÈ£ ÀÌº¥Æ® ÅëÁö
-            //OnLoadIndexChanged(GetLoadIndexNo());
-
             return nRet;
         }
 
-        /// //////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////
         
         public int ExecuteUnitLoadDie(bool isFine = false)
         {
@@ -2229,11 +2156,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.CurrentFunc = ExecuteUnitLoadDie;
             }
-            RequestInputDieTrDie = true; // InputDieTransfer¿¡ Chip ¿äÃ» »óÅÂ·Î º¯°æ.
+            RequestInputDieTrDie = true; // InputDieTransferì— Chip ìš”ì²­ ìƒíƒœë¡œ ë³€ê²½.
 
             return nRtn;
         }
-
         public int ExecuteUnitUnLoadDie(bool isFine = false)
         {
             int nRtn = 0;
@@ -2245,7 +2171,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn;
         }
-
         public int ExecuteUnitActionInterlockLoadMAlign(bool isFine = false)
         {
             int nRet = 0;
@@ -2253,7 +2178,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         public int ExecuteUnitActionInterlockProbe(bool isFine = false)
         {
             int nRet = 0;
@@ -2261,19 +2185,9 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         #endregion
 
-        protected virtual void OnLoadIndexChanged(int loadIndex0Based)
-        {
-            LoadIndexChangedHandler handler = this.LoadIndexChanged;
-            if (handler != null)
-            {
-                handler(this, loadIndex0Based);
-            }
-        }
-
-
+        #region Clear Sockets
         public int InitializeAfterHome(bool isFine = false)
         {
             Task<int> task = InitializeAfterHomeAsync(isFine);
@@ -2297,8 +2211,6 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int socketCount = GetIndexCount();
-                int CrashCanIdx = GetTrashCanIndexNo();
-
                 if (SetTrashEjector(true) == false)
                 {
                     Log.Write(UnitName, "[InitializeAfterHome] TrashEjector ON fail");
@@ -2314,10 +2226,17 @@ namespace QMC.LCP_280.Process.Unit
 
                 for (int i = 0; i < socketCount; i++)
                 {
-                    // Ãë¼Ò ¿äÃ» °¨Áö: ¿¹¿Ü ´ë½Å Á¤»ó Á¾·á ÄÚµå ¹İÈ¯
+                    string reason = string.Empty;
+                    // 1) Safe-Zone check.
+                    if (VerifyAllUnitsSafe(out reason) == false)
+                    {
+                        Log.Write("Rotary", $"Index Move Blocked: {reason}");
+                        return -1;
+                    }
+
+                    // ì·¨ì†Œ ìš”ì²­ ê°ì§€: ì˜ˆì™¸ ëŒ€ì‹  ì •ìƒ ì¢…ë£Œ ì½”ë“œ ë°˜í™˜
                     //this.CalcelToken?.Token.ThrowIfCancellationRequested();
                     //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
-                   
                     //if(IsStop)
                     //{
                     //    SetTrashVacuum(false);
@@ -2327,12 +2246,22 @@ namespace QMC.LCP_280.Process.Unit
                     //    return 0;
                     //}
 
+                    //ì´ê±°í•˜ë©´ Manualì— ì•„ì— ë™ì‘ì„ ì•ˆí•˜ëŠ”ë°...
+                    //ì´ê±° ì§„ì§œ ê³ ë¯¼ í•„ìš”í•˜ë‹¤..
+                    //if (IsStop) { /* IO ë³µêµ¬/ì •ë¦¬ */ return 0; }
+
+
+                    int CrashCanIdx = GetTrashCanIndexNo();
+
+                    SetVacuum(CrashCanIdx, false);
+                    Thread.Sleep(1);
                     SetBlow(CrashCanIdx, true);
-                    //ÀÏÁ¤ ½Ã°£ ´ë±â
-                    WaitByTime(GetClearTimeMs()); // ±âº»: 500ms
-                    // 2) ´ÙÀ½ ÀÎµ¦½º·Î ÇÑ Ä­ ÀÌµ¿ (ÀüÃ¼ ¼ÒÄÏ ¼ö ¸¸Å­ ¹İº¹ ¡æ ¿øÀ§Ä¡ º¹±Í)
-                    string reason;
-                    if (TryMoveIndexNext(out reason) == false)
+                    //ì¼ì • ì‹œê°„ ëŒ€ê¸°
+                    WaitByTime(GetClearTimeMs()); // ê¸°ë³¸: 500ms
+
+                    // 2) ë‹¤ìŒ ì¸ë±ìŠ¤ë¡œ í•œ ì¹¸ ì´ë™ (ì „ì²´ ì†Œì¼“ ìˆ˜ ë§Œí¼ ë°˜ë³µ â†’ ì›ìœ„ì¹˜ ë³µê·€)
+                    nRet = MovePositionRotate();
+                    if (nRet != 0)
                     {
                         Log.Write(UnitName, $"[InitializeAfterHome] Index move start fail: {reason}");
                         PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
@@ -2363,6 +2292,9 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[InitializeAfterHome] TrashEjector OFF fail");
                     return -1;
                 }
+
+                this.ClearSockets();
+
                 return nRet;
             }
             catch (Exception ex)
@@ -2370,12 +2302,94 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
                 return -1;
             }
+            finally
+            {
+                SetTrashVacuum(false);
+                SetTrashEjector(false);
+                for(int i=0; i < GetIndexCount(); i++)
+                {
+                    SetVacuum(i, false);
+                    SetBlow(i, false);
+                    SetVent(i, false);
+                }
+            }
         }
         private int GetClearTimeMs()
         {
-            // 0 ¶Ç´Â À½¼ö¸é ±âº» 500ms·Î »ç¿ë, ±× ¿Ü °ªÀº ±×´ë·Î »ç¿ë
+            // 0 ë˜ëŠ” ìŒìˆ˜ë©´ ê¸°ë³¸ 500msë¡œ ì‚¬ìš©, ê·¸ ì™¸ ê°’ì€ ê·¸ëŒ€ë¡œ ì‚¬ìš©
             int v = (Config != null) ? Config.ClearTimeMs : 0;
-            return (v <= 0) ? 500 : v;
+            return (v <= 0) ? 100 : v;
         }
+        #endregion
+
+        public void ResetForNewRun(bool clearSockets = true, bool moveIndexToSafe = true)
+        {
+            // 1) ëŸ°íƒ€ì„/ì‹œí€€ìŠ¤ í”Œë˜ê·¸ ì´ˆê¸°í™”
+            RequestInputDieTrDie = false;
+            RequestOutputDieTrDie = false;
+            this.CurrentFunc = null;
+            _moveStartTime = DateTime.MinValue;
+
+            // 2) OutputDieTransfer í•¸ë“œì…°ì´í¬ ì”ì—¬ ì‹ í˜¸ ì •ë¦¬
+            try
+            {
+                OutputDieTransfer?.ReSetPickupStartEvent();
+                OutputDieTransfer?.ResetPickupDoneEvent();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"[ResetForNewRun] ODT handshake reset failed: {ex.Message}");
+            }
+
+            // 3) IO ì•ˆì „ ìƒíƒœ(ì‹¤ê¸°ì—ì„œë§Œ)ë¡œ ë³µê·€
+            try
+            {
+                bool sim = (Config?.IsSimulation == true) || (Config?.IsDryRun == true) || (Config?.IsUnitDryRun == true);
+                if (!sim)
+                {
+                    int cnt = GetIndexCount();
+                    for (int i = 0; i < cnt; i++)
+                    {
+                        try { SetBlow(i, false); } catch { }
+                        try { SetVent(i, false); } catch { }
+                        try { SetVacuum(i, false); } catch { }
+                    }
+                    try { SetTrashEjector(false); } catch { }
+                    try { SetTrashVacuum(false); } catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"[ResetForNewRun] IO safe reset failed: {ex.Message}");
+            }
+
+            // 4) ì†Œì¼“ ì‚¬ìš© ì„¤ì •/ë‚´ìš© ì´ˆê¸°í™”
+            lock (_socketLock)
+            {
+                try
+                {
+                    RefreshSocketUsage(); // Config.UseSocket1~8 ë°˜ì˜
+                    if (clearSockets && _sockets != null)
+                    {
+                        foreach (var s in _sockets)
+                        {
+                            s?.SetMaterialDie(null);
+                            s?.SetState(RotarySocketState.Empty);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, $"[ResetForNewRun] Socket reset failed: {ex.Message}");
+                }
+                ClearSocketData();
+            }
+
+            // 6) UIì— í˜„ì¬ Load ì¸ë±ìŠ¤ ì•Œë¦¼(ì„ íƒ)
+            try { OnLoadIndexChanged(GetLoadIndexNo()); } catch { }
+        }
+        #endregion
+
+
     }
 }

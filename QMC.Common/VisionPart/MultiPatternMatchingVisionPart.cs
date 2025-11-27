@@ -61,8 +61,6 @@ namespace QMC.Common.VisionPart
         {
             int ret = 0;
 
-            //if (m_MultiPatternMatchingTool == null)
-            //    m_MultiPatternMatchingTool = new VisionProMultiPatternMatchingVisionTool();
             if (m_MultiPatternMatchingTool == null)
                 m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
             if (m_RoiTrain == null)
@@ -70,11 +68,35 @@ namespace QMC.Common.VisionPart
             if (m_RoiInspect == null)
                 m_RoiInspect = new VisionProRoiVisionTool();
 
-            //m_PatternMatchingTool.Prepare();
+            // Parameter 보장: VisionPro 전용 타입 사용
+            if (m_MultiPatternMatchingTool.Parameter == null)
+                m_MultiPatternMatchingTool.Parameter = new VisionProPatternMatchingVisionToolParameter();
+            if (m_RoiTrain.Parameter == null)
+                m_RoiTrain.Parameter = new VisionProRoiVisionToolParameter();
+            if (m_RoiInspect.Parameter == null)
+                m_RoiInspect.Parameter = new VisionProRoiVisionToolParameter();
+
             m_MultiPatternMatchingTool.SubTools.Clear();
             m_MultiPatternMatchingTool.SubTools.Add(m_RoiTrain);
 
             return ret;
+
+            //int ret = 0;
+
+            ////if (m_MultiPatternMatchingTool == null)
+            ////    m_MultiPatternMatchingTool = new VisionProMultiPatternMatchingVisionTool();
+            //if (m_MultiPatternMatchingTool == null)
+            //    m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
+            //if (m_RoiTrain == null)
+            //    m_RoiTrain = new VisionProRoiVisionTool();
+            //if (m_RoiInspect == null)
+            //    m_RoiInspect = new VisionProRoiVisionTool();
+
+            ////m_PatternMatchingTool.Prepare();
+            //m_MultiPatternMatchingTool.SubTools.Clear();
+            //m_MultiPatternMatchingTool.SubTools.Add(m_RoiTrain);
+
+            //return ret;
         }
 
         public override void Close()
@@ -286,6 +308,21 @@ namespace QMC.Common.VisionPart
                 visionImage = TestImage;
             }
 
+            // Tool/ROI Parameter 보장 (VisionPro 전용 타입)
+            if (m_MultiPatternMatchingTool == null)
+                m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
+            if (m_MultiPatternMatchingTool.Parameter == null)
+                m_MultiPatternMatchingTool.Parameter = new VisionProPatternMatchingVisionToolParameter();
+            if (m_RoiInspect == null)
+                m_RoiInspect = new VisionProRoiVisionTool();
+            if (m_RoiInspect.Parameter == null)
+                m_RoiInspect.Parameter = new VisionProRoiVisionToolParameter();
+            if (m_RoiTrain == null)
+                m_RoiTrain = new VisionProRoiVisionTool();
+            if (m_RoiTrain.Parameter == null)
+                m_RoiTrain.Parameter = new VisionProRoiVisionToolParameter();
+
+            // 파라미터 적용
             m_MultiPatternMatchingTool.Parameter.AngleTolerance = new RangeD(parameter.MinTolerance, parameter.MaxTolerance);
             m_MultiPatternMatchingTool.Parameter.DuplicateChecked = parameter.DuplicateChecked;
             m_MultiPatternMatchingTool.Parameter.MaxInstance = parameter.MaxInstance;
@@ -296,7 +333,22 @@ namespace QMC.Common.VisionPart
             m_RoiInspect.Parameter.StartLocation = startRoiPoint;
             m_RoiInspect.Parameter.EndLocation = endRoiPoint;
 
-            m_MultiPatternMatchingTool.SubTools.InputImage = parameter.TrainImages[0];
+            // Train 이미지: 0번 고정 대신 '첫 유효 이미지' 선택
+            VisionImage train = null;
+            if (parameter?.TrainImages != null)
+            {
+                for (int i = 0; i < parameter.TrainImages.Count; i++)
+                {
+                    var ti = parameter.TrainImages[i];
+                    if (ti != null && ti.GetImage() != null) { train = ti; break; }
+                }
+            }
+            if (train == null)
+            {
+                Log.Write(this.Name, "유효한 Train Image가 없습니다.");
+                return -100; // 적절한 에러 코드
+            }
+            m_MultiPatternMatchingTool.SubTools.InputImage = train;
 
             m_RoiTrain.Parameter.IsFull = true;
             m_RoiInspect.InputImage = visionImage;
@@ -344,55 +396,71 @@ namespace QMC.Common.VisionPart
                             minX >= -2 && minY >= -2 &&
                             maxX <= roiW + 2 && maxY <= roiH + 2;
 
+                        if (res.ResultOverlays != null)
+                        {
+                            foreach (var ov in res.ResultOverlays)
+                            {
+                                try
+                                {
+                                    var f = ov as FrameVisionImageOverlay;
+                                    if (f != null)
+                                    {
+                                        f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
+                                        f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
+                                        f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+
                         // 이미 절대좌표일 가능성: 최소값이 ROI 시작보다 크고, 최대값이 ROI 끝을 넘어감
                         // (혹은 일부 값이 전체 이미지 외곽폭에 걸쳐 있을 때) -> insideRelativeBox 거짓이면 그대로 둔다.
-                        bool needOffset = insideRelativeBox;
-
-//                        if (needOffset)
-//                        {
-//                            for (int i = 0; i < values.Count; i++)
-//                            {
-//                                var v = values[i];
-//                                v.X += startRoiPoint.X;
-//                                v.Y += startRoiPoint.Y;
-//                                values[i] = v;
-//                            }
-
-//                            // Frame 계열 Overlay 이동
-//                            if (res.ResultOverlays != null)
-//                            {
-//                                foreach (var ov in res.ResultOverlays)
-//                                {
-//                                    try
-//                                    {
-//                                        if (ov is FrameVisionImageOverlay f)
-//                                        {
-//                                            f.StartLocation = new Point(
-//                                                f.StartLocation.X + startRoiPoint.X,
-//                                                f.StartLocation.Y + startRoiPoint.Y);
-//                                            f.EndLocation = new Point(
-//                                                f.EndLocation.X + startRoiPoint.X,
-//                                                f.EndLocation.Y + startRoiPoint.Y);
-//                                            f.CenterLocation = new Point(
-//                                                f.CenterLocation.X + startRoiPoint.X,
-//                                                f.CenterLocation.Y + startRoiPoint.Y);
-//                                        }
-//                                    }
-//                                    catch { }
-//                                }
-//                            }
-//#if DEBUG
-//                            System.Diagnostics.Debug.WriteLine(
-//                                $"[MultiPM] ROI Offset Applied start={startRoiPoint} roiSize=({roiW},{roiH}) min=({minX},{minY}) max=({maxX},{maxY})");
-//#endif
-//                        }
-#if DEBUG
+                        //                        bool needOffset = insideRelativeBox;
+                        //                        if (needOffset)
+                        //                        {
+                        //                            for (int i = 0; i < values.Count; i++)
+                        //                            {
+                        //                                var v = values[i];
+                        //                                v.X += startRoiPoint.X;
+                        //                                v.Y += startRoiPoint.Y;
+                        //                                values[i] = v;
+                        //                            }
+                        //                            // Frame 계열 Overlay 이동
+                        //                            if (res.ResultOverlays != null)
+                        //                            {
+                        //                                foreach (var ov in res.ResultOverlays)
+                        //                                {
+                        //                                    try
+                        //                                    {
+                        //                                        if (ov is FrameVisionImageOverlay f)
+                        //                                        {
+                        //                                            f.StartLocation = new Point(
+                        //                                                f.StartLocation.X + startRoiPoint.X,
+                        //                                                f.StartLocation.Y + startRoiPoint.Y);
+                        //                                            f.EndLocation = new Point(
+                        //                                                f.EndLocation.X + startRoiPoint.X,
+                        //                                                f.EndLocation.Y + startRoiPoint.Y);
+                        //                                            f.CenterLocation = new Point(
+                        //                                                f.CenterLocation.X + startRoiPoint.X,
+                        //                                                f.CenterLocation.Y + startRoiPoint.Y);
+                        //                                        }
+                        //                                    }
+                        //                                    catch { }
+                        //                                }
+                        //                            }
+                        //#if DEBUG
+                        //                            System.Diagnostics.Debug.WriteLine(
+                        //                                $"[MultiPM] ROI Offset Applied start={startRoiPoint} roiSize=({roiW},{roiH}) min=({minX},{minY}) max=({maxX},{maxY})");
+                        //#endif
+                        //                        }
+                        //#if DEBUG
                         //else
-                        {
-                            System.Diagnostics.Debug.WriteLine(
-                                $"[MultiPM] ROI Offset Skipped (already absolute?) start={startRoiPoint} roiSize=({roiW},{roiH}) min=({minX},{minY}) max=({maxX},{maxY})");
-                        }
-#endif
+                        //{
+                        //    System.Diagnostics.Debug.WriteLine(
+                        //        $"[MultiPM] ROI Offset Skipped (already absolute?) start={startRoiPoint} roiSize=({roiW},{roiH}) min=({minX},{minY}) max=({maxX},{maxY})");
+                        //}
+                        //#endif
                     }
                 }
                 catch { }

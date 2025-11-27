@@ -493,8 +493,8 @@ namespace QMC.Common.Motions.CKD
 
         private const int BoardNo = 0;
         private const uint StartBitOffset = 1320;
-        private const int PdoWriteDelay = 25; // ms
-        private const int ReadPeriod = 20; // ms
+        private const int PdoWriteDelay = 9; // ms //25
+        private const int ReadPeriod = 3; // ms //20
         private const double Resolution = 540672; // 펄스수 (1회전 당)
 
         #region Field
@@ -506,6 +506,8 @@ namespace QMC.Common.Motions.CKD
         private readonly object gate = new object();
 
         private bool _disposed = false;
+
+        private readonly object _lock = new object();
         #endregion
 
         #region Property
@@ -648,15 +650,18 @@ namespace QMC.Common.Motions.CKD
             }
             return mcode;
         }
+
         public bool IsInPosition()
         {
             SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.InPosition];
             return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
+           
         }
         public bool IsRunWait()
         {
             SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.StartInputWait];
             return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
+           
         }
         public bool IsAlarm()
         {

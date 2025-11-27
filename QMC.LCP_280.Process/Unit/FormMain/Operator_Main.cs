@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
+using static QMC.LCP_280.Process.Unit.InputStage;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
@@ -117,6 +118,20 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             InputWaferCamera.LightControlRequested += LightControlRequested;
             IndexOutputCamera.LightControlRequested += LightControlRequested;
             OutputWaferCamera.LightControlRequested += LightControlRequested;
+
+            if (InputStage != null)
+            {
+                InputStage.MarksFound -= OnMarksFound;
+                InputStage.MarksFound += OnMarksFound;
+            }
+
+            if(IndexUnloadAligner != null)
+            {
+                IndexUnloadAligner.MarksFound -= OnMarksFound;
+                IndexUnloadAligner.MarksFound += OnMarksFound;
+            }
+
+                
         }
 
         #region Form Cleanup
@@ -124,6 +139,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             if (sequenceManualControl != null)
                 sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
+
+            if (InputStage != null)
+                InputStage.MarksFound -= OnMarksFound;
+
+            if (IndexUnloadAligner != null)
+                IndexUnloadAligner.MarksFound -= OnMarksFound;
 
             try
             {
@@ -184,6 +205,72 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 catch { }
             }
         }
+
+        private void OnMarksFound(object sender, PatternMarksFoundEventArgs e)
+        {
+            VisionImageViewer viewer = null;
+            if (sender == (object)InputStage) 
+                viewer = InputWaferCamera;
+            else if (sender == (object)IndexUnloadAligner) 
+                viewer = IndexOutputCamera;
+
+            if (viewer == null || viewer.IsDisposed) 
+                return;
+
+            
+            Action apply = () => ApplyMarkOverlays(viewer, e);
+            if (viewer.InvokeRequired) viewer.BeginInvoke(apply);
+            else apply();
+        }
+
+        private void ApplyMarkOverlays(VisionImageViewer viewer, PatternMarksFoundEventArgs e)
+        {
+            try
+            {
+                
+                // 최신 이미지 갱신 가능 시
+                if (e.Image != null)
+                {
+                    // 프로젝트의 이미지 설정 메서드에 맞게 적용하세요.
+                    // 예: viewer.InputImage = e.Image.GetImage();
+                }
+
+                // ResultOverlays 컬렉션 존재 시 사용
+                var overlaysProp = viewer.GetType().GetProperty("ResultOverlays");
+                var list = overlaysProp?.GetValue(viewer) as System.Collections.IList;
+                if (list != null)
+                {
+                    lock (list)
+                    {
+
+                        list?.Clear();
+
+                        for (int i = 0; i < e.Marks.Count; i++)
+                        {
+                            var m = e.Marks[i];
+
+                            var ov = new QMC.Common.Vision.PatternMatchResultOverlay
+                            {
+                                Center = new PointF((float)m.X, (float)m.Y),
+                                PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
+                                PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
+                                AngleDeg = (float)m.AngleDeg,
+                                CrossHalfLenPx = (i == e.RepresentativeIndex) ? 24 : 16,
+                                Highlight = (i == e.RepresentativeIndex),
+                                Index = i,
+                                Color = (i == e.RepresentativeIndex) ? Color.Yellow : Color.Lime,
+                                Thickness = (i == e.RepresentativeIndex) ? 2f : 1f,
+                                Visible = true
+                            };
+                            list?.Add(ov);
+                        }
+                    }
+                }
+                viewer.ResumeDisplay();
+            }
+            catch { }
+        }
+
         private async void StartDeferredInit()
         {
             if (_deferredInitDone) return;
@@ -244,8 +331,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             // Auto 버튼들 (sequenceAutoControl 내부 API 가정)
             bool canReady = state == EquipmentState.Stopped || state == EquipmentState.Ready;
-            bool canStart = state == EquipmentState.Running || state == EquipmentState.Ready;
-            bool canStop = state == EquipmentState.Running || state == EquipmentState.Starting;
+            bool canStart = state == EquipmentState.AutoRunning || state == EquipmentState.Ready;
+            bool canStop = state == EquipmentState.AutoRunning || state == EquipmentState.Starting;
 
             if (state == EquipmentState.Error)
             {
@@ -317,12 +404,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
                 ct.ThrowIfCancellationRequested();
-                if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running || unit.IsRunning)
+                if (unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning || unit.IsRunning)
                     return true;
 
                 await Task.Delay(100, ct).ConfigureAwait(true);
             }
-            return unit.RunUnitStatus == BaseUnit.UnitStatus.Running || unit.IsRunning;
+            return unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning || unit.IsRunning;
         }
         // 시퀀스명 → Units 매핑 (복수 유닛 지원)
         private IEnumerable<BaseUnit> GetUnitsForSequence(string sequenceName)
@@ -567,18 +654,20 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 case "InputWafer":
                     return new Func<CancellationToken, Task<int>>[]
                     {
-                        // InputFeeder.EnsureReady()
-                        ct => Task.Run(() =>
-                        {
-                            ct.ThrowIfCancellationRequested();
-                            return InputFeeder?.EnsureReady() ?? -1;
-                        }, ct),
                         // InputStageEjector.CheckReady()
                         ct => Task.Run(() =>
                         {
                             ct.ThrowIfCancellationRequested();
                             return InputStageEjector?.CheckReady() ?? -1;
                         }, ct),
+
+                        // InputFeeder.EnsureReady()
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return InputFeeder?.EnsureReady() ?? -1;
+                        }, ct),
+                        
                     };
 
                 case "ChipLoading":
@@ -710,7 +799,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     Log.Write("Operator_Main", "TryStartUnitAsync 실패 - UnitName 비어있음");
                     return false;
                 }
-                if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                if (unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning)
                 {
                     Log.Write("Operator_Main", $"TryStartUnitAsync - Unit '{unitName}' 이미 실행 중");
                     return true;
@@ -815,33 +904,46 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             _axisPosPopup.Activate();
         }
         private CancellationTokenSource _homeCts;
-        private async void btnHomeAll_Click(object sender, EventArgs e)
+
+        // === HomeAll: Helpers ===
+        private bool ConfirmHome()
+        {
+            var ask = new MessageBoxYesNo();
+            return ask.ShowDialog("확인", "축 홈을 진행하시겠습니까?") == DialogResult.Yes;
+        }
+
+        private CancellationToken PrepareNewHomeToken()
+        {
+            _homeCts?.Cancel();
+            _homeCts?.Dispose();
+            _homeCts = new CancellationTokenSource();
+            return _homeCts.Token;
+        }
+
+        private bool TryServoOnAllAxes()
+        {
+            var axes = _Equipment.AxisManager?.GetAll();
+            if (axes == null || axes.Length == 0)
+            {
+                MessageBox.Show("등록된 축이 없습니다.");
+                return false;
+            }
+
+            foreach (var ax in axes)
+            {
+                try { ax.ClearAlarm(); } catch { }
+                try { ax.Servo(true); } catch { }
+            }
+            return true;
+        }
+
+        private async Task<int> RunHomeSequenceWithDialogAsync(CancellationToken token)
         {
             HomeProgressForm dlg = null;
             try
             {
-                // 홈 진행 전 사용자 확인
-                var ask = new MessageBoxYesNo();
-                if (ask.ShowDialog("확인", "축 홈을 진행하시겠습니까?") != DialogResult.Yes)
-                    return;
-
-                _homeCts?.Cancel();
-                _homeCts?.Dispose();
-                _homeCts = new CancellationTokenSource();
-                var token = _homeCts.Token;
-                //var axes = _axisManager?.GetAll();
-                var axes = _Equipment.AxisManager?.GetAll();
-                if (axes == null || axes.Length == 0)
-                {
-                    MessageBox.Show("등록된 축이 없습니다.");
-                    return;
-                }
-                foreach (var ax in axes)
-                {
-                    try { ax.ClearAlarm(); } catch { }
-                    try { ax.Servo(true); } catch { }
-                }
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(_Equipment);
+
                 dlg = new HomeProgressForm();
                 dlg.InitializeProgress("Machine Home", seq.TotalSteps);
 
@@ -886,17 +988,30 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                             IsAborted = true,
                             Message = "Canceled"
                         });
-                        MessageBox.Show("Home 취소됨");
-                        return;
+                        throw new OperationCanceledException();
                     }
                 }
 
                 var results = await runTask.ConfigureAwait(true);
-                dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
+
+                dlg.SafeUpdate(new OperationProgress
+                {
+                    OperationId = "HOME",
+                    Title = "Home",
+                    StepIndex = seq.TotalSteps - 1,
+                    TotalSteps = seq.TotalSteps,
+                    IsCompleted = true,
+                    IsCanceled = token.IsCancellationRequested,
+                    IsAborted = seq.Aborted,
+                    Message = seq.AbortReason
+                });
+
                 int success = results.Count(r => r.Success);
                 int notStarted = results.Count(r => !r.Started);
                 int fail = results.Count - success - notStarted;
+
                 string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+
                 if (fail > 0 || notStarted > 0)
                 {
                     var detailList = new List<string>();
@@ -909,62 +1024,311 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         }
                         else if (r.Started)
                         {
-                            if (r.Error != null && r.Error.Message != null)
-                            {
-                                status = r.Error.Message;
-                            }
-                            else
-                            {
-                                status = "rc=" + r.ReturnCode;
-                            }
+                            status = (r.Error != null && r.Error.Message != null)
+                                ? r.Error.Message
+                                : "rc=" + r.ReturnCode;
                         }
                         else
                         {
                             status = "NOT STARTED (" + r.FailReason + ")";
                         }
-
                         detailList.Add("- " + r.AxisName + ": " + status);
                     }
                     var detail = string.Join("\r\n", detailList);
-
                     msg += "\r\n\r\n" + detail;
                 }
 
-                Task<int> t = Rotary.RunManualFunction(Rotary.InitializeAfterHome);
-                ProgressForm form = new ProgressForm("Manual Running", nameof(Rotary.InitializeAfterHome), t, this.Rotary);
-                if (t != null)
+                // 결과 표시(요약)
+                //MessageBox.Show(msg, "Home");
+
+                // 반환: 모두 성공(미시작/실패 없음) 시 0, 아니면 -1
+                return (fail == 0 && notStarted == 0 && !seq.Aborted) ? 0 : -1;
+            }
+            finally
+            {
+                try { dlg?.Close(); dlg?.Dispose(); } catch { }
+            }
+        }
+
+        private async Task<int> RunRotaryInitializeAfterHomeAsync(CancellationToken token)
+        {
+            Task<int> t = Rotary.RunManualFunction(Rotary.InitializeAfterHome);
+            if (t == null) 
+                return 0; // 실행할 작업 없음 → OK 취급
+
+            var form = new ProgressForm("Manual Running", nameof(Rotary.InitializeAfterHome), t, this.Rotary);
+            try
+            {
+                form.ShowDialog();
+
+                if (form.DialogResult == DialogResult.Cancel)
                 {
-                    try
-                    {
-                        form.ShowDialog();
-                        if (form.DialogResult == DialogResult.Cancel)
-                        {
-                            this.Rotary.CancelSequence();
-                            MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            // 취소는 정상 흐름으로 처리: 실패 메시지 표시하지 않음
-                            return;
-                        }
-                        else if (t.IsFaulted)
-                        {
-                            // 예외 메시지 표시
-                            var mb = new MessageBoxOk();
-                            mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
-
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Write(ex);
-                    }
+                    this.Rotary.CancelSequence();
+                    MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
                 }
-                // 여기서 정상적으로 종료 후에... 초기화 완료 후 추가 시컨스 적용해야 한다...
-                //int nRet = Rotary.InitializeAfterHome();   // Index Clear 위치로 한 스텝씩 이동하면서 기존에 있는 제품 제거.
-                //if(nRet != 0)
-                //{
-                //    MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                //}
 
-                MessageBox.Show(msg, "Home");
+                if (t.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                // 정상 완료 → rc 확인
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"Rotary InitializeAfterHome 실패(rc={rc})", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                return 0;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Rotary InitializeAfterHome 예외 발생: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        private async Task<int> MoveUnitsToReadyAsync(CancellationToken token)
+        {
+            string failureSummary = null;
+
+            var t = Task.Run(async () =>
+            {
+                try
+                {
+                    // 1) InputDieTransfer + OutputDieTransfer (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputDieTransfer != null)
+                        {
+                            tasks.Add(Task.Run(() => InputDieTransfer.EnsureReady(), token));
+                            names.Add("InputDieTransfer");
+                        }
+                        if (OutputDieTransfer != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputDieTransfer.EnsureReady(), token));
+                            names.Add("OutputDieTransfer");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1; // 첫 실패 시 즉시 NG
+                                }
+                            }
+                        }
+                    }
+
+                    // 2) Rotary (단독)
+                    if (Rotary != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "Rotary(ExecuteUnitActionReady)";
+                            return -1;
+                        }
+                    }
+
+                    // 3) InputStageEjector (단독, CheckReady)
+                    if (InputStageEjector != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var rc = await Task.Run(() => InputStageEjector.CheckReady(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "InputStageEjector(CheckReady)";
+                            return -1;
+                        }
+                    }
+
+                    // 4) InputFeeder + OutputFeeder (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputFeeder != null)
+                        {
+                            tasks.Add(Task.Run(() => InputFeeder.EnsureReady(), token));
+                            names.Add("InputFeeder");
+                        }
+                        if (OutputFeeder != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputFeeder.EnsureReady(), token));
+                            names.Add("OutputFeeder");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1;
+                                }
+                            }
+                        }
+                    }
+
+                    // 5) InputStage + OutputStage (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputStage != null)
+                        {
+                            tasks.Add(Task.Run(() => InputStage.MoveToStageReadyPosition(), token));
+                            names.Add("InputStage");
+                        }
+                        if (OutputStage != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputStage.MoveToStageReadyPosition(), token));
+                            names.Add("OutputStage");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1;
+                                }
+                            }
+                        }
+                    }
+
+                    return 0; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    failureSummary = "Ready 이동 중 예외";
+                    return -1;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "MoveUnitsToReady", t, null);
+            try
+            {
+                form.ShowDialog();
+
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    // 사용자가 Stop을 눌렀을 가능성 → 상위 토큰 취소 시도(있으면)
+                    try { _homeCts?.Cancel(); } catch { }
+                    return -1;
+                }
+
+                if (t.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Ready 이동 중 예외!", t.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                if (t.IsCanceled)
+                {
+                    throw new OperationCanceledException();
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show("Ready 이동 실패: " + (failureSummary ?? string.Empty),
+                        "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return rc;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Ready 이동 처리 중 예외: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        // === HomeAll: Entrypoint ===
+        private async void btnHomeAll_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 1) 사용자 확인
+                if (!ConfirmHome()) 
+                    return;
+
+                // 2) 취소 토큰 준비
+                var token = PrepareNewHomeToken();
+
+                // 3) 축 알람 초기화 및 서보 ON
+                if (!TryServoOnAllAxes()) 
+                    return;
+
+                // 4) 홈 시퀀스 실행(다이얼로그 포함)
+                var rcHome = await RunHomeSequenceWithDialogAsync(token).ConfigureAwait(true);
+                if (rcHome != 0)
+                {
+                    // 필요시 조기 종료하려면 return; 하세요.
+                    MessageBox.Show("Home 실패 또는 미완료 항목이 있습니다.", "Home 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 6) 전 유닛 Ready 이동 → int 반환
+                var rcReady = await MoveUnitsToReadyAsync(token).ConfigureAwait(true);
+                if (rcReady != 0)
+                {
+                    //MessageBox.Show("일부 유닛 Ready 이동 실패", "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 5) Rotary InitializeAfterHome → int 반환
+                var rcRot = await RunRotaryInitializeAfterHomeAsync(token).ConfigureAwait(true);
+                if (rcRot != 0)
+                {
+                    MessageBox.Show("실패", "실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return; // 실패 시 종료
+                }
+
+                // 7) 결과 표시
+                MessageBox.Show("초기화 완료", "Home");
             }
             catch (OperationCanceledException)
             {
@@ -974,15 +1338,23 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 MessageBox.Show("Home 오류: " + ex.Message);
             }
-            finally
-            {
-                try 
-                { 
-                    dlg?.Close(); 
-                    dlg?.Dispose(); 
-                } 
-                catch { }
-            }
+        }
+
+
+        private MeasurementResultForm _measurementResultForm;
+        private void BtnMeasurementResult_Click(object sender, EventArgs e)
+        {
+            if (_measurementResultForm == null || _measurementResultForm.IsDisposed)
+                _measurementResultForm = new MeasurementResultForm();
+
+            if (!_measurementResultForm.Visible)
+                _measurementResultForm.Show();
+            else
+                _measurementResultForm.BringToFront();
+
+            _measurementResultForm.Focus();
+            _measurementResultForm.TopMost = true;
+            _measurementResultForm.TopMost = false; // 잠깐 TopMost로 올렸다가 해제 (앞으로 Bring)
         }
     }
 }

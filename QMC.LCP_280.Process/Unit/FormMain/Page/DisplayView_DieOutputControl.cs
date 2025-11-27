@@ -27,7 +27,8 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         {
             Empty,   // 흰색
             Present, // 검은색
-            Picked   // 초록색
+            Placed,   // 초록색
+            Error,
         }
 
         public class DisplayItem
@@ -59,6 +60,23 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         private ToolTip _toolTip;
         private DisplayItem _hoveredItem = null;
         private Timer _hoverTimer;
+
+        /// <summary>
+        /// 표시 중인 아이템 읽기 전용 접근자 (우클릭 등 외부 HitTest/표시용)
+        /// </summary>
+        //public IReadOnlyList<DisplayItem> Items => _items;
+
+        ///// <summary>
+        ///// 컨트롤 좌표계 기준 HitTest (가장 가까운 아이템 반환, 없으면 null)
+        ///// </summary>
+        //public DisplayItem HitTest(Point clientPoint)
+        //{
+        //    return GetItemAtPosition(clientPoint);
+        //}
+
+        public IReadOnlyList<DisplayItem> Items => _items;
+        public DisplayItem HitTest(Point clientPoint) => GetItemAtPosition(clientPoint);
+
 
         public DisplayView_DieOutputControl()
         {
@@ -189,7 +207,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                 // 툴팁 표시
                 string tooltipText = $"Position: ({_hoveredItem.Position.X}, {_hoveredItem.Position.Y})\n";
                 tooltipText += $"State: {_hoveredItem.State}\n";
-                tooltipText += $"Die ID: {_hoveredItem.DieId}";
+                tooltipText += $"Die ID: {_hoveredItem.DieId + 1}";
 
                 if (!string.IsNullOrEmpty(_hoveredItem.Info))
                     tooltipText += $"\nInfo: {_hoveredItem.Info}";
@@ -308,9 +326,13 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                         brush = Brushes.Black;
                         pen = Pens.DarkGray;
                         break;
-                    case ItemState.Picked:
+                    case ItemState.Placed:
                         brush = Brushes.LimeGreen;
                         pen = Pens.Green;
+                        break;
+                    case ItemState.Error:
+                        brush = Brushes.Red;
+                        pen = Pens.IndianRed;
                         break;
                     case ItemState.Empty:
                     default:

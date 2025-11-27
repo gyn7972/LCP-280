@@ -26,69 +26,29 @@ namespace QMC.Common
         {
             InitializeComponent();
 
-            this.BackColor = Color.White; // 폼 배경색을 하얀색으로 설정
+            this.BackColor = Color.White;
 
-            // 컨트롤 생성
-            _topContentsEquipmentControl = new TopContentsEquipmentControl();
-            _topContentsEquipmentControl.Dock = DockStyle.None;
-            this.Controls.Add(_topContentsEquipmentControl);
-
-            _topContentsStatusControl = new TopContentsStatusControl();
-            _topContentsStatusControl.Dock = DockStyle.None;
-            this.Controls.Add(_topContentsStatusControl);
-
-            _topContentsLoginModeControl = new TopContentsLoginModeControl();
-            _topContentsLoginModeControl.Dock = DockStyle.None;
-            this.Controls.Add(_topContentsLoginModeControl);
-
-            _topContentsIOStatusControl = new TopContentsIOStatusControl();
-            _topContentsIOStatusControl.Dock = DockStyle.None;
-            this.Controls.Add(_topContentsIOStatusControl);
-
+            // 디자이너가 생성한 컨트롤 사용
             _topContentsStatusControl.ClickTopAlarmClearButton += GetTopContentsStatusControl_ClickTopAlarmClearButton;
         }
 
         private void GetTopContentsStatusControl_ClickTopAlarmClearButton()
         {
-            if (true)
+            var alarms = AlarmManager.Instance.Alarms;
+            if (alarms != null && alarms.Count > 0)
             {
-                var alarms = AlarmManager.Instance.Alarms;
-                if (alarms != null && alarms.Count > 0)
-                {
-                    AlarmManager.Instance.ClearAllAlarms();
-                    //CommonModule.Instance.TowerLamp_BuzzerStop = true;
-
-                    // UI 갱신이나 로그 기록
-                    Log.Write("LCP_280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
-                }
+                AlarmManager.Instance.ClearAllAlarms();
+                Log.Write("LCP_280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
             }
 
             var mb = new MessageBoxOk();
             mb.ShowDialog("Clear!", $"Alarm Clear");
         }
 
-
+        // 외부에서 호출하더라도 테이블 레이아웃이 Dock=Fill 이므로 크기만 반영
         public void SetPanelSize(int width, int height)
         {
-            this.Width = width;
-            this.Height = height;
-            this.ClientSize = new System.Drawing.Size(width, height);
-
-            _topContentsEquipmentControl.SetPanelSize(230, height);
-            _topContentsStatusControl.SetPanelSize(746, height);
-            _topContentsLoginModeControl.SetPanelSize(150, height);
-            _topContentsIOStatusControl.SetPanelSize(150, height);
-
-            _topContentsEquipmentControl.Location = new Point(2, 4);
-
-            _topContentsStatusControl.Location = new Point(
-                _topContentsEquipmentControl.Location.X - 1 + _topContentsEquipmentControl.Width, _topContentsEquipmentControl.Location.Y);
-
-            _topContentsLoginModeControl.Location = new Point(
-                _topContentsStatusControl.Location.X - 1 + _topContentsStatusControl.Width, _topContentsStatusControl.Location.Y);
-
-            _topContentsIOStatusControl.Location = new Point(
-                _topContentsLoginModeControl.Location.X - 1 + _topContentsLoginModeControl.Width, _topContentsLoginModeControl.Location.Y);
+            this.ClientSize = new Size(width, height);
         }
     }
 }

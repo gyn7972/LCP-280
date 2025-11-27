@@ -33,6 +33,7 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
+            //this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.ltfTestConditionSetPage();
             this.rankSetPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.RankSetPage();
             this.cellTesterPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.CellTesterPage();
             this.tabControl1.SuspendLayout();
@@ -145,6 +146,7 @@
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TabPage tabPage1;
         private TestConditionSetPage testConditionSetPage1;
+        //private ltfTestConditionSetPage testConditionSetPage1; //
         private FormRecipe.Page.CellTesterPage cellTesterPage1;
         private FormRecipe.Page.RankSetPage rankSetPage1;
     }

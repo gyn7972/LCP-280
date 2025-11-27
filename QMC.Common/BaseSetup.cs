@@ -18,7 +18,7 @@ namespace QMC.Common
         public bool IsEnabled { get; set; } = true;
 
         [JsonIgnore]
-        public DateTime LastModified { get; private set; } = DateTime.Now;
+        public DateTime LastModified { get; set; } = DateTime.Now;
 
         [JsonIgnore]
         public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();

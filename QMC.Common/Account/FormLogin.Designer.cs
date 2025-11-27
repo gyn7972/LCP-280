@@ -170,7 +170,7 @@
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(551, 58);
             this.label6.TabIndex = 0;
-            this.label6.Text = "LCP-280";
+            this.label6.Text = "VA1VPRO16"; // <-서울바이오시스 납기 장비명  //LCP-280
             this.label6.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // label7

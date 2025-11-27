@@ -54,6 +54,31 @@ namespace QMC.Common.Motions
             //    if (rc0 != 0) return rc0;
             //}
 
+            // 홈 테스트 필요.!!
+            // 1) 홈 파라미터 셋팅
+            //double firstVel = 0.0, secondVel = 0.0;
+            //double thirdVel = 0.0, lastVel = 0.0;
+            //double firstAcc = 0.0, secondAcc = 0.0;
+            //firstVel = _lastConfig.HomeFirstSpeed;
+            //secondVel = _lastConfig.HomeSecondSpeed;
+            //thirdVel = _lastConfig.HomeThirdSpeed;
+            //lastVel = _lastConfig.HomeLastSpeed;
+            //firstAcc = _lastConfig.HomeFirstAcc;
+            //secondAcc = _lastConfig.HomeSecondAcc;
+            //int rc = AjinApi.ApplyHomeFromSetup(axisNo,
+            //    _lastSetup,
+            //    firstVel,
+            //    secondVel, 
+            //    thirdVel, 
+            //    lastVel, 
+            //    firstAcc, 
+            //    secondAcc);
+            //if(rc != 0)
+            //{
+            //    Log.Write("LCP_280", "Home", "파라미터 셋팅 Error");
+            //    return rc;
+            //}
+
             // 2) 홈 시작
             return AjinApi.HomeStart(axisNo);
         }
@@ -221,13 +246,13 @@ namespace QMC.Common.Motions
             double h2a = cfg.HomeSecondAcc * ppu;
 
             rc = AjinApi.ApplyHomeFromSetup(axisNo, setup, h1v, h2v, hlv, izv, h1a, h2a);
-            if (rc != 0) return rc;
+            if (rc != 0) 
+                return rc;
 
             // 3) 프로파일(주 운전 파라미터)
             double v = cfg.MaxVelocity * ppu;
             double a = cfg.RunAcc * ppu;
             double d = cfg.RunDec * ppu;
-
             if (ProfileMode == ProfileMode.SCurve)
                 rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 1.0), setup.PulsesPerUnit, setup.AxisScale);
             else
@@ -237,6 +262,7 @@ namespace QMC.Common.Motions
             if ((rc = AjinApi.ApplyMotionSignal(axisNo, (uint)setup.StopMode, (uint)setup.EmergencyLevel, setup.AlarmLevel, 
                 setup.AlarmResetLevel, setup.InPosition, setup.PositiveLimitLevel, setup.NegativeLimitLevel)) != 0)
                 return rc;
+
             return 0;
         }
 

@@ -273,8 +273,14 @@ namespace QMC.Common.Alarm
 
         private void button_Alarm_Buzz_Off_Click(object sender, EventArgs e)
         {
-            //CommonModule.Instance.TowerLamp.Buzzer_Off();
-            //CommonModule.Instance.TowerLamp_BuzzerStop = true;
+            if (EquipmentLocator.Instance.m_bBuzzerOff == true)
+            {
+                EquipmentLocator.Instance.m_bBuzzerOff = false;
+            }
+            else
+            {
+                EquipmentLocator.Instance.m_bBuzzerOff = true;
+            }
         }
 
         private void FormNew_Alarm_Activated(object sender, EventArgs e)

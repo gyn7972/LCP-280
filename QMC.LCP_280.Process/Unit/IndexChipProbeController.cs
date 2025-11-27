@@ -174,18 +174,26 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_isSafetyMoving)
                     return true;
-                if (this.Rotary.IsAxisMoving(AxisNames.IndexT))
+
+                if(Rotary.IsIndexMoving())
                 {
                     AxisProbeCardZ?.EmgStop();
                     AxisProbeZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                     return false;
-                }
+                }    
+                //if (this.Rotary.IsAxisMoving(AxisNames.IndexT))
+                //{
+                //    AxisProbeCardZ?.EmgStop();
+                //    AxisProbeZ?.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                //    return false;
+                //}
             }
             else if (baseComponent == this.AxisProbeCardX ||
                      baseComponent == this.AxisProbeCardY)
             {
-                if (this.IsProbeCardZAtSafetyZone() == false)  // Todo: ProbeCardZ Safety -> Ready Pos 이동하는 시퀀스 추가 필요 
+                if (this.IsPositionProbeCardZSafety() == false)  // Todo: ProbeCardZ Safety -> Ready Pos 이동하는 시퀀스 추가 필요 
                 {
                     AxisProbeCardX?.EmgStop();
                     AxisProbeCardY?.EmgStop();
@@ -199,6 +207,33 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
+
+        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 2)
+        {
+            var sw = Stopwatch.StartNew();
+            while (true)
+            {
+                // Auto 모드에서 Stop 신호 시 즉시 반환
+                if (RunMode == UnitRunMode.Auto && IsStop)
+                    return 0;
+
+                // 즉시 확인 API 사용(알람 미발행)
+                if (this.Rotary.IsIndexMoving() == false)
+                {
+                    return 0;
+                }
+
+                if (timeoutMs >= 0 && sw.ElapsedMilliseconds >= timeoutMs)
+                {
+                    Log.Write(UnitName, nameof(WaitForRotaryIdle), $"Timeout waiting Rotary idle ({timeoutMs} ms)");
+                    return -1;
+                }
+                Thread.Sleep(pollMs);
+            }
+        }
+
+        
+
         public int MovePositionSafetyZ(bool isFine = false)
         {
             Task<int> task = MovePositionAsyncSafetyZ(isFine);
@@ -233,7 +268,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -244,6 +279,17 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeSafetyZ(bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -309,7 +355,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -320,6 +366,18 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeSphereZDown(bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -386,7 +444,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -397,6 +455,18 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeSphereZReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -458,17 +528,15 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionTopContact_Index_Up(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
+            // nIndex 처리
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
-                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Up] Invalid index {nIndex}. Range 0~7 or 1~8");
+                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Up] Invalid index {nIndex}. Range 0~7");
                 return -1;
             }
 
@@ -479,7 +547,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"TopContact_Index{teachingIdx}_Up";
+            string tpName = $"Top_Index{teachingIdx}_Up";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -494,6 +562,21 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Up] ToolT move failed tp={tpName} pos={dTPos}");
                 return -1;
             }
+
+            while(true)
+            {
+                if(IsStop)
+                {
+                    return 0;
+                }
+
+                if(IsTopContactIndexZUp(nIndex))
+                {
+                    break;
+                }
+                Thread.Sleep(1);
+            }
+
             return nRet;
             //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
         }
@@ -501,7 +584,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -512,6 +595,18 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeTopContact_Index_Up(int nIndex, bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -573,9 +668,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionTopContact_Index_Ready(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
+            // nIndex 처리
             int teachingIdx = 0;
             if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
@@ -584,8 +677,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Ready] Invalid index {nIndex}. Range 0~7 or 1~8");
                 return -1;
             }
-
-            string tpName = $"TopContact_Index{teachingIdx}_Ready";
+            string tpName = $"Top_Index{teachingIdx}_Ready";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -593,21 +685,20 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            double dTPos = GetTP(tpName, AxisNames.ProbeZ);
-            nRet = OnMoveAxisPositionOne(AxisProbeZ, dTPos);
+            double dPosZ = GetTP(tpName, AxisNames.ProbeZ);
+            nRet = OnMoveAxisPositionOne(AxisProbeZ, dPosZ);
             if (nRet != 0)
             {
-                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Ready] ToolT move failed tp={tpName} pos={dTPos}");
+                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Ready] ToolT move failed tp={tpName} pos={dPosZ}");
                 return -1;
             }
             return nRet;
-            //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
         }
         private int IsMoveInterLockTopContact_Index_Ready()
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -618,6 +709,18 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeTopContact_Index_Ready(int nIndex, bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -659,21 +762,18 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionTopContact_Index_ReadyZ(int nIndex, bool bFineSpeed)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
-                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_ReadyZ] Invalid index {nIndex}. Range 0~7 or 1~8");
+                Log.Write(UnitName, $"[OnMovePositionTopContact_Index_ReadyZ] Invalid index {nIndex}.");
                 return -1;
             }
 
-            string tpName = $"TopContact_Index{teachingIdx}_Ready";
+            string tpName = $"Top_Index{teachingIdx}_Ready";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -689,7 +789,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             return nRet;
-            //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
 
         }
 
@@ -716,21 +815,19 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionBottomContact_Index_Up(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
+            // nIndex 처리 
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
-                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] Invalid index {nIndex}. Range 0~7 or 1~8");
+                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] Invalid index {nIndex}.");
                 return -1;
             }
 
-            nRet = OnMovePositionBottomContact_Index_ReadyZ(nIndex, isFine);
+            nRet = MovePositionBottomContact_Index_Ready(nIndex, isFine);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] MovePositionBottomContact_Index_ReadyZ failed index={nIndex}");
@@ -747,7 +844,6 @@ namespace QMC.LCP_280.Process.Unit
 
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
-
             nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
             nRet &= OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
             if (nRet != 0)
@@ -765,15 +861,13 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-
             return nRet;
-            //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
         }
         private int IsMoveInterLockBottomContact_Index_Up()
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -784,6 +878,18 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    AxisProbeZ?.EmgStop();
+            //    AxisProbeCardX?.EmgStop();
+            //    AxisProbeCardY?.EmgStop();
+            //    AxisProbeCardZ?.EmgStop();
+            //    AxisSphereZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+            //    nRet = -1;
+            //    return nRet;
+            //}
             return nRet;
         }
 
@@ -809,14 +915,12 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionBottomContact_Index_Ready(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
+            // nIndex 처리
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] Invalid index {nIndex}. Range 0~7 or 1~8");
@@ -831,17 +935,20 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            double dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
-            if (nRet != 0)
+            double dZPos = 0.0;
+            if (IsBottomIndexZUp(nIndex))
             {
-                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
-                return -1;
+                dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
+                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
+                    return -1;
+                }
             }
 
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
-
             nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
             nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dYPos);
             if (nRet != 0)
@@ -850,14 +957,22 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posY={dYPos}");
                 return -1;
             }
+
+            dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
+            nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
+                return -1;
+            }
+
             return nRet;
-            //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
         }
         private int IsMoveInterLockBottomContact_Index_Ready()
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -873,14 +988,12 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionBottomContact_Index_ReadyZ(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
+            // nIndex 처리
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
+            if (nIndex >= 0 && nIndex < 8)
+            {
                 teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            }
             else
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] Invalid index {nIndex}. Range 0~7 or 1~8");
@@ -921,8 +1034,8 @@ namespace QMC.LCP_280.Process.Unit
 
         // SafetyZone에서 각 Z축만 개별 확인 (기존 함수 활용)
         public bool IsProbeZAtSafetyZone()
-            => IsAxisProbeZSafetyPos();       // SafetyZone의 ProbeZ만 검사
-        public bool IsProbeCardZAtSafetyZone()
+            => IsPositionProbeZSafety();       // SafetyZone의 ProbeZ만 검사
+        public bool IsPositionProbeCardZSafety()
             => IsAxisProbeCardZSafetyPos();   // SafetyZone의 ProbeCardZ만 검사
 
         // TopContact: ProbeZ만 검사 (Index 0~7 또는 1~8 허용)
@@ -936,7 +1049,7 @@ namespace QMC.LCP_280.Process.Unit
             else
                 return false;
 
-            string tpName = $"TopContact_Index{idx}_Up";
+            string tpName = $"Top_Index{idx}_Up";
             return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
         }
 
@@ -949,7 +1062,7 @@ namespace QMC.LCP_280.Process.Unit
                 idx = nIndex + 1;
             else return false;
 
-            string tpName = $"TopContact_Index{idx}_Ready";
+            string tpName = $"Top_Index{idx}_Ready";
             return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
         }
 
@@ -1011,14 +1124,58 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public bool IsAxisProbeZSafetyPos()
-            => IsAxisInTeachingPosition(AxisProbeZ,
+        public bool IsPositionProbeZSafety()
+        {
+            // 현재 실제 위치 읽기
+            double currentPos;
+            try
+            {
+                currentPos = AxisProbeZ.GetPosition();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
+            // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
+            const double zeroTolerance = 0.007;
+            if (Math.Abs(currentPos) <= zeroTolerance)
+            {
+                return true;
+            }
+
+            return IsAxisInTeachingPosition(AxisProbeZ,
                 IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeZ);
+        }
+            
         public bool IsAxisProbeCardZSafetyPos()
-            => IsAxisInTeachingPosition(AxisProbeCardZ,
+        {
+            // 현재 실제 위치 읽기
+            double currentPos;
+            try
+            {
+                currentPos = AxisProbeCardZ.GetPosition();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
+            // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
+            const double zeroTolerance = 0.007;
+            if (Math.Abs(currentPos) <= zeroTolerance)
+            {
+                return true;
+            }
+
+            return IsAxisInTeachingPosition(AxisProbeCardZ,
                 IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeCardZ);
+        }
+            
         public bool IsAxisSphereZSafetyPos()
         {
             // Up 우선
@@ -1032,18 +1189,19 @@ namespace QMC.LCP_280.Process.Unit
                     IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
                     AxisNames.SphereZ);
         }
+
         /// <summary>
         /// 세 축(ProbeZ, ProbeCardZ, SphereZ)이 모두 Safety 위치인가
         /// </summary>
         public bool IsAllSafetyAxisPos()
-            => IsAxisProbeZSafetyPos() &&
+            => IsPositionProbeZSafety() &&
                IsAxisProbeCardZSafetyPos() &&
                IsAxisSphereZSafetyPos();
 
         public bool IsProbeSafetyAxisPos()
         {
             bool bRet1 = false, bRet2 = false;
-            bRet1 = IsAxisProbeZSafetyPos();
+            bRet1 = IsPositionProbeZSafety();
             bRet2 = IsAxisProbeCardZSafetyPos();
 
             return bRet1 && bRet2;
@@ -1149,14 +1307,14 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Top Contact
                 WriteOutput(IndexChipProbeControllerConfig.IO.PROBECARD_CONTACT_VLV, false);
-                Thread.Sleep(10); // 약간의 딜레이
+                Thread.Sleep(5); // 약간의 딜레이
                 WriteOutput(IndexChipProbeControllerConfig.IO.BLADE_CONTACT_VLV, true);
             }
             else
             {
                 // Probe Contact
                 WriteOutput(IndexChipProbeControllerConfig.IO.BLADE_CONTACT_VLV, false);
-                Thread.Sleep(10); // 약간의 딜레이
+                Thread.Sleep(5); // 약간의 딜레이
                 WriteOutput(IndexChipProbeControllerConfig.IO.PROBECARD_CONTACT_VLV, true);
             }
 
@@ -1227,16 +1385,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
-                ret = -1;
-            }
-            if (this.RunUnitStatus == UnitStatus.Running)
-            {
                 return 0;
             }
+            
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
@@ -1264,35 +1420,38 @@ namespace QMC.LCP_280.Process.Unit
 
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary.IsIndexMoving())
             {
-                //AxisProbeCardX.EmgStop();
-                //AxisProbeCardY.EmgStop();
-                //AxisProbeCardZ.EmgStop();
-                //AxisProbeZ.EmgStop();
-                //AxisSphereZ.EmgStop();
-
-                //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
+            //if (Rotary != null && Rotary.IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    //AxisProbeCardX.EmgStop();
+            //    //AxisProbeCardY.EmgStop();
+            //    //AxisProbeCardZ.EmgStop();
+            //    //AxisProbeZ.EmgStop();
+            //    //AxisSphereZ.EmgStop();
+
+            //    //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+            //    return -1;
+            //}
             return 0;
         }
 
         private void LogSequence(string log)
         {
-            if (RunMode == UnitRunMode.Manual)
-            {
                 if (this.CurrentFunc == null)
                     return;
 
                 Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
-            }
         }
 
         public bool IsTopRequired()
         {
             //Todo: Recipe Data로 사용해야함.
-            return Config.ContectTopMode;
+            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            return recipe.ContectTop;
+            //return Config.ContectTopMode;
         }
         protected override void OnMakeSequence()
         {
@@ -1312,42 +1471,50 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = -1;
 
+            //이거 계속 있어야 돼나.. 확인하고 뺴자.
             while (IsRotaryIdle() != 0)
             {
-                Thread.Sleep(1);
+                if (IsStop)
+                {
+                    return 0;
+                }
+                Thread.Sleep(2);
             }
 
-
-            if (SetSphereFB(true))
+            if (IsSphereForward() == false)
             {
-                var sw = Stopwatch.StartNew();
-                while (!IsSphereForward())
+                if (SetSphereFB(true))
                 {
-                    if (sw.ElapsedMilliseconds > 2000)
+                    var sw = Stopwatch.StartNew();
+                    while (!IsSphereForward())
                     {
-                        PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                        Log.Write(UnitName, "[BottomContactOnce] SphereFB-F Timeout");
-                        return -1;
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                            Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] SphereFB-F Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
                     }
-                    Thread.Sleep(1);
                 }
             }
-            //if(IsStop) { return 0; }
 
             // 적분구 공정 위치.
-            nRet = MovePositionSphereZDown();
-            if (nRet != 0)
+            if (IsSphereZAtDown() == false)
             {
-                Log.Write(UnitName, "[RunInspectionReady] MovePositionSphereZDown failed");
-                return -1;
+                nRet = MovePositionSphereZDown(); //실제로는 다운임.
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSphereZDown failed");
+                    return -1;
+                }
             }
-            //if (IsStop) { return 0; }
 
             // 하부 Z-Axis.
             nRet = MovePositionSafetyZ();
             if (nRet != 0)
             {
-                Log.Write(UnitName, "[RunInspectionReady] MovePositionSafetyZ failed");
+                Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSafetyZ failed");
                 return -1;
             }
             return nRet;
@@ -1366,22 +1533,21 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = RunInspection;
-                LogSequence("Start");
-            }
+            this.CurrentFunc = RunInspection;
+            LogSequence("Start");
 
-            nRet = IsRotaryIdle();
-            if (nRet != 0)
+            while (IsRotaryIdle() != 0)
             {
-                return 0;
+                if (IsStop)
+                {
+                    return 0;
+                }
+                Thread.Sleep(1);
             }
-
+           
             MaterialDie die = this.Rotary.GetProbeSocketMaterial();
             int nIndex = this.GetProbeIndexNo();
             bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
-
             if (bUseSocket == false)
             {
                 Log.Write(UnitName, "[RunInspection] Socket not used. Skip inspection.");
@@ -1400,10 +1566,13 @@ namespace QMC.LCP_280.Process.Unit
             socket.SetState(Rotary.RotarySocketState.Probing);
             if (IsTopRequired())
             {
-                if (SetContectTop(true) == false)
+                if(IsContactTop() == false)
                 {
-                    Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
-                    return -1;
+                    if (SetContectTop(true) == false)
+                    {
+                        Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
+                        return -1;
+                    }
                 }
 
                 nRet = TopContactAndMeasureOnce(bFineSpeed);
@@ -1415,10 +1584,14 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (SetContectTop(false) == false)
+                if(IsContactProbe() == false)
                 {
-                    Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
-                    return -1;
+                    if (SetContectTop(false) == false)
+                    {
+                        Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
+                        return -1;
+                    }
+
                 }
 
                 nRet = BottomContactAndMeasureOnce(bFineSpeed);
@@ -1437,21 +1610,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (IsAxisProbeCardZSafetyPos() == false)
+            if (IsProbeSafetyAxisPos() == false)
             {
                 PostAlarm((int)AlarmKeys.eRotaryNotSafety);
-                Log.Write(UnitName, "[RunInspection] ProbeCardZ not in SafetyPos");
-                return -1;
-            }
-            if (IsAxisProbeZSafetyPos() == false)
-            {
-                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
-                Log.Write(UnitName, "[RunInspection] ProbeZ not in SafetyPos");
+                Log.Write(UnitName, "[RunInspection] ProbeCardZ, ProbeZ not in SafetyPos");
                 return -1;
             }
 
             die.State = DieProcessState.Inspected;
-
             socket.SetState(Rotary.RotarySocketState.Probed);
 
             LogSequence("End");
@@ -1462,53 +1628,70 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            int nIndex = GetProbeIndexNo();
+            
             try
             {
-                if (RunMode == UnitRunMode.Manual)
-                {
-                    this.CurrentFunc = TopContactAndMeasureOnce;
-                    LogSequence("Start");
-                }
+                this.CurrentFunc = TopContactAndMeasureOnce;
+                LogSequence("Start");
 
-                nRet = IsRotaryIdle();
-                if (nRet != 0)
+                while (IsRotaryIdle() != 0)
                 {
-                    return 0;
-                }
-
-                if (SetSphereFB(true))
-                {
-                    var sw = Stopwatch.StartNew();
-                    while (!IsSphereForward())
+                    if (IsStop)
                     {
-                        if (sw.ElapsedMilliseconds > 2000)
+                        return 0;
+                    }
+                    Thread.Sleep(1);
+                }
+
+
+                int nIndex = GetProbeIndexNo();
+                if (IsSphereForward() == false)
+                {
+                    if (SetSphereFB(true))
+                    {
+                        var sw = Stopwatch.StartNew();
+                        while (!IsSphereForward())
                         {
-                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                            Log.Write(UnitName, "[BottomContactOnce] SphereFB-F Timeout");
-                            return -1;
+                            if (IsStop)
+                            {
+                                return 0;
+                            }
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
-                        Thread.Sleep(1);
                     }
                 }
-                //if(IsStop) { return 0; }
 
-                nRet = MovePositionSphereZDown(); //실제로는 다운임.
+                if(IsSphereZAtDown() == false)
+                {
+                    nRet = MovePositionSphereZDown(); //실제로는 다운임.
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                        return -1;
+                    }
+                }
+
+                nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "[TopContactOnce] MovePositionSphereZDown failed");
+                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionBottomContact_Index_Ready failed");
                     return -1;
                 }
-                //if (IsStop) { return 0; }
-
 
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
+                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
                     return -1;
                 }
-                //if (IsStop) { return 0; }
+
+                WaitByTime(Config.UpperWaitTime);
 
                 // 6) 검사 요구 동기 처리
                 nRet = IndexChipProber.MeasureChip();
@@ -1517,6 +1700,22 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
                     return -1;
                 }
+
+                nRet = MovePositionSafetyZ();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
+                    nRet = -1;
+                }
+                while (this.IsProbeSafetyAxisPos() == false)
+                {
+                    if(IsStop)
+                    {
+                        return 0;
+                    }
+                    Thread.Sleep(1);
+                }
+                LogSequence("End");
             }
             catch (Exception ex)
             {
@@ -1527,17 +1726,15 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // 9) Ready Z축 하강
                 //nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
-                nRet = MovePositionSafetyZ();
-                if (nRet != 0)
+                if(IsProbeSafetyAxisPos() == false)
                 {
-                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
-                    nRet = -1;
+                    nRet = MovePositionSafetyZ();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
+                        nRet = -1;
+                    }
                 }
-                while (this.IsProbeSafetyAxisPos() == false)
-                {
-                    Thread.Sleep(1);
-                }
-                LogSequence("End");
             }
 
             return nRet;
@@ -1560,44 +1757,52 @@ namespace QMC.LCP_280.Process.Unit
         public int BottomContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
+            int nIndex = GetProbeIndexNo();
             try
             {
-                if (RunMode == UnitRunMode.Manual)
-                {
-                    LogSequence("Start");
-                    this.CurrentFunc = BottomContactAndMeasureOnce;
+                this.CurrentFunc = BottomContactAndMeasureOnce;
+                LogSequence("Start");
 
-                }
-                int nIndex = GetProbeIndexNo();
-                nRet = IsRotaryIdle();
-                if (nRet != 0)
+                while (IsRotaryIdle() != 0)
                 {
-                    return 0;
-                }
-
-                if (SetSphereFB(true))
-                {
-                    var sw = Stopwatch.StartNew();
-                    while (!IsSphereForward())
+                    if (IsStop)
                     {
-                        if (sw.ElapsedMilliseconds > 2000)
+                        return 0;
+                    }
+                    Thread.Sleep(1);
+                }
+
+                if (IsSphereForward() == false)
+                {
+                    if (SetSphereFB(true))
+                    {
+                        var sw = Stopwatch.StartNew();
+                        while (!IsSphereForward())
                         {
-                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                            Log.Write(UnitName, "[BottomContactOnce] SphereFB-F Timeout");
-                            return -1;
+                            if (IsStop)
+                            {
+                                return 0;
+                            }
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
-                        Thread.Sleep(1);
                     }
                 }
-                //if (IsStop) { return 0; }
 
-                nRet = MovePositionSphereZDown(); //실제로는 다운임.
-                if (nRet != 0)
+                if (IsSphereZAtDown() == false)
                 {
-                    Log.Write(UnitName, "[BottomContactOnce] MovePositionSphereZDown failed");
-                    return -1;
+                    nRet = MovePositionSphereZDown(); //실제로는 다운임.
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                        return -1;
+                    }
                 }
-                //if (IsStop) { return 0; }
 
                 nRet = MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1605,38 +1810,39 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
                     return -1;
                 }
-                //if (IsStop) { return 0; }
 
-                nRet = OnMovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
+                nRet = MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
                     return -1;
                 }
-                //if (IsStop) { return 0; }
 
-                // 6) 검사 요구 신호
-                SetChipProberRequest(true);
+                WaitByTime(Config.UpperWaitTime);
 
-                // 7) 검사 완료 신호 대기
-                nRet = ContactInspectionWait();
+                // 6) 검사 요구 동기 처리
+                nRet = IndexChipProber.MeasureChip();
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "[BottomContactOnce] ContactInspectionWait failed");
+                    Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
                     return -1;
                 }
 
-                // 8) 검사 완료 처리
-                SetChipProberRequest(false);
-
-                // 9) Ready Z축 하강
-                //nRet = OnMovePositionBottomContact_Index_ReadyZ(nIndex, bFineSpeed);
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "[BottomContactOnce] MovePositionSafetyZ failed");
-                    return -1;
+                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
+                    nRet = -1;
                 }
+                while (this.IsProbeSafetyAxisPos() == false)
+                {
+                    if (IsStop)
+                    {
+                        return 0;
+                    }
+                    Thread.Sleep(1);
+                }
+                LogSequence("End");
             }
             catch (Exception ex)
             {
@@ -1645,72 +1851,20 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                nRet = MovePositionSafetyZ();
-                if (nRet != 0)
+                // 9) Ready Z축 하강
+                //nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
+                if (IsProbeSafetyAxisPos() == false)
                 {
-                    Log.Write(UnitName, "[BottomContactOnce] MovePositionSafetyZ failed");
+                    nRet = MovePositionSafetyZ();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
+                        nRet = -1;
+                    }
                 }
-                LogSequence("End");
             }
 
             return nRet;
-        }
-
-        public int ContactInspectionWait(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (IndexChipProber == null)
-            {
-                Log.Write(UnitName, "[BottomContactWait] IndexChipProber null");
-                return -1;
-            }
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                Thread.Sleep(1000);
-                return 0;
-            }
-
-            // Config에 타임아웃 속성이 있다면 사용 (예: Config.ProbeInspectTimeoutMs), 없으면 기본값
-            int timeoutMs = Config.ProbeInspectTimeOutms;
-            try
-            {
-                var cfgType = Config.GetType();
-                var pi = cfgType.GetProperty("ProbeInspectTimeOutms");
-                if (pi != null && pi.PropertyType == typeof(int))
-                {
-                    int v = (int)pi.GetValue(Config, null);
-                    if (v > 0) timeoutMs = v;
-                }
-            }
-            catch { /* 무시 */ }
-
-            var sw = Stopwatch.StartNew();
-            while (!IndexChipProber.InspectDone)
-            {
-                if (sw.ElapsedMilliseconds > timeoutMs)
-                {
-                    PostAlarm((int)AlarmKeys.eProbeTimeout);
-                    Log.Write(UnitName, $"[BottomContactWait] Inspect timeout (> {timeoutMs} ms)");
-                    return -1;
-                }
-
-                // (선택) Rotary 움직임 감시하여 비정상 시 탈출 가능
-                if (Rotary != null && Rotary.IsAnyAxisMoving())
-                {
-                    Log.Write(UnitName, "[BottomContactWait] Rotary moving detected - abort wait");
-                    return -1;
-                }
-
-                Thread.Sleep(5);
-            }
-
-            // 완료 시 후속 처리 필요하면 여기에 추가
-            return nRet;
-        }
-
-        private void SetChipProberRequest(bool bRtn)
-        {
-            IndexChipProber.RequestChipInsp = bRtn;
         }
 
         public int GetProbeIndexNo()
@@ -1752,8 +1906,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (IsAxisProbeZSafetyPos() == false
-             || IsAxisProbeZSafetyPos() == false)
+            if (IsPositionProbeZSafety() == false
+             || IsPositionProbeZSafety() == false)
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)

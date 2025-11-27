@@ -232,7 +232,6 @@ namespace QMC.Common
                 //if (SafeThread.IsThreadInterrupted(ex) == true)
                 //    throw ex;
                 Log.Write(ex);
-                Console.WriteLine(ex.Message);
                 return false;
             }
 

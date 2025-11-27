@@ -24,13 +24,12 @@ namespace QMC.LCP_280.Process.Component
     {
         // ===== 식별 =====
         [DefaultValue(-1)] public int Index { get; set; } = -1;
-        [DefaultValue(0)] public double MapX { get; set; } = 0;
-        [DefaultValue(0)] public double MapY { get; set; } = 0;
+        [DefaultValue(-1)] public int SocketIndex { get; set; } = -1;
+        [DefaultValue(0)] public int MapX { get; set; } = 0;
+        [DefaultValue(0)] public int MapY { get; set; } = 0;
 
         [DefaultValue(0)] public double BinX { get; set; } = 0;
         [DefaultValue(0)] public double BinY { get; set; } = 0;
-
-
 
         // ===== Vision 위치 =====
         [DefaultValue(0.0)] public double CenterX { get; set; } = 0.0;
@@ -41,9 +40,7 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(0.0)] public double UnloadAlignOffsetY { get; set; } = 0.0;
         [DefaultValue(0.0)] public double UnloadAlignOffsetT { get; set; } = 0.0;
 
-
         // ===== 상태 =====
-
         [DefaultValue(DieProcessState.None)] public DieProcessState State { get; set; } = DieProcessState.None;
         [DefaultValue(true)] public bool IsPass { get; set; } = true;
         [DefaultValue("")] public string RejectReason { get; set; } = "";
@@ -53,13 +50,15 @@ namespace QMC.LCP_280.Process.Component
 
         // ===== 검사 데이터 =====
         public Dictionary<string, double> MeasureValues { get; set; } = new Dictionary<string, double>();
-
         public PKGTesterResult TesterResult = new PKGTesterResult();
 
-
         // ===== 트래킹 =====
+        [DefaultValue("")] public string SourceBinFileName { get; set; } = "";
+
         [DefaultValue("")] public string SourceWaferId { get; set; } = "";
         [DefaultValue("")] public string TargetWaferId { get; set; } = "";
+        
+
         [DefaultValue(-1)] public int TargetSlot { get; set; } = -1;
         [DefaultValue(-1)] public int TargetChipIndex { get; set; } = -1;
 
@@ -73,7 +72,6 @@ namespace QMC.LCP_280.Process.Component
                 return value;
             return null;
         }
-
 
         public void SetReject(string reason)
         {

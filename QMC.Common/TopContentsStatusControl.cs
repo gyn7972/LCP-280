@@ -42,25 +42,34 @@ namespace QMC.Common
         public TopContentsStatusControl()
         {
             InitializeComponent();
+
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
-            InitTableLayoutPanel();
-            SetControlValue();
-            CreateAlarmClearButton();
 
-            // Timer 설정
-            _timer = new Timer();
-            _timer.Interval = 1000; // 1초
-            _timer.Tick += Timer_Tick;
-            _timer.Start();
-
-            // 수명주기 정리
-            this.Disposed += (s, e) =>
+            // 런타임 전용 초기화 (디자인 모드에서는 실행하지 않음)
+            if (!IsDesignMode())
             {
-                try { _timer?.Stop(); _timer?.Dispose(); } catch { }
-                _timer = null;
-            };
+                // Timer 설정
+                _timer = new Timer();
+                _timer.Interval = 1000; // 1초
+                _timer.Tick += Timer_Tick;
+                _timer.Start();
+
+                // 수명주기 정리
+                this.Disposed += (s, e) =>
+                {
+                    try { _timer?.Stop(); _timer?.Dispose(); } catch { }
+                    _timer = null;
+                };
+            }
+        }
+
+        private bool IsDesignMode()
+        {
+            return LicenseManager.UsageMode == LicenseUsageMode.Designtime
+                   || (this.Site?.DesignMode ?? false)
+                   || this.DesignMode;
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -68,93 +77,22 @@ namespace QMC.Common
             var eq = EquipmentLocator.Instance;
             string recipe = eq.ICurrentRecipe;
             SetTopoContentsOperationRecipeValue(recipe);
-        }
 
+            RefreshSystemMessageFromEquipment();
+        }
 
         #region Method
 
+        // 기존 동적 생성 코드는 디자이너에서 생성하므로 더 이상 호출하지 않습니다.
+        // 유지만 하고 미사용 상태로 둡니다(호출 시 중복 추가 방지).
         private void InitTableLayoutPanel()
         {
-            tableLayoutContentsStatusPanel.BackColor = Color.White;
-            tableLayoutContentsStatusPanel.Dock = DockStyle.None;
-            tableLayoutContentsStatusPanel.Anchor = AnchorStyles.None;
-            tableLayoutContentsStatusPanel.AutoSize = false;
-
-            tableLayoutContentsStatusPanel.RowCount = 3;
-            tableLayoutContentsStatusPanel.ColumnCount = 3;
-            tableLayoutContentsStatusPanel.ColumnStyles.Clear();
-            tableLayoutContentsStatusPanel.RowStyles.Clear();
-
-            for (int i = 0; i < 3; i++)
-                tableLayoutContentsStatusPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / 3));
-
-            tableLayoutContentsStatusPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10f / 3));
-            tableLayoutContentsStatusPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80f / 3));
-            tableLayoutContentsStatusPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10f / 3));
+            // 디자이너에서 설정하므로 비워 둡니다.
         }
 
         private void SetControlValue()
         {
-            this.SuspendLayout();
-            tableLayoutContentsStatusPanel.SuspendLayout();
-            try
-            {
-                _mesMessageTitleLabel = new CustomBorderLabel { Text = "MES MSG.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
-                tableLayoutContentsStatusPanel.Controls.Add(_mesMessageTitleLabel, 0, 0);
-                _mesMessageTitleLabel.Margin = new Padding(_labelMargin);
-
-                _systemMessageTitleLabel = new CustomBorderLabel { Text = "SYSTEM", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
-                tableLayoutContentsStatusPanel.Controls.Add(_systemMessageTitleLabel, 0, 1);
-                _systemMessageTitleLabel.Margin = new Padding(_labelMargin);
-
-                _operationRecipeTitleLabel = new CustomBorderLabel { Text = "OP Recipe", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
-                tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeTitleLabel, 0, 2);
-                _operationRecipeTitleLabel.Margin = new Padding(_labelMargin);
-
-                _mesMessageLabel = new CustomBorderLabel
-                {
-                    Text = "MES Message",
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    ForeColor = Color.Lime,
-                    BackColor = Color.Black,
-                    TabStop = false
-                };
-                tableLayoutContentsStatusPanel.Controls.Add(_mesMessageLabel, 1, 0);
-                _mesMessageLabel.Margin = new Padding(_labelMargin);
-
-                _systemMessageLabel = new CustomBorderLabel
-                {
-                    Text = "System Message",
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    ForeColor = Color.Lime,
-                    BackColor = Color.Black,
-                    TabStop = false
-                };
-                tableLayoutContentsStatusPanel.Controls.Add(_systemMessageLabel, 1, 1);
-                _systemMessageLabel.Margin = new Padding(_labelMargin);
-
-                _operationRecipeLabel = new CustomBorderLabel
-                {
-                    Text = "Operation Recipe",
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    ForeColor = Color.Lime,
-                    BackColor = Color.Black,
-                    TabStop = false
-                };
-                tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeLabel, 1, 2);
-                _operationRecipeLabel.Margin = new Padding(_labelMargin);
-            }
-            finally
-            {
-                tableLayoutContentsStatusPanel.ResumeLayout();
-                this.ResumeLayout();
-            }
+            // 디자이너에서 컨트롤을 생성하므로 비워 둡니다.
         }
 
         private void SetTopoContentsMesMessageValue(string mesMessage)
@@ -172,6 +110,7 @@ namespace QMC.Common
 
         public void CreateAlarmClearButton()
         {
+            // 디자이너에서 이미 생성됨
             if (_AlarmClearButton != null) return;
 
             _AlarmClearButton = new IndividualMenuButton();
@@ -204,13 +143,16 @@ namespace QMC.Common
                 // UserControl 크기 설정
                 this.Size = new Size(panelWidth, panelHeight);
 
-                // TableLayoutPanel 크기 설정
-                tableLayoutContentsStatusPanel.Size = new Size(panelWidth, panelHeight);
+                // TableLayoutPanel이 Dock=Fill 이면 크기/위치 계산 불필요
+                if (tableLayoutContentsStatusPanel.Dock == DockStyle.None)
+                {
+                    tableLayoutContentsStatusPanel.Size = new Size(panelWidth, panelHeight);
 
-                // 좌측 정렬, 위아래 중앙 정렬
-                int x = 0; // 좌측
-                int y = (this.Height - tableLayoutContentsStatusPanel.Height) / 2; // 위아래 중앙
-                tableLayoutContentsStatusPanel.Location = new Point(x, y);
+                    // 좌측 정렬, 위아래 중앙 정렬
+                    int x = 0; // 좌측
+                    int y = (this.Height - tableLayoutContentsStatusPanel.Height) / 2; // 위아래 중앙
+                    tableLayoutContentsStatusPanel.Location = new Point(x, y);
+                }
             }
             finally
             {
@@ -222,6 +164,73 @@ namespace QMC.Common
             tableLayoutContentsStatusPanel.Invalidate();
             this.Invalidate();
         }
+
+        // ========= 여기에 Public API 추가 =========
+
+        // 간단: 메시지 라인 3개만 갱신
+        public void SetStatusTexts(string mesMessage, string systemMessage, string operationRecipe)
+        {
+            SafeUI(() =>
+            {
+                if (_mesMessageLabel != null) _mesMessageLabel.Text = mesMessage ?? string.Empty;
+                if (_systemMessageLabel != null) _systemMessageLabel.Text = systemMessage ?? string.Empty;
+                if (_operationRecipeLabel != null) _operationRecipeLabel.Text = operationRecipe ?? string.Empty;
+            });
+        }
+
+        // 타이틀/색상까지 한 번에 갱신 (필요한 항목만 전달하면 해당 항목만 변경)
+        public void UpdateStatusPanel(
+            string mesTitle = null,
+            string systemTitle = null,
+            string recipeTitle = null,
+            string mesMessage = null,
+            string systemMessage = null,
+            string operationRecipe = null,
+            Color? valueForeColor = null,
+            Color? valueBackColor = null)
+        {
+            SafeUI(() =>
+            {
+                // 타이틀
+                if (mesTitle != null && _mesMessageTitleLabel != null) _mesMessageTitleLabel.Text = mesTitle;
+                if (systemTitle != null && _systemMessageTitleLabel != null) _systemMessageTitleLabel.Text = systemTitle;
+                if (recipeTitle != null && _operationRecipeTitleLabel != null) _operationRecipeTitleLabel.Text = recipeTitle;
+
+                // 값
+                if (mesMessage != null && _mesMessageLabel != null) _mesMessageLabel.Text = mesMessage;
+                if (systemMessage != null && _systemMessageLabel != null) _systemMessageLabel.Text = systemMessage;
+                if (operationRecipe != null && _operationRecipeLabel != null) _operationRecipeLabel.Text = operationRecipe;
+
+                // 색상(값 라인 공통 적용)
+                if (valueForeColor.HasValue)
+                {
+                    if (_mesMessageLabel != null) _mesMessageLabel.ForeColor = valueForeColor.Value;
+                    if (_systemMessageLabel != null) _systemMessageLabel.ForeColor = valueForeColor.Value;
+                    if (_operationRecipeLabel != null) _operationRecipeLabel.ForeColor = valueForeColor.Value;
+                }
+                if (valueBackColor.HasValue)
+                {
+                    if (_mesMessageLabel != null) _mesMessageLabel.BackColor = valueBackColor.Value;
+                    if (_systemMessageLabel != null) _systemMessageLabel.BackColor = valueBackColor.Value;
+                    if (_operationRecipeLabel != null) _operationRecipeLabel.BackColor = valueBackColor.Value;
+                }
+            });
+        }
+
+        // 스레드 안전 UI 업데이트 도우미
+        private void SafeUI(Action action)
+        {
+            if (this.IsDisposed) return;
+            if (this.InvokeRequired)
+            {
+                try { this.BeginInvoke(new MethodInvoker(() => { if (!this.IsDisposed) action(); })); } catch { }
+            }
+            else
+            {
+                action();
+            }
+        }
+
         #endregion
 
         #region EventHandler
@@ -243,7 +252,65 @@ namespace QMC.Common
                 _AlarmClearButton.SetButtonState(true);
             }
         }
+
+        private void RefreshSystemMessageFromEquipment()
+        {
+            try
+            {
+                var eq = EquipmentLocator.Instance;
+                if (eq == null || _systemMessageLabel == null) return;
+
+                string stateText = eq.EqState.ToString();
+
+                // EqState 프로퍼티를 리플렉션으로 읽음 (공용 enum 타입 의존 제거)
+                //var pi = eq.GetType().GetProperty("EqState");
+                //var stateObj = pi != null ? pi.GetValue(eq, null) : null;
+                //var stateText = (stateObj != null) ? stateObj.ToString() : "Unknown";
+
+                // 텍스트 세팅
+                SetTopoContentsSystemMessageValue(stateText);
+
+                // 상태별 색상 매핑
+                // Ready/Running -> Lime, Initializing/Starting/Stopping/CycleStop -> Yellow, 
+                // Stopped/Unknown -> Silver, Error -> Red
+                Color fore = Color.Lime;
+                switch (stateText)
+                {
+                    case "Ready":
+                    case "Running":
+                        fore = Color.Lime;
+                        break;
+                    case "Initializing":
+                    case "Starting":
+                    case "Stopping":
+                    case "CycleStop":
+                    case "Warning":
+                        fore = Color.Yellow;
+                        break;
+                    case "Stopped":
+                    case "Unknown":
+                        fore = Color.Silver;
+                        break;
+                    case "Error":
+                        fore = Color.Red;
+                        break;
+                    default:
+                        fore = Color.Silver;
+                        break;
+                }
+
+                // UI 반영
+                if (_systemMessageLabel.ForeColor != fore)
+                    _systemMessageLabel.ForeColor = fore;
+                // 배경은 기존 스타일 유지(검정). 필요 시 변경:
+                // _systemMessageLabel.BackColor = Color.Black;
+            }
+            catch
+            {
+                // 안전: 디자인 모드/초기화 전 예외 무시
+            }
+        }
+
         #endregion
     }
 }
-

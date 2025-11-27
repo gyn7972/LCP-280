@@ -33,36 +33,62 @@ namespace QMC.Common
         private void InitializeComponent()
         {
             this.tableLayoutContentsLoginModePanel = new DeleteInnerBorderTableLayoutPanel();
+            this._loginModeTitleLabel = new Label();
+            this._loginModeLabel = new CustomBorderLabel();
             this.SuspendLayout();
             // 
-            // tableLayoutContentsStatusPanel
+            // tableLayoutContentsLoginModePanel
             // 
-            this.tableLayoutContentsLoginModePanel.AutoSize = true;
+            this.tableLayoutContentsLoginModePanel.Dock = DockStyle.Fill;
+            this.tableLayoutContentsLoginModePanel.BackColor = Color.White;
+            this.tableLayoutContentsLoginModePanel.Margin = new Padding(0);
+            this.tableLayoutContentsLoginModePanel.Padding = new Padding(0);
+            this.tableLayoutContentsLoginModePanel.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+
             this.tableLayoutContentsLoginModePanel.ColumnCount = 1;
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutContentsLoginModePanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutContentsLoginModePanel.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutContentsLoginModePanel.Name = "tableLayoutContentsStatusPanel";
-            this.tableLayoutContentsLoginModePanel.RowCount = 1;
-            this.tableLayoutContentsLoginModePanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutContentsLoginModePanel.Size = new System.Drawing.Size(461, 171);
-            this.tableLayoutContentsLoginModePanel.TabIndex = 0;
+            this.tableLayoutContentsLoginModePanel.ColumnStyles.Clear();
+            this.tableLayoutContentsLoginModePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+
+            this.tableLayoutContentsLoginModePanel.RowCount = 2;
+            this.tableLayoutContentsLoginModePanel.RowStyles.Clear();
+            this.tableLayoutContentsLoginModePanel.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            this.tableLayoutContentsLoginModePanel.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
             // 
-            // TopContentsStatusControl
+            // _loginModeTitleLabel
+            // 
+            this._loginModeTitleLabel.Text = "Login Mode";
+            this._loginModeTitleLabel.TextAlign = ContentAlignment.MiddleLeft;
+            this._loginModeTitleLabel.Dock = DockStyle.Fill;
+            this._loginModeTitleLabel.Margin = new Padding(2);
+            this._loginModeTitleLabel.Font = new Font("Arial", 8F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            // 
+            // _loginModeLabel
+            // 
+            this._loginModeLabel.Text = "Guest";
+            this._loginModeLabel.TextAlign = ContentAlignment.MiddleCenter;
+            this._loginModeLabel.Dock = DockStyle.Fill;
+            this._loginModeLabel.Margin = new Padding(5);
+            this._loginModeLabel.Font = new Font("Arial", 8F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            this._loginModeLabel.ForeColor = Color.Lime;
+            this._loginModeLabel.BackColor = Color.Black;
+            this._loginModeLabel.TabStop = false;
+
+            // 
+            // Add controls
+            // 
+            this.tableLayoutContentsLoginModePanel.Controls.Add(this._loginModeTitleLabel, 0, 0);
+            this.tableLayoutContentsLoginModePanel.Controls.Add(this._loginModeLabel, 0, 1);
+
+            // 
+            // TopContentsLoginModeControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = Color.White;
             this.Controls.Add(this.tableLayoutContentsLoginModePanel);
-            this.Name = "TopContentsStatusControl";
-            this.Size = new System.Drawing.Size(461, 171);
+            this.Name = "TopContentsLoginModeControl";
+            this.Size = new System.Drawing.Size(360, 80);
             this.ResumeLayout(false);
-            this.PerformLayout();
-
         }
 
         #endregion

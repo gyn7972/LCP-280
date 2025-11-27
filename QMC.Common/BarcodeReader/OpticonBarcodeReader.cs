@@ -28,7 +28,7 @@ namespace QMC.Common.BarcodeReader
         #endregion
 
         #region Property
-        public new OpticonBarcodeReaderConfig Config { get; private set; }
+        public new OpticonBarcodeReaderConfig Config { get; set; }
         #endregion
 
         // 1. Field 추가 (기존 Field 영역에 추가)

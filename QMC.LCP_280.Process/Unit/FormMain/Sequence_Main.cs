@@ -183,7 +183,7 @@ namespace QMC.LCP_280.Process
         {
             switch (state)
             {
-                case UnitStatus.Running: item.BackColor = Color.LightGreen; break;
+                case UnitStatus.AutoRunning: item.BackColor = Color.LightGreen; break;
                 case UnitStatus.Error: item.BackColor = Color.LightCoral; break;
                 case UnitStatus.Starting:
                 case UnitStatus.Stopping: item.BackColor = Color.LightYellow; break;
@@ -265,7 +265,7 @@ namespace QMC.LCP_280.Process
                     lblEquipmentState.Text = $"State: {args.NewState}";
                     switch (args.NewState)
                     {
-                        case EquipmentState.Running:
+                        case EquipmentState.AutoRunning:
                             lblEquipmentState.ForeColor = Color.Green; break;
                         case EquipmentState.Error:
                             lblEquipmentState.ForeColor = Color.Red; break;
@@ -472,7 +472,7 @@ namespace QMC.LCP_280.Process
             {
                 statusUpdateTimer?.Stop();
                 statusUpdateTimer?.Dispose();
-                if (equipment != null && equipment.EqState == EquipmentState.Running)
+                if (equipment != null && equipment.EqState == EquipmentState.AutoRunning)
                 {
                     var result = MessageBox.Show("설비가 실행 중입니다. 정지하고 종료하시겠습니까?", "확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes) equipment.StopAllUnitsAsync().GetAwaiter().GetResult(); else { e.Cancel = true; return; }

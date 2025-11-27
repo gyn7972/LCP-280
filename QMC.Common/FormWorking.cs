@@ -104,7 +104,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"EnsureFirstTabLoaded(Working) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -200,64 +200,13 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"working 폼 로드 중 오류: {ex.Message}");
+                Log.Write(ex);
 
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"working 폼 로드 중 오류 발생: {ex.Message}");
 
                 CreateSampleTabs();
             }
-
-            //try
-            //{
-            //    Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
-
-            //    var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
-            //    //Console.WriteLine($"   등록된 working 폼 개수: {workingForms.Count}");
-
-            //    var desiredOrder = new[]
-            //    {
-            //        "InputWafer",
-            //        "ChipLoading",
-            //        "Process",
-            //        "ChipUnloading",
-            //        "OutputWafer"
-            //    };
-
-            //    var indexMap = desiredOrder
-            //        .Select((name, idx) => new { name, idx })
-            //        .ToDictionary(x => x.name, x => x.idx);
-
-            //    workingForms = workingForms
-            //        .OrderBy(f => indexMap.ContainsKey(f.DisplayName) ? indexMap[f.DisplayName] : int.MaxValue)
-            //        .ThenBy(f => f.DisplayName)
-            //        .ToList();
-
-            //    foreach (var formInfo in workingForms)
-            //        CreateTabFromFormInfo(formInfo);
-
-            //    if (workingForms.Count == 0)
-            //        CreateSampleTabs();
-
-            //    // 기존 코드 백업
-            //    //var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
-            //    //foreach (var formInfo in workingForms)
-            //    //{
-            //    //    Console.WriteLine($"   working 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
-            //    //    CreateTabFromFormInfo(formInfo);
-            //    //}
-            //    //if (workingForms.Count == 0)
-            //    //{
-            //    //    Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
-            //    //    CreateSampleTabs();
-            //    //}
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"❌ working 폼 로드 중 오류: {ex.Message}");
-            //    MessageBox.Show($"working 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //    CreateSampleTabs();
-            //}
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
@@ -349,7 +298,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateActiveChildSize(Working) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

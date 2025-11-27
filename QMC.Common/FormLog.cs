@@ -104,7 +104,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"EnsureFirstTabLoaded(Log) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -138,7 +138,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"log 폼 로드 중 오류: {ex.Message}");
+                Log.Write(ex);
 
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"log 폼 로드 중 오류 발생: {ex.Message}");
@@ -236,7 +236,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateActiveChildSize(Log) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

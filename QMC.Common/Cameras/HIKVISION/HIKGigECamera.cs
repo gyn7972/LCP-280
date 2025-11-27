@@ -245,7 +245,7 @@ namespace QMC.Common.Cameras.HIKVISION
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Log.Write(ex);
             }
 
             return ret;
@@ -1298,7 +1298,7 @@ namespace QMC.Common.Cameras.HIKVISION
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Log.Write(ex);
                 ret = -1;
             }
 

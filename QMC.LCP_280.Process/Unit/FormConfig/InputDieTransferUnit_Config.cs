@@ -245,36 +245,361 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_unit == null) return;
+                if (_unit == null)
+                    return;
 
-                var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
+                int nRet = 0;
+                int nIndex = 0;// _unit.GetLoadIndexNo();
+                
+                //티칭 이름 확인
+                string tpName = string.Empty;
+                var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
 
-                using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
+                if (hasName)
                 {
-                    var dr = pf.ShowDialog(this);
-                    if (dr == DialogResult.Cancel)
+                    InputDieTransferConfig.TeachingPositionName en;
+                    if (Enum.TryParse(tpName, out en))
                     {
-                        _unit.StopTeachingPositionOnce(e.Index);
-                        return;
+                        switch (en)
+                        {
+                            case InputDieTransferConfig.TeachingPositionName.Pickup:
+                                // SafetyZ 선행 이동 (동기 메서드를 백그라운드에서 실행)
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPickUpToolT(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPickUpPickZ(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputDieTransferConfig.TeachingPositionName.Ready:
+                                nRet = await Task.Run(() => _unit.MovePositionReady(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+                                    return;
+                                }
+
+                                break;
+
+                            case InputDieTransferConfig.TeachingPositionName.SafetyZone:
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index1:
+                                nIndex = 0;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index2:
+                                nIndex = 1;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index3:
+                                nIndex = 2;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index4:
+                                nIndex = 3;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index5:
+                                nIndex = 4;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index6:
+                                nIndex = 5;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index7:
+                                nIndex = 6;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputDieTransferConfig.TeachingPositionName.Place_Index8:
+                                nIndex = 7;
+                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine)); // SafetyZ 선행 이동
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+                                    return;
+                                }
+
+                                nRet = await Task.Run(() => _unit.MovePositionPlace_Index(nIndex, e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    var mbErr = new MessageBoxOk();
+                                    mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            default:
+                                break;
+                        }
                     }
                 }
 
-                var result = await task;
-                var mb = new MessageBoxOk();
-                if (result == 0)
-                {
-                    mb.ShowDialog("Information.", "Teaching Position 이동 완료");
-                }
-                else
-                {
-                    mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
-                }
+                var mb1 = new MessageBoxOk();
+                mb1.ShowDialog("Information.", "Teaching Position 이동 완료");
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
         }
+
+        //private async void OnPositionTeachingMoveRequested(object sender, MovePositionEventArgs e)
+        //{
+        //    try
+        //    {
+        //        if (_unit == null)
+        //            return;
+
+        //        int nRet = 0;
+        //        int nIndex = _unit.GetLoadIndexNo();
+        //        var mb = new MessageBoxYesNo();
+        //        var confirmResult = mb.ShowDialog("Confirmation.", "선택한 Teaching Position으로 이동하시겠습니까?");
+        //        if (confirmResult != DialogResult.Yes)
+        //        {
+        //            return;
+        //        }
+
+        //        //티칭 이름 확인
+        //        string tpName = string.Empty;
+        //        var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
+        //        //티칭 enum으로 분기하여 축 순서 결정
+        //        if (hasName)
+        //        {
+        //            InputDieTransferConfig.TeachingPositionName en;
+        //            if (Enum.TryParse(tpName, out en))
+        //            {
+        //                switch (en)
+        //                {
+        //                    case InputDieTransferConfig.TeachingPositionName.Pickup:
+        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+        //                            return;
+        //                        }
+
+        //                        nRet = _unit.MovePositionPickUpToolT(e.IsFine);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+        //                            return;
+        //                        }
+
+        //                        nRet = _unit.MovePositionPickUpPickZ(e.IsFine);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+        //                            return;
+        //                        }
+        //                        break;
+
+        //                    case InputDieTransferConfig.TeachingPositionName.Ready:
+        //                        nRet = _unit.MovePositionPickUpToolT(e.IsFine);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
+        //                            return;
+        //                        }
+        //                        break;
+
+        //                    case InputDieTransferConfig.TeachingPositionName.SafetyZone:
+        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+        //                            return;
+        //                        }
+        //                        break;
+
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index1:
+        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+        //                            return;
+        //                        }
+
+        //                        nRet = _unit.MovePositionPlace_Index(nIndex);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "Index1 위치 이동 실패");
+        //                            return;
+        //                        }
+
+        //                        break;
+
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index2:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index3:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index4:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index5:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index6:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index7:
+        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index8:
+
+        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
+        //                            return;
+        //                        }
+
+        //                        nRet = _unit.MovePositionPlace_Index(nIndex, e.IsFine);
+        //                        if (nRet != 0)
+        //                        {
+        //                            var mbErr = new MessageBoxOk();
+        //                            mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
+        //                            return;
+        //                        }
+        //                        break;
+
+        //                    default:
+        //                        break;
+        //                }
+        //            }
+        //        }
+        //        var mb1 = new MessageBoxOk();
+        //        mb1.ShowDialog("Information.", "Teaching Position 이동 완료");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //    }
+        //}
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)
         {

@@ -29,7 +29,7 @@ namespace QMC.Common.Keithley
             this.Type = item.Type;
             this.SourceValue = item.SourceValue;
             this.SourceTime = item.SourceTime;
-            this.SourceLimit = item.SourceLimit;
+            this.MeasureLimit = item.MeasureLimit;
             this.MeasureTime = item.MeasureTime;
 
             IsOpticalSource = isOpticalSource;
@@ -354,29 +354,29 @@ namespace QMC.Common.Keithley
                     var command = new KeithleySourcemeterChannel.ChannelCommand();
                     switch (item.Type)
                     {
-                        case TestItemType.VF:
+                        case TestItemType.VF:   //mA
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
                                 command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
-                                command.SourceLimit = item.SourceLimit;
+                                command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetVMeasureRange(command.SourceLimit);
+                                command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
                             }
                             break;
-                        case TestItemType.VR:
+                        case TestItemType.VR:   //uA
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue / 1000) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
-                                command.SourceLimit = item.SourceLimit;
+                                command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetVMeasureRange(command.SourceLimit);
+                                command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
                             }
                             break;
@@ -386,10 +386,10 @@ namespace QMC.Common.Keithley
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
                                 command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
-                                command.SourceLimit = item.SourceLimit;
+                                command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetIMeasureRange(command.SourceLimit);
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
                             }
                             break;
@@ -399,10 +399,10 @@ namespace QMC.Common.Keithley
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
                                 command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
-                                command.SourceLimit = item.SourceLimit;
+                                command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetIMeasureRange(command.SourceLimit);
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
                             }
                             break;
@@ -454,8 +454,8 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.VR:
                             {
-                                itemResult.RawData = value;
-                                itemResult.Value = value;
+                                itemResult.RawData = Math.Abs(value);
+                                itemResult.Value = Math.Abs(value);
                                 itemResult.Unit = "V";
                             }
                             break;
@@ -468,6 +468,7 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IR:
                             {
+
                                 itemResult.RawData = value;
                                 itemResult.Value = value;
                                 itemResult.Unit = "A";
@@ -629,63 +630,63 @@ namespace QMC.Common.Keithley
             }
             return sourceRange;
         }
-        public double GetIMeasureRange(double ISourceLimit)
+        public double GetIMeasureRange(double IMeasureLimit)
         {
-            double sourceLimitSize = Math.Abs(ISourceLimit);
+            double MeasureLimitSize = Math.Abs(IMeasureLimit);
             double measureRange = 0;
             switch (Config.Model)
             {
                 case SMUInstrumentCategory.Keithley260X:
                     {
-                        if (sourceLimitSize < 1e-5) { measureRange = 1e-5; }
-                        else if (sourceLimitSize < 1e-4) { measureRange = 1e-4; }
-                        else if (sourceLimitSize < 1e-3) { measureRange = 1e-3; }
-                        else if (sourceLimitSize < 1e-2) { measureRange = 1e-2; }
-                        else if (sourceLimitSize < 1e-1) { measureRange = 1e-1; }
-                        else if (sourceLimitSize < 1) { measureRange = 1; }
-                        else if (sourceLimitSize < 1.5) { measureRange = 1.5; }
+                        if (MeasureLimitSize < 1e-5) { measureRange = 1e-5; }
+                        else if (MeasureLimitSize < 1e-4) { measureRange = 1e-4; }
+                        else if (MeasureLimitSize < 1e-3) { measureRange = 1e-3; }
+                        else if (MeasureLimitSize < 1e-2) { measureRange = 1e-2; }
+                        else if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 1.5) { measureRange = 1.5; }
                         else { measureRange = 3; }
                     }
                     break;
                 case SMUInstrumentCategory.Keithley261X:
                 case SMUInstrumentCategory.Keithley263X:
                     {
-                        if (sourceLimitSize < 1e-5) { measureRange = 1e-5; }
-                        else if (sourceLimitSize < 1e-4) { measureRange = 1e-4; }
-                        else if (sourceLimitSize < 1e-3) { measureRange = 1e-3; }
-                        else if (sourceLimitSize < 1e-2) { measureRange = 1e-2; }
-                        else if (sourceLimitSize < 1e-1) { measureRange = 1e-1; }
-                        else if (sourceLimitSize < 1) { measureRange = 1; }
+                        if (MeasureLimitSize < 1e-5) { measureRange = 1e-5; }
+                        else if (MeasureLimitSize < 1e-4) { measureRange = 1e-4; }
+                        else if (MeasureLimitSize < 1e-3) { measureRange = 1e-3; }
+                        else if (MeasureLimitSize < 1e-2) { measureRange = 1e-2; }
+                        else if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
                         else { measureRange = 1.5; }
                     }
                     break;
             }
             return measureRange;
         }
-        public double GetVMeasureRange(double VSourceLimit)
+        public double GetVMeasureRange(double VMeasureLimit)
         {
-            double sourceLimitSize = Math.Abs(VSourceLimit);
+            double MeasureLimitSize = Math.Abs(VMeasureLimit);
             double measureRange = 0;
             switch (Config.Model)    
             {
                 case SMUInstrumentCategory.Keithley260X:
                     {
-                        if (sourceLimitSize < 1e-1) { measureRange = 1e-1; }
-                        else if (sourceLimitSize < 1) { measureRange = 1; }
-                        else if (sourceLimitSize < 6) { measureRange = 6; }
-                        else if (sourceLimitSize < 20) { measureRange = 20; }
-                        else if (sourceLimitSize < 35) { measureRange = 35; }
+                        if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 6) { measureRange = 6; }
+                        else if (MeasureLimitSize < 20) { measureRange = 20; }
+                        else if (MeasureLimitSize < 35) { measureRange = 35; }
                         else { measureRange = 40; }
                     }
                     break;
                 case SMUInstrumentCategory.Keithley261X:
                 case SMUInstrumentCategory.Keithley263X:
                     {
-                        if (sourceLimitSize < 1e-1) { measureRange = 1e-1; }
-                        else if (sourceLimitSize < 1) { measureRange = 1; }
-                        else if (sourceLimitSize < 5) { measureRange = 5; }
-                        else if (sourceLimitSize < 20) { measureRange = 20; }
-                        else if (sourceLimitSize < 180) { measureRange = 180; }
+                        if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 5) { measureRange = 5; }
+                        else if (MeasureLimitSize < 20) { measureRange = 20; }
+                        else if (MeasureLimitSize < 180) { measureRange = 180; }
                         else { measureRange = 200; }
                     }
                     break;

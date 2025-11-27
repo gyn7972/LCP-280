@@ -18,7 +18,7 @@ namespace QMC.Common
         private readonly Type _type;
         private readonly List<PropEntry> _entries = new List<PropEntry>();
 
-        public PropertyCollection PropertyCollection { get; private set; }
+        public PropertyCollection PropertyCollection { get; set; }
 
         private class PropEntry
         {

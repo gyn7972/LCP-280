@@ -115,6 +115,7 @@ namespace QMC.Common.Cameras
             get { return CameraResolution; }
         }
 
+
         [DefaultValue(false)] public bool AutoSleepEnable { get; set; }
         [DefaultValue(false)] public bool EnableExposure { get; set; }
         [DefaultValue(false)] public bool SuspendedImageDisplay { get; set; }

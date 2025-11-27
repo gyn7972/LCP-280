@@ -192,7 +192,7 @@ namespace QMC.Common
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Shutdown error: " + ex.Message);
+                    Log.Write(ex);
                 }
             }
             finally
@@ -334,7 +334,7 @@ namespace QMC.Common
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Prewarm failed for {next}: {ex.Message}");
+                    Log.Write(ex);
                 }
             };
             _prewarmTimer.Start();
@@ -463,7 +463,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Size apply failed: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -524,7 +524,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"FormManager 초기화 오류: {ex.Message}");
+                Log.Write(ex);
 
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"FormManager 초기화 중 오류 발생: {ex.Message}");

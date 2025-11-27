@@ -91,8 +91,13 @@ namespace QMC.Common.Vision.Cognex
         protected override int OnRun()
         {
             int ret = 0;
+
+            // VisionPro 네이티브 모듈 선 로드(디버거에서 LoaderLock 중단을 한 지점으로 고정)
+            VisionProBootstrapper.WarmUp();
+
             VisionImage image = this.InputImage;
-            if(image == null) return ret;
+            if (image == null) return ret;
+
             if (image.CustomizedData == null)
             {
                 if ((ret = VisionProCustomizedVisionImage.Create(ref image)) != 0) return ret;
@@ -102,6 +107,19 @@ namespace QMC.Common.Vision.Cognex
 
             this.OutputImage = this.InputImage;
             return ret;
+
+            //int ret = 0;
+            //VisionImage image = this.InputImage;
+            //if(image == null) return ret;
+            //if (image.CustomizedData == null)
+            //{
+            //    if ((ret = VisionProCustomizedVisionImage.Create(ref image)) != 0) return ret;
+            //}
+
+            //if ((ret = this.SetValue(image)) != 0) return ret;
+
+            //this.OutputImage = this.InputImage;
+            //return ret;
         }
 
         protected override int OnCheckedLicense()

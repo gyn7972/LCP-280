@@ -155,6 +155,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Vision\Cognex\Library\Cognex.VisionPro.PMAlign.dll</HintPath>
     </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=1.2.0.246, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpZipLib.1.2.0\lib\net45\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
     <Reference Include="Ivi.Visa, Version=5.7.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.HashCode.6.0.0\lib\net462\Microsoft.Bcl.HashCode.dll</HintPath>
@@ -168,8 +171,29 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NPOI, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetCore.NPOI.Core.1.2.3\lib\net461\NPOI.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OOXML, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetCore.NPOI.1.2.3\lib\net461\NPOI.OOXML.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXml4Net, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetCore.NPOI.OpenXml4Net.1.2.3\lib\net461\NPOI.OpenXml4Net.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXmlFormats, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DotNetCore.NPOI.OpenXmlFormats.1.2.3\lib\net461\NPOI.OpenXmlFormats.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing.Common, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Drawing.Common.4.5.0\lib\net461\System.Drawing.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encoding.CodePages.4.5.0\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -493,6 +517,12 @@
     </Compile>
     <Compile Include="PKGTester\ColorCoordinateProcess.cs" />
     <Compile Include="PKGTester\DataBinning.cs" />
+    <Compile Include="PKGTester\DataBinningBinLoader.cs" />
+    <Compile Include="PKGTester\DataBinningExcelLoader.cs" />
+    <Compile Include="PKGTester\ExcelBinningModel.cs" />
+    <Compile Include="PKGTester\ExcelBinningModelConverter.cs" />
+    <Compile Include="PKGTester\ITFParser.cs" />
+    <Compile Include="PKGTester\ItfTesterData.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
     <Compile Include="StrainGage\FormStrainGageDialog.cs">
@@ -614,6 +644,7 @@
     <Compile Include="VisionPart\VisionPart.cs" />
     <Compile Include="Vision\AbbreviationAttribute.cs" />
     <Compile Include="Vision\Cognex\VisionProBlobVisionTool.cs" />
+    <Compile Include="Vision\Cognex\VisionProBootstrapper.cs" />
     <Compile Include="Vision\Cognex\VisionProCustomizedVisionImage.cs" />
     <Compile Include="Vision\Cognex\VisionProLineSearchingVisionTool.cs" />
     <Compile Include="Vision\Cognex\VisionProMultiPatternMatchingVisionTool.cs" />
@@ -624,6 +655,8 @@
     <Compile Include="Vision\IlluminationChannel.cs" />
     <Compile Include="Vision\IlluminationDataSet.cs" />
     <Compile Include="Vision\Illuminator.cs" />
+    <Compile Include="Vision\PatternMarksFoundEventArgs.cs" />
+    <Compile Include="Vision\PatternMatchResultOverlay.cs" />
     <Compile Include="Vision\qGeometry.cs" />
     <Compile Include="Vision\qMath.cs" />
     <Compile Include="Vision\QMCMatrix.cs" />
@@ -792,6 +825,7 @@
     <None Include="Resources\ico_circle_yellow_141.png" />
     <None Include="Resources\ico_speaker_gray_141.png" />
     <None Include="Resources\ico_speaker_green_141.png" />
+    <Content Include="NOTICE.TXT" />
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />

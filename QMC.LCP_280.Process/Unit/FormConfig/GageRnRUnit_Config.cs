@@ -121,7 +121,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (unitConfigControl == null) return;
+                if (unitConfigControl == null) 
+                    return;
+
                 if (_cfg == null)
                 {
                     unitConfigControl.BindConfig(null);
@@ -235,7 +237,15 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_unit == null) return;
+                if (_unit == null) 
+                    return;
+
+                var mb = new MessageBoxYesNo();
+                var drConfirm = mb.ShowDialog("Confirmation", "Teaching Position으로 이동하시겠습니까?");
+                if (drConfirm != DialogResult.Yes)
+                {
+                    return;
+                }
 
                 var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
 
@@ -250,14 +260,14 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 var result = await task;
-                var mb = new MessageBoxOk();
+                var mb1 = new MessageBoxOk();
                 if (result == 0)
                 {
-                    mb.ShowDialog("Information.", "Teaching Position 이동 완료");
+                    mb1.ShowDialog("Information.", "Teaching Position 이동 완료");
                 }
                 else
                 {
-                    mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
+                    mb1.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
                 }
             }
             catch (Exception ex)

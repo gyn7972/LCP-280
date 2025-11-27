@@ -53,7 +53,7 @@ namespace QMC.Common.IOUtil
         /// <summary>
         /// Vacuum On 후 OK까지 대기. 센서가 없으면 settleMs 대기 후 성공 처리(옵션).
         /// </summary>
-        public bool OnWaitOk(int timeoutMs = 2000, int pollMs = 10, int settleMs = 50, bool assumeOkWhenNoSensor = true)
+        public bool OnWaitOk(int timeoutMs = 2000, int pollMs = 2, int settleMs = 50, bool assumeOkWhenNoSensor = true)
         {
             On();
 
@@ -80,7 +80,7 @@ namespace QMC.Common.IOUtil
         /// <summary>
         /// Vacuum Off 후 OK 센서가 떨어질 때까지 대기. 센서가 없으면 settleMs 대기 후 성공 처리.
         /// </summary>
-        public bool OffWaitOk(int timeoutMs = 2000, int pollMs = 10, int settleMs = 50, bool assumeOffWhenNoSensor = true)
+        public bool OffWaitOk(int timeoutMs = 2000, int pollMs = 2, int settleMs = 50, bool assumeOffWhenNoSensor = true)
         {
             Off();
 

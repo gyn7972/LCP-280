@@ -14,7 +14,7 @@ namespace QMC.Common
         private GroupBox groupBox; // PropertyCollectionView처럼 private 필드로 선언
 
         private string _fontFamily = "맑은 고딕";
-        private float _fontSize = 10f;
+        private float _fontSize = 12f;
         private string _groupName = "Group Title";
 
         // 색상 테마 (디자이너에서 설정 가능하도록 노출)
@@ -198,7 +198,7 @@ namespace QMC.Common
             groupBox = new GroupBox
             {
                 Text = groupName,
-                Font = new Font("맑은 고딕", 10f, FontStyle.Regular),
+                Font = new Font("맑은 고딕", 12f, FontStyle.Regular),
                 ForeColor = _groupForeColor,
                 BackColor = _groupBackColor,
                 Padding = new Padding(8, 8, 8, 8)

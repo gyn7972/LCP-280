@@ -110,54 +110,12 @@ namespace QMC.LCP_280.Process
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Unit '{unitName}' Config 저장 예외: {ex.Message}");
+                        Log.Write(ex);
                         allOk = false;
                     }
                 }
                 return allOk;
 
-                //try
-                //{
-                //    directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
-
-                //    if (!Directory.Exists(directoryPath))
-                //    {
-                //        Directory.CreateDirectory(directoryPath);
-                //    }
-
-                //    bool allSuccess = true;
-
-                //    foreach (var kvp in _unitConfigs)
-                //    {
-                //        var unitName = kvp.Key;
-                //        var config = kvp.Value;
-
-                //        try
-                //        {
-                //            var filePath = Path.Combine(directoryPath, $"{unitName}_Config.xml");
-
-                //            var serializer = new XmlSerializer(config.GetType());
-                //            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
-                //            {
-                //                serializer.Serialize(writer, config);
-                //            }
-
-                //            Console.WriteLine($"Unit '{unitName}' Config 저장됨: {filePath}");
-                //        }
-                //        catch (Exception ex)
-                //        {
-                //            Console.WriteLine($"Unit '{unitName}' Config 저장 실패: {ex.Message}");
-                //            allSuccess = false;
-                //        }
-                //    }
-
-                //    return allSuccess;
-                //}
-                //catch (Exception ex)
-                //{
-                //    Console.WriteLine($"Config 저장 중 오류: {ex.Message}");
-                //    return false;
-                //}
             }
         }
 
@@ -216,7 +174,7 @@ namespace QMC.LCP_280.Process
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Unit '{unitName}' Config 로드 실패: {ex.Message}");
+                    Log.Write(ex);
                     allOk = false;
                 }
             }
@@ -236,65 +194,9 @@ namespace QMC.LCP_280.Process
         public void ApplyGlobalSimulationAndSave(bool isDryRun, bool save = false)
         {
             BaseConfig.SetGlobalSimulation(isDryRun);
-            //if (save)
-            //    SaveAllConfigs();
+            
         }
 
-        ///// <summary>
-        ///// 모든 Config 로드 (XML 형식)
-        ///// </summary>
-        //public bool LoadAllConfigs(string directoryPath = null)
-        //{
-        //    try
-        //    {
-        //        directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
-
-        //        if (!Directory.Exists(directoryPath))
-        //        {
-        //            Console.WriteLine($"Config 디렉토리가 없습니다: {directoryPath}");
-        //            return false;
-        //        }
-
-        //        var configFiles = Directory.GetFiles(directoryPath, "*_Config.xml");
-        //        bool allSuccess = true;
-
-        //        foreach (var filePath in configFiles)
-        //        {
-        //            try
-        //            {
-        //                var fileName = Path.GetFileNameWithoutExtension(filePath);
-        //                var unitName = fileName.Replace("_Config", "");
-
-        //                // 현재 등록된 Config 타입을 기반으로 역직렬화
-        //                if (_unitConfigs.TryGetValue(unitName, out var existingConfig))
-        //                {
-        //                    var serializer = new XmlSerializer(existingConfig.GetType());
-        //                    using (var reader = new StreamReader(filePath))
-        //                    {
-        //                        var loadedConfig = serializer.Deserialize(reader);
-        //                        if (loadedConfig is BaseConfig baseConfig)
-        //                        {
-        //                            _unitConfigs[unitName] = baseConfig;
-        //                            Console.WriteLine($"Unit '{unitName}' Config 로드됨: {filePath}");
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Console.WriteLine($"Config 파일 로드 실패 {filePath}: {ex.Message}");
-        //                allSuccess = false;
-        //            }
-        //        }
-
-        //        return allSuccess;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Config 로드 중 오류: {ex.Message}");
-        //        return false;
-        //    }
-        //}
 
     }
 
@@ -399,7 +301,7 @@ namespace QMC.LCP_280.Process
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Unit '{unitName}' Recipe 저장 실패: {ex.Message}");
+                            Log.Write(ex);
                             allSuccess = false;
                         }
                     }
@@ -408,7 +310,7 @@ namespace QMC.LCP_280.Process
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Recipe 저장 중 오류: {ex.Message}");
+                    Log.Write(ex);
                     return false;
                 }
             }
@@ -456,7 +358,7 @@ namespace QMC.LCP_280.Process
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Recipe 파일 로드 실패 {filePath}: {ex.Message}");
+                        Log.Write(ex);
                         allSuccess = false;
                     }
                 }
@@ -465,7 +367,7 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Recipe 로드 중 오류: {ex.Message}");
+                Log.Write(ex);
                 return false;
             }
         }

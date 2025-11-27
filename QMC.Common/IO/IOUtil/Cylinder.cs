@@ -46,7 +46,7 @@ namespace QMC.Common.IOUtil
             _config = config ?? new CylinderConfig { Name = name };
         }
 
-        public bool Extend(int timeoutMs = 1500, int settleMs = 50)
+        public bool Extend(int timeoutMs = 1500, int settleMs = 2)
         {
             DIO.Out(_bwdOutKey, false);
             DIO.Out(_fwdOutKey, true);
@@ -66,7 +66,7 @@ namespace QMC.Common.IOUtil
 
             if (this.Config.IsSimulation)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(1);
                 return true;
             }
 
@@ -80,7 +80,7 @@ namespace QMC.Common.IOUtil
             return false;
         }
 
-        public bool Retract(int timeoutMs = 1500, int settleMs = 50)
+        public bool Retract(int timeoutMs = 1500, int settleMs = 2)
         {
             DIO.Out(_fwdOutKey, false);
             DIO.Out(_bwdOutKey, true);
@@ -101,7 +101,7 @@ namespace QMC.Common.IOUtil
 
             if (this.Config.IsSimulation)
             {
-                Thread.Sleep(500);
+                Thread.Sleep(5);
                 return true;
             }
 

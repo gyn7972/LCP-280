@@ -374,19 +374,33 @@ namespace QMC.Common.Motions
         /// </summary>
         public static int ApplyHomeFromSetup(
             int axisNo, MotionAxisSetup setup,
-            double firstVel, double secondVel, double lastVel,
-            double indexVel, double firstAcc, double secondAcc)
+            double firstVel, double secondVel, double thirdVel,
+            double lastVel, double firstAcc, double secondAcc)
         {
             int rc;
 
             // 1) 홈 방법 (방향/신호/Z상)
             //MapHome(setup.HomeMode, out var dir, out var sig, out var z);
-            if ((rc = AXM.SetHomeSensorLevel(axisNo, setup.HomeSignalLevel)) != 0) return rc;
+            //if ((rc = AXM.SetHomeSensorLevel(axisNo, setup.HomeSignalLevel)) != 0) 
+            //    return rc;
 
-            if ((rc = AXM.SetHomeMethod(axisNo, setup.HomeDirection, setup.HomeSignal, setup.HomeZPhase, setup.HomeClearTime, setup.HomeOffset)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
+            if ((rc = AXM.SetHomeMethod(axisNo, 
+                setup.HomeDirection, 
+                setup.HomeSignal, 
+                setup.HomeZPhase, 
+                setup.HomeClearTime, 
+                setup.HomeOffset)) != 0) 
+                return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
 
             // 2) 홈 속도/가속
-            if ((rc = AXM.SetHomeVelocity(axisNo, firstVel, secondVel, lastVel, indexVel, firstAcc, secondAcc)) != 0) return rc; // AxmHomeSetVel :contentReference[oaicite:5]{index=5}
+            if ((rc = AXM.SetHomeVelocity(axisNo, 
+                firstVel, 
+                secondVel, 
+                thirdVel, 
+                lastVel, 
+                firstAcc, 
+                secondAcc)) != 0) 
+                return rc; // AxmHomeSetVel :contentReference[oaicite:5]{index=5}
 
             return 0;
         }

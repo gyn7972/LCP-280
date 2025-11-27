@@ -151,9 +151,16 @@
     <Compile Include="Component\DIOControl.Designer.cs">
       <DependentUpon>DIOControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormInputWaferID.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormInputWaferID.Designer.cs">
+      <DependentUpon>FormInputWaferID.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\HomeHooks.cs" />
     <Compile Include="Component\InterlockManager.cs" />
     <Compile Include="Component\MachineHomeCoordinator.cs" />
+    <Compile Include="Component\ManualSeqReproTestRunner.cs" />
     <Compile Include="Component\ManualSequenceControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -166,6 +173,13 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\MeasurementResultForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\MeasurementResultForm.Designer.cs">
+      <DependentUpon>MeasurementResultForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\ResultWriterManager.cs" />
     <Compile Include="Component\ProcessData\WaferMapView.designer.cs">
       <DependentUpon>WaferMapView.cs</DependentUpon>
     </Compile>
@@ -362,6 +376,7 @@
     <Compile Include="Unit\FormMain\Operator_Main.Designer.cs">
       <DependentUpon>Operator_Main.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormRecipe\Page\DesignModeHelper.cs" />
     <Compile Include="Unit\FormRecipe\Page\RankSetPage.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -644,11 +659,17 @@
     <EmbeddedResource Include="Component\DIOControl.resx">
       <DependentUpon>DIOControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormInputWaferID.resx">
+      <DependentUpon>FormInputWaferID.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\ManualSequenceControl.resx">
       <DependentUpon>ManualSequenceControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\JogControl.resx">
       <DependentUpon>JogControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\MeasurementResultForm.resx">
+      <DependentUpon>MeasurementResultForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\PatternMatchingControl.resx">
       <DependentUpon>PatternMatchingControl.cs</DependentUpon>

@@ -63,6 +63,7 @@ namespace QMC.LCP_280.Process.Unit
             name = tpn.ToString();
             return true;
         }
+
         [JsonIgnore]
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {

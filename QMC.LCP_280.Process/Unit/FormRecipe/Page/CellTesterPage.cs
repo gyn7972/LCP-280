@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using QMC.Common;
 using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
 using System;
@@ -20,6 +21,16 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private CancellationTokenSource _ctsRepeat;
 
+        private Component.MeasurementRecipe currentRecipe
+        {
+            get
+            {
+                if (DesignModeHelper.IsDesignMode(this)) return null;
+                var eq = Equipment.Instance;
+                return eq?.EquipmentRecipe?.CurrentRecipe;
+            }
+        }
+
         public CellTesterPage()
         {
             InitializeComponent();
@@ -40,6 +51,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void CellTesterPage_Load(object sender, EventArgs e)
         {
+            if (DesignModeHelper.IsDesignMode(this)) return;
+            if (currentRecipe == null) return;
+
             UpdateNewResultGrid();
         }
 
@@ -87,6 +101,17 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void UpdateNewResultGrid()
         {
+            if (DesignModeHelper.IsDesignMode(this)) 
+                return;
+
+            //var recipe = currentRecipe;
+            //if (recipe == null)
+            //{
+            //    // 그리드만 클리어하고 종료
+            //    try { dataGridView1.Rows.Clear(); } catch { }
+            //    return;
+            //}
+
             ClearResultGrid();
             foreach (var item in tester.ConditionSet.Items)
             {
@@ -288,7 +313,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
 
             int repeatCount = 1;
-            int intervalMs = 500;
+            int intervalMs = 500;// 500;
 
             if (rbvOption.SelectedIndex == 1)
             {
@@ -296,7 +321,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 intervalMs = (int)nudIntervalDelay.Value;
             }
 
-            Task.Run(() => RunManualMeasureAsync(repeatCount, intervalMs));
+            Task.Run(() => RunManualMeasureAsync(repeatCount, intervalMs)); 
         }
 
         private void btnTestStop_Click(object sender, EventArgs e)

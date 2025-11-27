@@ -169,13 +169,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void btn_Aligning_Click(object sender, EventArgs e)
         {
-            RotateStatus = (int)Rotary.RotarySocketState.Aligning;
+            RotateStatus = (int)Rotary.RotarySocketState.MAligning;
             this.Close();
         }
 
         private void btn_Aligned_Click(object sender, EventArgs e)
         {
-            RotateStatus = (int)Rotary.RotarySocketState.Aligned;
+            RotateStatus = (int)Rotary.RotarySocketState.MAligned;
             this.Close();
         }
 
@@ -199,7 +199,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void btn_Outputting_Click(object sender, EventArgs e)
         {
-            RotateStatus = (int)Rotary.RotarySocketState.Outputting;
+            RotateStatus = (int)Rotary.RotarySocketState.Unloaded;
             this.Close();
         }
 

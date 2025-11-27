@@ -245,35 +245,79 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_unit == null) return;
+                if (_unit == null)
+                    return;
 
-                var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
+                int nRet = 0;
 
-                using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
+                string tpName = string.Empty;
+                var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
+                if (hasName)
                 {
-                    var dr = pf.ShowDialog(this);
-                    if (dr == DialogResult.Cancel)
+                    InputStageConfig.TeachingPositionName en;
+                    if (Enum.TryParse(tpName, out en))
                     {
-                        _unit.StopTeachingPositionOnce(e.Index);
-                        return;
+                        switch (en)
+                        {
+                            case InputStageConfig.TeachingPositionName.Ready:
+                                nRet = await Task.Run(() => _unit.MoveToStageReadyPosition(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "Ready 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputStageConfig.TeachingPositionName.Loading:
+                                nRet = await Task.Run(() => _unit.MoveToStageLoadPosition(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "Loading 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputStageConfig.TeachingPositionName.Unloading:
+                                nRet = await Task.Run(() => _unit.MoveToStageUnloadPosition(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "Unloading 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputStageConfig.TeachingPositionName.CenterPoint:
+                                nRet = await Task.Run(() => _unit.MoveToStageCenterPosition(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "CenterPoint 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            case InputStageConfig.TeachingPositionName.SetPosition:
+                                //nRet = await Task.Run(() => _unit.MoveToStageCenterPosition(e.IsFine));
+                                //if (nRet != 0)
+                                //{
+                                //    new MessageBoxOk().ShowDialog("Error.", "CenterPoint 이동 실패");
+                                //    return;
+                                //}
+                                break;
+
+                            default:
+                                nRet = -1; // Unknown position
+                                break;
+                        }
                     }
                 }
 
-                var result = await task;
-                var mb = new MessageBoxOk();
-                if (result == 0)
-                {
-                    mb.ShowDialog("Information.", "Teaching Position 이동 완료");
-                }
-                else
-                {
-                    mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
-                }
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
+
+            new MessageBoxOk().ShowDialog("Infor.", "이동 완료");
         }
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)

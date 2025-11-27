@@ -43,6 +43,9 @@
             this.labelsocketNumberUnload = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.ButtonManualTest = new QMC.Common.IndividualMenuButton();
+            this.ButtonClear = new QMC.Common.IndividualMenuButton();
+            this.checkBoxIndexCal = new System.Windows.Forms.CheckBox();
             this.groupBoxProcessSeq = new System.Windows.Forms.GroupBox();
             this.manualSequenceControlProcessSeq = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tabControl1 = new System.Windows.Forms.TabControl();
@@ -76,11 +79,9 @@
             this.groupBoxManual.Controls.Add(this.tableLayoutPanel2);
             this.groupBoxManual.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxManual.Location = new System.Drawing.Point(507, 377);
-            this.groupBoxManual.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxManual.Location = new System.Drawing.Point(761, 566);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxManual.Size = new System.Drawing.Size(375, 372);
+            this.groupBoxManual.Size = new System.Drawing.Size(562, 557);
             this.groupBoxManual.TabIndex = 17;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
@@ -103,8 +104,12 @@
             this.tableLayoutPanel2.Controls.Add(this.labelsocketNumberUnload, 1, 3);
             this.tableLayoutPanel2.Controls.Add(this.label5, 0, 2);
             this.tableLayoutPanel2.Controls.Add(this.label6, 0, 3);
+            this.tableLayoutPanel2.Controls.Add(this.ButtonManualTest, 0, 5);
+            this.tableLayoutPanel2.Controls.Add(this.ButtonClear, 1, 5);
+            this.tableLayoutPanel2.Controls.Add(this.checkBoxIndexCal, 2, 5);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 10;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
@@ -117,7 +122,7 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(371, 350);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel2.TabIndex = 23;
             // 
             // label4
@@ -125,10 +130,10 @@
             this.label4.AutoSize = true;
             this.label4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label4.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label4.Location = new System.Drawing.Point(3, 38);
-            this.label4.Margin = new System.Windows.Forms.Padding(3);
+            this.label4.Location = new System.Drawing.Point(4, 56);
+            this.label4.Margin = new System.Windows.Forms.Padding(4);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(117, 29);
+            this.label4.Size = new System.Drawing.Size(177, 44);
             this.label4.TabIndex = 28;
             this.label4.Text = "L-Align No";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -138,10 +143,10 @@
             this.labelIndexSocketNo.AutoSize = true;
             this.labelIndexSocketNo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelIndexSocketNo.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelIndexSocketNo.Location = new System.Drawing.Point(3, 3);
-            this.labelIndexSocketNo.Margin = new System.Windows.Forms.Padding(3);
+            this.labelIndexSocketNo.Location = new System.Drawing.Point(4, 4);
+            this.labelIndexSocketNo.Margin = new System.Windows.Forms.Padding(4);
             this.labelIndexSocketNo.Name = "labelIndexSocketNo";
-            this.labelIndexSocketNo.Size = new System.Drawing.Size(117, 29);
+            this.labelIndexSocketNo.Size = new System.Drawing.Size(177, 44);
             this.labelIndexSocketNo.TabIndex = 22;
             this.labelIndexSocketNo.Text = "Load No";
             this.labelIndexSocketNo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -151,9 +156,10 @@
             this.comboBoxIndexSocketNo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxIndexSocketNo.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.comboBoxIndexSocketNo.FormattingEnabled = true;
-            this.comboBoxIndexSocketNo.Location = new System.Drawing.Point(3, 283);
+            this.comboBoxIndexSocketNo.Location = new System.Drawing.Point(4, 420);
+            this.comboBoxIndexSocketNo.Margin = new System.Windows.Forms.Padding(4);
             this.comboBoxIndexSocketNo.Name = "comboBoxIndexSocketNo";
-            this.comboBoxIndexSocketNo.Size = new System.Drawing.Size(117, 25);
+            this.comboBoxIndexSocketNo.Size = new System.Drawing.Size(174, 36);
             this.comboBoxIndexSocketNo.TabIndex = 21;
             this.comboBoxIndexSocketNo.Visible = false;
             this.comboBoxIndexSocketNo.SelectedIndexChanged += new System.EventHandler(this.comboBoxIndexSocketNo_SelectedIndexChanged);
@@ -168,9 +174,10 @@
             this.btnInputMAlign.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.btnInputMAlign.ForeColor = System.Drawing.Color.Black;
             this.btnInputMAlign.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnInputMAlign.Location = new System.Drawing.Point(126, 283);
+            this.btnInputMAlign.Location = new System.Drawing.Point(189, 420);
+            this.btnInputMAlign.Margin = new System.Windows.Forms.Padding(4);
             this.btnInputMAlign.Name = "btnInputMAlign";
-            this.btnInputMAlign.Size = new System.Drawing.Size(117, 28);
+            this.btnInputMAlign.Size = new System.Drawing.Size(176, 42);
             this.btnInputMAlign.TabIndex = 20;
             this.btnInputMAlign.TabStop = false;
             this.btnInputMAlign.Text = "InputMAlign";
@@ -180,9 +187,10 @@
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(249, 283);
+            this.buttonTest.Location = new System.Drawing.Point(374, 420);
+            this.buttonTest.Margin = new System.Windows.Forms.Padding(4);
             this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(118, 28);
+            this.buttonTest.Size = new System.Drawing.Size(177, 42);
             this.buttonTest.TabIndex = 18;
             this.buttonTest.Text = "SEQ STOP";
             this.buttonTest.UseVisualStyleBackColor = true;
@@ -193,10 +201,10 @@
             this.labelsocketNumberInput.AutoSize = true;
             this.labelsocketNumberInput.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberInput.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberInput.Location = new System.Drawing.Point(126, 3);
-            this.labelsocketNumberInput.Margin = new System.Windows.Forms.Padding(3);
+            this.labelsocketNumberInput.Location = new System.Drawing.Point(189, 4);
+            this.labelsocketNumberInput.Margin = new System.Windows.Forms.Padding(4);
             this.labelsocketNumberInput.Name = "labelsocketNumberInput";
-            this.labelsocketNumberInput.Size = new System.Drawing.Size(117, 29);
+            this.labelsocketNumberInput.Size = new System.Drawing.Size(177, 44);
             this.labelsocketNumberInput.TabIndex = 24;
             this.labelsocketNumberInput.Text = "---";
             this.labelsocketNumberInput.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -212,9 +220,10 @@
             this.btnRotary.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.btnRotary.ForeColor = System.Drawing.Color.Black;
             this.btnRotary.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnRotary.Location = new System.Drawing.Point(249, 3);
+            this.btnRotary.Location = new System.Drawing.Point(374, 4);
+            this.btnRotary.Margin = new System.Windows.Forms.Padding(4);
             this.btnRotary.Name = "btnRotary";
-            this.btnRotary.Size = new System.Drawing.Size(119, 29);
+            this.btnRotary.Size = new System.Drawing.Size(178, 44);
             this.btnRotary.TabIndex = 23;
             this.btnRotary.TabStop = false;
             this.btnRotary.Text = "Next Index";
@@ -226,10 +235,10 @@
             this.labelsocketNumberLAlign.AutoSize = true;
             this.labelsocketNumberLAlign.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberLAlign.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberLAlign.Location = new System.Drawing.Point(126, 38);
-            this.labelsocketNumberLAlign.Margin = new System.Windows.Forms.Padding(3);
+            this.labelsocketNumberLAlign.Location = new System.Drawing.Point(189, 56);
+            this.labelsocketNumberLAlign.Margin = new System.Windows.Forms.Padding(4);
             this.labelsocketNumberLAlign.Name = "labelsocketNumberLAlign";
-            this.labelsocketNumberLAlign.Size = new System.Drawing.Size(117, 29);
+            this.labelsocketNumberLAlign.Size = new System.Drawing.Size(177, 44);
             this.labelsocketNumberLAlign.TabIndex = 25;
             this.labelsocketNumberLAlign.Text = "---";
             this.labelsocketNumberLAlign.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -239,10 +248,10 @@
             this.labelsocketNumberProbe.AutoSize = true;
             this.labelsocketNumberProbe.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberProbe.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberProbe.Location = new System.Drawing.Point(126, 73);
-            this.labelsocketNumberProbe.Margin = new System.Windows.Forms.Padding(3);
+            this.labelsocketNumberProbe.Location = new System.Drawing.Point(189, 108);
+            this.labelsocketNumberProbe.Margin = new System.Windows.Forms.Padding(4);
             this.labelsocketNumberProbe.Name = "labelsocketNumberProbe";
-            this.labelsocketNumberProbe.Size = new System.Drawing.Size(117, 29);
+            this.labelsocketNumberProbe.Size = new System.Drawing.Size(177, 44);
             this.labelsocketNumberProbe.TabIndex = 26;
             this.labelsocketNumberProbe.Text = "---";
             this.labelsocketNumberProbe.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -252,10 +261,10 @@
             this.labelsocketNumberUnload.AutoSize = true;
             this.labelsocketNumberUnload.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberUnload.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberUnload.Location = new System.Drawing.Point(126, 108);
-            this.labelsocketNumberUnload.Margin = new System.Windows.Forms.Padding(3);
+            this.labelsocketNumberUnload.Location = new System.Drawing.Point(189, 160);
+            this.labelsocketNumberUnload.Margin = new System.Windows.Forms.Padding(4);
             this.labelsocketNumberUnload.Name = "labelsocketNumberUnload";
-            this.labelsocketNumberUnload.Size = new System.Drawing.Size(117, 29);
+            this.labelsocketNumberUnload.Size = new System.Drawing.Size(177, 44);
             this.labelsocketNumberUnload.TabIndex = 27;
             this.labelsocketNumberUnload.Text = "---";
             this.labelsocketNumberUnload.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -265,10 +274,10 @@
             this.label5.AutoSize = true;
             this.label5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label5.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label5.Location = new System.Drawing.Point(3, 73);
-            this.label5.Margin = new System.Windows.Forms.Padding(3);
+            this.label5.Location = new System.Drawing.Point(4, 108);
+            this.label5.Margin = new System.Windows.Forms.Padding(4);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(117, 29);
+            this.label5.Size = new System.Drawing.Size(177, 44);
             this.label5.TabIndex = 29;
             this.label5.Text = "Probe No";
             this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -278,24 +287,74 @@
             this.label6.AutoSize = true;
             this.label6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label6.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label6.Location = new System.Drawing.Point(3, 108);
-            this.label6.Margin = new System.Windows.Forms.Padding(3);
+            this.label6.Location = new System.Drawing.Point(4, 160);
+            this.label6.Margin = new System.Windows.Forms.Padding(4);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(117, 29);
+            this.label6.Size = new System.Drawing.Size(177, 44);
             this.label6.TabIndex = 30;
             this.label6.Text = "Unload No";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // ButtonManualTest
+            // 
+            this.ButtonManualTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonManualTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.ButtonManualTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonManualTest.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ButtonManualTest.CustomForeColor = System.Drawing.Color.Black;
+            this.ButtonManualTest.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ButtonManualTest.ForeColor = System.Drawing.Color.Black;
+            this.ButtonManualTest.ImageSize = new System.Drawing.Size(45, 45);
+            this.ButtonManualTest.Location = new System.Drawing.Point(4, 264);
+            this.ButtonManualTest.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonManualTest.Name = "ButtonManualTest";
+            this.ButtonManualTest.Size = new System.Drawing.Size(177, 44);
+            this.ButtonManualTest.TabIndex = 31;
+            this.ButtonManualTest.TabStop = false;
+            this.ButtonManualTest.Text = "ReportTest";
+            this.ButtonManualTest.UseVisualStyleBackColor = false;
+            this.ButtonManualTest.Click += new System.EventHandler(this.ButtonManualTest_Click);
+            // 
+            // ButtonClear
+            // 
+            this.ButtonClear.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonClear.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.ButtonClear.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonClear.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ButtonClear.CustomForeColor = System.Drawing.Color.Black;
+            this.ButtonClear.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ButtonClear.ForeColor = System.Drawing.Color.Black;
+            this.ButtonClear.ImageSize = new System.Drawing.Size(45, 45);
+            this.ButtonClear.Location = new System.Drawing.Point(189, 264);
+            this.ButtonClear.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonClear.Name = "ButtonClear";
+            this.ButtonClear.Size = new System.Drawing.Size(177, 44);
+            this.ButtonClear.TabIndex = 32;
+            this.ButtonClear.TabStop = false;
+            this.ButtonClear.Text = "Clear Index";
+            this.ButtonClear.UseVisualStyleBackColor = false;
+            this.ButtonClear.Click += new System.EventHandler(this.ButtonClear_Click);
+            // 
+            // checkBoxIndexCal
+            // 
+            this.checkBoxIndexCal.AutoSize = true;
+            this.checkBoxIndexCal.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.checkBoxIndexCal.Location = new System.Drawing.Point(373, 263);
+            this.checkBoxIndexCal.Name = "checkBoxIndexCal";
+            this.checkBoxIndexCal.Size = new System.Drawing.Size(180, 46);
+            this.checkBoxIndexCal.TabIndex = 33;
+            this.checkBoxIndexCal.Text = "Index Cal";
+            this.checkBoxIndexCal.UseVisualStyleBackColor = true;
+            this.checkBoxIndexCal.CheckedChanged += new System.EventHandler(this.checkBoxIndexCal_CheckedChanged);
             // 
             // groupBoxProcessSeq
             // 
             this.groupBoxProcessSeq.Controls.Add(this.manualSequenceControlProcessSeq);
             this.groupBoxProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxProcessSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxProcessSeq.Location = new System.Drawing.Point(886, 2);
-            this.groupBoxProcessSeq.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxProcessSeq.Location = new System.Drawing.Point(1329, 3);
             this.groupBoxProcessSeq.Name = "groupBoxProcessSeq";
-            this.groupBoxProcessSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxProcessSeq.Size = new System.Drawing.Size(376, 371);
+            this.groupBoxProcessSeq.Size = new System.Drawing.Size(564, 557);
             this.groupBoxProcessSeq.TabIndex = 27;
             this.groupBoxProcessSeq.TabStop = false;
             this.groupBoxProcessSeq.Text = "Process Seq";
@@ -303,12 +362,12 @@
             // manualSequenceControlProcessSeq
             // 
             this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(2, 20);
-            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(3, 30);
+            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
             this.manualSequenceControlProcessSeq.ParentUnit = null;
-            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(372, 349);
+            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(558, 524);
             this.manualSequenceControlProcessSeq.TabIndex = 14;
             // 
             // tabControl1
@@ -317,22 +376,20 @@
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.tabControl1.Location = new System.Drawing.Point(886, 377);
-            this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
+            this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.tabControl1.Location = new System.Drawing.Point(1329, 566);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(376, 372);
+            this.tabControl1.Size = new System.Drawing.Size(564, 557);
             this.tabControl1.TabIndex = 28;
             // 
             // tabPage1
             // 
             this.tabPage1.Controls.Add(this.manualSequenceControl);
-            this.tabPage1.Location = new System.Drawing.Point(4, 26);
-            this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage1.Location = new System.Drawing.Point(4, 39);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage1.Size = new System.Drawing.Size(368, 342);
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(556, 514);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "MAlign";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -340,22 +397,21 @@
             // manualSequenceControl
             // 
             this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControl.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControl.Location = new System.Drawing.Point(3, 3);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(364, 338);
+            this.manualSequenceControl.Size = new System.Drawing.Size(550, 508);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.manualSequenceControlProbe);
-            this.tabPage2.Location = new System.Drawing.Point(4, 26);
-            this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage2.Location = new System.Drawing.Point(4, 37);
             this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage2.Size = new System.Drawing.Size(368, 342);
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(556, 516);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Probe";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -363,21 +419,20 @@
             // manualSequenceControlProbe
             // 
             this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlProbe.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 3);
+            this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
             this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(364, 248);
+            this.manualSequenceControlProbe.Size = new System.Drawing.Size(550, 372);
             this.manualSequenceControlProbe.TabIndex = 15;
             // 
             // tabPage3
             // 
             this.tabPage3.Controls.Add(this.manualSequenceControlOutAlign);
-            this.tabPage3.Location = new System.Drawing.Point(4, 26);
-            this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage3.Location = new System.Drawing.Point(4, 37);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(368, 342);
+            this.tabPage3.Size = new System.Drawing.Size(556, 516);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "OutAlign";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -386,11 +441,11 @@
             // 
             this.manualSequenceControlOutAlign.Dock = System.Windows.Forms.DockStyle.Top;
             this.manualSequenceControlOutAlign.Location = new System.Drawing.Point(0, 0);
-            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
             this.manualSequenceControlOutAlign.ParentUnit = null;
-            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(368, 248);
+            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(556, 372);
             this.manualSequenceControlOutAlign.TabIndex = 29;
             // 
             // groupBox1
@@ -398,11 +453,9 @@
             this.groupBox1.Controls.Add(this.tableLayoutPanel5);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBox1.Location = new System.Drawing.Point(507, 2);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBox1.Location = new System.Drawing.Point(761, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(375, 371);
+            this.groupBox1.Size = new System.Drawing.Size(562, 557);
             this.groupBox1.TabIndex = 29;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "ImageView";
@@ -413,12 +466,13 @@
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel5.Controls.Add(this._ProcessCameraviewer, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
             // _ProcessCameraviewer
@@ -431,12 +485,11 @@
             this._ProcessCameraviewer.FrameRate = 1D;
             this._ProcessCameraviewer.InputImage = null;
             this._ProcessCameraviewer.IsViewCustomizedImage = false;
-            this._ProcessCameraviewer.Location = new System.Drawing.Point(2, 2);
-            this._ProcessCameraviewer.Margin = new System.Windows.Forms.Padding(2);
+            this._ProcessCameraviewer.Location = new System.Drawing.Point(3, 3);
             this._ProcessCameraviewer.Name = "_ProcessCameraviewer";
             this._ProcessCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ProcessCameraviewer.Simulated = false;
-            this._ProcessCameraviewer.Size = new System.Drawing.Size(367, 275);
+            this._ProcessCameraviewer.Size = new System.Drawing.Size(550, 413);
             this._ProcessCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ProcessCameraviewer.TabIndex = 13;
             this._ProcessCameraviewer.TabStop = false;
@@ -457,44 +510,45 @@
             this.tableLayoutPanel1.Controls.Add(this.tabControl1, 2, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1896, 1126);
             this.tableLayoutPanel1.TabIndex = 30;
             // 
             // dioControl
             // 
             this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(2, 379);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.dioControl.Location = new System.Drawing.Point(3, 569);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(501, 368);
+            this.dioControl.Size = new System.Drawing.Size(752, 551);
             this.dioControl.TabIndex = 32;
             // 
             // teachingPositionControl
             // 
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);
-            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.teachingPositionControl.Location = new System.Drawing.Point(3, 6);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(501, 367);
+            this.teachingPositionControl.Size = new System.Drawing.Size(752, 551);
             this.teachingPositionControl.TabIndex = 31;
             this.teachingPositionControl.UnitName = null;
             // 
             // Process_Working
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.ClientSize = new System.Drawing.Size(1896, 1126);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "Process_Working";
             this.Text = "Process_Working";
             this.groupBoxManual.ResumeLayout(false);
@@ -543,5 +597,8 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
+        private Common.IndividualMenuButton ButtonManualTest;
+        private Common.IndividualMenuButton ButtonClear;
+        private System.Windows.Forms.CheckBox checkBoxIndexCal;
     }
 }

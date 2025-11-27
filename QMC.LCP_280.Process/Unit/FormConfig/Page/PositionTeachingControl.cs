@@ -29,6 +29,17 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
 
 
 
+        
+
+        public void SetUnitData(BaseUnit unit, BaseConfig config)
+        {
+            _unit = unit;
+            _config = config;
+
+            InitializeUI();
+            InitializeRadioButtonView();
+        }
+
         private void InitializeUI()
         {
             try
@@ -40,15 +51,6 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             {
                 Log.Write("PositionTeachingControl", $"InitializeUI error: {ex}");
             }
-        }
-
-        public void SetUnitData(BaseUnit unit, BaseConfig config)
-        {
-            _unit = unit;
-            _config = config;
-
-            InitializeUI();
-            InitializeRadioButtonView();
         }
 
         private void InitializeRadioButtonView()
@@ -205,8 +207,14 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
                     return;
                 }
 
-                bool isFine = GetSelectedMoveModeIsFine();
+                var mb = new MessageBoxYesNo();
+                mb.Title = "이동 확인";
+                mb.Message = "선택된 Teaching Position으로 이동하시겠습니까?";
+                var dr = mb.ShowDialog();
+                if (dr != DialogResult.Yes)
+                    return;
 
+                bool isFine = GetSelectedMoveModeIsFine();
                 // 부모에게 이동 요청
                 MoveRequested?.Invoke(this, new MovePositionEventArgs
                 {
@@ -216,7 +224,7 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"btnMovePosition_Click error: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -321,7 +329,8 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
 
         private void BuildAxisButtons(IEnumerable<string> axisNames)
         {
-            if (axisButtonPanel == null) return;
+            if (axisButtonPanel == null) 
+                return;
 
             axisButtonPanel.SuspendLayout();
             try
@@ -358,7 +367,7 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             }
         }
 
-        private void OnAxisButtonClick(object sender, EventArgs e)
+        private async void OnAxisButtonClick(object sender, EventArgs e)
         {
             try
             {
@@ -399,21 +408,66 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
                     return;
                 }
 
-                // 부모에게 축 이동 요청 이벤트 발생
-                _unit.MoveAxisPositionOneAsync(axisName, dTargetPos, isFine);
+                var mb = new MessageBoxYesNo();
+                mb.Title = "이동 확인";
+                mb.Message = "선택된 Teaching Position으로 이동하시겠습니까?";
+                var dr = mb.ShowDialog();
+                if (dr != DialogResult.Yes)
+                    return;
+
+                // 이동 실행 및 결과 처리
+                var task = _unit?.MoveAxisPositionOneAsync(axisName, dTargetPos, isFine);
+                if (task == null)
+                {
+                    MessageBox.Show($"축 '{axisName}' 을(를) 찾을 수 없어 이동을 시작하지 못했습니다.",
+                        "이동 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // UI 피드백
+                var oldCursor = Cursor.Current;
+                if (btn != null) btn.Enabled = false;
+                Cursor.Current = Cursors.WaitCursor;
+
+                int rc;
+                try
+                {
+                    rc = await task; // UI 스레드 콘텍스트로 복귀
+                }
+                finally
+                {
+                    Cursor.Current = oldCursor;
+                    if (btn != null) btn.Enabled = true;
+                }
+
+                var mbResult = new MessageBoxOk();
+                if (rc == 0)
+                {
+                    mb.Title = "이동 확인";
+                    mb.Message = "이동 완료.";
+                    mb.ShowDialog();
+                    //MessageBox.Show($"[{axisName}] {dTargetPos} 위치로 이동 완료.",
+                    //    "이동 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    mb.Title = "이동 확인";
+                    mb.Message = "이동 실패.";
+                    mb.ShowDialog();
+                    //MessageBox.Show($"[{axisName}] {dTargetPos} 위치로 이동 실패 (rc={rc}).",
+                    //    "이동 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("OnAxisButtonClick error: " + ex.Message);
+                Log.Write(ex);
+                //Debug.WriteLine("OnAxisButtonClick error: " + ex.Message);
+                //MessageBox.Show("축 이동 중 오류가 발생했습니다.\n" + ex.Message,
+                //    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         #endregion
-
-        private void btnMovePosition_Click_1(object sender, EventArgs e)
-        {
-
-        }
     }
 
     #region EventArgs Classes

@@ -55,9 +55,55 @@ namespace QMC.Common.PKGTester
     {
         #region Fields
         private BinningSpecSheet specSheet = new BinningSpecSheet();
+
+        // Simulation 지원
+        public bool IsSimulation { get; set; }
+        public bool IsDryRun { get; set; }
+        private static readonly object _randLock = new object();
+        private static readonly Random _rand = new Random();
+        // Simulation 시 GoodBin 배정 확률 (0~1)
+        public double SimulationGoodProbability { get; set; } = 0.75;
+
         #endregion
 
         #region Properties
+        #endregion
+
+        #region Public Accessors (추가)
+        /// <summary>
+        /// 내부 SpecSheet의 헤더/빈 스펙을 읽기 전용으로 반환합니다.
+        /// </summary>
+        public BinningSpecSheet GetSpecSheet()
+        {
+            return specSheet;
+        }
+
+        /// <summary>
+        /// 지정한 BinLabel에 해당하는 항목별 Range 딕셔너리를 복사하여 반환합니다.
+        /// 존재하지 않으면 null 반환.
+        /// </summary>
+        public IReadOnlyDictionary<string, BinningRange> GetRangesForBin(string binLabel)
+        {
+            if (string.IsNullOrWhiteSpace(binLabel))
+                return null;
+            var spec = specSheet.Specs.FirstOrDefault(s => string.Equals(s.BinLabel, binLabel, StringComparison.OrdinalIgnoreCase));
+            if (spec == null)
+                return null;
+            // 복사본 생성(외부에서 값 변경 못하도록)
+            var copy = new Dictionary<string, BinningRange>(spec.Items.Count);
+            foreach (var kv in spec.Items)
+            {
+                var r = kv.Value;
+                var nr = new BinningRange(kv.Key)
+                {
+                    Min = r.Min,
+                    Max = r.Max,
+                    Ignore = r.Ignore
+                };
+                copy.Add(kv.Key, nr);
+            }
+            return copy;
+        }
         #endregion
 
         #region Constructors
@@ -75,8 +121,16 @@ namespace QMC.Common.PKGTester
         {
             return specSheet.CopyFrom(sheet);
         }
+
+        //Rank 분류를 여기서 매긴다.
         public BinningResult Classify(IReadOnlyDictionary<string, TestItemResult> data)
         {
+            // Simulation / DryRun이면 랜덤 분류
+            if (IsSimulation || IsDryRun)
+            {
+                return ClassifyRandom();
+            }
+
             BinningResult result = new BinningResult();
             try
             {
@@ -117,6 +171,47 @@ namespace QMC.Common.PKGTester
                 result.BinType = BinningType.NgBin;
                 result.BinLabel = "NG";
                 return result;
+            }
+            catch
+            {
+                result.Reset();
+            }
+            return result;
+        }
+
+        private BinningResult ClassifyRandom()
+        {
+            var result = new BinningResult();
+            try
+            {
+                int specCount = specSheet.Specs.Count;
+                if (specCount <= 0)
+                {
+                    // 사양 없으면 전부 NG
+                    result.BinNo = -1;
+                    result.BinType = BinningType.NgBin;
+                    result.BinLabel = "NG";
+                    return result;
+                }
+
+                double p;
+                lock (_randLock) { p = _rand.NextDouble(); }
+
+                if (p <= SimulationGoodProbability)
+                {
+                    int pickIndex;
+                    lock (_randLock) { pickIndex = _rand.Next(specCount); }
+                    var spec = specSheet.Specs[pickIndex];
+                    result.BinNo = pickIndex + 1;
+                    result.BinType = BinningType.GoodBin;
+                    result.BinLabel = spec.BinLabel;
+                }
+                else
+                {
+                    result.BinNo = -1;
+                    result.BinType = BinningType.NgBin;
+                    result.BinLabel = "NG";
+                }
             }
             catch
             {

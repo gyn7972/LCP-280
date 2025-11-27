@@ -37,6 +37,30 @@ namespace QMC.LCP_280.Process
         // NEW: 러너가 반환한 마지막 실행 결과 (대표 좌표 포함)
         private PatternMatchingRunner.PatternMatchRunResult _lastRunResult;
 
+        // 새로 추가: 카메라 변경 시 결과/크로스라인 초기화를 묶어서 처리
+        private void ResetCrossAndResults()
+        {
+            try
+            {
+                _lastResultPoint = Point.Empty;
+                _lastResultAngle = 0;
+                if (_lastValues != null) 
+                    _lastValues.Clear();
+
+                _lastRunResult = null;
+                if (_viewer != null)
+                {
+                    // 내부 기본 크로스라인 버퍼 초기화
+                    _viewer.InitCrossLine();
+                    // VisibleCrossLine 상태 유지하면서 다시 표시
+                    _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
+                    _viewer.Invalidate();
+                }
+            }
+            catch { /* 무시 */ }
+        }
+
+
         // 디자인 타임 가드
         private readonly bool _designMode;
 
@@ -47,9 +71,6 @@ namespace QMC.LCP_280.Process
 
             // 1) 오토 스케일/도킹/앵커 고정 (디자인/런타임 공통)
             ApplyFixedLayout();
-
-            // 2) 최소 크기 보장
-            //this.MinimumSize = new Size(900, 600);
 
             if (_designMode)
             {
@@ -92,22 +113,23 @@ namespace QMC.LCP_280.Process
             maintROIControl.SetImageviwer(_viewer);
             AttachEvents();
 
-            if (_btnClose != null) _btnClose.Click += (s, e) => Close();
-            //if (_btnSaveParam != null) _btnSaveParam.Click += BtnSaveParam_Click;
-            //if (_btnLoadParam != null) _btnLoadParam.Click += (s, e) => LoadRecipeForCurrentCamera();
+            //제거
+            //if (_btnClose != null) _btnClose.Click += (s, e) => Close();
 
-            if (patternMatchingParamControl != null)
-            {
-                patternMatchingParamControl.Load += patternMatchingParamControl_Load;
-                patternMatchingParamControl.UpdateParameters(_parameters);
-            }
+            // 중복 연결 제거: 디자이너에서 이미 연결됨
+            // if (patternMatchingParamControl != null)
+            // {
+            //     patternMatchingParamControl.Load += patternMatchingParamControl_Load;
+            //     patternMatchingParamControl.UpdateParameters(_parameters);
+            // }
+            patternMatchingParamControl?.UpdateParameters(_parameters);
 
             // 수동 Paint 이벤트 제거 (Overlay 시스템 사용)
             if (_viewer != null)
             {
                 _viewer.Paint -= Viewer_PaintCross;
                 _viewer.Paint -= Viewer_PaintMatches; // avoid duplicate
-                _viewer.Paint += Viewer_PaintMatches; // new unified paint
+                //_viewer.Paint += Viewer_PaintMatches; // new unified paint
             }
 
             // 체크박스 이벤트 연결 (Runner 생성 전이라도 상태를 기억, Runner 생성 시 반영)
@@ -135,7 +157,6 @@ namespace QMC.LCP_280.Process
             ApplyVisionRecipeFromMeasurement();
 
             var eq = Equipment.Instance;
-            //_currentRecipeName = Equipment._CurrentRecipeName;
             _currentRecipeName = eq.EquipmentRecipe.CurrentRecipeName;
             LoadRecipe(_currentRecipeName);
             TryBindEquipmentCameras();
@@ -257,8 +278,12 @@ namespace QMC.LCP_280.Process
 
         private void Viewer_PaintCross(object sender, PaintEventArgs e)
         {
-            if (_lastResultPoint == Point.Empty) return;
-            if (_viewer?.Image == null) return;
+            if (_lastResultPoint == Point.Empty) 
+                return;
+
+            if (_viewer?.Image == null) 
+                return;
+
             try
             {
                 var imgW = _viewer.Image.Width;
@@ -405,10 +430,97 @@ namespace QMC.LCP_280.Process
         private void RebuildResultOverlays()
         {
             // Overlays removed – direct painting in Viewer_PaintMatches handles drawing.
-            _viewer?.Invalidate();
+            // _viewer?.Invalidate();
+
+            if (_viewer == null) return;
+
+            try
+            {
+                var overlays = _viewer.ResultOverlays;
+                if (overlays == null) return;
+
+                lock (overlays)
+                {
+                    overlays.Clear();
+
+                    if (_lastValues == null || _lastValues.Count == 0)
+                    {
+                        _viewer.Invalidate();
+                        return;
+                    }
+
+                    int patternW = 40, patternH = 40;
+                    try
+                    {
+                        var ti = _parameters?.TrainImages?.FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                        if (ti != null) { patternW = ti.Header.Width; patternH = ti.Header.Height; }
+                    }
+                    catch { }
+
+                    bool showIdx = chkShowIndexes?.Checked ?? false;
+                    bool highlight = chkHighlightRef?.Checked ?? true;
+
+                    int repIndex = (_lastRunResult != null && _lastRunResult.ReferenceIndex >= 0)
+                                    ? _lastRunResult.ReferenceIndex : 0;
+                    if (listViewResults?.SelectedIndices.Count > 0)
+                        repIndex = listViewResults.SelectedIndices[0];
+                    if (repIndex < 0 || repIndex >= _lastValues.Count) repIndex = 0;
+
+                    for (int i = 0; i < _lastValues.Count; i++)
+                    {
+                        var v = _lastValues[i];
+                        var ov = new PatternMatchResultOverlay
+                        {
+                            Center = new PointF((float)v.X, (float)v.Y), // 절대좌표
+                            PatternWidth = patternW,
+                            PatternHeight = patternH,
+                            AngleDeg = (float)v.R,
+                            CrossHalfLenPx = (i == repIndex) ? 24 : 16,
+                            Color = Color.Lime,
+                            Thickness = (i == repIndex) ? 2 : 1,
+                            Highlight = highlight && (i == repIndex),
+                            Index = showIdx ? i : -1,
+                            Visible = true
+                        };
+                        overlays.Add(ov);
+                    }
+                }
+
+                _viewer.Invalidate();
+            }
+            catch { }
+
         }
 
         // Core Helpers (region removed to avoid unmatched directives)
+        private void BindUiToCurrentContext(Camera cam = null)
+        {
+            try
+            {
+                // ROI 패널
+                if (maintROIControl != null)
+                {
+                    maintROIControl.SetOwner(_visionPart);
+                    maintROIControl.SetImageviwer(_viewer);
+                    if (cam != null)
+                        maintROIControl.UpdateImageInfo(cam.Resolution);
+                    maintROIControl.EnsureDefaultRoiTools();
+                }
+
+                // 파라미터 패널
+                if (_parameters == null && _visionPart != null)
+                    _parameters = _visionPart.GetPatternMatchingParameters();
+                patternMatchingParamControl?.UpdateParameters(_parameters);
+
+                // 결과 패널
+                patternMatchingResultControl?.Bind(_visionPart, _parameters, _viewer);
+            }
+            catch
+            {
+                // 바인딩 중 예외는 UI에만 영향. 로깅 원하면 여기서 Log.Write(...)
+            }
+        }
+
         private void UpdateStatus(string text)
         {
             if (_lblStatus != null) _lblStatus.Text = text;
@@ -442,6 +554,21 @@ namespace QMC.LCP_280.Process
             {
                 Log.Write("PatternMatchingDialog", "TryBindEquipmentCameras error: " + ex.Message);
             }
+        }
+
+        public void SelectCamera(int index)
+        {
+            if (index < 0 || index >= _cameras.Count) return;
+            if (cameraListBoxItemsView != null)
+                cameraListBoxItemsView.SelectedIndex = index; // UI 표시 동기화
+            ApplyCameraSelection(index); // 여기서 LoadRecipeForCurrentCamera 호출됨
+        }
+
+        public void SelectCameraByName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            int idx = _cameraNames.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0) SelectCamera(idx);
         }
 
         public void SetCameras(IEnumerable<Camera> cameras)
@@ -480,7 +607,7 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Camera list init failed: " + ex.Message);
+                Log.Write(ex);
                 cameraListBoxItemsView?.SetItems();
             }
         }
@@ -491,17 +618,32 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                if (index < 0 || index >= _cameras.Count) return;
+                if (index < 0 || index >= _cameras.Count) 
+                    return;
+
+                // 이전 뷰/결과 완전 정리
                 ClearViewer();
+
                 try { _viewer.Camera?.StopLive(); } catch { }
+
                 var cam = _cameras[index];
                 _viewer.Camera = cam;
+
                 ResetViewerForCameraChange(cam);
+
+                // 카메라 변경 직후 크로스라인 및 이전 검색결과 완전 제거
+                ResetCrossAndResults();
+
                 try { cam.StartLive(); } catch { }
                 _viewer.StartUpdateTask();
+
                 SyncImageInfoToControls(cam);
+
                 _suspendAutoLoad = true;
                 try { LoadRecipeForCurrentCamera(); } finally { _suspendAutoLoad = false; }
+
+                // 아래 한 줄 추가: 현재 컨텍스트로 모든 UI 바인딩
+                BindUiToCurrentContext(cam);
 
                 try
                 {
@@ -539,12 +681,12 @@ namespace QMC.LCP_280.Process
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Runner init failed: " + ex.Message);
+                    Log.Write(ex);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ApplyCameraSelection error: " + ex.Message);
+                Log.Write(ex);
             }
         }
 
@@ -569,7 +711,7 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SyncImageInfoToControls error: " + ex.Message);
+                Log.Write(ex);
             }
         }
 
@@ -601,7 +743,7 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ResetViewerForCameraChange error: " + ex.Message);
+                Log.Write(ex);
             }
         }
 
@@ -615,9 +757,24 @@ namespace QMC.LCP_280.Process
                 try { _viewer.NormalOverlays?.Clear(); } catch { }
                 try { _viewer.Image = null; } catch { }
                 try { if (_viewer.InputImage != null) _viewer.InputImage = null; } catch { }
-                try { _lastResultPoint = Point.Empty; _lastResultAngle = 0; } catch { }
-                try { _viewer.InitCrossLine(); } catch { }
+
+                //try { _lastResultPoint = Point.Empty; _lastResultAngle = 0; } catch { }
+                //try { _viewer.InitCrossLine(); } catch { }
+                //_viewer.Invalidate();
+
+                // 결과 및 크로스라인(검색 십자) 초기화
+                _lastResultPoint = Point.Empty;
+                _lastResultAngle = 0;
+                if (_lastValues != null) _lastValues.Clear();
+                _lastRunResult = null;
+
+                // 뷰어 자체 중앙 크로스라인 버퍼 재설정
+                _viewer.InitCrossLine();
+                _viewer.ShowCrossLine(true); // 새 뷰에서도 항상 보여주려면 true 강제 (원래 상태로 두려면 _viewer.VisibleCrossLine 사용)
+
                 _viewer.Invalidate();
+
+                
             }
             catch { }
         }
@@ -630,21 +787,19 @@ namespace QMC.LCP_280.Process
             try
             {
                 string measName = null;
-                try 
+                try
                 {
                     var eq = Equipment.Instance;
-                    //_currentRecipeName = Equipment._CurrentRecipeName;
                     measName = eq.EquipmentRecipe.CurrentRecipeName;
-                    //measName = Equipment._CurrentRecipeName; 
-                } 
+                }
                 catch { measName = null; }
 
-                if (string.IsNullOrWhiteSpace(measName)) 
+                if (string.IsNullOrWhiteSpace(measName))
                     return null;
 
                 var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
                 var mr = br as MeasurementRecipe;
-                if (mr == null || !mr.UseVisionRecipe) 
+                if (mr == null || !mr.UseVisionRecipe)
                     return null;
 
                 string vName = string.IsNullOrWhiteSpace(mr.VisionRecipeName) ? fallbackRecipeName : mr.VisionRecipeName;
@@ -652,24 +807,18 @@ namespace QMC.LCP_280.Process
 
                 if (!string.IsNullOrWhiteSpace(vPath))
                 {
+                    // 1) 파일 경로가 명시된 경우: 현재 설계상 '공용 파일' 사용 유지
+                    //    (카메라별 분리를 강제하려면, 파일명에 카메라명을 suffix로 붙이도록 추가 로직을 도입해야 함)
                     if (File.Exists(vPath))
                     {
-                        // 명시적 파일
-                        return vPath;
+                        return vPath; // 공용 파일
                     }
-                    if (Directory.Exists(vPath))
-                    {
-                        // dir/<camera>/<name>.pmrecipe.json
-                        if (!string.IsNullOrWhiteSpace(vName))
-                        {
-                            string p1 = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".Vision.json");
-                            if (File.Exists(p1) || Directory.Exists(Path.GetDirectoryName(p1))) 
-                                return p1; // 존재 안해도 저장시 사용
 
-                            string p2 = Path.Combine(vPath, vName + ".Vision.json");
-                            if (File.Exists(p2) || Directory.Exists(vPath)) 
-                                return p2;
-                        }
+                    // 2) 디렉터리로 간주(존재하지 않아도 됨): 항상 카메라별 하위 폴더 경로 반환
+                    if (!string.IsNullOrWhiteSpace(vName))
+                    {
+                        string pCamera = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".Vision.json");
+                        return pCamera;
                     }
                 }
 
@@ -681,6 +830,61 @@ namespace QMC.LCP_280.Process
             }
             catch { }
             return null;
+
+            //try
+            //{
+            //    string measName = null;
+            //    try 
+            //    {
+            //        var eq = Equipment.Instance;
+            //        //_currentRecipeName = Equipment._CurrentRecipeName;
+            //        measName = eq.EquipmentRecipe.CurrentRecipeName;
+            //        //measName = Equipment._CurrentRecipeName; 
+            //    } 
+            //    catch { measName = null; }
+
+            //    if (string.IsNullOrWhiteSpace(measName)) 
+            //        return null;
+
+            //    var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
+            //    var mr = br as MeasurementRecipe;
+            //    if (mr == null || !mr.UseVisionRecipe) 
+            //        return null;
+
+            //    string vName = string.IsNullOrWhiteSpace(mr.VisionRecipeName) ? fallbackRecipeName : mr.VisionRecipeName;
+            //    string vPath = mr.VisionRecipePath;
+
+            //    if (!string.IsNullOrWhiteSpace(vPath))
+            //    {
+            //        if (File.Exists(vPath))
+            //        {
+            //            // 명시적 파일
+            //            return vPath;
+            //        }
+            //        if (Directory.Exists(vPath))
+            //        {
+            //            // dir/<camera>/<name>.pmrecipe.json
+            //            if (!string.IsNullOrWhiteSpace(vName))
+            //            {
+            //                string p1 = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".Vision.json");
+            //                if (File.Exists(p1) || Directory.Exists(Path.GetDirectoryName(p1))) 
+            //                    return p1; // 존재 안해도 저장시 사용
+
+            //                string p2 = Path.Combine(vPath, vName + ".Vision.json");
+            //                if (File.Exists(p2) || Directory.Exists(vPath)) 
+            //                    return p2;
+            //            }
+            //        }
+            //    }
+
+            //    if (!string.IsNullOrWhiteSpace(vName))
+            //    {
+            //        string camFolder = Path.Combine(_recipeDirectory, cameraName ?? "NoCamera");
+            //        return Path.Combine(camFolder, vName + ".Vision.json");
+            //    }
+            //}
+            //catch { }
+            //return null;
         }
 
         private string GetRecipePath(string cameraName, string recipeName)
@@ -705,7 +909,20 @@ namespace QMC.LCP_280.Process
         }
         private void SaveRecipeForCurrentCamera()
         {
-            SaveRecipe(_currentRecipeName, GetCurrentCameraName());
+            var camName = GetCurrentCameraName();
+            if (string.Equals(camName, "NoCamera", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(camName))
+            {
+                UpdateStatus("Save skipped: No camera selected.");
+                try
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "카메라 선택 후 저장하세요.");
+                }
+                catch { }
+                return;
+            }
+            SaveRecipe(_currentRecipeName, camName);
+            //SaveRecipe(_currentRecipeName, GetCurrentCameraName());
         }
         private void LoadRecipeForCurrentCamera()
         {
@@ -794,6 +1011,11 @@ namespace QMC.LCP_280.Process
                 maintROIControl.SetOwner(_visionPart);
                 maintROIControl.EnsureDefaultRoiTools();
                 AttachEvents();
+
+                // 결과 패널 바인딩 추가 (레시피를 외부에서 로드했을 때도 동기화)
+                patternMatchingResultControl?.Bind(_visionPart, _parameters, _viewer);
+
+
                 UpdateStatus($"Recipe loaded: {path}");
             }
             catch (Exception ex)
@@ -812,17 +1034,35 @@ namespace QMC.LCP_280.Process
             {
                 var cam = _viewer?.Camera;
                 if (cam != null && cam.Opened && cam.LatestImage?.RawData != null)
+                {
                     src = cam.LatestImage;
+                }
+
                 if (src == null && cam != null && cam.Opened)
                 {
-                    try { cam.GrabSync(out src); } catch { }
+                    try 
+                    { 
+                        cam.GrabSync(out src); 
+                    } 
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
                 }
+
                 if (src == null && _viewer?.InputImage?.RawData != null)
-                    src = _viewer.InputImage;
+                {
+                    src = _viewer?.InputImage;
+                }
                 if (src == null && _visionPart.TestImage?.RawData != null)
+                {
                     src = _visionPart.TestImage;
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
             return src;
         }
 
@@ -831,26 +1071,45 @@ namespace QMC.LCP_280.Process
             try
             {
                 SyncParametersFromUI();
+
                 if (_parameters == null)
+                {
                     _parameters = _visionPart.GetPatternMatchingParameters();
-                if (_parameters == null || _parameters.TrainImages == null || _parameters.TrainImages.Count == 0 ||
-                    _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
+                }
+                   
+                if (_parameters == null 
+                    || _parameters.TrainImages == null 
+                    || _parameters.TrainImages.Count == 0 
+                    || _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
                 {
                     var mb = new MessageBoxOk();
                     mb.ShowDialog("Notification!", "최소 1개 이상의 Train Image가 필요합니다.");
                     return;
                 }
+
                 var testImage = AcquireCurrentSearchImage();
-                if (testImage == null || testImage.GetImage() == null)
+
+                if (testImage == null 
+                    || testImage.GetImage() == null)
                 {
                     var mb = new MessageBoxOk();
                     mb.ShowDialog("Notification!", "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.");
                     return;
                 }
+
                 maintROIControl?.CommitCurrentRoi();
                 SaveRecipeForCurrentCamera();
-                if (_runner == null && _viewer?.Camera != null)
+
+                // 러너 생성은 ApplyCameraSelection에서 수행됨. 여기서는 존재 시 그대로 사용.
+                if (_runner == null)
                 {
+                    var cam = _viewer?.Camera;
+                    if (cam == null)
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Error!", "Runner 초기화 실패 (카메라 없음)");
+                        return;
+                    }
                     var opt = new PatternMatchingRunner.RunnerOptions
                     {
                         AutoLoadRecipe = false,
@@ -861,30 +1120,22 @@ namespace QMC.LCP_280.Process
                         CrossHalfLength = 15,
                         EnableSaveImage = false
                     };
-                    //_runner = new PatternMatchingRunner(_viewer.Camera, _viewer, opt);
-
-                    _runner = VisionRunnerHub.GetOrCreate(_viewer.Camera.Name);
-                    
+                    _runner = new PatternMatchingRunner(cam, _viewer, opt);
                     UpdateRunnerModeFromUI();
                     ApplyOverlayOptionCheckboxes();
                 }
-                if (_runner == null)
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"Runner 초기화 실패 (카메라 없음)");
-                    return;
-                }
+
                 _runner.LoadRecipe();
                 UpdateRunnerModeFromUI();
 
                 var res = _runner.Search(testImage, save: false);
-                _lastRunResult = res; // 새 결과 저장 (대표 좌표 포함)
+                _lastRunResult = res;
                 if (!res.Success || res.RawResult == null)
                 {
                     UpdateStatus("Search Fail: " + res.FailReason);
 
                     var mb = new MessageBoxOk();
-                    mb.ShowDialog("Notification!", $"Search 실패: \" + res.FailReason");
+                    mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}");
 
                     listViewResults.Items.Clear();
                     _lastValues.Clear();
@@ -896,7 +1147,6 @@ namespace QMC.LCP_280.Process
                 PopulateResultList();
                 if (_lastValues.Count > 0)
                 {
-                    // 대표 인덱스 기준 (PatternMatchRunResult.ReferenceIndex)
                     int idx = (res.ReferenceIndex >= 0 && res.ReferenceIndex < _lastValues.Count) ? res.ReferenceIndex : 0;
                     var first = _lastValues[idx];
                     _lastResultPoint = new Point((int)first.X, (int)first.Y);
@@ -1101,9 +1351,7 @@ namespace QMC.LCP_280.Process
                 if (ask.ShowDialog("저장 확인", "현재 설정을 저장하시겠습니까?") == DialogResult.Yes)
                 {
                     SaveRecipeForCurrentCamera();
-
-                    _runner = VisionRunnerHub.GetOrCreate(_viewer.Camera.Name);
-                    _runner.LoadRecipe();
+                    _runner?.LoadRecipe(); // 러너 교체 대신 로드만
                 }
                 else
                 {
@@ -1115,6 +1363,26 @@ namespace QMC.LCP_280.Process
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"저장 중 오류: " + ex.Message);
             }
+            //try
+            //{
+            //    maintROIControl?.CommitCurrentRoi();
+            //    var ask = new MessageBoxYesNo();
+            //    if (ask.ShowDialog("저장 확인", "현재 설정을 저장하시겠습니까?") == DialogResult.Yes)
+            //    {
+            //        SaveRecipeForCurrentCamera();
+            //        _runner = VisionRunnerHub.GetOrCreate(_viewer.Camera.Name);
+            //        _runner.LoadRecipe();
+            //    }
+            //    else
+            //    {
+            //        UpdateStatus("Save canceled");
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    var mb = new MessageBoxOk();
+            //    mb.ShowDialog("Error!", $"저장 중 오류: " + ex.Message);
+            //}
         }
 
         private void txtResultT_TextChanged(object sender, EventArgs e)
@@ -1134,7 +1402,30 @@ namespace QMC.LCP_280.Process
 
         private void _btnClose_Click(object sender, EventArgs e)
         {
+            Close();
+        }
 
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            try
+            {
+                if (!DesignMode)
+                {
+                    if (_viewer != null)
+                    {
+                        _viewer.Paint -= Viewer_PaintMatches;
+                        try { _viewer.Camera?.StopLive(); } catch { }
+                    }
+                    if (maintROIControl != null)
+                    {
+                        maintROIControl.TrainImageCaptured -= MaintROIControl_TrainImageCaptured;
+                    }
+                    _runner?.Dispose();
+                    _runner = null;
+                }
+            }
+            catch { }
+            base.OnHandleDestroyed(e);
         }
     }
 }

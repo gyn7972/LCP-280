@@ -51,7 +51,6 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int IndexOfOutAlign { get; set; } = 0;
 
-
         public IndexUnloadAlignerConfig() 
             : base("IndexUnloadAlignerConfig") 
         {

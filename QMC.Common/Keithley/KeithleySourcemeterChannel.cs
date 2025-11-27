@@ -26,7 +26,7 @@ namespace QMC.Common.Keithley
             // Source
             public double SourceValue { get; set; }
             public double SourceTime { get; set; }
-            public double SourceLimit { get; set; }
+            public double MeasureLimit { get; set; }
             public double SourceRange { get; set; }
 
             // Measure
@@ -186,7 +186,7 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
-                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("vi(" + string.Join(",", args) + ")");
@@ -199,7 +199,7 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
-                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("iv(" + string.Join(",", args) + ")");
@@ -212,7 +212,7 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
-                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("vi_trig(" + string.Join(",", args) + ")");
@@ -225,7 +225,7 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
-                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");

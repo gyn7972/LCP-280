@@ -502,7 +502,7 @@ namespace QMC.Common.Vision
             }
             catch (Exception ex)
             {
-                Console.WriteLine(string.Format("VisionImage : {0}", ex.Message));
+                Log.Write(ex);
             }
             finally
             {
@@ -619,7 +619,7 @@ namespace QMC.Common.Vision
             catch (Exception ex)
             {
                 //Log.Write("VisionImage", ex.Message);
-                Console.WriteLine(ex.Message);
+                Log.Write(ex);
             }
 
             return ret;

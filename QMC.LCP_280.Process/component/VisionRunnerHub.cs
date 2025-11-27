@@ -92,6 +92,7 @@ namespace QMC.LCP_280.Process.Component
             try
             {
                 var res = extImage == null ? runner.Search(false) : runner.Search(extImage, false);
+
                 if (!res.Success || res.Matches == null || res.Matches.Count == 0)
                     return (false, null, res.FailReason ?? "No match");
                 return (true, res.Matches, null);

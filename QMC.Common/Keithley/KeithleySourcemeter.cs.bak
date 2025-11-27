@@ -1,0 +1,727 @@
+﻿using QMC.Common.Component;
+using QMC.Common.PKGTester;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace QMC.Common.Keithley
+{
+    public class KeithleySourceTestConditionItem : TestConditionItem
+    {
+        #region Field & Property
+        public bool IsOpticalSource { get; set; }
+        #endregion
+
+        #region Constructor
+        public KeithleySourceTestConditionItem() : base("")
+        {
+            IsOpticalSource = false;
+        }
+        public KeithleySourceTestConditionItem(TestConditionItem item, bool isOpticalSource) : base("")
+        {
+            this.Name = item.Name;
+            this.Type = item.Type;
+            this.SourceValue = item.SourceValue;
+            this.SourceTime = item.SourceTime;
+            this.MeasureLimit = item.MeasureLimit;
+            this.MeasureTime = item.MeasureTime;
+
+            IsOpticalSource = isOpticalSource;
+        }
+        #endregion
+    }
+
+    public class KeithleySourcemeter : BaseComponent, IDisposable
+    {
+        #region Defines
+        public enum SMUInstrumentCategory
+        {
+            Keithley260X,
+            Keithley261X,
+            Keithley263X,
+        }
+        #endregion
+
+        #region Field
+        private List<string> script = new List<string>();
+        private List<KeithleySourceTestConditionItem> testItems = new List<KeithleySourceTestConditionItem>();
+        private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
+
+        private System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch(); // Timeout check
+        #endregion
+
+        #region Property
+        public new KeithelySourcemeterConfig Config { get; private set; }
+        public KeithleyInstrumentCommunicator Communicator { get; private set; }
+        public Dictionary<string, KeithleySourcemeterChannel> Channels { get; private set; }
+        public string ModelName { get; private set; }
+        public string SerialNo { get; private set; }
+        public string FirmwareRevision { get; private set; }
+        public IDictionary<string, TestItemResult> Results => results;
+        #endregion
+
+        #region Constructor
+        public KeithleySourcemeter(string name) : base(name)
+        {
+            Communicator = new KeithleyInstrumentCommunicator();
+            Config = new KeithelySourcemeterConfig(name);
+
+            // 2611B 기준으로 구성함. (추후 변경 필요)
+            Channels = new Dictionary<string, KeithleySourcemeterChannel>
+            {
+                { "smua", new KeithleySourcemeterChannel("smua", this) },
+                //{ "smub", new KeithleySourcemeterChannel("smub", this) },
+            };
+
+            // Event Subscribe
+            Communicator.OnSessionOpened += Communicator_OnSessionOpened;
+            Communicator.OnSessionClosed += Communicator_OnSessionClosed;
+            Communicator.OnReceived += Communicator_OnReceived;
+        }
+        #endregion
+
+        #region IDisposable
+        private bool disposed = false;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose managed resources
+                    if (Communicator != null)
+                    {
+                        if (Communicator.IsConnected)
+                        {
+                            Communicator.CloseSession();
+                        }
+
+                        Communicator.OnSessionOpened -= Communicator_OnSessionOpened;
+                        Communicator.OnSessionClosed -= Communicator_OnSessionClosed;
+                        Communicator.OnReceived -= Communicator_OnReceived;
+                        Communicator = null;
+                    }
+                }
+                // Dispose unmanaged resources
+                disposed = true;
+            }   
+        }
+        #endregion
+
+        #region Event
+        public event EventHandler OnSessionOpened;
+        public event EventHandler OnSessionClosed;
+        public event EventHandler OnInitialized;
+        public event EventHandler OnReceived;
+        public event EventHandler<string> OnMeasureFailed;
+
+        // Subscribe Event      
+        private void Communicator_OnSessionOpened(object sender, EventArgs e)
+        {
+            OnSessionOpened?.Invoke(this, EventArgs.Empty);
+        }
+        private void Communicator_OnSessionClosed(object sender, EventArgs e)
+        {
+            ModelName = "";
+            SerialNo = "";
+            FirmwareRevision = "";
+
+            OnSessionClosed?.Invoke(this, EventArgs.Empty);
+        }
+        private void Communicator_OnReceived(object sender, EventArgs e)
+        {
+            OnReceived?.Invoke(this, EventArgs.Empty);
+        }
+        #endregion
+
+        #region Override Methods
+        public override int Initialize()
+        {
+            try
+            {
+                // Open session
+                if (Communicator.IsConnected)
+                    Communicator.CloseSession();
+
+                if (!Communicator.OpenSession(Config.ResourceName))
+                {
+                    throw new Exception($"Failed to open session. (ResourceName: {Config.ResourceName})");
+                }
+
+                // Query Identification
+                string identification = "";
+                if (!Communicator.Query("*IDN?", ref identification))
+                {
+                    throw new Exception($"Failed to get identification.");
+                }
+
+                string[] items = identification.Split(',');
+                if (items.Length == 4 && items[0].Contains("Keithley Instruments"))
+                {
+                    ModelName = items[1].Trim();
+                    SerialNo = items[2].Trim();
+                    FirmwareRevision = items[3].Trim();
+                }
+                else
+                {
+                    throw new Exception($"[{Name}] is not keithley sourcemeter.");
+                }    
+
+                // Load Script
+                if (SendUserScript() != 0)
+                {
+                    throw new Exception($"Failed to send user script. (FileName: {Config.ScriptFileName})");
+                }
+
+                // Initialize
+                if (Init() != 0)
+                {
+                    throw new Exception("Failed to initialize sourcemeter.");
+                }
+
+                // Apply SMU Config 
+                if (ApplyConfig() != 0)
+                {
+                    throw new Exception("Failed to apply parameter.");
+                }
+
+                OnInitialized?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                ModelName = "";
+                SerialNo = "";
+                FirmwareRevision = "";
+
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+        #endregion
+
+        public bool IsReady()
+        {
+            if (!Config.IsSimulation)
+            {
+                if (Communicator != null)
+                {
+                    if (Communicator.IsConnected)
+                        return true;
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        public int ApplyConfig()
+        {
+            try
+            {
+                // Sourcemeter Parameter 적용
+                // -
+
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.ApplyConfig())
+                    {
+                        throw new Exception($"Failed to apply config channel [{channel.Name}].");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
+        public int Init()
+        {
+            try
+            {
+                if (!Communicator.Write("init()"))
+                    throw new Exception("Failed to send init command.");
+
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.Init())
+                    {
+                        throw new Exception($"Failed to initialize channel [{channel.Name}].");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
+        public int Measure()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"];
+                if (Config.IsSimulation)
+                {
+                    channel.SimulateBufferData();
+                    return 0;
+                }
+
+                if (!channel.RunCommands())
+                    throw new Exception("Failed to run measure commands.");
+
+                stopwatch.Restart();
+
+                while (!channel.WaitComplete())
+                {
+                    if (stopwatch.ElapsedMilliseconds > Config.MeasureTimeout)
+                        throw new TimeoutException("Measure timeout.");
+
+                    Thread.Sleep(10);
+                }
+
+                if (!channel.ReadBufferData())
+                    throw new Exception("Failed to read buffer data.");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                OnMeasureFailed?.Invoke(this, ex.Message);
+                return -1;
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+            return 0;
+        }  
+
+        #region Test Item Methods
+        public void ClearTestItems()
+        {
+            testItems.Clear();
+            results.Clear();
+        }   
+        public bool AddTestItem(TestConditionItem item, bool isOpticalSource = false)
+        {
+            if (item == null)
+                return false;
+
+            KeithleySourceTestConditionItem testItem = new KeithleySourceTestConditionItem(item, isOpticalSource);
+
+            // 1) Electrical 항목만 추가 가능
+            TestItemCategory category = testItem.GetTestItemCategory();
+            if (category != TestItemCategory.Electrical)
+                return false;
+
+            // 2) isOpticalSource는 오직 하나만 가능
+            if (isOpticalSource)
+            {
+                if (testItems.Any(x => x.IsOpticalSource))
+                    return false;
+            }
+
+            testItems.Add(testItem);
+            results.Add(testItem.Name, new TestItemResult());
+            return true;
+        }
+        public bool BuildTestCommands()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
+                channel.ClearCommands();
+                foreach (var item in testItems)
+                {
+                    var command = new KeithleySourcemeterChannel.ChannelCommand();
+                    switch (item.Type)
+                    {
+                        case TestItemType.VF:   //mA
+                            {
+                                command.Name = item.Name;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetISourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.VR:   //uA
+                            {
+                                command.Name = item.Name;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.SourceValue = (item.SourceValue / 1000) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetISourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IF:
+                            {
+                                command.Name = item.Name;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IR:
+                            {
+                                command.Name = item.Name;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Not supported test item type. (Type: {item.Type})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        public bool GetResultProcess()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
+
+                int measureCount = 0;
+                foreach (var item in testItems)
+                {
+                    if (item.IsMeasureItem())
+                        measureCount ++;
+                }
+
+                if (channel.BufferDatas.Length != measureCount)
+                {
+                    throw new InvalidOperationException($"Data count mismatch. (Expected: {testItems.Count}, Actual: {channel.BufferDatas.Length})");
+                }
+
+                // Data assign
+                for (int i = 0; i < channel.BufferDatas.Length; i ++)
+                {
+                    TestConditionItem item = testItems[i];
+                    TestItemResult itemResult = results[item.Name];
+
+                    double value = double.Parse(channel.BufferDatas[i]);
+                    switch (testItems[i].Type)
+                    {
+                        case TestItemType.VF:
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
+                            break;
+                        case TestItemType.VR:
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
+                            break;
+                        case TestItemType.IF:
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
+                            break;
+                        case TestItemType.IR:
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                foreach (var key in results.Keys.ToList())
+                {
+                    results[key].Reset();
+                }
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        #endregion
+
+        // Script Methods
+        #region Script Methods
+        private bool LoadScriptFromFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return false;
+            try
+            {
+                script.Clear();
+                string text = "";
+                int lineCommentPosition = 0;
+                bool comment = false;
+                string[] fileTexts = System.IO.File.ReadAllLines(filePath);
+                for (int i = 0; i < fileTexts.Length; i++)
+                {
+                    // 텍스트의 앞 뒤 빈공간 제거
+                    text = fileTexts[i].Trim();
+                    // 빈 텍스트 경우 패스
+                    if (text == "")
+                        continue;
+                    // 범위 주석처리 경우 패스
+                    if (text.Contains("--[[") == true)
+                    {
+                        comment = true;
+                        continue;
+                    }
+                    if (text.Contains("]]--") == true)
+                    {
+                        comment = false;
+                        continue;
+                    }
+                    if (comment == true)
+                        continue;
+                    // 주석처리 경우 주석처리 앞에 텍스트가 있다면 가져온다.
+                    lineCommentPosition = text.IndexOf("--");
+                    if (lineCommentPosition > 0)
+                        text = text.Substring(0, lineCommentPosition).Trim();
+                    if (text == "")
+                        continue;
+                    script.Add(text);
+                }
+            }
+            catch
+            {
+                // Error handling
+                return false;
+            }
+            return true;
+        }
+        private int SendUserScript()
+        {
+            try
+            {
+                if (!LoadScriptFromFile(Config.ScriptFileName))
+                    return -1;
+
+                // Send Script
+                foreach (var txt in script)
+                {
+                    if (!Communicator.Write(txt))
+                        throw new Exception("Failed to send user script.");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Error handling
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+        #endregion
+
+        // Range Methods
+        #region Range Methods
+        public double GetISourceRange(double ISourceValue)
+        {
+            double sourceSize = Math.Abs(ISourceValue);
+            double sourceRange = 0;
+            switch (Config.Model)
+            {
+                case SMUInstrumentCategory.Keithley260X:
+                    {
+                        if (sourceSize >= 1.5) { sourceRange = 3; }
+                        else if (sourceSize >= 1) { sourceRange = 1.5; }
+                        else if (sourceSize >= 1e-1) { sourceRange = 1; }
+                        else if (sourceSize >= 1e-2) { sourceRange = 1e-1; }
+                        else if (sourceSize >= 1e-3) { sourceRange = 1e-2; }
+                        else if (sourceSize >= 1e-4) { sourceRange = 1e-3; }
+                        else if (sourceSize >= 1e-5) { sourceRange = 1e-4; }
+                        else if (sourceSize >= 1e-6) { sourceRange = 1e-5; }
+                        else { sourceRange = 1e-6; }
+                    }
+                    break;
+                case SMUInstrumentCategory.Keithley261X:
+                case SMUInstrumentCategory.Keithley263X:
+                    {
+                        if (sourceSize >= 1) { sourceRange = 1.5; }
+                        else if (sourceSize >= 1e-1) { sourceRange = 1; }
+                        else if (sourceSize >= 1e-2) { sourceRange = 1e-1; }
+                        else if (sourceSize >= 1e-3) { sourceRange = 1e-2; }
+                        else if (sourceSize >= 1e-4) { sourceRange = 1e-3; }
+                        else if (sourceSize >= 1e-5) { sourceRange = 1e-4; }
+                        else if (sourceSize >= 1e-6) { sourceRange = 1e-5; }
+                        else { sourceRange = 1e-6; }
+                    }
+                    break;
+            }
+            return sourceRange;
+        }
+        public double GetVSourceRange(double VSourceValue)
+        {
+            double sourceSize = Math.Abs(VSourceValue);
+            double sourceRange = 0;
+            switch (Config.Model)
+            {
+                case SMUInstrumentCategory.Keithley260X:
+                    {
+                        if (sourceSize >= 35) { sourceRange = 40; }
+                        else if (sourceSize >= 20) { sourceRange = 35; }
+                        else if (sourceSize >= 6) { sourceRange = 20; }
+                        else if (sourceSize >= 1) { sourceRange = 6; }
+                        else if (sourceSize >= 1e-1) { sourceRange = 1; }
+                        else { sourceRange = 1e-1; }
+                    }
+                    break;
+                case SMUInstrumentCategory.Keithley261X:
+                case SMUInstrumentCategory.Keithley263X:
+                    {
+                        if (sourceSize >= 180) { sourceRange = 200; }
+                        else if (sourceSize >= 20) { sourceRange = 180; }
+                        else if (sourceSize >= 5) { sourceRange = 20; }
+                        else if (sourceSize >= 1) { sourceRange = 5; }
+                        else if (sourceSize >= 1e-1) { sourceRange = 1; }
+                        else { sourceRange = 1e-1; }
+                    }
+                    break;
+            }
+            return sourceRange;
+        }
+        public double GetIMeasureRange(double IMeasureLimit)
+        {
+            double MeasureLimitSize = Math.Abs(IMeasureLimit);
+            double measureRange = 0;
+            switch (Config.Model)
+            {
+                case SMUInstrumentCategory.Keithley260X:
+                    {
+                        if (MeasureLimitSize < 1e-5) { measureRange = 1e-5; }
+                        else if (MeasureLimitSize < 1e-4) { measureRange = 1e-4; }
+                        else if (MeasureLimitSize < 1e-3) { measureRange = 1e-3; }
+                        else if (MeasureLimitSize < 1e-2) { measureRange = 1e-2; }
+                        else if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 1.5) { measureRange = 1.5; }
+                        else { measureRange = 3; }
+                    }
+                    break;
+                case SMUInstrumentCategory.Keithley261X:
+                case SMUInstrumentCategory.Keithley263X:
+                    {
+                        if (MeasureLimitSize < 1e-5) { measureRange = 1e-5; }
+                        else if (MeasureLimitSize < 1e-4) { measureRange = 1e-4; }
+                        else if (MeasureLimitSize < 1e-3) { measureRange = 1e-3; }
+                        else if (MeasureLimitSize < 1e-2) { measureRange = 1e-2; }
+                        else if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else { measureRange = 1.5; }
+                    }
+                    break;
+            }
+            return measureRange;
+        }
+        public double GetVMeasureRange(double VMeasureLimit)
+        {
+            double MeasureLimitSize = Math.Abs(VMeasureLimit);
+            double measureRange = 0;
+            switch (Config.Model)    
+            {
+                case SMUInstrumentCategory.Keithley260X:
+                    {
+                        if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 6) { measureRange = 6; }
+                        else if (MeasureLimitSize < 20) { measureRange = 20; }
+                        else if (MeasureLimitSize < 35) { measureRange = 35; }
+                        else { measureRange = 40; }
+                    }
+                    break;
+                case SMUInstrumentCategory.Keithley261X:
+                case SMUInstrumentCategory.Keithley263X:
+                    {
+                        if (MeasureLimitSize < 1e-1) { measureRange = 1e-1; }
+                        else if (MeasureLimitSize < 1) { measureRange = 1; }
+                        else if (MeasureLimitSize < 5) { measureRange = 5; }
+                        else if (MeasureLimitSize < 20) { measureRange = 20; }
+                        else if (MeasureLimitSize < 180) { measureRange = 180; }
+                        else { measureRange = 200; }
+                    }
+                    break;
+            }
+            return measureRange;
+        }
+        #endregion
+
+        // Digital I/O Methods
+        #region Digital I/O Methods
+        public bool[] GetDigitalIOState(int bitCount=14)
+        {
+            bool[] digio = null;
+            try
+            {
+                string response = "";
+                if (Communicator.Query("print(digio.readport())", ref response))
+                {
+                    response = response.Replace("\n", "");
+                    if (double.TryParse(response, out double value))
+                    {
+                        digio = new bool[bitCount];
+                        int v = (int)value;
+                        for (int i = 0; i < bitCount; i++)
+                        {
+                            digio[i] = (v & (1 << i)) != 0;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            return digio;
+        }
+        #endregion
+    }
+}

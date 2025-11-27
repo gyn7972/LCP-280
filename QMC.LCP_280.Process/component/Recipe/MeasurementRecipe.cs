@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using QMC.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using QMC.Common;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -21,13 +22,13 @@ namespace QMC.LCP_280.Process.Component
         //[DefaultValue("DefaultMeasurement")]
         //public string MeasurementRecipeName { get; set; } = "DefaultMeasurement";
 
-        [Category("Measurement"), DisplayName("Test Condition Set Path")]
+        [Category("Measurement"), DisplayName("Test Condition Set File")]
         [DefaultValue("")]
-        public string TestConditionSetPath { get; set; } = string.Empty;
+        public string TestConditionSetFile { get; set; } = string.Empty;
 
-        [Category("Measurement"), DisplayName("Binning Spec Sheet Path")]
+        [Category("Measurement"), DisplayName("Binning Spec Sheet File")]
         [DefaultValue("")]
-        public string BinningSpecSheetPath { get; set; } = string.Empty;
+        public string BinningSpecSheetFile { get; set; } = string.Empty;
 
         // 2. VisionParameters (비전 파라미터) 참조
         [Category("Vision"), DisplayName("Use Vision Recipe")]
@@ -82,22 +83,27 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(90.0)]
         public double MapMatchLimitPercent { get; set; } = 90.0;
 
-        // Bin Array
-        [Category("Bin Array"), DisplayName("Bin Count X")]
-        [DefaultValue(50)]
-        public int BinCountX { get; set; } = 50;
-
-        [Category("Bin Array"), DisplayName("Bin Count Y")]
-        [DefaultValue(50)]
-        public int BinCountY { get; set; } = 50;
+        // 3. BinMap(빈 맵) 정보(빈 직경, 칩 크기, 행/열 개수 등)
+        // ===== Bin Map =====
+        [Category("Bin Array"), DisplayName("Bin Diameter (mm)")]
+        [DefaultValue(20)]
+        public int BinDiameter { get; set; } = 20;
 
         [Category("Bin Array"), DisplayName("Bin Pitch X (mm)")]
         [DefaultValue(1)]
-        public int BinPitchXmm { get; set; } = 1;
+        public double BinPitchXmm { get; set; } = 1;
 
         [Category("Bin Array"), DisplayName("Bin Pitch Y (mm)")]
         [DefaultValue(1)]
-        public int BinPitchYmm { get; set; } = 1;
+        public double BinPitchYmm { get; set; } = 1;
+
+        [Category("Bin Array"), DisplayName("Bin Count X")]
+        [DefaultValue(10)]
+        public int BinCountX { get; set; } = 10;
+
+        [Category("Bin Array"), DisplayName("Bin Count Y")]
+        [DefaultValue(10)]
+        public int BinCountY { get; set; } = 10;
 
         // Material
         [Category("Material"), DisplayName("Tape Thickness (um)")]
@@ -107,6 +113,18 @@ namespace QMC.LCP_280.Process.Component
         [Category("Material"), DisplayName("Chip Thickness (um)")]
         [DefaultValue(120.0)]
         public double ChipThicknessUm { get; set; } = 120.0;
+
+        //[JsonProperty("UseBarcode")] // ← JSON 키를 명시적으로 고정
+        [Category("Contect"), DisplayName("Top")]
+        [DefaultValue(false)]
+        [JsonProperty("ContectTop")]
+        public bool ContectTop { get; set; } = false;
+
+        //ToleranceMm
+        [Category("AlginT"), DisplayName("ToleranceMm (mm)")]
+        [DefaultValue(0.1)]
+        [JsonProperty("ToleranceMm")]
+        public double ToleranceMm { get; set; } = 0.1;
 
         // ===== Measurement Keys =====
         public List<MeasurementKey> Keys { get; set; } = new List<MeasurementKey>();

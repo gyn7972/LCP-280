@@ -89,6 +89,12 @@ namespace QMC.LCP_280.Process.Unit
         //[DisplayOrder(1)]
         public int SlotCount { get; set; } = 0;
 
+        [Category("Cassette"), DisplayName("Use_Barcode")]
+        [DefaultValue(false)]
+        [JsonProperty("UseBarcode")] // ← JSON 키를 명시적으로 고정
+        public bool UseBarcode { get; set; } = false;
+
+
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
 
         /// <summary>
@@ -236,6 +242,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "Cassette", 2 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -247,8 +254,21 @@ namespace QMC.LCP_280.Process.Unit
                 "Name",
                 "Simulation",
                 "SlotPitch (mm)",
-                "SlotCount (ea)"
+                "SlotCount (ea)",
+                "Use_Barcode",
             };
         #endregion
+
+        // JSON 저장 설정을 이 클래스에서 명시 Override (기본값도 저장)
+        protected override JsonSerializerSettings GetJsonSettings()
+        {
+            return new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Include,   // ← 기본값도 저장
+                ObjectCreationHandling = ObjectCreationHandling.Replace
+            };
+        }
     }
 }

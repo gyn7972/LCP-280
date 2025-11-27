@@ -196,11 +196,19 @@ namespace QMC.LCP_280.Process.Unit
         //EjectBlockUp
         public int MovePositionEjectBlockUp(bool isFine = false)
         {
+            int nRtn = 0;
+
+            //움직이기전에 확인 후 구동.
+            nRtn = IsMoveInterLockEjectBlockUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
             Task<int> task = MovePositionAsyncEjectBlockUp(isFine);
             while (IsEndTask(task) == false)
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
-                int nRtn = 0;
                 nRtn = IsMoveInterLockEjectBlockUp();
                 if (nRtn != 0)
                 {
@@ -230,10 +238,6 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
-                if(Config.IsSimulation)
-                {
-                    Thread.Sleep(100);
-                }
                 if(InputStage.IsAnyAxisMoving())
                 {
                     AxisEjectorZ.EmgStop();
@@ -380,6 +384,15 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(1);
             }
+
+            while(IsEjectorZSafetyPos() == false)
+            {
+                if (IsStop)
+                {
+                    return -1;
+                }
+                Thread.Sleep(1);
+            }
             return task.Result;
         }
         public Task<int> MovePositionAsyncEjectBlockSafety(bool isFine = false)
@@ -500,49 +513,122 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRet;
         }
-        public Task<int> MovePositionAsyncSafeEjectPinReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
+
+        public int MovePositionEjectPinOffset(bool isFine = false)
+        {
+            //MovePositionEjectPinOffset <- 현재 Safety 역할 :: 이름 바꾸자.
+            Task<int> task = MovePositionAsyncEjectPinOffset(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectPinOffset();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncEjectPinOffset(bool isFine = false)
         {
             return Task.Run(() =>
             {
-                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
-                var coreTask = Task.Run(() => OnMovePositionEjectPinReady(isFine), ct);
-
-                while (!IsEndTask(coreTask))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            AxisEjectorZ?.EmgStop();
-                            AxisPinZ?.EmgStop();
-                        }
-                        catch { }
-                        return -999; // 취소 코드
-                    }
-
-                    int nRtn = IsMoveInterLockEjectPinReady();
-                    if (nRtn != 0)
-                    {
-                        return -1;
-                    }
-
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
-                }
-
-                return coreTask.Result;
-            },
-            ct);
+                OnMovePositionEjectPinOffset(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionEjectPinOffset(bool isFine = false)
+        {
+            _isSafetyMoving = true;
+            try
+            {
+                return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectPinOffset, isFine);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                _isSafetyMoving = false;
+            }
         }
 
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        private int IsMoveInterLockEjectPinOffset()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+            return nRet;
+        }
+
+        public int MovePositionEjectPinChange(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncEjectPinChange(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectPinChange();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncEjectPinChange(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionEjectPinChange(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionEjectPinChange(bool isFine = false)
+        {
+            _isSafetyMoving = true;
+            try
+            {
+                return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectPinChange, isFine);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                _isSafetyMoving = false;
+            }
+        }
+
+        private int IsMoveInterLockEjectPinChange()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+            return nRet;
+        }
+
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
         #endregion
 
         #region Teaching
@@ -599,57 +685,24 @@ namespace QMC.LCP_280.Process.Unit
                                      bool treatMissingAsSafe = true,
                                      bool allowAbove = false)
         {
-            var tp = TeachingPositions[(int)InputStageEjectorConfig.TeachingPositionName.EjectPinReady];
-            if (tp == null)
+            var tp1 = TeachingPositions[(int)InputStageEjectorConfig.TeachingPositionName.EjectPinReady];
+            if (tp1 == null)
                 return false;
-            return InPosTeaching(tp);
 
-            //if (_axPinZ == null)
-            //    return treatMissingAsSafe;
+            var tp2 = TeachingPositions[(int)InputStageEjectorConfig.TeachingPositionName.EjectPinOffset];
+            if (tp2 == null)
+                return false;
 
-            //var cfg = InputStageEjectorConfig;
-            //if (cfg?.TeachingPositions == null || cfg.TeachingPositions.Count == 0)
-            //    return treatMissingAsSafe;
-
-            //// 우선순위 (문서 주석 기준)
-            //string[] candidates =
-            //{
-            //    InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
-            //    InputStageEjectorConfig.TeachingPositionName.EjectPinChange.ToString(),
-            //    InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()
-            //};
-
-            //var targetList = new List<double>();
-
-            //foreach (var name in candidates)
-            //{
-            //    var tp = cfg.GetTeachingPosition(name);
-            //    if (tp?.AxisPositions == null) continue;
-
-            //    if (tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out double val))
-            //    {
-            //        // 실제로 0.0 위치가 유효한 Teaching 일 수도 있으므로 그대로 사용
-            //        targetList.Add(val);
-            //    }
-            //}
-
-            //if (targetList.Count == 0)
-            //    return treatMissingAsSafe; // Teaching 에 PinZ 가 하나도 정의 안된 경우 정책상 Safe 처리
-
-            //double cur = _axPinZ.GetPosition();
-            //double tol = useAxisInposTolerance
-            //             ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
-            //             : fallbackTolerance;
-
-            //if (allowAbove)
-            //{
-            //    // 가장 낮은 위치(위험 가능성 최대) 이상이면 Safe 로 본다 (양(+)방향이 Up 이라고 가정)
-            //    double minTarget = targetList.Min();
-            //    return cur >= (minTarget - tol);
-            //}
-
-            //// 어떤 후보라도 허용오차 내면 Safe
-            //return targetList.Any(t => Math.Abs(cur - t) <= tol);
+            bool bRet1 = InPosTeaching(tp1);
+            bool bRet2 = InPosTeaching(tp2);
+            if(bRet1 == true || bRet2 == true)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -941,16 +994,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
-                ret = -1;
-            }
-            if (this.RunUnitStatus == UnitStatus.Running)
-            {
                 return 0;
             }
+            
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
@@ -1017,5 +1068,29 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #endregion
+
+        // 클래스 내부에 추가
+        public void ResetForNewRun(bool moveToSafeReady = true)
+        {
+            // 1) 런타임/시퀀스 플래그 초기화
+            _isSafetyMoving = false;
+            this.CurrentFunc = null;
+
+            // 2) 안전 위치 복귀(선택)
+            if (moveToSafeReady)
+            {
+                try
+                {
+                    // 내부에서 인터락/축 동작을 확인하며 Safety/Ready로 이동
+                    CheckReady();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, $"[ResetForNewRun] CheckReady failed: {ex.Message}");
+                }
+            }
+        }
+
+        
     }
 }

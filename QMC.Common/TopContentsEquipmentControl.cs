@@ -1,12 +1,7 @@
 ﻿using QMC.Common.CustomControl;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
@@ -38,118 +33,51 @@ namespace QMC.Common
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
 
-            InitTableLayoutPanel();
-            SetControlValue();
-
-            // Timer 설정
-            _timer = new Timer();
-            _timer.Interval = 1000; // 1초
-            _timer.Tick += Timer_Tick;
-            _timer.Start();
-
-            // 최초 값 갱신
-            UpdateDateTime();
-
-            // 수명주기 정리
-            this.Disposed += (s, e) =>
+            // 런타임 전용 초기화 (디자인 모드에서는 실행하지 않음)
+            if (!IsDesignMode())
             {
-                try { _timer?.Stop(); _timer?.Dispose(); } catch { }
-                _timer = null;
-            };
+                ApplyRuntimeFonts();
+
+                // Timer 설정
+                _timer = new Timer();
+                _timer.Interval = 1000; // 1초
+                _timer.Tick += Timer_Tick;
+                _timer.Start();
+
+                // 최초 값 갱신
+                UpdateDateTime();
+
+                // 수명주기 정리
+                this.Disposed += (s, e) =>
+                {
+                    try { _timer?.Stop(); _timer?.Dispose(); } catch { }
+                    _timer = null;
+                };
+            }
         }
 
-        private void InitTableLayoutPanel()
+        private bool IsDesignMode()
         {
-            // 테이블 레이아웃 패널 초기화
-            tableLayoutContentsEquipmentPanel.BackColor = Color.White;
-            this.tableLayoutContentsEquipmentPanel.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-            tableLayoutContentsEquipmentPanel.Width = 10;
-            tableLayoutContentsEquipmentPanel.Dock = DockStyle.Fill;
-            tableLayoutContentsEquipmentPanel.Location = new Point(0, 0);
-            tableLayoutContentsEquipmentPanel.Anchor = AnchorStyles.None;
-            tableLayoutContentsEquipmentPanel.AutoSize = false;
-            tableLayoutContentsEquipmentPanel.RowCount = 3;
-            tableLayoutContentsEquipmentPanel.ColumnCount = 2;
-            tableLayoutContentsEquipmentPanel.ColumnStyles.Clear();
-            tableLayoutContentsEquipmentPanel.RowStyles.Clear();
-
-            for (int i = 0; i < 3; i++)
-                tableLayoutContentsEquipmentPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / 3));
-            for (int i = 0; i < 2; i++)
-                tableLayoutContentsEquipmentPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 2));
+            return LicenseManager.UsageMode == LicenseUsageMode.Designtime
+                   || (this.Site?.DesignMode ?? false)
+                   || this.DesignMode;
         }
 
-        private void SetControlValue()
+        // 디자이너에서 구성하므로 빈 메서드로 유지
+        private void InitTableLayoutPanel() { }
+        private void SetControlValue() { }
+
+        private void ApplyRuntimeFonts()
         {
-            // PictureBox 생성 및 리소스 이미지 할당
-            var pictureBox = new PictureBox
-            {
-                Image = Properties.Resources.Logo,
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                TabStop = false
-            };
-
-            // (0,0)에 추가하고 2행 병합 (즉, (0,0)~(0,1) 병합)
-            tableLayoutContentsEquipmentPanel.Controls.Add(pictureBox, 0, 0);
-            tableLayoutContentsEquipmentPanel.SetRowSpan(pictureBox, 2);
-
-            // (0, 0) Date Label
-            _machineName = new CustomBorderLabel
-            {
-                Text = "Machine Name",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                AutoSize = false,
-                BorderColor = Color.White,
-                TabStop = false
-            };
-            tableLayoutContentsEquipmentPanel.Controls.Add(_machineName, 0, 2);
-            _machineName.Margin = new Padding(_labelMargin);
-
-            // (1,0) Date Label
-            _dateLabel = new CustomBorderLabel
-            {
-                Text = "",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                AutoSize = false,
-                BorderColor = Color.White,
-                TabStop = false
-            };
-            tableLayoutContentsEquipmentPanel.Controls.Add(_dateLabel, 1, 0);
-            _dateLabel.Margin = new Padding(_labelMargin);
-
-            // (1,1) Time Label
-            _timeLabel = new CustomBorderLabel
-            {
-                Text = "",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                AutoSize = false,
-                BorderColor = Color.White,
-                TabStop = false
-            };
-            tableLayoutContentsEquipmentPanel.Controls.Add(_timeLabel, 1, 1);
-            _timeLabel.Margin = new Padding(_labelMargin);
-
-            // (1,2) BuildVer Label
-            _buildVerLabel = new CustomBorderLabel
-            {
-                Text = "Build Ver.",
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                AutoSize = false,
-                BorderColor = Color.White,
-                TabStop = false
-            };
-            tableLayoutContentsEquipmentPanel.Controls.Add(_buildVerLabel, 1, 2);
-            _buildVerLabel.Margin = new Padding(_labelMargin);
+            var bold = FontStyle.Bold;
+            if (_machineName != null)
+                _machineName.Font = new Font(_machineName.Font.FontFamily, _labelSize, bold);
+            if (_dateLabel != null)
+                _dateLabel.Font = new Font(_dateLabel.Font.FontFamily, _labelSize, bold);
+            if (_timeLabel != null)
+                _timeLabel.Font = new Font(_timeLabel.Font.FontFamily, _labelSize, bold);
+            if (_buildVerLabel != null)
+                _buildVerLabel.Font = new Font(_buildVerLabel.Font.FontFamily, _labelSize, bold);
         }
 
         public void SetTopContentsEquipmentValue(string machineName, string buildVersion)
@@ -162,7 +90,6 @@ namespace QMC.Common
         {
             UpdateDateTime();
         }
-
 
         private void UpdateDateTime()
         {
@@ -180,15 +107,20 @@ namespace QMC.Common
                 int panelWidth = (int)(width * 1.0);
                 int panelHeight = (int)(height * 0.9);
 
-                // tableLayoutMenuButtonPanel 크기 조정
+                // UserControl 크기 조정
                 this.Size = new Size(panelWidth, panelHeight);
-                tableLayoutContentsEquipmentPanel.Size = new Size(panelWidth, panelHeight);
-                tableLayoutContentsEquipmentPanel.ClientSize = new Size(panelWidth, panelHeight);
 
-                // 좌측 정렬, 위아래 중앙 정렬
-                int x = 0; // 좌측
-                int y = (this.Height - tableLayoutContentsEquipmentPanel.Height) / 2; // 위아래 중앙
-                tableLayoutContentsEquipmentPanel.Location = new Point(x, y);
+                // Dock=Fill이면 별도 위치/크기 조정 불필요
+                if (tableLayoutContentsEquipmentPanel.Dock == DockStyle.None)
+                {
+                    tableLayoutContentsEquipmentPanel.Size = new Size(panelWidth, panelHeight);
+                    tableLayoutContentsEquipmentPanel.ClientSize = new Size(panelWidth, panelHeight);
+
+                    // 좌측 정렬, 위아래 중앙 정렬
+                    int x = 0; // 좌측
+                    int y = (this.Height - tableLayoutContentsEquipmentPanel.Height) / 2; // 위아래 중앙
+                    tableLayoutContentsEquipmentPanel.Location = new Point(x, y);
+                }
             }
             finally
             {

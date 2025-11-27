@@ -1,13 +1,21 @@
 ﻿using QMC.Common;
+using QMC.Common.PKGTester;
+using QMC.Common.UI;
+using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component; // DIO / teaching controls
 using QMC.LCP_280.Process.Unit.FormSetup;
+using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Automation.Peers;
 using System.Windows.Forms;
+using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
 using Timer = System.Windows.Forms.Timer;
 
@@ -30,9 +38,30 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private IndexUnloadAligner IndexUnloadAligner;
         private Rotary Rotary;
 
+        // 추가 유닛 (재현성 시퀀스용)
+        private InputDieTransfer _inputDieTransfer;
+        private InputStage _inputStage;
+        private PKGTester _tester;
+
         private bool _initialized;
         private bool _deferredInitDone; // 지연 바인딩 여부
         private bool _preloadRequested;
+
+        private ManualSeqReproTestRunner _manualReproTestRunner;
+
+
+        #region 재현성 테스트 필드
+        private volatile bool _reproRunning;
+        private CancellationTokenSource _reproCts;
+        private int _reproNextSocket = 0;              // 0~7
+        private string _reproDataFilePath;
+        private StreamWriter _reproWriter;
+        private string _reproStatePath;
+        private TaskCompletionSource<PKGTesterResult> _probeTcs;
+        private MaterialDie _lastPickedDie;
+        private readonly object _reproLock = new object();
+        #endregion
+
 
         #region Constructors
         public Process_Working() : this(
@@ -56,12 +85,34 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             IndexUnloadAligner = unloadAligner;
             Rotary = rotary;
 
+            // 재현성 시퀀스 관련 유닛 바인딩
+            _inputDieTransfer = TryGetUnit<InputDieTransfer>("InputDieTransfer");
+            _inputStage = TryGetUnit<InputStage>("InputStage");
+            _tester = Equipment?.Tester;
+
             Load += Process_Working_Load;
             FormClosing += Process_Working_FormClosing;
 
             _ProcessCameraviewer.LightControlRequested += LightControlRequested;
+
+            // 재현성 테스트 러너 초기화
+            _manualReproTestRunner = new ManualSeqReproTestRunner(Rotary, 
+                _inputDieTransfer, 
+                _inputStage, 
+                IndexChipProbeController, 
+                IndexLoadAligner, 
+                Equipment?.Tester);
+
+            _manualReproTestRunner.RunningChanged += on => 
+            BeginInvoke(new Action(() => 
+            {
+                ButtonManualTest.Text = on ? "Repro Stop" : "Repro Start";
+            }));
+            _manualReproTestRunner.Message += msg => Log.Write("ReproTest", msg);
+
         }
         #endregion
+
 
         public void PreloadUI()
         {
@@ -485,21 +536,21 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             int nRet = 0;
 
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate Start");
             nRet = Rotary.MovePositionRotate();
             if(nRet != 0)
             {
                 Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
                 return;
             }
-
-            //nRet = Rotary.WaitIndexMoveDone();
-            //if (nRet != 0)
-            //{
-            //    Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
-            //    return;
-            //}
-
-            int a = 0;
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate -------------");
+            nRet = Rotary.WaitIndexMoveDone();
+            if (nRet != 0)
+            {
+                Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
+                return;
+            }
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End");
         }
 
         private void LightControlRequested(object sender, EventArgs e)
@@ -533,6 +584,226 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
             popupForm.Show();
             this.Activate();
+        }
+
+        // === 재현성 테스트 ProgressForm 래핑 헬퍼 ===
+        private Task<int> CreateReproTestTask(bool startMode, int timeoutMs = 0)
+        {
+            var tcs = new TaskCompletionSource<int>();
+            CancellationTokenSource localCts = null;
+            if (timeoutMs > 0)
+            {
+                localCts = new CancellationTokenSource();
+                localCts.CancelAfter(timeoutMs);
+                localCts.Token.Register(() =>
+                {
+                    try
+                    {
+                        _manualReproTestRunner.Stop();
+                    }
+                    catch { }
+                });
+            }
+
+            void Handler(bool running)
+            {
+                // running == false → 종료
+                if (!running)
+                {
+                    _manualReproTestRunner.RunningChanged -= Handler;
+                    tcs.TrySetResult(0);
+                    localCts?.Dispose();
+                }
+            }
+
+            _manualReproTestRunner.RunningChanged += Handler;
+
+            try
+            {
+                if (startMode)
+                {
+                    // Start 요청
+                    _manualReproTestRunner.Start();
+                }
+                else
+                {
+                    // Stop 요청
+                    _manualReproTestRunner.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                _manualReproTestRunner.RunningChanged -= Handler;
+                tcs.TrySetException(ex);
+            }
+
+            return tcs.Task;
+        }
+
+        private void ButtonManualTest_Click(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            btn.Enabled = false;
+
+            bool isRunning = _manualReproTestRunner.IsRunning;
+            string title = "Manual Repro Test";
+            string msg = isRunning ? "정지 중..." : "실행 중...";
+            var task = CreateReproTestTask(startMode: !isRunning);
+
+            var pf = new ProgressForm(title, msg, task, _manualReproTestRunner);
+            pf.StopProcess += _ =>
+            {
+                try { _manualReproTestRunner.Stop(); } catch { }
+            };
+
+            // 모달 표시 (원하면 Show(this)로 모델리스 가능)
+            pf.ShowDialog(this);
+
+            // 결과 처리
+            if (task.IsFaulted)
+            {
+                MessageBox.Show("재현성 테스트 오류: " + task.Exception?.GetBaseException().Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else if (pf.DialogResult == DialogResult.Cancel)
+            {
+                // 사용자가 중간 취소
+                MessageBox.Show("재현성 테스트 취소됨", "취소", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                // 정상 종료
+                // 필요 시 완료 메시지 생략 가능
+                // MessageBox.Show("재현성 테스트 완료", "완료");
+            }
+
+            btn.Enabled = true;
+        }
+        private volatile bool _rotaryInitBusy;
+        private CancellationTokenSource _rotaryInitCts;
+
+        private async void ButtonClear_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "Rotary 초기화(InitializeAfterHome)를 실행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            Rotary.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
+
+            var btn = (Button)sender;
+            btn.Enabled = false;
+            try
+            {
+                var rc = await RunRotaryInitializeAfterHomeAsync(CancellationToken.None).ConfigureAwait(true);
+                if (rc == 0)
+                {
+                    MessageBox.Show("Rotary 초기화 완료.", "완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    // 실패 메시지는 내부에서 이미 출력함
+                }
+            }
+            finally
+            {
+                btn.Enabled = true;
+                Rotary.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
+            }
+        }
+
+        private async Task<int> RunRotaryInitializeAfterHomeAsync(CancellationToken token)
+        {
+            if (Rotary == null)
+            {
+                MessageBox.Show("Rotary Unit 없음.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return -1;
+            }
+
+            Task<int> t = Rotary.RunManualFunction(Rotary.InitializeAfterHome);
+            if (t == null) return 0; // 실행할 작업 없음 → OK 취급
+
+            var form = new ProgressForm("Manual Running", nameof(Rotary.InitializeAfterHome), t, this.Rotary);
+
+            // [추가] ProgressForm 취소 버튼 → 즉시 취소 요청
+            form.StopProcess += _ =>
+            {
+                try { this.Rotary.CancelSequence(); } catch { }
+            };
+
+            try
+            {
+                form.ShowDialog(this);
+
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    // [개선] 폼이 닫힌 뒤에도 취소 전파 유예 대기
+                    try
+                    {
+                        using (var grace = new CancellationTokenSource(2000))
+                        {
+                            await Task.WhenAny(t, Task.Delay(Timeout.Infinite, grace.Token)).ConfigureAwait(true);
+                        }
+                    }
+                    catch { /* ignore */ }
+
+                    if (!t.IsCompleted)
+                    {
+                        MessageBox.Show("취소 진행 중.", "취소 진행 중",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return -1;
+                    }
+
+                    // 작업이 완료되었으면 rc 확인
+                    if (t.IsFaulted)
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+                        return -1;
+                    }
+
+                    var rcCanceled = await t.ConfigureAwait(true);
+                    return rcCanceled == 0 ? 0 : -1;
+                }
+
+                if (t.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                // 정상 완료 → rc 확인
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"Rotary InitializeAfterHome 실패(rc={rc})", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                return 0;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Rotary InitializeAfterHome 예외 발생: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        private void checkBoxIndexCal_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBoxIndexCal.Checked)
+            {
+                Equipment.Instance.bIndexCal = true;
+            }
+            else
+            {
+                Equipment.Instance.bIndexCal = false;
+            }
         }
     }
 }

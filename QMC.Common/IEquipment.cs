@@ -13,12 +13,16 @@ namespace QMC.Common
     /// </summary>
     public enum EquipmentState
     {
+        Unknown,
         Stopped,
         Initializing,
         Ready,
         Starting,
-        Running,
+        AutoRunning,
+        ManualRunning,
         Stopping,
+        CycleStop,
+        Reset,
         Error
     }
 
@@ -38,6 +42,7 @@ namespace QMC.Common
 
         // 인터페이스에서는 구현 없이 선언만(C# 7.3 호환)
         string ICurrentRecipe { get; set; }
+        bool m_bBuzzerOff { get; set; }
 
         void SetAndRaiseUnitState(string unitName, UnitStatus newState);
     }
@@ -54,6 +59,8 @@ namespace QMC.Common
             eq = _instance;
             return eq != null;
         }
+
+        //public bool m_bBuzzerOff = false;
 
         // C# 7.3 호환: 글로벌 접근 편의를 위한 정적 프록시
         public static string CurrentRecipe

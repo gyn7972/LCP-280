@@ -98,10 +98,10 @@ namespace QMC.LCP_280.Process
             this.chkShowIndexes = new System.Windows.Forms.CheckBox();
             this.chkHighlightRef = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel17 = new System.Windows.Forms.TableLayoutPanel();
-            this.txtAvgT = new System.Windows.Forms.TextBox();
-            this.lblAvgY = new System.Windows.Forms.Label();
-            this.tableLayoutPanel16 = new System.Windows.Forms.TableLayoutPanel();
             this.lblAvgT = new System.Windows.Forms.Label();
+            this.txtAvgT = new System.Windows.Forms.TextBox();
+            this.tableLayoutPanel16 = new System.Windows.Forms.TableLayoutPanel();
+            this.lblAvgY = new System.Windows.Forms.Label();
             this.txtAvgY = new System.Windows.Forms.TextBox();
             this.tableLayoutPanel15 = new System.Windows.Forms.TableLayoutPanel();
             this.lblAvgX = new System.Windows.Forms.Label();
@@ -148,10 +148,10 @@ namespace QMC.LCP_280.Process
             // _btnSearch
             // 
             this._btnSearch.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._btnSearch.Location = new System.Drawing.Point(2, 263);
+            this._btnSearch.Location = new System.Drawing.Point(2, 315);
             this._btnSearch.Margin = new System.Windows.Forms.Padding(2);
             this._btnSearch.Name = "_btnSearch";
-            this._btnSearch.Size = new System.Drawing.Size(292, 39);
+            this._btnSearch.Size = new System.Drawing.Size(352, 48);
             this._btnSearch.TabIndex = 1;
             this._btnSearch.Text = "Search";
             this._btnSearch.Click += new System.EventHandler(this.BtnSearch_Click);
@@ -160,10 +160,10 @@ namespace QMC.LCP_280.Process
             // 
             this._lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this._lblStatus.Location = new System.Drawing.Point(8, 6);
-            this._lblStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this._lblStatus.Location = new System.Drawing.Point(10, 7);
+            this._lblStatus.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this._lblStatus.Name = "_lblStatus";
-            this._lblStatus.Size = new System.Drawing.Size(1208, 28);
+            this._lblStatus.Size = new System.Drawing.Size(1450, 34);
             this._lblStatus.TabIndex = 0;
             this._lblStatus.Text = "Ready";
             this._lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -174,21 +174,21 @@ namespace QMC.LCP_280.Process
             this.tabControl_Vision.Controls.Add(this.tabPageParam);
             this.tabControl_Vision.Controls.Add(this.tabPageResult);
             this.tabControl_Vision.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl_Vision.Location = new System.Drawing.Point(2, 20);
+            this.tabControl_Vision.Location = new System.Drawing.Point(2, 23);
             this.tabControl_Vision.Margin = new System.Windows.Forms.Padding(2);
             this.tabControl_Vision.Name = "tabControl_Vision";
             this.tabControl_Vision.SelectedIndex = 0;
-            this.tabControl_Vision.Size = new System.Drawing.Size(640, 802);
+            this.tabControl_Vision.Size = new System.Drawing.Size(769, 965);
             this.tabControl_Vision.TabIndex = 4;
             // 
             // tabPageROI
             // 
             this.tabPageROI.Controls.Add(this.maintROIControl);
-            this.tabPageROI.Location = new System.Drawing.Point(4, 25);
+            this.tabPageROI.Location = new System.Drawing.Point(4, 28);
             this.tabPageROI.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageROI.Name = "tabPageROI";
             this.tabPageROI.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPageROI.Size = new System.Drawing.Size(632, 773);
+            this.tabPageROI.Size = new System.Drawing.Size(761, 933);
             this.tabPageROI.TabIndex = 0;
             this.tabPageROI.Text = "ROI";
             this.tabPageROI.UseVisualStyleBackColor = true;
@@ -197,19 +197,19 @@ namespace QMC.LCP_280.Process
             // 
             this.maintROIControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.maintROIControl.Location = new System.Drawing.Point(2, 2);
-            this.maintROIControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.maintROIControl.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
             this.maintROIControl.Name = "maintROIControl";
-            this.maintROIControl.Size = new System.Drawing.Size(628, 769);
+            this.maintROIControl.Size = new System.Drawing.Size(757, 929);
             this.maintROIControl.TabIndex = 0;
             // 
             // tabPageParam
             // 
             this.tabPageParam.Controls.Add(this.patternMatchingParamControl);
-            this.tabPageParam.Location = new System.Drawing.Point(4, 25);
+            this.tabPageParam.Location = new System.Drawing.Point(4, 28);
             this.tabPageParam.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageParam.Name = "tabPageParam";
             this.tabPageParam.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPageParam.Size = new System.Drawing.Size(631, 767);
+            this.tabPageParam.Size = new System.Drawing.Size(761, 933);
             this.tabPageParam.TabIndex = 1;
             this.tabPageParam.Text = "Parameter";
             this.tabPageParam.UseVisualStyleBackColor = true;
@@ -221,12 +221,12 @@ namespace QMC.LCP_280.Process
             this.patternMatchingParamControl.DuplicateChecked = false;
             this.patternMatchingParamControl.LearnImage = null;
             this.patternMatchingParamControl.Location = new System.Drawing.Point(2, 2);
-            this.patternMatchingParamControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.patternMatchingParamControl.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
             this.patternMatchingParamControl.MaxInstnce = 0;
             this.patternMatchingParamControl.MinScore = 0D;
             this.patternMatchingParamControl.Name = "patternMatchingParamControl";
             this.patternMatchingParamControl.SelectedIndex = 0;
-            this.patternMatchingParamControl.Size = new System.Drawing.Size(627, 532);
+            this.patternMatchingParamControl.Size = new System.Drawing.Size(757, 638);
             this.patternMatchingParamControl.TabIndex = 0;
             this.patternMatchingParamControl.Tolerance = 0D;
             this.patternMatchingParamControl.TrainImage = null;
@@ -236,10 +236,10 @@ namespace QMC.LCP_280.Process
             // tabPageResult
             // 
             this.tabPageResult.Controls.Add(this.patternMatchingResultControl);
-            this.tabPageResult.Location = new System.Drawing.Point(4, 25);
+            this.tabPageResult.Location = new System.Drawing.Point(4, 28);
             this.tabPageResult.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageResult.Name = "tabPageResult";
-            this.tabPageResult.Size = new System.Drawing.Size(631, 767);
+            this.tabPageResult.Size = new System.Drawing.Size(761, 933);
             this.tabPageResult.TabIndex = 2;
             this.tabPageResult.Text = "Result";
             this.tabPageResult.UseVisualStyleBackColor = true;
@@ -248,9 +248,9 @@ namespace QMC.LCP_280.Process
             // 
             this.patternMatchingResultControl.Dock = System.Windows.Forms.DockStyle.Top;
             this.patternMatchingResultControl.Location = new System.Drawing.Point(0, 0);
-            this.patternMatchingResultControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.patternMatchingResultControl.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
             this.patternMatchingResultControl.Name = "patternMatchingResultControl";
-            this.patternMatchingResultControl.Size = new System.Drawing.Size(631, 535);
+            this.patternMatchingResultControl.Size = new System.Drawing.Size(761, 642);
             this.patternMatchingResultControl.TabIndex = 0;
             // 
             // tableLayoutPanel4
@@ -260,13 +260,13 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel4.Controls.Add(this.tableLayoutPanel5, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.groupBox3, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 23);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 2;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(770, 904);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(925, 1087);
             this.tableLayoutPanel4.TabIndex = 0;
             // 
             // tableLayoutPanel5
@@ -277,23 +277,23 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel5.Controls.Add(this.groupBoxImageView, 1, 0);
             this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel6, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 1;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(762, 444);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(915, 533);
             this.tableLayoutPanel5.TabIndex = 10;
             // 
             // groupBoxImageView
             // 
             this.groupBoxImageView.Controls.Add(this._viewer);
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBoxImageView.Location = new System.Drawing.Point(306, 2);
+            this.groupBoxImageView.Location = new System.Drawing.Point(368, 2);
             this.groupBoxImageView.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxImageView.Name = "groupBoxImageView";
             this.groupBoxImageView.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxImageView.Size = new System.Drawing.Size(454, 440);
+            this.groupBoxImageView.Size = new System.Drawing.Size(545, 529);
             this.groupBoxImageView.TabIndex = 18;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
@@ -308,12 +308,12 @@ namespace QMC.LCP_280.Process
             this._viewer.FrameRate = 1D;
             this._viewer.InputImage = null;
             this._viewer.IsViewCustomizedImage = false;
-            this._viewer.Location = new System.Drawing.Point(2, 20);
+            this._viewer.Location = new System.Drawing.Point(2, 23);
             this._viewer.Margin = new System.Windows.Forms.Padding(2);
             this._viewer.Name = "_viewer";
             this._viewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._viewer.Simulated = false;
-            this._viewer.Size = new System.Drawing.Size(450, 418);
+            this._viewer.Size = new System.Drawing.Size(541, 504);
             this._viewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._viewer.TabIndex = 0;
             this._viewer.TabStop = false;
@@ -328,14 +328,14 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel6.Controls.Add(this.groupSearchMode, 0, 2);
             this.tableLayoutPanel6.Controls.Add(this.cameraListBoxItemsView, 0, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 3;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 60F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(296, 436);
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(356, 523);
             this.tableLayoutPanel6.TabIndex = 0;
             // 
             // groupSearchMode
@@ -343,11 +343,11 @@ namespace QMC.LCP_280.Process
             this.groupSearchMode.Controls.Add(this.radioSingle);
             this.groupSearchMode.Controls.Add(this.radioMulti);
             this.groupSearchMode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupSearchMode.Location = new System.Drawing.Point(2, 306);
+            this.groupSearchMode.Location = new System.Drawing.Point(2, 367);
             this.groupSearchMode.Margin = new System.Windows.Forms.Padding(2);
             this.groupSearchMode.Name = "groupSearchMode";
             this.groupSearchMode.Padding = new System.Windows.Forms.Padding(2);
-            this.groupSearchMode.Size = new System.Drawing.Size(292, 128);
+            this.groupSearchMode.Size = new System.Drawing.Size(352, 154);
             this.groupSearchMode.TabIndex = 9;
             this.groupSearchMode.TabStop = false;
             this.groupSearchMode.Text = "Search Mode";
@@ -355,10 +355,10 @@ namespace QMC.LCP_280.Process
             // radioSingle
             // 
             this.radioSingle.AutoSize = true;
-            this.radioSingle.Location = new System.Drawing.Point(14, 22);
+            this.radioSingle.Location = new System.Drawing.Point(17, 26);
             this.radioSingle.Margin = new System.Windows.Forms.Padding(2);
             this.radioSingle.Name = "radioSingle";
-            this.radioSingle.Size = new System.Drawing.Size(86, 19);
+            this.radioSingle.Size = new System.Drawing.Size(102, 22);
             this.radioSingle.TabIndex = 0;
             this.radioSingle.TabStop = true;
             this.radioSingle.Text = "FirstOnly";
@@ -367,10 +367,10 @@ namespace QMC.LCP_280.Process
             // radioMulti
             // 
             this.radioMulti.AutoSize = true;
-            this.radioMulti.Location = new System.Drawing.Point(120, 22);
+            this.radioMulti.Location = new System.Drawing.Point(144, 26);
             this.radioMulti.Margin = new System.Windows.Forms.Padding(2);
             this.radioMulti.Name = "radioMulti";
-            this.radioMulti.Size = new System.Drawing.Size(85, 19);
+            this.radioMulti.Size = new System.Drawing.Size(101, 22);
             this.radioMulti.TabIndex = 1;
             this.radioMulti.TabStop = true;
             this.radioMulti.Text = "All (Avg)";
@@ -388,24 +388,24 @@ namespace QMC.LCP_280.Process
             this.cameraListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.cameraListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.cameraListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.cameraListBoxItemsView.Location = new System.Drawing.Point(2, 6);
-            this.cameraListBoxItemsView.Margin = new System.Windows.Forms.Padding(2, 6, 2, 6);
+            this.cameraListBoxItemsView.Location = new System.Drawing.Point(2, 7);
+            this.cameraListBoxItemsView.Margin = new System.Windows.Forms.Padding(2, 7, 2, 7);
             this.cameraListBoxItemsView.Name = "cameraListBoxItemsView";
             this.cameraListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.cameraListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.cameraListBoxItemsView.SelectedIndex = -1;
-            this.cameraListBoxItemsView.Size = new System.Drawing.Size(292, 249);
+            this.cameraListBoxItemsView.Size = new System.Drawing.Size(352, 299);
             this.cameraListBoxItemsView.TabIndex = 3;
             // 
             // groupBox3
             // 
             this.groupBox3.Controls.Add(this.tableLayoutPanel8);
             this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox3.Location = new System.Drawing.Point(2, 454);
+            this.groupBox3.Location = new System.Drawing.Point(2, 545);
             this.groupBox3.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox3.Size = new System.Drawing.Size(766, 448);
+            this.groupBox3.Size = new System.Drawing.Size(921, 540);
             this.groupBox3.TabIndex = 21;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "groupBox3";
@@ -418,12 +418,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel8.Controls.Add(this.tableLayoutPanel9, 0, 0);
             this.tableLayoutPanel8.Controls.Add(this.tableLayoutPanel14, 1, 0);
             this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel8.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel8.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel8.Location = new System.Drawing.Point(2, 23);
+            this.tableLayoutPanel8.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel8.Name = "tableLayoutPanel8";
             this.tableLayoutPanel8.RowCount = 1;
             this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel8.Size = new System.Drawing.Size(762, 426);
+            this.tableLayoutPanel8.Size = new System.Drawing.Size(917, 515);
             this.tableLayoutPanel8.TabIndex = 11;
             this.tableLayoutPanel8.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel8_Paint);
             // 
@@ -434,16 +434,16 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel9.Controls.Add(this.tableLayoutPanel10, 0, 0);
             this.tableLayoutPanel9.Controls.Add(this.listViewResults, 0, 1);
             this.tableLayoutPanel9.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel9.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel9.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel9.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel9.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel9.Name = "tableLayoutPanel9";
             this.tableLayoutPanel9.RowCount = 5;
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 85.71429F));
-            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel9.Size = new System.Drawing.Size(433, 418);
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel9.Size = new System.Drawing.Size(520, 505);
             this.tableLayoutPanel9.TabIndex = 22;
             // 
             // tableLayoutPanel10
@@ -456,12 +456,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel10.Controls.Add(this.tableLayoutPanel12, 1, 0);
             this.tableLayoutPanel10.Controls.Add(this.tableLayoutPanel11, 0, 0);
             this.tableLayoutPanel10.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel10.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel10.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel10.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel10.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel10.Name = "tableLayoutPanel10";
             this.tableLayoutPanel10.RowCount = 1;
             this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel10.Size = new System.Drawing.Size(425, 40);
+            this.tableLayoutPanel10.Size = new System.Drawing.Size(510, 49);
             this.tableLayoutPanel10.TabIndex = 0;
             // 
             // tableLayoutPanel13
@@ -472,12 +472,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel13.Controls.Add(this.lblRT, 0, 0);
             this.tableLayoutPanel13.Controls.Add(this.txtResultT, 1, 0);
             this.tableLayoutPanel13.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel13.Location = new System.Drawing.Point(286, 4);
-            this.tableLayoutPanel13.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel13.Location = new System.Drawing.Point(345, 5);
+            this.tableLayoutPanel13.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel13.Name = "tableLayoutPanel13";
             this.tableLayoutPanel13.RowCount = 1;
             this.tableLayoutPanel13.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel13.Size = new System.Drawing.Size(135, 32);
+            this.tableLayoutPanel13.Size = new System.Drawing.Size(160, 39);
             this.tableLayoutPanel13.TabIndex = 2;
             // 
             // lblRT
@@ -485,21 +485,21 @@ namespace QMC.LCP_280.Process
             this.lblRT.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblRT.AutoSize = true;
-            this.lblRT.Location = new System.Drawing.Point(43, 4);
-            this.lblRT.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lblRT.Location = new System.Drawing.Point(51, 5);
+            this.lblRT.Margin = new System.Windows.Forms.Padding(5);
             this.lblRT.Name = "lblRT";
-            this.lblRT.Size = new System.Drawing.Size(20, 24);
+            this.lblRT.Size = new System.Drawing.Size(24, 29);
             this.lblRT.TabIndex = 0;
             this.lblRT.Text = "T:";
             // 
             // txtResultT
             // 
             this.txtResultT.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtResultT.Location = new System.Drawing.Point(69, 2);
+            this.txtResultT.Location = new System.Drawing.Point(82, 2);
             this.txtResultT.Margin = new System.Windows.Forms.Padding(2);
             this.txtResultT.Name = "txtResultT";
             this.txtResultT.ReadOnly = true;
-            this.txtResultT.Size = new System.Drawing.Size(64, 25);
+            this.txtResultT.Size = new System.Drawing.Size(76, 28);
             this.txtResultT.TabIndex = 3;
             this.txtResultT.TextChanged += new System.EventHandler(this.txtResultT_TextChanged);
             // 
@@ -511,13 +511,13 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel12.Controls.Add(this.lblRY, 0, 0);
             this.tableLayoutPanel12.Controls.Add(this.txtResultY, 1, 0);
             this.tableLayoutPanel12.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel12.Location = new System.Drawing.Point(145, 4);
-            this.tableLayoutPanel12.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel12.Location = new System.Drawing.Point(175, 5);
+            this.tableLayoutPanel12.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel12.Name = "tableLayoutPanel12";
             this.tableLayoutPanel12.RowCount = 1;
             this.tableLayoutPanel12.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel12.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
-            this.tableLayoutPanel12.Size = new System.Drawing.Size(133, 32);
+            this.tableLayoutPanel12.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 39F));
+            this.tableLayoutPanel12.Size = new System.Drawing.Size(160, 39);
             this.tableLayoutPanel12.TabIndex = 1;
             // 
             // lblRY
@@ -525,21 +525,21 @@ namespace QMC.LCP_280.Process
             this.lblRY.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblRY.AutoSize = true;
-            this.lblRY.Location = new System.Drawing.Point(42, 4);
-            this.lblRY.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lblRY.Location = new System.Drawing.Point(50, 5);
+            this.lblRY.Margin = new System.Windows.Forms.Padding(5);
             this.lblRY.Name = "lblRY";
-            this.lblRY.Size = new System.Drawing.Size(20, 24);
+            this.lblRY.Size = new System.Drawing.Size(25, 29);
             this.lblRY.TabIndex = 1;
             this.lblRY.Text = "Y:";
             // 
             // txtResultY
             // 
             this.txtResultY.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtResultY.Location = new System.Drawing.Point(68, 2);
+            this.txtResultY.Location = new System.Drawing.Point(82, 2);
             this.txtResultY.Margin = new System.Windows.Forms.Padding(2);
             this.txtResultY.Name = "txtResultY";
             this.txtResultY.ReadOnly = true;
-            this.txtResultY.Size = new System.Drawing.Size(63, 25);
+            this.txtResultY.Size = new System.Drawing.Size(76, 28);
             this.txtResultY.TabIndex = 4;
             // 
             // tableLayoutPanel11
@@ -550,12 +550,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel11.Controls.Add(this.lblRX, 0, 0);
             this.tableLayoutPanel11.Controls.Add(this.txtResultX, 1, 0);
             this.tableLayoutPanel11.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel11.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel11.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel11.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel11.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel11.Name = "tableLayoutPanel11";
             this.tableLayoutPanel11.RowCount = 1;
             this.tableLayoutPanel11.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel11.Size = new System.Drawing.Size(133, 32);
+            this.tableLayoutPanel11.Size = new System.Drawing.Size(160, 39);
             this.tableLayoutPanel11.TabIndex = 0;
             // 
             // lblRX
@@ -563,10 +563,10 @@ namespace QMC.LCP_280.Process
             this.lblRX.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblRX.AutoSize = true;
-            this.lblRX.Location = new System.Drawing.Point(41, 4);
-            this.lblRX.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lblRX.Location = new System.Drawing.Point(50, 5);
+            this.lblRX.Margin = new System.Windows.Forms.Padding(5);
             this.lblRX.Name = "lblRX";
-            this.lblRX.Size = new System.Drawing.Size(21, 24);
+            this.lblRX.Size = new System.Drawing.Size(25, 29);
             this.lblRX.TabIndex = 2;
             this.lblRX.Text = "X:";
             this.lblRX.Click += new System.EventHandler(this.lblRX_Click);
@@ -574,11 +574,11 @@ namespace QMC.LCP_280.Process
             // txtResultX
             // 
             this.txtResultX.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtResultX.Location = new System.Drawing.Point(68, 2);
+            this.txtResultX.Location = new System.Drawing.Point(82, 2);
             this.txtResultX.Margin = new System.Windows.Forms.Padding(2);
             this.txtResultX.Name = "txtResultX";
             this.txtResultX.ReadOnly = true;
-            this.txtResultX.Size = new System.Drawing.Size(63, 25);
+            this.txtResultX.Size = new System.Drawing.Size(76, 28);
             this.txtResultX.TabIndex = 5;
             // 
             // listViewResults
@@ -593,11 +593,11 @@ namespace QMC.LCP_280.Process
             this.listViewResults.FullRowSelect = true;
             this.listViewResults.GridLines = true;
             this.listViewResults.HideSelection = false;
-            this.listViewResults.Location = new System.Drawing.Point(2, 50);
+            this.listViewResults.Location = new System.Drawing.Point(2, 61);
             this.listViewResults.Margin = new System.Windows.Forms.Padding(2);
             this.listViewResults.MultiSelect = false;
             this.listViewResults.Name = "listViewResults";
-            this.listViewResults.Size = new System.Drawing.Size(429, 290);
+            this.listViewResults.Size = new System.Drawing.Size(516, 351);
             this.listViewResults.TabIndex = 8;
             this.listViewResults.UseCompatibleStateImageBehavior = false;
             this.listViewResults.View = System.Windows.Forms.View.Details;
@@ -637,24 +637,24 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel14.Controls.Add(this.tableLayoutPanel16, 0, 1);
             this.tableLayoutPanel14.Controls.Add(this.tableLayoutPanel15, 0, 0);
             this.tableLayoutPanel14.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel14.Location = new System.Drawing.Point(445, 4);
-            this.tableLayoutPanel14.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel14.Location = new System.Drawing.Point(535, 5);
+            this.tableLayoutPanel14.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel14.Name = "tableLayoutPanel14";
             this.tableLayoutPanel14.RowCount = 13;
             this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel14.Size = new System.Drawing.Size(313, 418);
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel14.Size = new System.Drawing.Size(377, 505);
             this.tableLayoutPanel14.TabIndex = 23;
             // 
             // tableLayoutPanel18
@@ -665,12 +665,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel18.Controls.Add(this.chkShowIndexes, 0, 0);
             this.tableLayoutPanel18.Controls.Add(this.chkHighlightRef, 1, 0);
             this.tableLayoutPanel18.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel18.Location = new System.Drawing.Point(4, 148);
-            this.tableLayoutPanel18.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel18.Location = new System.Drawing.Point(5, 179);
+            this.tableLayoutPanel18.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel18.Name = "tableLayoutPanel18";
             this.tableLayoutPanel18.RowCount = 1;
             this.tableLayoutPanel18.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel18.Size = new System.Drawing.Size(305, 40);
+            this.tableLayoutPanel18.Size = new System.Drawing.Size(367, 48);
             this.tableLayoutPanel18.TabIndex = 5;
             // 
             // chkShowIndexes
@@ -680,7 +680,7 @@ namespace QMC.LCP_280.Process
             this.chkShowIndexes.Location = new System.Drawing.Point(2, 2);
             this.chkShowIndexes.Margin = new System.Windows.Forms.Padding(2);
             this.chkShowIndexes.Name = "chkShowIndexes";
-            this.chkShowIndexes.Size = new System.Drawing.Size(148, 36);
+            this.chkShowIndexes.Size = new System.Drawing.Size(179, 44);
             this.chkShowIndexes.TabIndex = 16;
             this.chkShowIndexes.Text = "Show Indexes";
             this.chkShowIndexes.UseVisualStyleBackColor = true;
@@ -689,10 +689,10 @@ namespace QMC.LCP_280.Process
             // 
             this.chkHighlightRef.AutoSize = true;
             this.chkHighlightRef.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkHighlightRef.Location = new System.Drawing.Point(154, 2);
+            this.chkHighlightRef.Location = new System.Drawing.Point(185, 2);
             this.chkHighlightRef.Margin = new System.Windows.Forms.Padding(2);
             this.chkHighlightRef.Name = "chkHighlightRef";
-            this.chkHighlightRef.Size = new System.Drawing.Size(149, 36);
+            this.chkHighlightRef.Size = new System.Drawing.Size(180, 44);
             this.chkHighlightRef.TabIndex = 17;
             this.chkHighlightRef.Text = "Highlight Center";
             this.chkHighlightRef.UseVisualStyleBackColor = true;
@@ -702,79 +702,79 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel17.ColumnCount = 2;
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel17.Controls.Add(this.lblAvgT, 0, 0);
             this.tableLayoutPanel17.Controls.Add(this.txtAvgT, 1, 0);
-            this.tableLayoutPanel17.Controls.Add(this.lblAvgY, 0, 0);
             this.tableLayoutPanel17.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel17.Location = new System.Drawing.Point(4, 100);
-            this.tableLayoutPanel17.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel17.Location = new System.Drawing.Point(5, 121);
+            this.tableLayoutPanel17.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel17.Name = "tableLayoutPanel17";
             this.tableLayoutPanel17.RowCount = 1;
             this.tableLayoutPanel17.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel17.Size = new System.Drawing.Size(305, 40);
+            this.tableLayoutPanel17.Size = new System.Drawing.Size(367, 48);
             this.tableLayoutPanel17.TabIndex = 4;
-            // 
-            // txtAvgT
-            // 
-            this.txtAvgT.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtAvgT.Location = new System.Drawing.Point(63, 2);
-            this.txtAvgT.Margin = new System.Windows.Forms.Padding(2);
-            this.txtAvgT.Name = "txtAvgT";
-            this.txtAvgT.ReadOnly = true;
-            this.txtAvgT.Size = new System.Drawing.Size(240, 25);
-            this.txtAvgT.TabIndex = 15;
-            // 
-            // lblAvgY
-            // 
-            this.lblAvgY.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblAvgY.AutoSize = true;
-            this.lblAvgY.Location = new System.Drawing.Point(7, 4);
-            this.lblAvgY.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.lblAvgY.Name = "lblAvgY";
-            this.lblAvgY.Size = new System.Drawing.Size(50, 32);
-            this.lblAvgY.TabIndex = 11;
-            this.lblAvgY.Text = "Avg Y:";
-            // 
-            // tableLayoutPanel16
-            // 
-            this.tableLayoutPanel16.ColumnCount = 2;
-            this.tableLayoutPanel16.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel16.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel16.Controls.Add(this.lblAvgT, 0, 0);
-            this.tableLayoutPanel16.Controls.Add(this.txtAvgY, 1, 0);
-            this.tableLayoutPanel16.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel16.Location = new System.Drawing.Point(4, 52);
-            this.tableLayoutPanel16.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.tableLayoutPanel16.Name = "tableLayoutPanel16";
-            this.tableLayoutPanel16.RowCount = 1;
-            this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel16.Size = new System.Drawing.Size(305, 40);
-            this.tableLayoutPanel16.TabIndex = 3;
             // 
             // lblAvgT
             // 
             this.lblAvgT.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblAvgT.AutoSize = true;
-            this.lblAvgT.Location = new System.Drawing.Point(7, 4);
-            this.lblAvgT.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lblAvgT.Location = new System.Drawing.Point(6, 5);
+            this.lblAvgT.Margin = new System.Windows.Forms.Padding(5);
             this.lblAvgT.Name = "lblAvgT";
-            this.lblAvgT.Size = new System.Drawing.Size(50, 32);
+            this.lblAvgT.Size = new System.Drawing.Size(62, 38);
             this.lblAvgT.TabIndex = 12;
             this.lblAvgT.Text = "Avg T:";
+            // 
+            // txtAvgT
+            // 
+            this.txtAvgT.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtAvgT.Location = new System.Drawing.Point(75, 2);
+            this.txtAvgT.Margin = new System.Windows.Forms.Padding(2);
+            this.txtAvgT.Name = "txtAvgT";
+            this.txtAvgT.ReadOnly = true;
+            this.txtAvgT.Size = new System.Drawing.Size(290, 28);
+            this.txtAvgT.TabIndex = 15;
+            // 
+            // tableLayoutPanel16
+            // 
+            this.tableLayoutPanel16.ColumnCount = 2;
+            this.tableLayoutPanel16.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel16.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel16.Controls.Add(this.lblAvgY, 0, 0);
+            this.tableLayoutPanel16.Controls.Add(this.txtAvgY, 1, 0);
+            this.tableLayoutPanel16.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel16.Location = new System.Drawing.Point(5, 63);
+            this.tableLayoutPanel16.Margin = new System.Windows.Forms.Padding(5);
+            this.tableLayoutPanel16.Name = "tableLayoutPanel16";
+            this.tableLayoutPanel16.RowCount = 1;
+            this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel16.Size = new System.Drawing.Size(367, 48);
+            this.tableLayoutPanel16.TabIndex = 3;
+            // 
+            // lblAvgY
+            // 
+            this.lblAvgY.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblAvgY.AutoSize = true;
+            this.lblAvgY.Location = new System.Drawing.Point(5, 5);
+            this.lblAvgY.Margin = new System.Windows.Forms.Padding(5);
+            this.lblAvgY.Name = "lblAvgY";
+            this.lblAvgY.Size = new System.Drawing.Size(63, 38);
+            this.lblAvgY.TabIndex = 11;
+            this.lblAvgY.Text = "Avg Y:";
             // 
             // txtAvgY
             // 
             this.txtAvgY.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtAvgY.Location = new System.Drawing.Point(63, 2);
+            this.txtAvgY.Location = new System.Drawing.Point(75, 2);
             this.txtAvgY.Margin = new System.Windows.Forms.Padding(2);
             this.txtAvgY.Name = "txtAvgY";
             this.txtAvgY.ReadOnly = true;
-            this.txtAvgY.Size = new System.Drawing.Size(240, 25);
+            this.txtAvgY.Size = new System.Drawing.Size(290, 28);
             this.txtAvgY.TabIndex = 14;
             // 
             // tableLayoutPanel15
@@ -785,12 +785,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel15.Controls.Add(this.lblAvgX, 0, 0);
             this.tableLayoutPanel15.Controls.Add(this.txtAvgX, 1, 0);
             this.tableLayoutPanel15.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel15.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel15.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel15.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel15.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel15.Name = "tableLayoutPanel15";
             this.tableLayoutPanel15.RowCount = 1;
             this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel15.Size = new System.Drawing.Size(305, 40);
+            this.tableLayoutPanel15.Size = new System.Drawing.Size(367, 48);
             this.tableLayoutPanel15.TabIndex = 2;
             // 
             // lblAvgX
@@ -798,10 +798,10 @@ namespace QMC.LCP_280.Process
             this.lblAvgX.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblAvgX.AutoSize = true;
-            this.lblAvgX.Location = new System.Drawing.Point(6, 4);
-            this.lblAvgX.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lblAvgX.Location = new System.Drawing.Point(5, 5);
+            this.lblAvgX.Margin = new System.Windows.Forms.Padding(5);
             this.lblAvgX.Name = "lblAvgX";
-            this.lblAvgX.Size = new System.Drawing.Size(51, 32);
+            this.lblAvgX.Size = new System.Drawing.Size(63, 38);
             this.lblAvgX.TabIndex = 10;
             this.lblAvgX.Text = "Avg X:";
             // 
@@ -810,20 +810,20 @@ namespace QMC.LCP_280.Process
             this.txtAvgX.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtAvgX.Location = new System.Drawing.Point(63, 2);
+            this.txtAvgX.Location = new System.Drawing.Point(75, 2);
             this.txtAvgX.Margin = new System.Windows.Forms.Padding(2);
             this.txtAvgX.Name = "txtAvgX";
             this.txtAvgX.ReadOnly = true;
-            this.txtAvgX.Size = new System.Drawing.Size(240, 25);
+            this.txtAvgX.Size = new System.Drawing.Size(290, 28);
             this.txtAvgX.TabIndex = 13;
             // 
             // _btnSaveParam
             // 
             this._btnSaveParam.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._btnSaveParam.Location = new System.Drawing.Point(326, 6);
-            this._btnSaveParam.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this._btnSaveParam.Location = new System.Drawing.Point(390, 7);
+            this._btnSaveParam.Margin = new System.Windows.Forms.Padding(7);
             this._btnSaveParam.Name = "_btnSaveParam";
-            this._btnSaveParam.Size = new System.Drawing.Size(308, 56);
+            this._btnSaveParam.Size = new System.Drawing.Size(370, 67);
             this._btnSaveParam.TabIndex = 6;
             this._btnSaveParam.Text = "Save Param";
             this._btnSaveParam.Click += new System.EventHandler(this._btnSaveParam_Click);
@@ -831,10 +831,10 @@ namespace QMC.LCP_280.Process
             // _btnLoadParam
             // 
             this._btnLoadParam.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._btnLoadParam.Location = new System.Drawing.Point(6, 6);
-            this._btnLoadParam.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this._btnLoadParam.Location = new System.Drawing.Point(7, 7);
+            this._btnLoadParam.Margin = new System.Windows.Forms.Padding(7);
             this._btnLoadParam.Name = "_btnLoadParam";
-            this._btnLoadParam.Size = new System.Drawing.Size(308, 56);
+            this._btnLoadParam.Size = new System.Drawing.Size(369, 67);
             this._btnLoadParam.TabIndex = 7;
             this._btnLoadParam.Text = "Load Param";
             this._btnLoadParam.Click += new System.EventHandler(this._btnLoadParam_Click);
@@ -847,7 +847,7 @@ namespace QMC.LCP_280.Process
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox2.Size = new System.Drawing.Size(644, 824);
+            this.groupBox2.Size = new System.Drawing.Size(773, 990);
             this.groupBox2.TabIndex = 20;
             this.groupBox2.TabStop = false;
             // 
@@ -860,11 +860,11 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel2, 1, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1442, 938);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1730, 1126);
             this.tableLayoutPanel1.TabIndex = 22;
             // 
             // tableLayoutPanel7
@@ -873,12 +873,12 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel7.Controls.Add(this.groupBoxdieInputControl, 0, 0);
             this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(5, 5);
+            this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
             this.tableLayoutPanel7.RowCount = 1;
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(778, 930);
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(933, 1116);
             this.tableLayoutPanel7.TabIndex = 1;
             // 
             // groupBoxdieInputControl
@@ -889,7 +889,7 @@ namespace QMC.LCP_280.Process
             this.groupBoxdieInputControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxdieInputControl.Name = "groupBoxdieInputControl";
             this.groupBoxdieInputControl.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxdieInputControl.Size = new System.Drawing.Size(774, 926);
+            this.groupBoxdieInputControl.Size = new System.Drawing.Size(929, 1112);
             this.groupBoxdieInputControl.TabIndex = 1;
             this.groupBoxdieInputControl.TabStop = false;
             this.groupBoxdieInputControl.Text = "Ready";
@@ -902,15 +902,15 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this._btnClose, 0, 2);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(790, 4);
-            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(948, 5);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 3;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 91.57895F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.421053F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(648, 930);
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(777, 1116);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // tableLayoutPanel3
@@ -921,34 +921,34 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel3.Controls.Add(this._btnLoadParam, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this._btnSaveParam, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(4, 832);
-            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(5, 999);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(640, 68);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(767, 81);
             this.tableLayoutPanel3.TabIndex = 21;
             // 
             // _btnClose
             // 
             this._btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnClose.Location = new System.Drawing.Point(576, 906);
+            this._btnClose.Location = new System.Drawing.Point(691, 1087);
             this._btnClose.Margin = new System.Windows.Forms.Padding(2);
             this._btnClose.Name = "_btnClose";
-            this._btnClose.Size = new System.Drawing.Size(70, 21);
+            this._btnClose.Size = new System.Drawing.Size(84, 25);
             this._btnClose.TabIndex = 2;
             this._btnClose.Text = "Close";
             this._btnClose.Click += new System.EventHandler(this._btnClose_Click);
             // 
             // PatternMatchingControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this._lblStatus);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "PatternMatchingControl";
-            this.Size = new System.Drawing.Size(1442, 938);
+            this.Size = new System.Drawing.Size(1730, 1126);
             this.tabControl_Vision.ResumeLayout(false);
             this.tabPageROI.ResumeLayout(false);
             this.tabPageParam.ResumeLayout(false);

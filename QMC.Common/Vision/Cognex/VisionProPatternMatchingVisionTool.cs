@@ -58,8 +58,8 @@ namespace QMC.Common.Vision.Cognex
         #region Constructor
         public VisionProPatternMatchingVisionTool(string name) : base(name)
         {
-            this.Parameter = new VisionProPatternMatchingVisionToolParameter();
-            //m_Tool = new CogPMAlignTool();
+            //주석처리
+            //this.Parameter = new VisionProPatternMatchingVisionToolParameter();
         }
 
         public VisionProPatternMatchingVisionTool() : this("") { }
@@ -451,38 +451,63 @@ namespace QMC.Common.Vision.Cognex
         {
             int ret = 0;
 
-            if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatMax)
+            var algo = this.Parameter?.CurrentAlgorithmOrNull;
+
+            if (algo == null)
             {
-                //if (CogLicense.IsEnabled(CogLicenseConstants.PatMax) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatMax));
-                if (CogLicense.IsEnabled(CogLicenseConstants.PatMax) != true) return -1;
-            }
-            else if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatQuick)
-            {
-                //if (CogLicense.IsEnabled(CogLicenseConstants.PatQuick) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatQuick));
-                if (CogLicense.IsEnabled(CogLicenseConstants.PatQuick) != true) return -1;
-            }
-            else if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatFlex)
-            {
-                //if (CogLicense.IsEnabled(CogLicenseConstants.PatFlex) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatFlex));
-                if (CogLicense.IsEnabled(CogLicenseConstants.PatFlex) != true) return -1;
+                // 아직 RunParams를 만들지 않았다면 모든 관련 라이선스를 폭넓게 확인
+                bool anyEnabled =
+                    CogLicense.IsEnabled(CogLicenseConstants.PatMax) ||
+                    CogLicense.IsEnabled(CogLicenseConstants.PatQuick) ||
+                    CogLicense.IsEnabled(CogLicenseConstants.PatFlex);
+
+                return anyEnabled ? 0 : -1;
             }
 
+            if (algo.Value == CogPMAlignRunAlgorithmConstants.PatMax)
+                return CogLicense.IsEnabled(CogLicenseConstants.PatMax) ? 0 : -1;
+            else if (algo.Value == CogPMAlignRunAlgorithmConstants.PatQuick)
+                return CogLicense.IsEnabled(CogLicenseConstants.PatQuick) ? 0 : -1;
+            else if (algo.Value == CogPMAlignRunAlgorithmConstants.PatFlex)
+                return CogLicense.IsEnabled(CogLicenseConstants.PatFlex) ? 0 : -1;
+
             return ret;
+
+            //int ret = 0;
+
+            //if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatMax)
+            //{
+            //    //if (CogLicense.IsEnabled(CogLicenseConstants.PatMax) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatMax));
+            //    if (CogLicense.IsEnabled(CogLicenseConstants.PatMax) != true) return -1;
+            //}
+            //else if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatQuick)
+            //{
+            //    //if (CogLicense.IsEnabled(CogLicenseConstants.PatQuick) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatQuick));
+            //    if (CogLicense.IsEnabled(CogLicenseConstants.PatQuick) != true) return -1;
+            //}
+            //else if (this.Parameter.RunParams.RunAlgorithm == CogPMAlignRunAlgorithmConstants.PatFlex)
+            //{
+            //    //if (CogLicense.IsEnabled(CogLicenseConstants.PatFlex) != true) return ErrorManager.Register(string.Format("{0} is not supported", CogLicenseConstants.PatFlex));
+            //    if (CogLicense.IsEnabled(CogLicenseConstants.PatFlex) != true) return -1;
+            //}
+
+            //return ret;
         }
 
         protected override int OnPrepare()
         {
-            int ret = 0;
-            // 필요 시 강제 재생성
-            this.Tool.InputImage = new CogImage8Grey();
-            this.Result = new PatternMatchingResult(this.Name);
-            return ret;
+            if (Parameter == null)
+                Parameter = new VisionProPatternMatchingVisionToolParameter(); // first touch here
+            Tool.InputImage = new CogImage8Grey();
+            Result = new PatternMatchingResult(Name);
+            return 0;
 
             //int ret = 0;
-            //this.Tool = new CogPMAlignTool();
+            //// 필요 시 강제 재생성
             //this.Tool.InputImage = new CogImage8Grey();
             //this.Result = new PatternMatchingResult(this.Name);
             //return ret;
+
         }
         #endregion
 
@@ -503,55 +528,135 @@ namespace QMC.Common.Vision.Cognex
         private CogPMAlignPattern m_Pattern;
         private CogPMAlignRunParams m_RunParams;
         private VisionProPatternMatchingVisionTool.ResultType m_Type;
+
+        public CogPMAlignRunAlgorithmConstants? CurrentAlgorithmOrNull => m_RunParams?.RunAlgorithm;
+
+        // 기본값 1회 적용 여부
+        [NonSerialized]
+        private bool _defaultsApplied;
         #endregion
 
         #region Constructor
         public VisionProPatternMatchingVisionToolParameter() : base()
         {
-            this.Pattern = new CogPMAlignPattern();
-            this.RunParams = new CogPMAlignRunParams();
-            this.Pattern.TrainAlgorithm = CogPMAlignTrainAlgorithmConstants.PatMax;
-            this.RunParams.RunAlgorithm = CogPMAlignRunAlgorithmConstants.PatMax;
-            this.RunParams.ScoreUsingClutter = false;
-            this.RunParams.ZoneAngle.Configuration = CogPMAlignZoneConstants.LowHigh;
-            this.RunParams.ZoneAngle.High = 0.78539816339744828;
-            this.RunParams.ZoneAngle.Low = -0.78539816339744828;
+            // 여기서는 Cognex 타입을 생성하지 않음(로더락 회피: 지연 로딩)
+            // 순수 관리 필드/기본값만 설정
             this.SortType = PatternMatchingVisionTool.SortType.X;
             this.Type = VisionProPatternMatchingVisionTool.ResultType.Center;
             this.ResultOverlayVisible = true;
             this.MaxInstance = -1;
             this.MinScore = -1;
-        } 
+
+            //this.Pattern = new CogPMAlignPattern();
+            //this.RunParams = new CogPMAlignRunParams();
+            //this.Pattern.TrainAlgorithm = CogPMAlignTrainAlgorithmConstants.PatMax;
+            //this.RunParams.RunAlgorithm = CogPMAlignRunAlgorithmConstants.PatMax;
+            //this.RunParams.ScoreUsingClutter = false;
+            //this.RunParams.ZoneAngle.Configuration = CogPMAlignZoneConstants.LowHigh;
+            //this.RunParams.ZoneAngle.High = 0.78539816339744828;
+            //this.RunParams.ZoneAngle.Low = -0.78539816339744828;
+            //this.SortType = PatternMatchingVisionTool.SortType.X;
+            //this.Type = VisionProPatternMatchingVisionTool.ResultType.Center;
+            //this.ResultOverlayVisible = true;
+            //this.MaxInstance = -1;
+            //this.MinScore = -1;
+        }
+        #endregion
+
+        #region Private
+        private void ApplyDefaultsIfNeeded()
+        {
+            if (_defaultsApplied) return;
+            if (m_Pattern == null || m_RunParams == null) return;
+
+            // VisionPro 관련 기본 설정은 실제 객체가 모두 준비된 뒤 1회만 적용
+            m_Pattern.TrainAlgorithm = CogPMAlignTrainAlgorithmConstants.PatMax;
+
+            m_RunParams.RunAlgorithm = CogPMAlignRunAlgorithmConstants.PatMax;
+            m_RunParams.ScoreUsingClutter = false;
+            m_RunParams.ZoneAngle.Configuration = CogPMAlignZoneConstants.LowHigh;
+            m_RunParams.ZoneAngle.High = 0.78539816339744828;   // +45도
+            m_RunParams.ZoneAngle.Low = -0.78539816339744828;  // -45도
+
+            _defaultsApplied = true;
+        }
         #endregion
 
         #region Property
         public CogPMAlignPattern Pattern
         {
-            get { return this.m_Pattern; }
+            get
+            {
+                if (m_Pattern == null)
+                {
+                    m_Pattern = new CogPMAlignPattern();
+                    ApplyDefaultsIfNeeded();
+                }
+                return m_Pattern;
+            }
             set
             {
-                if (this.m_Pattern == value) return;
-                this.m_Pattern = value;
-                this.HasChanged = true;
+                if (!object.ReferenceEquals(m_Pattern, value))
+                {
+                    m_Pattern = value;
+                    _defaultsApplied = false; // 외부에서 교체되면 다음 접근 시 기본값 재적용 가능
+                    ApplyDefaultsIfNeeded();
+                    this.HasChanged = true;
+                }
             }
+            //get 
+            //{ 
+            //    return this.m_Pattern; 
+            //}
+            //set
+            //{
+            //    if (this.m_Pattern == value) 
+            //        return;
+
+            //    this.m_Pattern = value;
+            //    this.HasChanged = true;
+            //}
         }
+
         public CogPMAlignRunParams RunParams
         {
-            get { return this.m_RunParams; }
+            get
+            {
+                if (m_RunParams == null)
+                {
+                    m_RunParams = new CogPMAlignRunParams();
+                    ApplyDefaultsIfNeeded();
+                }
+                return m_RunParams;
+            }
             set
             {
-                if (this.m_RunParams == value) return;
-                this.m_RunParams = value;
-                this.HasChanged = true;
+                if (!object.ReferenceEquals(m_RunParams, value))
+                {
+                    m_RunParams = value;
+                    _defaultsApplied = false;
+                    ApplyDefaultsIfNeeded();
+                    this.HasChanged = true;
+                }
             }
+            //get { return this.m_RunParams; }
+            //set
+            //{
+            //    if (this.m_RunParams == value) 
+            //        return;
+
+            //    this.m_RunParams = value;
+            //    this.HasChanged = true;
+            //}
         }
         public VisionProPatternMatchingVisionTool.ResultType Type
         {
             get { return this.m_Type; }
             set
             {
-                if (this.m_Type 
-                    == value) return;
+                if (this.m_Type == value) 
+                    return;
+
                 this.m_Type = value;
                 this.HasChanged = true;
             }

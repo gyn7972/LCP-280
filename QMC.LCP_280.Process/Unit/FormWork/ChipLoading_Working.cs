@@ -1,12 +1,19 @@
-﻿using QMC.Common;
+﻿using Newtonsoft.Json.Linq;
+using QMC.Common;
+using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
+using MessageBox = System.Windows.Forms.MessageBox;
+using Point = System.Drawing.Point;
+using Size = System.Drawing.Size;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -32,7 +39,7 @@ namespace QMC.LCP_280.Process.Unit
         private InputStage InputStage { get; set; }
         private InputStageEjector InputStageEjector { get; set; }
         private InputDieTransfer InputDieTransfer { get; set; }
-
+        private Rotary Rotary { get; set; }
         // State
         private bool _initialized;
         private bool _preloadRequested;
@@ -45,15 +52,19 @@ namespace QMC.LCP_280.Process.Unit
         public ChipLoading_Working() : this(
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<InputStageEjector>("InputStageEjector"),
-            TryGetUnit<InputDieTransfer>("InputDieTransfer"))
+            TryGetUnit<InputDieTransfer>("InputDieTransfer"),
+            TryGetUnit<Rotary>("Rotary"))
         { }
 
-        public ChipLoading_Working(InputStage inputStage, InputStageEjector ejector, InputDieTransfer dieTransfer)
+        public ChipLoading_Working(InputStage inputStage, InputStageEjector ejector, 
+                                    InputDieTransfer dieTransfer, Rotary rotary)
         {
             InitializeComponent();
             InputStage = inputStage;
             InputStageEjector = ejector;
             InputDieTransfer = dieTransfer;
+            Rotary = rotary;
+
             Load += ChipLoading_Working_Load;
             FormClosing += ChipLoading_Working_FormClosing;
 
@@ -100,10 +111,14 @@ namespace QMC.LCP_280.Process.Unit
 
         private async void StartDeferredInit()
         {
-            if (_deferredInitDone) return;
+            if (_deferredInitDone) 
+                return;
+
             _deferredInitDone = true;
             await Task.Delay(30); // 첫 Paint 후 실행 유도
-            if (IsDisposed || Disposing) return;
+            if (IsDisposed || Disposing) 
+                return;
+
             try
             {
                 BindTeachingPositions();
@@ -392,9 +407,375 @@ namespace QMC.LCP_280.Process.Unit
             this.Activate();
         }
 
+
+
         #endregion
 
 
+        private int GetSelectedLoadIndex()
+        {
+            if (cbLoadIndex == null) return -1;
+
+            if (cbLoadIndex.InvokeRequired)
+            {
+                try
+                {
+                    var idx = (int)cbLoadIndex.Invoke(new Func<int>(() => cbLoadIndex.SelectedIndex));
+                    return idx < 0 ? -1 : idx;
+                }
+                catch
+                {
+                    return -1;
+                }
+            }
+
+            var selected = cbLoadIndex.SelectedIndex;
+            return selected < 0 ? -1 : selected;
+        }
+
+        private  async void btnDiePickUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if(ask.ShowDialog("Question", "Die PickUp?") != DialogResult.Yes)
+                return;
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            SetUnitsManualRunning(true);
+            var t = Task.Run(async () =>
+            {
+                try
+                {
+                    if (InputDieTransfer != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        nRet = await Task.Run(() => PickDieFromWaferAsync(token), token).ConfigureAwait(false);
+                        if (nRet != 0)
+                        {
+                            //MessageBox.Show("Pick Up Fail", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            Log.Write(InputDieTransfer.UnitName, "MoveUnitsToReady", "Rotary EnsureReady failed");
+                            return nRet;
+                        }
+                    }
+                    return nRet; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return nRet;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "DiePickUp", t, null);
+            try
+            {
+                var mb = new MessageBoxOk();
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    mb.ShowDialog("DiePickUp Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    //throw new OperationCanceledException();
+                    mb.ShowDialog("DiePickUp Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show("DiePickUp Fail",
+                        "DiePickUp Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                SetUnitsManualRunning(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                SetUnitsManualRunning(false);
+                Log.Write(ex);
+                MessageBox.Show("DiePickUp Exception: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+        }
+
+        private async void btnDiePlaceDown_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Die PlaceDown?") != DialogResult.Yes)
+            {
+                return;
+            }
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            SetUnitsManualRunning(true);
+            var t = Task.Run(async () =>
+            {
+                try
+                {
+                    // 1) 선택된 Probe Index로 이동(선택 없으면 현재 유지)
+                    int selectedProbeIndex = GetSelectedLoadIndex();
+                    if (selectedProbeIndex >= 0)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        nRet = await Task.Run(() => MoveRotaryToLoadSocketAsync(selectedProbeIndex, token), token).ConfigureAwait(false);
+                        if (nRet != 0)
+                        {
+                            //MessageBox.Show("Rotary Target Socket Move Fail", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            Log.Write(InputDieTransfer.UnitName, "btnDiePlaceDown_Click", "MoveRotaryToLoadSocketAsync failed");
+                            return nRet;
+                        }
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+
+                    nRet = await Task.Run(() => PlaceDieFromArmToCurrentSocketAsync(token), token).ConfigureAwait(false);
+                    if (nRet != 0)
+                    {
+                        //MessageBox.Show("DiePlaceDown Fail.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Log.Write(InputDieTransfer.UnitName, "btnDiePlaceDown_Click", "MoveRotaryToLoadSocketAsync failed");
+                        return nRet;
+                    }
+
+                    return nRet; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return nRet;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "DiePlaceDown", t, null);
+            try
+            {
+                var mb = new MessageBoxOk();
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    mb.ShowDialog("DiePlaceDown Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    //throw new OperationCanceledException();
+                    mb.ShowDialog("DiePlaceDown Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show("DiePlaceDown Fail",
+                        "DiePlaceDown Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                SetUnitsManualRunning(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                SetUnitsManualRunning(false);
+                Log.Write(ex);
+                MessageBox.Show("DiePlaceDown Exception: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+
+            //int nRet = 0;
+            //try
+            //{
+            //    var cts = new CancellationTokenSource();
+            //    var token = cts.Token;
+            //    // 1) 선택된 Probe Index로 이동(선택 없으면 현재 유지)
+            //    int selectedProbeIndex = GetSelectedLoadIndex();
+            //    if (selectedProbeIndex >= 0)
+            //    {
+            //        nRet = await Task.Run(() => MoveRotaryToLoadSocketAsync(selectedProbeIndex, token));
+            //        if (nRet != 0)
+            //        {
+            //            MessageBox.Show("Rotary 목표 소켓 이동 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //            return;
+            //        }
+            //    }
+
+            //    nRet = await Task.Run(() => PlaceDieFromArmToCurrentSocketAsync(token));
+            //    if (nRet != 0)
+            //    {
+            //        MessageBox.Show("Pick Down Fail.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //        return;
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+        }
+
+
+        private void SetUnitsManualRunning(bool running)
+        {
+            try
+            {
+                if (running)
+                {
+                    Rotary.StartManual();
+                    InputDieTransfer.StartManual();
+                    InputStage.StartManual();
+                    InputStageEjector.StartManual();
+                }
+                else
+                {
+                    Rotary.Stop();
+                    InputDieTransfer.Stop();
+                    InputStage.Stop();
+                    InputStageEjector.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+
+        // Rotary를 목표 LoadIndex로 이동(회전 + 대기)
+        private async Task<int> MoveRotaryToLoadSocketAsync(int targetSocket, CancellationToken ct)
+        {
+            int targetIdx0 = (targetSocket + 8) % 8; // 0~7
+            for (int i = 0; i < 16; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                int cur = Rotary.GetLoadIndexNo();
+                if (cur == targetIdx0)
+                    return 0;
+
+                int rc = Rotary.MovePositionRotate();
+                if (rc != 0)
+                    return -1;
+
+                rc = Rotary.WaitIndexMoveDone();
+                if (rc != 0)
+                    return -1;
+
+                await Task.Delay(50, ct).ConfigureAwait(false);
+            }
+            return -1;
+        }
+
+        private async Task<int> PickDieFromWaferAsync(CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                int nRet = 0;
+
+                //흠
+                //nRet = InputDieTransfer.IsVacuumOK(0) ? 0 : -1;
+                //if (nRet == 0)
+                //{
+                //    MessageBoxOk mb = new MessageBoxOk();
+                //    mb.ShowDialog("VacuumOn", "Already have die on arm.");
+                //    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "Vacuum OK");
+                //    return -1;
+                //}
+
+
+                nRet = InputDieTransfer.MovePositionReady();
+                if (nRet != 0)
+                {
+                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
+                    return -1;
+                }
+
+                nRet = InputDieTransfer.RecheckDieAndAlign();
+                if (nRet != 0)
+                {
+                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
+                    return -1;
+                }
+
+                nRet = InputDieTransfer.PrepareNextDie();
+                if (nRet != 0)
+                {
+                    MessageBoxOk mb = new MessageBoxOk();
+                    mb.ShowDialog("PrepareNextDie", "PrepareNextDie Fial.");
+                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "PrepareNextDie");
+                    return -1;
+                }
+
+                nRet = InputDieTransfer.RaiseEjectorForPick(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.ChipPickDown(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.SyncPickPinUp(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.SyncPickPinRetreat(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.CommitPickedDie(); if (nRet != 0) return -1;
+                return 0;
+            }, ct).ConfigureAwait(false);
+        }
+
+
+        private async Task<int> PlaceDieFromArmToCurrentSocketAsync(CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                int nRet = 0;
+
+                //nRet = InputDieTransfer.IsVacuumOK(0) ? 0 : -1;
+                //if (nRet != 0)
+                //{
+                //    MessageBoxOk mb = new MessageBoxOk();
+                //    mb.ShowDialog("VacuumOff", "Already have not die on arm.");
+                //    Log.Write(InputDieTransfer.UnitName, "PlaceDieFromArmToCurrentSocketAsync", "Vacuum Off ");
+                //    return -1;
+                //}
+
+                nRet = InputDieTransfer.RotateToolTForPlace_AsyncWait(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.PlaceChipDown(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.ReleaseVacuumAndPlaceUp(); if (nRet != 0) return -1; // 암 Off, 로터리 Vac On
+                return 0;
+            }, ct).ConfigureAwait(false);
+        }
 
     }
 }

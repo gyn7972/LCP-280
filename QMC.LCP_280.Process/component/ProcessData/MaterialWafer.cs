@@ -1,9 +1,11 @@
-﻿using System;
+﻿using QMC.Common; // For PointD
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Media.Media3D;
-using QMC.Common; // For PointD
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -41,9 +43,11 @@ namespace QMC.LCP_280.Process.Component
         // ===== Chip 관리 함수 =====
         public MaterialDie AddChip(int index, int mapX, int mapY)
         {
+            string existingName = WaferId + "_" + index;
             var chip = new MaterialDie
             {
                 Index = index,
+                Name = existingName,
                 MapX = mapX,
                 MapY = mapY,
                 Presence = MaterialPresence.Exist,
@@ -81,16 +85,24 @@ namespace QMC.LCP_280.Process.Component
                 if (centers == null) return;
                 var rawList = centers; // already a list
                 Dies.Clear();
-                if (rawList.Count == 0) return;
-                if (chipPitchXmm <= 0 || chipPitchYmm <= 0) throw new ArgumentOutOfRangeException("Chip pitch must be > 0");
+                if (rawList.Count == 0) 
+                    return;
+                if (chipPitchXmm <= 0 || chipPitchYmm <= 0) 
+                    throw new ArgumentOutOfRangeException("Chip pitch must be > 0");
 
                 // 1) 중복/중첩 Chip 병합 (마지막 좌표가 최종)
                 double tolX = chipPitchXmm * 0.30; // 허용 오차 (조정 가능)
                 double tolY = chipPitchYmm * 0.30;
                 var merged = new List<PointD>();
+                int nIndex = 0;
+                string strFileName = "MakeWaferInfo_rawList" + DateTime.Now.Ticks.ToString();
+                Log.Write(strFileName, "rawList", " WaferId,rawList.Count,rawList.Index,rawList.posX ,rawList.posY");
                 foreach (var p in rawList)
                 {
                     int found = -1;
+                    nIndex++;
+                    Log.Write(strFileName, "rawList", $"{WaferId},{rawList.Count},{nIndex},{p.X},{p.Y}");
+
                     for (int i = 0; i < merged.Count; i++)
                     {
                         if (Math.Abs(merged[i].X - p.X) <= tolX && Math.Abs(merged[i].Y - p.Y) <= tolY)
@@ -121,50 +133,38 @@ namespace QMC.LCP_280.Process.Component
                 if (merged.Count == 0) 
                     return;
 
-                // 2) 좌상단 기준 Chip (X 최소, 그 다음 Y 최소)
-                var topLeft = merged.OrderBy(v => v.X).ThenBy(v => v.Y).First();
-                double baseX = topLeft.X;
-                double baseY = topLeft.Y;
-
-                // 3) PitchY 추정 (기준 Chip 아래쪽 후보)
-                double estPitchY = chipPitchYmm;
-                var downCandidates = merged
-                    .Where(v => v.Y > baseY && Math.Abs(v.X - baseX) <= tolX)
-                    .Select(v => v.Y - baseY)
-                    .Where(dy => dy > tolY * 0.2)
-                    .OrderBy(dy => dy)
-                    .ToList();
-                if (downCandidates.Count > 0)
+                string BinFileName = "";
+                var recip = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                if (recip != null)
                 {
-                    estPitchY = downCandidates.First();
-                    if (estPitchY < chipPitchYmm * 0.5 || estPitchY > chipPitchYmm * 1.5)
-                        estPitchY = chipPitchYmm;
+                    var raw = recip.BinningSpecSheetFile;
+                    if (!string.IsNullOrWhiteSpace(raw))
+                    {
+                        // 경로 끝이 \ 또는 / 로 끝나면 제거 후 파일명만 추출
+                        raw = raw.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                        BinFileName = Path.GetFileName(raw);
+                    }
                 }
-
-                // 4) PitchX 추정 (기준 Chip 오른쪽 후보)
-                double estPitchX = chipPitchXmm;
-                var rightCandidates = merged
-                    .Where(v => v.X > baseX && Math.Abs(v.Y - baseY) <= tolY)
-                    .Select(v => v.X - baseX)
-                    .Where(dx => dx > tolX * 0.2)
-                    .OrderBy(dx => dx)
-                    .ToList();
-                if (rightCandidates.Count > 0)
-                {
-                    estPitchX = rightCandidates.First();
-                    if (estPitchX < chipPitchXmm * 0.5 || estPitchX > chipPitchXmm * 1.5)
-                        estPitchX = chipPitchXmm;
-                }
-
-                if (estPitchX <= 0) estPitchX = chipPitchXmm;
-                if (estPitchY <= 0) estPitchY = chipPitchYmm;
 
                 // 5) Chip 객체 생성 및 Grid 계산
                 var temp = new List<MaterialDie>();
+                
+                double estPitchX = chipPitchXmm;
+                double estPitchY = chipPitchYmm;
+
+
+                var refchip = new MaterialDie();
+                refchip.CenterX = merged[0].X;
+                refchip.CenterY = merged[0].Y;
+                refchip.MapX = 0;
+                refchip.MapY = 0;
+
+
+
                 foreach (var p in merged)
                 {
-                    int mapX = (int)Math.Round((p.X - baseX) / estPitchX, MidpointRounding.AwayFromZero);
-                    int mapY = (int)Math.Round((p.Y - baseY) / estPitchY, MidpointRounding.AwayFromZero);
+                    int mapX = (int)Math.Round((p.X - refchip.CenterX) / estPitchX) + refchip.MapX;
+                    int mapY = (int)Math.Round((p.Y - refchip.CenterY) / estPitchY) + refchip.MapY;
 
                     var chip = new MaterialDie
                     {
@@ -176,9 +176,11 @@ namespace QMC.LCP_280.Process.Component
                         Angle = 0.0,
                         Presence = MaterialPresence.Exist,
                         State = DieProcessState.Mapped,
-                        SourceWaferId = WaferId
+                        SourceWaferId = WaferId,
+                        SourceBinFileName = BinFileName,
                     };
                     temp.Add(chip);
+                    refchip = chip;
                 }
 
                 // 6) Index 부여 (행 우선)
@@ -199,7 +201,12 @@ namespace QMC.LCP_280.Process.Component
                 //    chip.Index = idx++;
                 //}
                 //Dies.AddRange(temp.OrderBy(c => c.Index));
-
+                strFileName = "MakeWaferInfo_Dies" + DateTime.Now.Ticks.ToString();
+                Log.Write(strFileName, "rawList", $" WaferId,Dies.Count,Dies.Index,Dies.MapX ,Dies.MapY ,Dies.CenterX,Dies.CenterY ");
+                for (int j=0; j < Dies.Count; j++)
+                {
+                    Log.Write(strFileName, "rawList", $"{WaferId}, {Dies.Count},{Dies[j].Index},{Dies[j].MapX},{Dies[j].MapY},{ Dies[j].CenterX},{ Dies[j].CenterY}");
+                }
 
                 // 측정값 초기화
                 foreach (var chip in Dies)
@@ -212,6 +219,9 @@ namespace QMC.LCP_280.Process.Component
                         }
                     }
                 }
+
+
+
             }
             
         }

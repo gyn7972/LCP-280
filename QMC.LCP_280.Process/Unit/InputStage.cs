@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Cameras; // Camera base
@@ -33,15 +33,16 @@ namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
     /// InputStage Unit
-    ///  - Teaching Position + Offset ���� (InputStageConfig)
-    ///  - �� ���ε� �� Move Helper ����
-    ///  - IO Domain (Clamp / Expander / Vacuum / Ring Check ��) �߻�ȭ
-    ///  - Vision Pattern Matching Runner ���� (��Ƽ/���� ��ũ �˻�)
-    ///  - DryRun (�ùķ��̼�) ����
-    ///  - OutputStage �� ���� ��� ���� (Axis / IO / Domain / High-Level ����)
+    ///  - Teaching Position + Offset 관리 (InputStageConfig)
+    ///  - 축 바인딩 및 Move Helper 제공
+    ///  - IO Domain (Clamp / Expander / Vacuum / Ring Check 등) 추상화
+    ///  - Vision Pattern Matching Runner 연계 (멀티/센터 마크 검색)
+    ///  - DryRun (시뮬레이션) 지원
+    ///  - OutputStage 와 구현 양식 통일 (Axis / IO / Domain / High-Level 구분)
     /// </summary>
-    public class InputStage : BaseUnit<InputStageConfig>
+    public class InputStage : BaseUnit<InputStageConfig>, IPatternMarkSource
     {
+        public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
 
         public delegate void UpdateUIWafer(MaterialWafer wafer);
         public event UpdateUIWafer EventUpdateUIWafer;
@@ -57,6 +58,9 @@ namespace QMC.LCP_280.Process.Unit
             eVisionXYsearch,
             eInputStageMoveFail,
             eRingLockFailed,
+            eInputStageAlignNotDone,
+            eInputStageNoWafer,
+            eInputStageAlignNotCompleted,
         }
         private struct AngleStats
         {
@@ -73,7 +77,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eDieTransferPickZNotSafety;
             alarm.Title = "Die Tr Z-Axis Not safety Pos.";
-            alarm.Cause = "Die TrZAxis�� ���� ��ġ�� �ƴմϴ�. ������ Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -81,7 +85,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputFeederCylinderZNotSafety;
             alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
-            alarm.Cause = "Feeder Z-Cylinder�� ���� ��ġ�� �ƴմϴ�. ������ Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -90,7 +94,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafety;
             alarm.Title = "EjectorPin Z-Axis Not safety Pos.";
-            alarm.Cause = "EjectorPin Z-Axis�� ���� ��ġ�� �ƴմϴ�. ������ Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -98,7 +102,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafety;
             alarm.Title = "Ejector Z-Axis Not safety Pos.";
-            alarm.Cause = "Ejector Z-Axis�� ���� ��ġ�� �ƴմϴ�. ������ Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -107,7 +111,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputFeederYNotSafe;
             alarm.Title = "Feeder Y-Axis Not safety Pos.";
-            alarm.Cause = "Feeder Y-Axis�� ���� ��ġ�� �ƴմϴ�. ������ Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -115,7 +119,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eVisionTsearch;
             alarm.Title = "Vision T Search.";
-            alarm.Cause = "Vision T Search Fail. Chip Mark Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Vision T Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -123,39 +127,60 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eVisionXYsearch;
             alarm.Title = "Vision XY Search.";
-            alarm.Cause = "Vision XY Search Fail. Chip Mark Ȯ�� �� �ٽ� ���� �Ͻʽÿ�.";
+            alarm.Cause = "Vision XY Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageMoveFail;
-            alarm.Title = "�������� �̵��� ���� �Ͽ����ϴ�.";
-            alarm.Cause = "���ͻ��¸� Ȯ�� �Ͽ��ֽʽÿ�.";
+            alarm.Title = "스테이지 이동에 실패 하였습니다.";
+            alarm.Cause = "모터상태를 확인 하여주십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRingLockFailed;
-            alarm.Title = "�������� ��ǰ ��� ���� �Ͽ����ϴ�.";
-            alarm.Cause = "�������� Lift Lock �Ǹ��� ���¸� Ȯ�� �Ͽ��ֽʽÿ�.";
+            alarm.Title = "스테이지 제품 잠금 실패 하였습니다.";
+            alarm.Cause = "스테이지 Lift Lock 실린더 상태를 확인 하여주십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageAlignNotDone;
+            alarm.Title = "Input Stage Align Not Done.";
+            alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageNoWafer;
+            alarm.Title = "Input Stage No Wafer.";
+            alarm.Cause = "Input Stage에 Wafer가 없습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageAlignNotCompleted;
+            alarm.Title = "Input Stage Align Not Completed.";
+            alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+            
         }
         #endregion
-
-        
 
         #region Vision Hooks / Camera / Runner
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
 
         public PatternMatchingRunner _pmRunner;
-
-        // Pattern Matching Runner (����ȭ: Recipe �ڵ� ����)
+        // Pattern Matching Runner (간소화: Recipe 자동 관리)
         public PatternMatchingRunner PmRunner
         { 
             get
@@ -179,7 +204,6 @@ namespace QMC.LCP_280.Process.Unit
         public string PatternRecipeRootDir { get; set; } = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "PatternMatching");
         public string PatternRecipeName { get; set; } = "Default";
         #endregion
-
 
         InputDieTransfer InputDieTransfer { get; set; }
         InputFeeder InputFeeder { get; set; }
@@ -241,9 +265,9 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        // ... Ŭ���� ���� ���� Vision Runner (Pattern Matching) ���� ��ü
-        #region Vision Runner (Pattern Matching)  // REFACTORED: Hub ���
-        private string CameraKey => StageCameraKey; // ���ϵ� Ű ���
+        // ... 클래스 내부 기존 Vision Runner (Pattern Matching) 영역 교체
+        #region Vision Runner (Pattern Matching)  // REFACTORED: Hub 사용
+        private string CameraKey => StageCameraKey; // 통일된 키 사용
 
         private (bool ok, List<double> thetaList) MultiSearchViaRunner()
         {
@@ -253,8 +277,8 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         /// <summary>
-        /// ��Ƽ ���� ��Ī ���� ����Ʈ ��ȯ (Align �������� ����)
-        /// DryRun �� ���� ������ ����
+        /// 멀티 패턴 매칭 각도 리스트 반환 (Align 시퀀스용 래퍼)
+        /// DryRun 시 모의 데이터 제공
         /// </summary>
         public bool TryGetMultiAngles(out List<double> angles)
         {
@@ -273,7 +297,7 @@ namespace QMC.LCP_280.Process.Unit
             IEnumerable<double> work = ordered;
 
             if (excludeExtremes && ordered.Count >= 3)
-                work = ordered.Skip(1).Take(ordered.Count - 2); // �ּڰ�/�ִ� 1���� ����
+                work = ordered.Skip(1).Take(ordered.Count - 2); // 최솟값/최댓값 1개씩 제거
 
             var wList = work.ToList();
             if (wList.Count == 0)
@@ -285,7 +309,7 @@ namespace QMC.LCP_280.Process.Unit
                 var = wList.Sum(a => (a - avg) * (a - avg)) / (wList.Count - 1);
             double std = Math.Sqrt(var);
 
-            // ��ǥ��: ��հ� ���� ����� "����(��ü angles)" ��
+            // 대표값: 평균과 가장 가까운 "원본(전체 angles)" 값
             double rep = angles.OrderBy(a => Math.Abs(a - avg)).First();
 
             st.Average = avg;
@@ -324,26 +348,26 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            const string unitName = "Unit"; // Equipment���� �� ��� �� ����� ���ָ��� �����ؾ� ��
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
             BindAxis(mgr, unitName, AxisNames.WaferStageX, ref _axX);
             BindAxis(mgr, unitName, AxisNames.WaferStageY, ref _axY);
             BindAxis(mgr, unitName, AxisNames.WaferStageT, ref _axT);
         }
 
 
-        //�����ÿ� �������� Area ������ �����°��� �����ϱ� ���� �Լ�
+        //가공시에 스테이지 Area 밖으로 나가는것을 방지하기 위한 함수
         //public override int CheckMoveSafety(MotionAxis ax)
         //{
         //    try
         //    {
-        //        //if (/*�ٸ� ���� �� �̵���*/) return (int)AlarmKeys.xxx;
+        //        //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
         //        // PickZ Safety Check
         //        // Ejector Pin Z and Ejector Z Safety Check
-        //        // Ejector Pin Z and Ejector Z �� Safety Position�� �ƴ� ���
-        //        // X,Y Encoder ��ġ ���� min/max üũ�ϰ� �������� �Ѵ�. 
+        //        // Ejector Pin Z and Ejector Z 이 Safety Position이 아닐 경우
+        //        // X,Y Encoder 위치 기준 min/max 체크하고 움직여야 한다. 
 
 
-        //        // 1) Ejector / PinZ Safety �˻� (�켱���� ����)
+        //        // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
         //        bool pinZSafe = true;
         //        bool ejectorZSafe = true;
         //        if (InputStageEjector != null)
@@ -356,17 +380,17 @@ namespace QMC.LCP_280.Process.Unit
 
         //            if (!pinZSafe || !ejectorZSafe)
         //            {
-        //                // PinZ �Ǵ� EjectorZ �� Safety �� �ƴ� �� X/Y �̵� ��� ���� �˻�
+        //                // PinZ 또는 EjectorZ 가 Safety 가 아닐 때 X/Y 이동 허용 범위 검사
         //                if (ax == AxisX || ax == AxisY)
         //                {
         //                    if (!IsStageInterLockOK())
         //                    {
-        //                        // � ���� ���������� ���� �� ��ü���� �˶� ����
+        //                        // 어떤 축이 원인인지에 따라 더 구체적인 알람 선택
         //                        if (!pinZSafe)
         //                            return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
         //                        if (!ejectorZSafe)
         //                            return (int)AlarmKeys.eInputStageEjectorZNotSafe;
-        //                        // �� �� �ƴϸ� �Ϲ� ��ȯ
+        //                        // 둘 다 아니면 일반 반환
         //                        return (int)AlarmKeys.eInputStageEjectorZNotSafe;
         //                    }
         //                }
@@ -387,21 +411,21 @@ namespace QMC.LCP_280.Process.Unit
         //                return (int)AlarmKeys.eInputFeederYNotSafe;
         //        }
 
-        //        // �߰��� "�ٸ� ���� �� �̵���" ���� �ְ� �ʹٸ� ���⼭ �˻� �� �˶� �ڵ� ��ȯ
+        //        // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
         //    }
         //    catch (Exception ex)
         //    {
         //        Log.Write(ex);
-        //        // ���� �߻� �� ���������� �̵� �ߴ��ϵ��� ���� �˶� (PinZ �˶� ����) ��ȯ ����
+        //        // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 (PinZ 알람 선택) 반환 가능
         //        return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
         //    }
 
         //    return 0; // 0 = OK
         //}
 
-        // ================== Generic Single Axis Move (Safety Interlock ���� ����) ==================
+        // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
         /// <summary>
-        /// ���� �� �̵� (Safety ���Ͷ� ����). �̵� �Ϸ���� ����.
+        /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
         /// </summary>
         public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
@@ -415,7 +439,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
-                // ���� Safety Interlock
+                // 동일 Safety Interlock
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
@@ -434,33 +458,33 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafety);
                     return -1;
                 }
-                if (!InputFeeder.IsFeederZSafetyPosition())
+                if (!InputFeeder.IsPositionFeederZSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafety);
                     return -1;
                 }
-                if (!InputFeeder.IsFeederYSafetyPosition())
+                if (!InputFeeder.IsPositionFeederYSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
         public int MoveApplyOffset(string positionName, double dx, double dy, double dt)
         {
             int nRtn = 0;
-            // Teaching Position ��������
+            // Teaching Position 가져오기
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
 
-            // ������ ����
+            // 오프셋 적용
             Config.SetOffset(positionName, dx, dy, dt);
-            var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset ���� ��ġ - Align ���� �� data ����.
+            var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
 
             int rc = 0;
             if (AxisX != null) rc |= MoveAxisPositionOne(AxisX, x, false);
@@ -468,10 +492,10 @@ namespace QMC.LCP_280.Process.Unit
             if (AxisT != null) rc |= MoveAxisPositionOne(AxisT, t, false);
             if (rc != 0) return -1;
 
-            // �ʿ� �� ���� ��ġ ����
+            // 필요 시 최종 위치 검증
             if (!InPosTeaching(positionName))
             {
-                // �ణ�� ���� ��� �߰� (���� ��鸲 ���)
+                // 약간의 여유 대기 추가 (조건 흔들림 대비)
                 if (WaitUntil(() => InPosTeaching(positionName), MoveTimeoutMs) != 0)
                     return -1;
             }
@@ -479,7 +503,7 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
         /// //////////////////////////////////////////////////////////////////////////////////////////////
-        // UI, sequence �� Move �Լ�
+        // UI, sequence 용 Move 함수
         public int MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName name, bool isFine)
         {
             return MoveTeachingPositionOnce((int)name, isFine);
@@ -509,7 +533,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToStageReadyPositionAsync();
             while (IsEndTask(task) == false)
             {
-                // Check Interlock.!!! ���� ������.!!!
+                // Check Interlock.!!! 구문 넣을것.!!!
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     this.AxisX.EmgStop();
@@ -538,7 +562,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederZSafetyPosition())
+                if (!InputFeeder.IsPositionFeederZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -547,7 +571,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederYSafetyPosition())
+                if (!InputFeeder.IsPositionFeederYSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -556,7 +580,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -581,16 +605,16 @@ namespace QMC.LCP_280.Process.Unit
         //}
 
         /// <summary>
-        /// ������ Teaching Position���� Ư�� �ุ InPosition ���θ� Ȯ��.
-        /// - T / PickZ / PlaceZ �� Offset ���� ���� ���
-        /// - �� �� �� �̸��� ���� TeachingPosition.AxisPositions �� �״�� ��
+        /// 지정한 Teaching Position에서 특정 축만 InPosition 여부를 확인.
+        /// - T / PickZ / PlaceZ 는 Offset 적용 값을 사용
+        /// - 그 외 축 이름이 오면 TeachingPosition.AxisPositions 값 그대로 비교
         /// </summary>
-        /// <param name="tpName">Teaching Position �̸�</param>
+        /// <param name="tpName">Teaching Position 이름</param>
         /// <param name="axisName">
-        /// Ȯ���� �� Ű(or �̸�). ��:
+        /// 확인할 축 키(or 이름). 예:
         ///   AxisNames.LeftToolT / AxisNames.LeftPickZ / AxisNames.LeftPlaceZ
         /// </param>
-        /// <returns>true = ���� ���� ��ǥ ��ġ(InPositionTolerance ��)�� ����</returns>
+        /// <returns>true = 지정 축이 목표 위치(InPositionTolerance 내)에 있음</returns>
         public bool InPosTeachingAxis(string tpName, string axisName)
         {
             if (string.IsNullOrEmpty(tpName) || string.IsNullOrEmpty(axisName)) return false;
@@ -598,7 +622,7 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(tpName);
             if (tp == null) return false;
 
-            // ǥ�� 3��(T / PickZ / PlaceZ) �� Offset �ݿ��� ��ġ ���
+            // 표준 3축(T / PickZ / PlaceZ) 은 Offset 반영된 위치 사용
             var (t, pz, plz) = Config.GetPositionWithOffset(tpName);
             if (string.Equals(axisName, AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
                 return InPos(_axX, t);
@@ -607,13 +631,13 @@ namespace QMC.LCP_280.Process.Unit
             if (string.Equals(axisName, AxisNames.WaferStageT, StringComparison.OrdinalIgnoreCase))
                 return InPos(_axT, plz);
 
-            // ��Ÿ �� ó��: TeachingPosition�� ����� ���� �� ��� (Offset ������)
+            // 기타 축 처리: TeachingPosition에 저장된 원본 값 사용 (Offset 미적용)
             MotionAxis axis = null;
             if (tp.Axes != null && tp.Axes.TryGetValue(axisName, out var direct)) axis = direct;
             if (axis == null && Axes.TryGetValue(axisName, out var unitAxis)) axis = unitAxis;
             if (axis == null)
             {
-                // Name ���� �߰� �˻�
+                // Name 기준 추가 검색
                 foreach (var kv in Axes)
                 {
                     if (kv.Value != null &&
@@ -635,10 +659,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-            var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset ���� ��ġ - Align ���� �� data ����.
+            var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
             int rc = 0;
 
-            //Todo : ���Ͷ� Ȯ�� �� �̵� �ϵ��� ����.
+            //Todo : 인터락 확인 후 이동 하도록 수정.
             //if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
             //if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
             //if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
@@ -671,14 +695,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Vacuum ��Ī���� ��ȸ��
+            // Vacuum 별칭으로 조회만
             if (!IoAutoBindings.Vacuums.TryGetValue("InStageVac", out _vacuum))
             {
                 Log.Write("InputStage", "BindIoDomains", "Vacuums not found: InStageVac");
             }
             
 
-            // Cylinder�� �߾� ��Ī���� ��ȸ��
+            // Cylinder는 중앙 별칭으로 조회만
             if (!IoAutoBindings.Cylinders.TryGetValue("InStageExpander", out _cylPlate))
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageExpander");
@@ -704,7 +728,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Interlock Check EjectorZ Safety Position
                 bRet &= IsInterlockOkWidthEjectorZ(baseComponent, e);
-                if (this.InputFeeder.IsFeederZSafetyPosition() == false)
+                if (this.InputFeeder.IsPositionFeederZSafety() == false)
                 {
                     if (this.InputFeeder.IsPositionReady() == false)
                     {
@@ -733,7 +757,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (this.IsRingPresent())
                 {
-                    if (IsClampFwd() == false || IsClampLiftDown() == false)
+                    if (IsClampFwd() == false || IsClampLiftUp() == false)
                     {
                         this.AxisX?.EmgStop();
                         this.AxisY?.EmgStop();
@@ -748,7 +772,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (e.IsExtend)
                 {
-                    // Todo : ��Ȳ ���� ���Ͷ� ����. �̰� ���� ������ �ȴ°� ����.
+                    // Todo : 상황 봐서 인터락 걸자. 이건 꼬라 박지는 안는거 같다.
 
                     //if(this.IsRingPresent() == false)
                     //{
@@ -818,7 +842,7 @@ namespace QMC.LCP_280.Process.Unit
             return bRet;
         }
 
-        // === Domain Control (ǥ�� ����) ===
+        // === Domain Control (표준 구동) ===
         public bool SetVacuum(bool on, bool bCheckSignal = false)
         {
             if (_vacuum == null)
@@ -862,7 +886,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 if (!IsClampBwd())
-                    return false; // ���� ���Ͷ� ����
+                    return false; // 기존 인터락 유지
 
                 return _cylClampLift.Retract();
             }
@@ -873,7 +897,7 @@ namespace QMC.LCP_280.Process.Unit
             if (bFwdBwd)
             {
                 if (!IsClampLiftUp())
-                    return false; // ���� ���Ͷ� ����
+                    return false; // 기존 인터락 유지
 
                 return _cylClampFB.Extend();
             }
@@ -881,7 +905,7 @@ namespace QMC.LCP_280.Process.Unit
                 return _cylClampFB.Retract();
         }
 
-        #region High-Level Actuator API (Interlock ����)
+        #region High-Level Actuator API (Interlock 포함)
         public bool IsVacuumOn()
         {
             if (Config.IsSimulation || Config.IsDryRun)
@@ -933,7 +957,7 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
-            // Clamp Forward ���� (Ŭ���� ���� ����) Ȯ��
+            // Clamp Forward 센서 (클램프 전진 상태) 확인
             return this.ReadInput(InputStageConfig.IO.CLAMP_FWD_SNS);
         }
         public bool IsClampBwd()
@@ -962,8 +986,8 @@ namespace QMC.LCP_280.Process.Unit
             return this.ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         }
 
-        // === Cylinder �Ϸ� ��� Helpers ===
-        // Plate: expectUp=true(UP ���), false(DOWN ���)
+        // === Cylinder 완료 대기 Helpers ===
+        // Plate: expectUp=true(UP 기대), false(DOWN 기대)
         private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
@@ -983,7 +1007,7 @@ namespace QMC.LCP_280.Process.Unit
             return -1;
         }
 
-        // ClampLift: expectUp=true(UP ���), false(DOWN ���)
+        // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
         private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
@@ -1003,7 +1027,7 @@ namespace QMC.LCP_280.Process.Unit
             return -1;
         }
 
-        // Clamp F/B: expectFwd=true(FWD ���), false(BWD ���)
+        // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
         private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
@@ -1026,7 +1050,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        // === Direct Valve Control (���� ����) ===
+        // === Direct Valve Control (강제 구동) ===
         public bool IsVacuumValveOn()
         {
             if (Config.IsSimulation)// || Config.IsDryRun)
@@ -1037,15 +1061,15 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        // �Ķ���ͷ� �����ϴ� Data �� ���
+        // 파라미터로 빼야하는 Data 및 상수
         public int MoveTimeoutMs { get; set; } = 6000;
-        public int PollIntervalMs { get; set; } = 30;
+        public int PollIntervalMs { get; set; } = 5; //30
         public double AngleIgnoreThresholdDeg { get; set; } = 0.001;
         public double AngleMaxApplyDeg { get; set; } = 2.0;
-        public double AngleApplyGain { get; set; } =- 1.0; // ���� ���� �ʿ� �� -1 ���
-        public bool UseOffsetForTAxisCorrection { get; set; } = true; // false�� ���� �� �̵� ������� ��ȯ ���� (���� Ȯ��)
+        
+        public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
 
-        private int WaitUntil(Func<bool> cond, int timeoutMs, int? pollMs = null, int stableHoldMs = 0, CancellationToken ct = default(CancellationToken))
+        private int WaitUntil(Func<bool> cond, int timeoutMs, int? pollMs = null, int stableHoldMs = 1, CancellationToken ct = default(CancellationToken))
         {
             if (cond == null) 
                 return -1;
@@ -1057,7 +1081,7 @@ namespace QMC.LCP_280.Process.Unit
             while (swTotal.ElapsedMilliseconds < timeoutMs)
             {
                 if (ct.IsCancellationRequested)
-                    return -2; // ���
+                    return -2; // 취소
 
                 bool ok = false;
                 try { ok = cond(); } catch { ok = false; }
@@ -1065,22 +1089,22 @@ namespace QMC.LCP_280.Process.Unit
                 if (ok)
                 {
                     if (stableHoldMs <= 0)
-                        return 0; // ��� ����
+                        return 0; // 즉시 성공
 
                     if (stable >= stableHoldMs)
-                        return 0; // ���� ���� Ȯ�� �� ����
+                        return 0; // 안정 구간 확보 후 성공
 
                     Thread.Sleep(step);
                     stable += step;
                     continue;
                 }
 
-                // ���� ���� �� �����ð� ����
+                // 조건 깨짐 → 안정시간 리셋
                 stable = 0;
                 Thread.Sleep(step);
             }
 
-            // Ÿ�Ӿƿ�
+            // 타임아웃
             Log.Write(UnitName, $"WaitUntil timeout: {timeoutMs}ms (stableHoldMs={stableHoldMs}, pollMs={step})");
             return -1;
         }
@@ -1099,15 +1123,15 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region Seq Signal
-        // ====== Align Refactor: ����/��� ���� �ʵ� ======
-        public bool IsStatus_TAlignPrepared { get; private set; }
-        public bool IsStatus_TAlignDone { get; private set; }
-        public double IsStatus_LastFoundTRawAngle { get; private set; }
-        public double IsStatus_LastAppliedTAngle { get; private set; }
-        public bool IsStatus_XYAlignPrepared { get; private set; }
-        public bool IsStatus_XYAlignDone { get; private set; }
-        public double IsStatus_LastFoundDx { get; private set; }
-        public double IsStatus_LastFoundDy { get; private set; }
+        // ====== Align Refactor: 상태/결과 보관 필드 ======
+        public bool IsStatus_TAlignPrepared { get; set; }
+        public bool IsStatus_TAlignDone { get; set; }
+        public double IsStatus_LastFoundTRawAngle { get; set; }
+        public double IsStatus_LastAppliedTAngle { get; set; }
+        public bool IsStatus_XYAlignPrepared { get; set; }
+        public bool IsStatus_XYAlignDone { get; set; }
+        public double IsStatus_LastFoundDx { get; set; }
+        public double IsStatus_LastFoundDy { get; set; }
 
         // ====== InputDieTr Signal
         public bool RequestOutputDie { get; set; } = false;
@@ -1120,7 +1144,7 @@ namespace QMC.LCP_280.Process.Unit
             return mat as MaterialWafer;
         }
 
-        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY �ִ� ���� ���ġ (mm)
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
         public bool IsStatus_RequestWafer { get; internal set; } = false;
 
         #region Lifecycle
@@ -1128,16 +1152,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
-                this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop)
+               this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.CycleStop ||
+               this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
-                ret = -1;
-            }
-            if (this.RunUnitStatus == UnitStatus.Running)
-            {
                 return 0;
             }
+            
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
@@ -1155,7 +1177,7 @@ namespace QMC.LCP_280.Process.Unit
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
 
-            // �� ���� ���� -> ���⼭ �����ϸ� �ȵ���...
+            // 맵 상태 리셋 -> 여기서 리셋하면 안되지...
             //ResetChipMappingState();
 
             base.OnStop();
@@ -1169,13 +1191,57 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
+            this.SequencePlayers.Add(LoadingWaferComplete);
             this.SequencePlayers.Add(AlignT);
-            this.SequencePlayers.Add(AlignXY);
             this.SequencePlayers.Add(PerformChipMapping);
             this.SequencePlayers.Add(MoveStageToNextDie);
         }
 
-        #region Seq ���� ���� �Լ�
+        #region Seq 단위 동작 함수
+        public int LoadingWaferComplete(bool isFine = false)
+        {
+            int nRet = 0;
+
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = LoadingWaferComplete;
+            }
+
+            if (InputFeeder.IsPositionReady() == false)
+            {
+                Log.Write(UnitName, "LoadingWaferComplete", "Not prepared (call LoadingWaferPrepare first)");
+                return -1;
+            }
+
+            if (IsRingPresent() == false)
+            {
+                Log.Write(UnitName, "LoadingWaferComplete", "Not prepared (call LoadingWaferPrepare first)");
+                return -1;
+            }
+
+            // 아직 Wafer 안 올라옴 → 대기
+            if (IsRingPresent() || Config.IsSimulation || Config.IsDryRun)
+            {
+                Log.Write(UnitName, "LoadingWaferComplete", "Wafer detected -> Completing");
+
+                PlateUp();
+                ClampLiftUp();
+                ClampForward();
+                
+                // 센터 Teaching 이동
+                nRet = MoveToStageCenterPosition();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "LoadingWaferComplete", "MoveToStageCenterPosition Fail");
+                    return nRet;
+                }
+
+                Log.Write(UnitName, "LoadingWaferComplete", "Done");
+                return nRet;
+            }
+            return nRet;
+        }
+
         public int AlignT(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1188,6 +1254,29 @@ namespace QMC.LCP_280.Process.Unit
             if (nRet != 0)
             {
                 Log.Write(UnitName, "T_Align", "Fail: Prepare");
+                return -1;
+            }
+
+            nRet = InputStageEjector.MovePositionEjectPinOffset();
+            if (nRet != 0)
+            {
+                AxisX.EmgStop();
+                AxisY.EmgStop();
+                AxisT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafety);
+                Log.Write(UnitName, "T_Align", "Fail: MovePositionEjectBlockUp");
+                return -1;
+            }
+
+            SetVacuum(false);
+            nRet = InputStageEjector.MovePositionEjectBlockUp();
+            if (nRet != 0)
+            {
+                AxisX.EmgStop();
+                AxisY.EmgStop();
+                AxisT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafety);
+                Log.Write(UnitName, "T_Align", "Fail: MovePositionEjectBlockUp");
                 return -1;
             }
 
@@ -1223,6 +1312,128 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+
+
+
+        public bool UseUpdateOrderForPickup { get; set; } = false;
+        private void ReindexDiesSequential(MaterialWafer wafer)
+        {
+            if (wafer?.Dies == null) return;
+
+            for (int i = 0; i < wafer.Dies.Count; i++)
+            {
+                var d = wafer.Dies[i];
+                if (d == null) continue;
+
+                d.Index = i;
+                // MaterialDie.Name 사용 중이므로 존재 시 동일 규칙으로 부여
+                try
+                {
+                    if (!string.IsNullOrEmpty(wafer.WaferId))
+                    {
+                        d.Name = $"{wafer.WaferId}_{i}";
+                    }
+                }
+                catch { /* Name 미존재 시 무시 */ }
+            }
+        }
+
+
+        // 클래스 필드 영역에 추가
+        private List<PointD> _simAllDiesPool = new List<PointD>();
+        private HashSet<long> _simAddedKeys = new HashSet<long>();
+
+        // 좌표를 1µm 해상도로 정수 키화(중복 방지)
+        private static long MakeQuantKey(PointD p, double scale = 1000.0)
+        {
+            int qx = (int)Math.Round(p.X * scale);
+            int qy = (int)Math.Round(p.Y * scale);
+            unchecked
+            {
+                return ((long)qx << 32) ^ (uint)qy;
+            }
+        }
+
+        // 시뮬 전역 풀 생성(1회)
+        private void EnsureSimDiePoolGenerated()
+        {
+            if (!_simDiesGenerated)
+            {
+                _simAllDiesPool.Clear();
+                GenerateAllSimDies(_simAllDiesPool); // 웨이퍼 직경/피치 기반 그리드 생성
+                _simAddedKeys.Clear();
+                _simDiesGenerated = true;
+                Log.Write(UnitName, "Sim", $"SimDiePool Generated: {_simAllDiesPool.Count}");
+            }
+        }
+
+        // 현재 스테이지 위치(stageX, stageY)에서 카메라 FOV(mm) 사각 내 포인트만 반환(전역 중복 방지)
+        private void AddSimDiesInFovFromPool(double stageX, double stageY, List<PointD> dest)
+        {
+            if (dest == null) return;
+            EnsureSimDiePoolGenerated();
+
+            // 카메라 FOV(mm)
+            double fovWmm = 0.85, fovHmm = 0.7;
+            try
+            {
+                var cam = StageCamera;
+                if (cam?.CameraConfig != null)
+                {
+                    var res = cam.CameraConfig.Resolution;
+                    var scl = cam.CameraConfig.Scale;
+                    if (res.Width > 0 && res.Height > 0)
+                    {
+                        fovWmm = Math.Abs(res.Width * scl.X);
+                        fovHmm = Math.Abs(res.Height * scl.Y);
+                    }
+                }
+            }
+            catch { /* fallback */ }
+
+            // 피치 여유를 조금 빼서 가장자리 오분류 억제
+            double pitchX = ChipPitchXmm > 0 ? ChipPitchXmm : 0.5;
+            double pitchY = ChipPitchYmm > 0 ? ChipPitchYmm : 0.5;
+            double halfW = Math.Max(0.0, fovWmm / 2.0 - pitchX * 0.5);
+            double halfH = Math.Max(0.0, fovHmm / 2.0 - pitchY * 0.5);
+
+            double minX = stageX - halfW, maxX = stageX + halfW;
+            double minY = stageY - halfH, maxY = stageY + halfH;
+
+            // FOV 사각형 내에 들어오는 그리드 포인트만 추가(전역 중복 방지)
+            foreach (var p in _simAllDiesPool)
+            {
+                if (p.X >= minX && p.X <= maxX && p.Y >= minY && p.Y <= maxY)
+                {
+                    long key = MakeQuantKey(p); // 1µm 단위 중복 키
+                    if (_simAddedKeys.Add(key))
+                        dest.Add(p);
+                }
+            }
+        }
+        // 파일 상단 클래스 내부(적절한 private 영역)에 추가)
+        private void NormalizeIndicesSequential(MaterialWafer wafer, int startIndex = 0, bool rename = true)
+        {
+            if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0) return;
+
+            // 현재 Index 오름차순 → 연속 재부여
+            var orderedByIndex = wafer.Dies.Where(d => d != null).OrderBy(d => d.Index).ToList();
+            for (int i = 0; i < orderedByIndex.Count; i++)
+            {
+                var d = orderedByIndex[i];
+                d.Index = startIndex + i;
+                if (rename && !string.IsNullOrEmpty(wafer.WaferId))
+                    d.Name = $"{wafer.WaferId}_{d.Index}";
+            }
+        }
+
+        /// <summary>
+        /// 매핑 수행:
+        ///  1) 스캔 경로 이동하며 비전으로 Chip 중심 후보 수집 (chips)
+        ///  2) 수집된 좌표 간 중복(근접) 좌표 병합 (ConsolidateChipCenters)
+        ///  3) 병합 결과를 Wafer 정보에 반영
+        /// </summary>
         public int PerformChipMapping(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1231,21 +1442,66 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = PerformChipMapping;
             }
 
-            // �⺻ ���Ͷ�
-            if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
+            if (Config.IsSimulation == false
+                                && Config.IsDryRun == false)
             {
-                Log.Write(UnitName, "ChipMap", "Align not completed");
-                return -1;
+                if (this.StageCamera.IsLiveOn)
+                {
+                    this.StageCamera.StopLive();
+                    Thread.Sleep(100);
+                }
             }
-            if (!IsRingPresent())
+                
+
+            // 기본 인터락
+            //if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
+            if (IsStatus_TAlignDone == false)
             {
-                Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
+                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                Log.Write(UnitName, "PerformChipMapping", "Align not completed");
                 return -1;
             }
 
-            // �� ���� ���� ����(�̹� false�� �����ϰ� ������, ����ȭ)
+            if (RunMode == UnitRunMode.Auto)
+            {
+                if (!IsRingPresent())
+                {
+                    Log.Write(UnitName, "PerformChipMapping", "Wafer (Ring) not present");
+                    return -1;
+                }
+            }
+
+            nRet = InputStageEjector.MovePositionEjectPinOffset();
+            if (nRet != 0)
+            {
+                AxisX.EmgStop();
+                AxisY.EmgStop();
+                AxisT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafety);
+                Log.Write(UnitName, "T_Align", "Fail: MovePositionEjectBlockUp");
+                return -1;
+            }
+
+            SetVacuum(false);
+            nRet = InputStageEjector.MovePositionEjectBlockUp();
+            if (nRet != 0)
+            {
+                AxisX.EmgStop();
+                AxisY.EmgStop();
+                AxisT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafety);
+                Log.Write(UnitName, "T_Align", "Fail: MovePositionEjectBlockUp");
+                return -1;
+            }
+
+            // 맵 시작 직전 리셋(이미 false로 세팅하고 있으나, 공통화)
             ResetChipMappingState();
+            //20251123 T보정 추가
+            ApplyDynamicPitchParameters(); // <-- 추가
+            OnWaferOrRecipeChanged(); // 웨이퍼 교체/레시피 변경 대응
             MakeScanPath(out List<PointD> path);
+
+            // 원본 후보 좌표 (Raw)
             List<PointD> chips = new List<PointD>();
             Task<int> tImageProcess = null;
             try
@@ -1253,41 +1509,37 @@ namespace QMC.LCP_280.Process.Unit
                 foreach (var pt in path)
                 {
                     // this.CalcelToken?.Token.ThrowIfCancellationRequested();
-                    //Manual�϶� Stop���� �����ϰ� �ִ�...
-                    if (this.IsStop) 
-                    { 
-                        return 0; 
+                    //Manual일때 Stop으로 인지하고 있다...
+                    if (this.IsStop)
+                    {
+                        return 0;
                     }
 
+                    
                     nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
+                        PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                         return -1;
                     }
 
                     if (this.Config.IsSimulation || this.Config.IsDryRun)
                     {
-                        //�ùķ��̼�
-                        Random rnd = new Random();
-                        int nChips = rnd.Next(5, 15);
-                        for (int i = 0; i < nChips; i++)
-                        {
-                            double rx = (rnd.NextDouble() - 0.5) * 10;
-                            double ry = (rnd.NextDouble() - 0.5) * 10;
-                            chips.Add(new PointD(pt.X + rx, pt.Y + ry));
-                            
-                        }
+                        // 무작위 생성 대신: 전역 풀에서 현재 FOV에 걸리는 좌표만 추가(중복 1회만)
+                        AddSimDiesInFovFromPool(pt.X, pt.Y, chips);
                         continue;
                     }
                     else
                     {
-                        StageCamera.GrabSync(out VisionImage grabImage);
+                        //Thread.Sleep(200);
                         //SearchDies(grabImage, ref chips, pt.X, pt.Y);
                         if (tImageProcess != null)
                         {
                             tImageProcess.Wait();
                         }
+                        StageCamera.SuspendedImageDisplay = true;
+                        StageCamera.GrabSync(out VisionImage grabImage);
                         double dx = pt.X;
                         double dy = pt.Y;
                         tImageProcess = Task.Factory.StartNew(() =>
@@ -1317,20 +1569,456 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (RunMode == UnitRunMode.Manual)
+            // 1차 수집된 Raw 좌표 병합 (중복/겹침 제거)
+            //  - DuplicateDistMm: 중복 판정 거리(mm) (설정 가능)
+            //  - 동일 클러스터는 평균 좌표로 대표값 생성
+            //var consolidated = ConsolidateChipCenters(chips, DuplicateDistMm);
+            double tol = DuplicateDistMm;
+            double pitchMin = double.MaxValue;
+            if (ChipPitchXmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchXmm);
+            if (ChipPitchYmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchYmm);
+            if (pitchMin < double.MaxValue)
+                tol = Math.Min(tol, 0.49 * pitchMin);
+
+            var consolidated = ConsolidateChipCenters(chips, tol);
+
+            Log.Write(UnitName, "ChipMap",
+                $"RawCount={chips.Count} Consolidated={consolidated.Count} MergeDist={DuplicateDistMm:F3}mm");
+
+            // (MaterialWafer.MakeWaferInfo 내부에서도 근접 좌표 처리 로직이 있을 수 있으나
+            //  선행 병합으로 좌표 폭주/다중 중복을 줄여 Map 품질 향상)
+            //UpdateChipInfo(chips);
+            UpdateChipInfo(consolidated);
+
+            MaterialWafer wafer = GetMaterialWafer();
+            if (wafer != null)
             {
-                SetMaterial(new MaterialWafer());
+                if (UseUpdateOrderForPickup)
+                {
+                    ReindexDiesSequential(wafer); // 현재 리스트 순서대로 Index 재부여
+                }
+                else
+                {
+                    // 필요 시 기존 경로 옵션 기반 재정렬 사용
+                    ApplyDieOrderByPathSettings(wafer);
+                }
+
+                // 여기에서 연속 인덱스로 정규화(0부터 시작; UI가 1-base를 원하면 startIndex=1)
+                NormalizeIndicesSequential(wafer, startIndex: 0, rename: true);
+
+                // 맵핑 직후, 설정한 경로 옵션대로 다이 순서 재정렬
+                //ApplyDieOrderByPathSettings(wafer);
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                // 재인덱싱 직후 UI에 확정본을 다시 전달
+                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
             }
 
-            UpdateChipInfo(chips);
-            MaterialWafer wafer = GetMaterialWafer();
-            wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-
-            // ���Ⱑ '���� �Ϸ�' ����: �ݵ�� true ����
+            // 여기가 '맵핑 완료' 시점: 반드시 true 설정
             ChipMappingDone = true;
-
             return nRet;
         }
+
+        // 감지 결과를 이용해 원형 웨이퍼 전체 격자(있음/없음)를 MaterialWafer.Dies로 채움
+        private void BuildWaferDiesFullGrid(List<PointD> detected)
+        {
+            // Wafer 확보
+            var wafer = GetMaterialWafer();
+            if (wafer == null)
+            {
+                wafer = new MaterialWafer();
+                SetMaterial(wafer);
+            }
+
+            var eq = Equipment.Instance;
+            var recip = eq.EquipmentRecipe.CurrentRecipe;
+
+            // 웨이퍼 중심 (Teaching Position CenterPoint)
+            double centerX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
+            double centerY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
+
+            // 파라미터
+            double radius = Math.Max(0, recip.WaferDiameter) / 2.0;
+            double pitchX = ChipPitchXmm;
+            double pitchY = ChipPitchYmm;
+            if (pitchX <= 0) pitchX = 0.5;
+            if (pitchY <= 0) pitchY = 0.5;
+
+            // 격자 크기
+            int cols = Math.Max(1, (int)Math.Floor((radius * 2.0) / pitchX) + 1);
+            int rows = Math.Max(1, (int)Math.Floor((radius * 2.0) / pitchY) + 1);
+
+            // 격자 원점(좌상단 개념)
+            double originX = centerX - (cols - 1) * pitchX / 2.0;
+            double originY = centerY - (rows - 1) * pitchY / 2.0;
+
+            // 포함/매칭 판정
+            double includeMargin = Math.Min(pitchX, pitchY) * 0.25; // 원 경계 마진
+            double includeRadius = radius + includeMargin;
+
+            double matchTol = Math.Min(pitchX, pitchY) * 0.45; // 인접 셀 간섭 방지
+            double matchTol2 = matchTol * matchTol;
+
+            var remaining = (detected != null) ? new List<PointD>(detected) : new List<PointD>();
+            var list = new List<MaterialDie>(rows * cols);
+
+            // 행(Y) 우선으로 전체 셀 생성
+            for (int r = 0; r < rows; r++)
+            {
+                double y = originY + r * pitchY;
+
+                for (int c = 0; c < cols; c++)
+                {
+                    double x = originX + c * pitchX;
+
+                    // 원 내부 셀만 포함
+                    double dx0 = x - centerX;
+                    double dy0 = y - centerY;
+                    if (Math.Sqrt(dx0 * dx0 + dy0 * dy0) > includeRadius)
+                        continue;
+
+                    // 감지 좌표와 매칭
+                    bool present = false;
+                    int bestIdx = -1;
+                    double bestD2 = double.MaxValue;
+
+                    for (int i = 0; i < remaining.Count; i++)
+                    {
+                        double dx = remaining[i].X - x;
+                        double dy = remaining[i].Y - y;
+                        double d2 = dx * dx + dy * dy;
+                        if (d2 <= matchTol2 && d2 < bestD2)
+                        {
+                            bestD2 = d2;
+                            bestIdx = i;
+                        }
+                    }
+
+                    double cx = x, cy = y;
+                    if (bestIdx >= 0)
+                    {
+                        present = true;
+                        cx = remaining[bestIdx].X;
+                        cy = remaining[bestIdx].Y;
+                        // 중복 매칭 방지
+                        remaining.RemoveAt(bestIdx);
+                    }
+
+                    var die = new MaterialDie
+                    {
+                        // Map 격자 인덱스(정수 그리드) — MaterialDie.MapX/MapY는 double이지만 정수값을 넣습니다.
+                        MapX = c,
+                        MapY = r,
+
+                        // 실제(또는 격자) 중심 좌표
+                        CenterX = cx,
+                        CenterY = cy,
+                        Angle = 0.0,
+
+                        Presence = present ? MaterialPresence.Exist : MaterialPresence.NotExist,
+                        State = present ? DieProcessState.Mapped : DieProcessState.None,
+
+                        SourceWaferId = wafer.WaferId,
+                        ArrivedTime = DateTime.Now
+                    };
+
+                    // 측정 키 초기화
+                    foreach (var key in wafer.RecipeKeys)
+                        die.AddMeasure(key, double.NaN);
+
+                    list.Add(die);
+                }
+            }
+
+            // Wafer에 반영
+            wafer.Dies = list;
+        }
+
+
+        private bool _simDiesGenerated = false;
+       
+        private void ResetChipMappingState()
+        {
+            // 맵핑 상태/커서/결과 초기화
+            ChipMappingDone = false;
+            _chipPickupCursor = 0;
+            CurrentChipMap = null;
+            _simDiesGenerated = false; // 풀 재생성 트리거
+            _simAllDiesPool.Clear();
+            _simAddedKeys.Clear();
+        }
+        private void MakeScanPath(out List<PointD> path)
+        {
+            path = new List<PointD>();
+            try
+            {
+                double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
+                double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                double dRadius = recip.WaferDiameter / 2;
+
+                try
+                {
+                    if (Config.IsSimulation == false && this.Config.IsDryRun == false)
+                    {
+                        if (PmRunner.IsRecipeLoaded == false)
+                        {
+                            PmRunner.LoadRecipe();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+
+                double dRoiWidth = 0.0;// Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                double dRoiHeight = 0.0;//Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                if (Config.IsSimulation == false && this.Config.IsDryRun == false)
+                {
+                    dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                    dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                }
+                else
+                {
+                    dRoiWidth = 0.85;
+                    dRoiHeight = 0.7;
+                }
+
+                double dChipPitchX = ChipPitchXmm;
+                double dChipPitchY = ChipPitchYmm;
+
+                if (dChipPitchX <= 0) dChipPitchX = 0.5;
+                if (dChipPitchY <= 0) dChipPitchY = 0.5;
+
+                dRoiWidth -= dChipPitchX * 2;
+                dRoiHeight -= dChipPitchY * 2;
+                int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;
+                int nVertCount = (int)((dRadius - dChipPitchY) * 2 / dRoiHeight) + 1;
+                if (nHorzCount < 1) nHorzCount = 1;
+                if (nVertCount < 1) nVertCount = 1;
+                double startX = centerTpX - (nHorzCount - 1) * dRoiWidth / 2;
+                double startY = centerTpY - (nVertCount - 1) * dRoiHeight / 2;
+
+                bool useYScanFirst = true; // Config에서 선택 가능하도록 개선 예정
+                if (useYScanFirst)
+                {
+                    //y방향으로 서치
+                    for (int ix = 0; ix < nHorzCount; ix++)
+                    {
+                        double x = startX + ix * dRoiWidth;
+                        for (int iy = 0; iy < nVertCount; iy++)
+                        {
+                            double y = startY + iy * dRoiHeight;
+
+                            // 지그재그 패턴: X 열 기준으로 Y 스캔 방향 전환
+                            if (ix % 2 == 1)
+                            {
+                                // 홀수 열은 Y를 반대 방향으로 스캔
+                                y = startY + (nVertCount - 1 - iy) * dRoiHeight;
+                            }
+
+                            double dx = x - centerTpX;
+                            double dy = y - centerTpY;
+                            double dist = Math.Sqrt(dx * dx + dy * dy);
+                            double offsetDist = GetDistance(dRoiWidth / 2, dRoiHeight / 2);
+                            if (dist <= dRadius + offsetDist)
+                            {
+                                path.Add(new PointD(x, y));
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    //x방향으로 서치
+                    for (int iy = 0; iy < nVertCount; iy++)
+                    {
+                        double y = startY + iy * dRoiHeight;
+                        // 행 우선 지그재그: Y 고정 후 X 방향 반전
+                        bool reverse = (iy % 2 == 1);
+                        for (int ix = 0; ix < nHorzCount; ix++)
+                        {
+                            int rx = reverse ? (nHorzCount - 1 - ix) : ix;
+                            double x = startX + rx * dRoiWidth;
+
+                            double dx = x - centerTpX;
+                            double dy = y - centerTpY;
+                            double dist = Math.Sqrt(dx * dx + dy * dy);
+                            double offsetDist = GetDistance(dRoiWidth / 2, dRoiHeight / 2);
+                            if (dist <= dRadius + offsetDist)
+                                path.Add(new PointD(x, y));
+                        }
+                    }
+                }
+
+                Log.Write(UnitName, "MakeScanPath", 
+                    $"Count={path.Count} Radius={dRadius} Center=({centerTpX:F3},{centerTpY:F3}) ROI=({dRoiWidth:F3},{dRoiHeight:F3}) ChipPitch=({dChipPitchX:F3},{dChipPitchY:F3})");
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            //StageCamera.CameraConfig.Scale
+        }
+        public void UpdateUI()
+        {
+            MaterialWafer materialWafer = GetMaterialWafer();
+            EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
+        }
+
+        /// <summary>
+        /// Chip 중심 좌표 리스트에서 서로 가까운(mergeDist 이하) 점들을 하나의 대표 점(평균)으로 병합.
+        ///  - O(N^2) 단순 방식 (좌표 수가 매우 많아지면 향후 Grid/Spatial Hash로 최적화 가능)
+        ///  - 다중 스캔, ROI 겹침 등으로 인한 중복 제거
+        /// </summary>
+        /// <param name="raw">원본 좌표 목록</param>
+        /// <param name="mergeDist">병합 기준 거리(mm)</param>
+        /// <returns>병합된 좌표 목록</returns>
+        private List<PointD> ConsolidateChipCenters(List<PointD> raw, double mergeDist)
+        {
+            if (raw == null || raw.Count == 0)
+                return new List<PointD>();
+
+            // 음수/0 보호
+            if (mergeDist <= 0)
+                return new List<PointD>(raw);
+
+            double dist2 = mergeDist * mergeDist;
+
+            // 순서 민감도 완화: 공간 정렬(X,Y) 후 처리
+            var pts = raw.OrderBy(p => p.X).ThenBy(p => p.Y).ToList();
+            // 누적 평균 관리를 위한 내부 구조
+            // centers[i] : 현재 대표 좌표
+            // sums[i]    : (sumX, sumY, count)
+            var centers = new List<PointD>();
+            var sums = new List<(double sumX, double sumY, int count)>();
+
+
+            foreach (var p in raw)
+            {
+                int found = -1;
+
+                // 가장 먼저 발견되는 클러스터에 병합 (필요 시 '가장 가까운 클러스터'로 개선 가능)
+                for (int i = 0; i < centers.Count; i++)
+                {
+                    double dx = p.X - centers[i].X;
+                    double dy = p.Y - centers[i].Y;
+                    if (dx * dx + dy * dy <= dist2)
+                    {
+                        found = i;
+                        break;
+                    }
+                }
+
+                if (found < 0)
+                {
+                    centers.Add(p);
+                    sums.Add((p.X, p.Y, 1));
+                }
+                else
+                {
+                    var acc = sums[found];
+                    acc.sumX += p.X;
+                    acc.sumY += p.Y;
+                    acc.count++;
+                    sums[found] = acc;
+
+                    centers[found] = new PointD(acc.sumX / acc.count, acc.sumY / acc.count);
+                }
+            }
+
+            // 2차 병합: 클러스터 간 근접한 것 통합(전이적 병합 보장)
+            bool merged;
+            do
+            {
+                merged = false;
+                for (int i = 0; i < centers.Count && !merged; i++)
+                {
+                    for (int j = i + 1; j < centers.Count; j++)
+                    {
+                        double dx = centers[j].X - centers[i].X;
+                        double dy = centers[j].Y - centers[i].Y;
+                        if (dx * dx + dy * dy <= dist2)
+                        {
+                            // i <- i + j
+                            var ai = sums[i];
+                            var aj = sums[j];
+                            var comb = (ai.sumX + aj.sumX, ai.sumY + aj.sumY, ai.count + aj.count);
+                            sums[i] = comb;
+                            centers[i] = new PointD(comb.Item1 / comb.Item3, comb.Item2 / comb.Item3);
+
+                            // j 제거
+                            sums.RemoveAt(j);
+                            centers.RemoveAt(j);
+                            merged = true;
+                            break;
+                        }
+                    }
+                }
+            } while (merged);
+
+
+            return centers;
+        }
+
+
+        // 새 헬퍼 메서드 추가 (클래스 내 적절한 private 영역)
+        /// <summary>
+        /// 시뮬레이션 모드에서 웨이퍼 직경과 피치를 이용해 전체 칩 중심 좌표를 한 번에 생성.
+        /// BuildWaferDiesFullGrid 와 동일한 격자 로직을 사용하여 후처리 일관성 보장.
+        /// </summary>
+        private void GenerateAllSimDies(List<PointD> dest)
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+
+                double radius = Math.Max(0, recip.WaferDiameter) / 2.0;
+                if (radius <= 0)
+                    return;
+
+                double pitchX = ChipPitchXmm;
+                double pitchY = ChipPitchYmm;
+                if (pitchX <= 0) pitchX = 0.5;
+                if (pitchY <= 0) pitchY = 0.5;
+
+                // Teaching Center 기준
+                double centerX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
+                double centerY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
+
+                int cols = Math.Max(1, (int)Math.Floor((radius * 2.0) / pitchX) + 1);
+                int rows = Math.Max(1, (int)Math.Floor((radius * 2.0) / pitchY) + 1);
+
+                double originX = centerX - (cols - 1) * pitchX / 2.0;
+                double originY = centerY - (rows - 1) * pitchY / 2.0;
+
+                double includeRadius = radius; // 경계는 BuildWaferDiesFullGrid 에서 margin 포함 재판정
+                double includeR2 = includeRadius * includeRadius;
+
+                for (int r = 0; r < rows; r++)
+                {
+                    double y = originY + r * pitchY;
+                    for (int c = 0; c < cols; c++)
+                    {
+                        double x = originX + c * pitchX;
+                        double dx = x - centerX;
+                        double dy = y - centerY;
+                        if (dx * dx + dy * dy <= includeR2)
+                        {
+                            dest.Add(new PointD(x, y));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "GenerateAllSimDies", $"Exception: {ex.Message}");
+            }
+        }
+
         public int MoveStageToNextDie(bool bFine = false)
         {
             int nRet = 0;
@@ -1351,13 +2039,12 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-
         public bool IsRingPresent()
         {
             bool bRtn = true;
             if (Config.IsSimulation || Config.IsDryRun)
             {
-                // �ùķ��̼�: ���� ���� ��Ƽ����� �Ǵ�
+                // 시뮬레이션: 실제 보유 머티리얼로 판단
                 return this.GetMaterial() is MaterialWafer;
                 //return true;
             }
@@ -1369,7 +2056,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-        public bool IsWaferLoadingPosition()
+        public bool IsPositionWaferLoading()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
             if (tp == null) 
@@ -1377,7 +2064,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return InPosTeaching(tp);
         }
-        public bool IsWaferUnloadingPosition()
+        public bool IsPositionWaferUnloading()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Unloading];
             if (tp == null) return false;
@@ -1389,22 +2076,25 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-        public int LoadingWaferPrepare()
+        public int PrepareLoadingStage()
         {
             int nRtn = 0;
 
             Log.Write(this, "Start LoadingWaferPrepare");
 
-            // �� ������ �غ� ���� �� �� ���� ����
+            // 새 웨이퍼 준비 진입 → 맵 상태 리셋
             ResetChipMappingState();
-
-            // �̹� ������ �����ϸ� �غ� �ܰ� ���ʿ� (�ٷ� �Ϸ� �ܰ� ����)
+            // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
             if (Config.IsSimulation == false 
                 && Config.IsDryRun == false)    
             {
                 if (IsRingPresent())
                 {
                     MaterialWafer wafer = GetMaterialWafer();
+                    if(wafer != null)
+                    {
+                        return -1;
+                    }
                     if(wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
                     {
                         Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
@@ -1413,7 +2103,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             
-            // �ε� Teaching �̵�
+            // 로딩 Teaching 이동
             nRtn = MoveToStageLoadPosition();
             if (nRtn != 0)
             {
@@ -1448,9 +2138,9 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToStageLoadPosition(bool isFine = false)
         {
             int nRet = 0;
-            if (IsWaferLoadingPosition())
+            if (IsPositionWaferLoading())
             {
-                return 0; // �̹� �ε� ��ġ�� ������ ����
+                return 0; // 이미 로딩 위치에 있으면 무시
             }
 
             nRet = this.InputStageEjector.MovePositionEjectBlockSafety();
@@ -1476,7 +2166,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToStageLoadPositionAsync();
             while (IsEndTask(task) == false)
             {
-                // Check Interlock.!!! ���� ������.!!!
+                // Check Interlock.!!! 구문 넣을것.!!!
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     this.AxisX.EmgStop();
@@ -1510,7 +2200,7 @@ namespace QMC.LCP_280.Process.Unit
                     //Simulation - ok
                 }
 
-                else if (!InputFeeder.IsFeederZSafetyPosition())
+                else if (!InputFeeder.IsPositionFeederZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -1519,7 +2209,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederYSafetyPosition())
+                if (!InputFeeder.IsPositionFeederYSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -1528,7 +2218,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -1544,77 +2234,19 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.Loading, isFine);
         }
-        public int LoadingWaferComplete()
-        {
-            int ret = 0;
-
-            // �غ� �� �Ǿ����� ȣ�� ���� ����
-            if (IsRingPresent() == false)
-            {
-                Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingWaferPrepare first)");
-                return -1;
-            }
-
-            // ���� Wafer �� �ö�� �� ���
-            bool bRtn = Config.IsSimulation;
-            if (IsRingPresent() || bRtn || Config.IsDryRun)
-            {
-                Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
-
-                PlateUp();
-                //SetClampPlate(true);
-                //if (!IsPlateUp())
-                //{
-                //    Log.Write(this, "Fail: PlateUp");
-                //    return -1;
-                //}
-                //if(this.IsStop) { return 0; }
-
-                ClampLiftUp();
-                //SetClampLift(true);
-                //if (!IsClampLiftUp())
-                //{
-                //    Log.Write(this, "Fail: ClampLiftUp");
-                //    return -1;
-                //}
-                //if (this.IsStop) { return 0; }
-
-                ClampForward();
-                //SetClampFB(true);
-                //if (!IsClampFwd())
-                //{
-                //    Log.Write(this, "Fail: ClampForward");
-                //    return -1;
-                //}
-                //if (this.IsStop) { return 0; }
-
-                // ���� Teaching �̵�
-                ret = MoveToStageCenterPosition();
-                if (ret != 0)
-                {
-                    Log.Write(this, "Fail: Move Load");
-                    return ret;
-                }
-
-                Log.Write(UnitName, "LoadingComp", "Done");
-
-                return ret;
-            }
-
-            return ret;
-        }
+        
         public bool IsInterlockWithFeederAndDieTransferOk()
         {
             return IsInterlockWithFeederAndDieTransferOkInt() == 0;
         }
         public int IsInterlockWithFeederAndDieTransferOkInt()
         {
-            if (InputFeeder.IsFeederZSafetyPosition() == false)
+            if (InputFeeder.IsPositionFeederZSafety() == false)
             {
                 Log.Write(UnitName, "Interlock", "Feeder Z not safe");
                 return -1;
             }
-            if (InputFeeder.IsFeederYSafetyPosition() == false)
+            if (InputFeeder.IsPositionFeederYSafety() == false)
             {
                 Log.Write(UnitName, "Interlock", "Feeder Y not safe");
                 return -2;
@@ -1644,7 +2276,14 @@ namespace QMC.LCP_280.Process.Unit
 
             if(IsWaferCenterPosition())
             {
-                return 0; // �̹� ���� ��ġ�� ������ ����
+                return 0; // 이미 센터 위치에 있으면 무시
+            }
+
+            nRet = this.InputStageEjector.MovePositionEjectPinReady();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "MoveToStageUnloadPosition", "Fail: Ejector Pin Move Ready");
+                return -1;
             }
 
             nRet = this.InputStageEjector.MovePositionEjectBlockSafety();
@@ -1653,13 +2292,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "MoveToStageUnloadPosition", "Fail: Ejector Move Ready");
                 return -1;
             }
-            nRet = this.InputStageEjector.MovePositionEjectPinReady();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "MoveToStageUnloadPosition", "Fail: Ejector Pin Move Ready");
-                return -1;
-            }
-
+            
             if (IsInterlockWithFeederAndDieTransferOk() == false)
             {
                 Log.Write(UnitName, "MoveToCenter", "Interlock with Feeder/DieTransfer not OK");
@@ -1669,7 +2302,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToStageCenterPositionAsync();
             while (IsEndTask(task) == false)
             {
-                // Check Interlock.!!! ���� ������.!!!
+                // Check Interlock.!!! 구문 넣을것.!!!
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     this.AxisX.EmgStop();
@@ -1698,7 +2331,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederZSafetyPosition())
+                if (!InputFeeder.IsPositionFeederZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -1707,7 +2340,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederYSafetyPosition())
+                if (!InputFeeder.IsPositionFeederYSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -1716,7 +2349,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -1739,12 +2372,12 @@ namespace QMC.LCP_280.Process.Unit
         private TeachingPosition _lastCenterAlignTp;
         private int PrepareForAlign(out TeachingPosition centerTp, out VisionImage img)
         {
-            int nRtn = -1;
+            int nRet = 0;
 
             centerTp = null;
             img = null;
 
-            // 1) ���Ͷ�
+            // 1) 인터락
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "Align", "Fail: Ring(Wafer) not present");
@@ -1768,19 +2401,19 @@ namespace QMC.LCP_280.Process.Unit
                 wafer = new MaterialWafer();
                 SetMaterial(wafer);
             }
-            nRtn = MoveToStageCenterPosition();
-            if (nRtn != 0)
+            nRet = MoveToStageCenterPosition();
+            if (nRet != 0)
             {
                 Log.Write(UnitName, "Align", "Fail: Move Center");
                 return -1;
             }
 
-            // 2) Center TeachingPosition Ȯ��
-            //   - ��Ī ��� �켱
+            // 2) Center TeachingPosition 확보
+            //   - 명칭 기반 우선
             centerTp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
             if (centerTp == null)
             {
-                //   - �ε��� ��� ����
+                //   - 인덱스 기반 폴백
                 int idx = (int)InputStageConfig.TeachingPositionName.CenterPoint;
                 if (Config.TeachingPositions != null &&
                     idx >= 0 && idx < Config.TeachingPositions.Count)
@@ -1800,8 +2433,12 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
-            // ����� ���� �� ���� ���� ��ȿ. �ݵ�� ����
+            // 얼라인 시작 → 이전 맵은 무효. 반드시 리셋
             ResetChipMappingState();
+            
+            //20251123 T보정 추가
+            ApplyDynamicPitchParameters();
+            OnWaferOrRecipeChanged(); // 웨이퍼 교체/레시피 변경 대응
 
             if (this.Config.IsSimulation || this.Config.IsDryRun)
             {
@@ -1825,50 +2462,1116 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_TAlignPrepared = true;
             return 0;
         }
+
+
+        // 정밀 T 재보정 옵션/파라미터
+        public bool EnableThetaDualPointRefine { get; set; } = true;
+        public int MaxTRefineAttempts { get; set; } = 5;
+        public double TRefineResidualToleranceDeg { get; set; } = 0.02; // 최종 허용 잔류 기울기
+        public double TRefineShiftRatio { get; set; } = 0.5; // ROI 폭/높이 대비 이동 비율(50%)
+        /// <summary>
+        /// 현재 스테이지 위치에서 이미지 그랩 후 첫 번째 패턴의 글로벌 좌표(mm) 계산
+        /// (스테이지 좌표 + 픽셀->mm 오프셋)
+        /// </summary>
+        // 허용 오차(mm): X 시도 시 두 점의 Y가 동일 라인, Y 시도 시 두 점의 X가 동일 라인
+        public double DirectionalPerpendicularToleranceMm { get; set; } = 0.2;
+        public bool TryGetMarkCenterGlobalDirectional(bool useXAxis, 
+            double? refPerpMm, out double gx, out double gy, out double score)
+        {
+            gx = gy = score = 0.0;
+            // Teaching CenterPoint (글로벌 mm 기준)
+            var centerTp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
+
+            double centerX = centerTp?.GetAxisPosition(AxisNames.WaferStageX) ?? (AxisX?.GetPosition() ?? 0.0);
+            double centerY = centerTp?.GetAxisPosition(AxisNames.WaferStageY) ?? (AxisY?.GetPosition() ?? 0.0);
+
+            //return TryGetImageCenterMark(out gx, out gy, out score);
+
+            return TryGetMarkCenterGlobalDirectionalCenter(useXAxis, refPerpMm,
+                centerX, centerY,out gx, out gy, out score);
+
+        }
+
+        private bool TryGetMarkCenterGlobalDirectionalCenter(bool useXAxis, double? refPerpMm,
+            double centerX, double centerY, out double gx, out double gy, out double score)
+        {
+
+            gx = gy = score = 0.0;
+            try
+            {
+                VisionImage img;
+                if (Config.IsSimulation == false
+                                && Config.IsDryRun == false)
+                {
+                    if (this.StageCamera.IsLiveOn)
+                    {
+                        this.StageCamera.StopLive();
+                        Thread.Sleep(100);
+                    }
+                }
+                int rc = StageCamera.GrabSync(out img);
+                if (rc != 0 || img == null)
+                    return false;
+
+                var sr = PmRunner.Search(img);
+                if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0)
+                    return false;
+
+              
+                // 현재 T축 회전각 (deg → rad)
+                double tDeg = AxisT?.GetPosition() ?? 0.0;
+                double tRad = tDeg * Math.PI / 180.0;
+
+                // 주축(정방향)과 수직축 단위 벡터 구성
+                // useXAxis=true : '회전된 X 방향'을 기준 (cosθ, sinθ)
+                // useXAxis=false: '회전된 Y 방향'을 기준 ( -sinθ, cosθ )  (T 회전 후 Y 방향)
+                double dirX, dirY;      // 선택 주축 방향 단위벡터
+                if (useXAxis)
+                {
+                    dirX = Math.Cos(tRad);
+                    dirY = Math.Sin(tRad);
+                }
+                else
+                {
+                    dirX = -Math.Sin(tRad);
+                    dirY = Math.Cos(tRad);
+                }
+                // 수직 방향 단위벡터 (주축에 대해 90도 회전)
+                double perpX = -dirY;
+                double perpY = dirX;
+
+                // 픽셀 → mm 변환을 위해 카메라 중심 픽셀
+                double cxPix = StageCamera?.CameraConfig?.Resolution.Width / 2.0 ?? 0.0;
+                double cyPix = StageCamera?.CameraConfig?.Resolution.Height / 2.0 ?? 0.0;
+                double sx = AxisX?.GetPosition() ?? centerX;
+                double sy = AxisY?.GetPosition() ?? centerY;
+
+                // 후보 변환 + 거리 계산
+                var candidates = sr.Matches.Select(m =>
+                {
+                    // 픽셀 → mm 오프셋 (카메라 Scale 사용)
+                    var off = GetPixelToMmScale(m.X, m.Y);
+                    double ggx = sx + off.X;
+                    double ggy = sy + off.Y;
+
+                    // 중심 기준 벡터
+                    double vx = ggx - centerX;
+                    double vy = ggy - centerY;
+
+                    // 주축 방향 성분 (투영 길이), 수직 편차 성분
+                    double along = vx * dirX + vy * dirY;          // 주축 방향 좌표(mm)
+                    double perp = vx * perpX + vy * perpY;          // 수직축 방향 좌표(mm)
+
+                    double perpAbs = Math.Abs(perp);                // 수직 편차 절대값
+                    double centerPixD2 = (m.X - cxPix) * (m.X - cxPix) + (m.Y - cyPix) * (m.Y - cyPix);
+
+                    return new
+                    {
+                        M = m,
+                        GX = ggx,
+                        GY = ggy,
+                        Along = along,
+                        Perp = perp,
+                        PerpAbs = perpAbs,
+                        CenterPixD2 = centerPixD2
+                    };
+                }).ToList();
+
+                if (MarkMinScore > 0)
+                    candidates = candidates.Where(c => c.M.Score >= MarkMinScore).ToList();
+                if (candidates.Count == 0)
+                    return false;
+
+                // 허용 오차(mm)
+                double tol = Math.Max(0.0, DirectionalPerpendicularToleranceMm);
+                IEnumerable<dynamic> usable;
+
+                if (refPerpMm.HasValue)
+                {
+                    // 두 번째 지점: 이전 수직 좌표(refPerpMm)와 동일한 라인
+                    usable = candidates.Where(c => Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value) <= tol);
+                    if (!usable.Any())
+                    {
+                        // 글로벌 좌표 기준 refPerpMm 과 가장 근접한 것들로 폴백
+                        usable = candidates
+                                 .OrderBy(c => Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value))
+                                 .Take(3);
+                        Log.Write(UnitName, "DirectionalPick",
+                            $"No candidate within perp mm tolerance ({tol:F4}). Fallback nearest line.");
+                    }
+                }
+                else
+                {
+                    // 첫 지점: 회전된 주축의 수직 편차(perpAbs)가 최소인 것 (순수 라인 근접)
+                    usable = candidates.Where(c => c.PerpAbs <= tol);
+                    if (!usable.Any())
+                    {
+                        usable = candidates.OrderBy(c => c.PerpAbs).Take(3);
+                        Log.Write(UnitName, "DirectionalPick",
+                            $"No candidate within rotated-line tolerance ({tol:F4}). Fallback nearest perp.");
+                    }
+                }
+
+                // 최종 선택 규칙:
+                // 1) 수직 편차(PerpAbs) 최소
+                // 2) 중심 픽셀 근접
+                // 3) 점수 최대
+                var best = usable
+                    .OrderBy(c => c.PerpAbs)
+                    .ThenBy(c => c.CenterPixD2)
+                    .ThenByDescending(c => c.M.Score)
+                    .First();
+
+                // 최종 선택: "이미지 중심에 가장 가까운" 후보 최우선
+                //var best = candidates
+                //    .OrderBy(c => c.CenterPixD2) // 1) 센터 거리(픽셀) 최우선
+                //    .ThenBy(c =>
+                //        refPerpMm.HasValue
+                //            ? Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value) // 2) (있다면) 기준 라인 근접
+                //            : 0.0)
+                //    .ThenBy(c => c.PerpAbs)       // 3) 회전된 주축에 대한 수직 편차
+                //    .ThenByDescending(c => c.M.Score) // 4) 점수
+                //    .First();
+
+                gx = best.GX;
+                gy = best.GY;
+                score = best.M.Score;
+
+                Log.Write(UnitName, "DirectionalPick",
+                    $"Select GX={gx:F4} GY={gy:F4} Score={score:F3} Perp={best.Perp:F4} Along={best.Along:F4} (T={tDeg:F3}deg useAxis={(useXAxis ? "X" : "Y")})");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+               
+                return false;
+            }
+        }
+
+        public bool TryGetImageCenterMark(out double gx, out double gy, out double score, double? maxCenterDistPx = null)
+        {
+            gx = gy = score = 0.0;
+            try
+            {
+                VisionImage img;
+                int rc = StageCamera.GrabSync(out img);
+                if (rc != 0 || img == null) return false;
+
+                var sr = PmRunner.Search(img);
+                if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0) return false;
+
+                double cxPix = StageCamera?.CameraConfig?.Resolution.Width / 2.0 ?? 0.0;
+                double cyPix = StageCamera?.CameraConfig?.Resolution.Height / 2.0 ?? 0.0;
+
+                var bestM = sr.Matches
+                    .OrderBy(m => (m.X - cxPix) * (m.X - cxPix) + (m.Y - cyPix) * (m.Y - cyPix))
+                    .First();
+
+                // 반경 제한(옵션)
+                if (maxCenterDistPx.HasValue)
+                {
+                    double d2 = (bestM.X - cxPix) * (bestM.X - cxPix) + (bestM.Y - cyPix) * (bestM.Y - cyPix);
+                    if (d2 > maxCenterDistPx.Value * maxCenterDistPx.Value)
+                        return false;
+                }
+
+                // 픽셀->mm 오프셋 후 글로벌(mm) 좌표 계산
+                double sx = AxisX?.GetPosition() ?? 0.0;
+                double sy = AxisY?.GetPosition() ?? 0.0;
+                var off = GetPixelToMmScale(bestM.X, bestM.Y);
+
+                gx = sx + off.X;
+                gy = sy + off.Y;
+                score = bestM.Score;
+
+                // Overlay: 대표 1개만
+                int trainW = 0, trainH = 0;
+                try
+                {
+                    var ti = PmRunner.Parameters?.TrainImages?
+                        .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                    if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
+                }
+                catch { /* ignore */ }
+
+                OnRawMatchesFound(img, new[] { bestM }, 0, trainW, trainH);
+                Log.Write(UnitName, "CenterPick", $"GX={gx:F4} GY={gy:F4} Score={score:F3}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        //private bool TryGetMarkCenterGlobalDirectionalCenter(bool useXAxis, double? refPerpMm,
+        //    double centerX, double centerY, out double gx, out double gy, out double score)
+        //{
+        //    gx = gy = score = 0.0;
+        //    try
+        //    {
+        //        VisionImage img;
+        //        //StageCamera.StopLive();
+        //        int rc = StageCamera.GrabSync(out img);
+        //        if (rc != 0 || img == null)
+        //            return false;
+
+        //        var sr = PmRunner.Search(img);
+        //        if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0)
+        //            return false;
+
+        //        // 현재 T축 회전각 (deg → rad)
+        //        double tDeg = AxisT?.GetPosition() ?? 0.0;
+        //        double tRad = tDeg * Math.PI / 180.0;
+
+        //        // 주축(정방향)과 수직축 단위 벡터 구성
+        //        // useXAxis=true : '회전된 X 방향'을 기준 (cosθ, sinθ)
+        //        // useXAxis=false: '회전된 Y 방향'을 기준 ( -sinθ, cosθ )  (T 회전 후 Y 방향)
+        //        double dirX, dirY;      // 선택 주축 방향 단위벡터
+        //        if (useXAxis)
+        //        {
+        //            dirX = Math.Cos(tRad);
+        //            dirY = Math.Sin(tRad);
+        //        }
+        //        else
+        //        {
+        //            dirX = -Math.Sin(tRad);
+        //            dirY = Math.Cos(tRad);
+        //        }
+        //        // 수직 방향 단위벡터 (주축에 대해 90도 회전)
+        //        double perpX = -dirY;
+        //        double perpY = dirX;
+
+        //        // 픽셀 → mm 변환을 위해 카메라 중심 픽셀
+        //        double cxPix = StageCamera?.CameraConfig?.Resolution.Width / 2.0 ?? 0.0;
+        //        double cyPix = StageCamera?.CameraConfig?.Resolution.Height / 2.0 ?? 0.0;
+        //        double sx = AxisX?.GetPosition() ?? centerX;
+        //        double sy = AxisY?.GetPosition() ?? centerY;
+
+        //        // 후보 변환 + 거리 계산
+        //        var candidates = sr.Matches.Select(m =>
+        //        {
+        //            // 픽셀 → mm 오프셋 (카메라 Scale 사용)
+        //            var off = GetPixelToMmScale(m.X, m.Y);
+        //            double ggx = sx + off.X;
+        //            double ggy = sy + off.Y;
+
+        //            // 중심 기준 벡터
+        //            double vx = ggx - centerX;
+        //            double vy = ggy - centerY;
+
+        //            // 주축 방향 성분 (투영 길이), 수직 편차 성분
+        //            double along = vx * dirX + vy * dirY;          // 주축 방향 좌표(mm)
+        //            double perp = vx * perpX + vy * perpY;          // 수직축 방향 좌표(mm)
+
+        //            double perpAbs = Math.Abs(perp);                // 수직 편차 절대값
+        //            double centerPixD2 = (m.X - cxPix) * (m.X - cxPix) + (m.Y - cyPix) * (m.Y - cyPix);
+
+        //            return new
+        //            {
+        //                M = m,
+        //                GX = ggx,
+        //                GY = ggy,
+        //                Along = along,
+        //                Perp = perp,
+        //                PerpAbs = perpAbs,
+        //                CenterPixD2 = centerPixD2
+        //            };
+        //        }).ToList();
+
+        //        if (MarkMinScore > 0)
+        //            candidates = candidates.Where(c => c.M.Score >= MarkMinScore).ToList();
+        //        if (candidates.Count == 0)
+        //            return false;
+
+        //        // 허용 오차(mm)
+        //        double tol = Math.Max(0.0, DirectionalPerpendicularToleranceMm);
+        //        IEnumerable<dynamic> usable;
+
+        //        if (refPerpMm.HasValue)
+        //        {
+        //            // 두 번째 지점: 이전 수직 좌표(refPerpMm)와 동일한 라인
+        //            usable = candidates.Where(c => Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value) <= tol);
+        //            if (!usable.Any())
+        //            {
+        //                // 글로벌 좌표 기준 refPerpMm 과 가장 근접한 것들로 폴백
+        //                usable = candidates
+        //                         .OrderBy(c => Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value))
+        //                         .Take(3);
+        //                Log.Write(UnitName, "DirectionalPick",
+        //                    $"No candidate within perp mm tolerance ({tol:F4}). Fallback nearest line.");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            // 첫 지점: 회전된 주축의 수직 편차(perpAbs)가 최소인 것 (순수 라인 근접)
+        //            usable = candidates.Where(c => c.PerpAbs <= tol);
+        //            if (!usable.Any())
+        //            {
+        //                usable = candidates.OrderBy(c => c.PerpAbs).Take(3);
+        //                Log.Write(UnitName, "DirectionalPick",
+        //                    $"No candidate within rotated-line tolerance ({tol:F4}). Fallback nearest perp.");
+        //            }
+        //        }
+
+        //        // 최종 선택 규칙:
+        //        // 1) 수직 편차(PerpAbs) 최소
+        //        // 2) 중심 픽셀 근접
+        //        // 3) 점수 최대
+        //        var best = usable
+        //            .OrderBy(c => c.PerpAbs)
+        //            .ThenBy(c => c.CenterPixD2)
+        //            .ThenByDescending(c => c.M.Score)
+        //            .First();
+
+        //        gx = best.GX;
+        //        gy = best.GY;
+        //        score = best.M.Score;
+
+        //        // 여기만 변경: best 하나만 overlay로 전달
+        //        if (sr != null && sr.Success && sr.Matches != null && sr.Matches.Count > 0)
+        //        {
+        //            // 대표 인덱스 선택 로직(평균과 가장 가까운 점) 단순화
+        //            int repIdx = 0;
+        //            // Train 이미지 크기 확보
+        //            int trainW = 0, trainH = 0;
+        //            try
+        //            {
+        //                var ti = PmRunner.Parameters?.TrainImages?
+        //                    .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+        //                if (ti != null)
+        //                {
+        //                    trainW = ti.Header.Width;
+        //                    trainH = ti.Header.Height;
+        //                }
+        //            }
+        //            catch { /* ignore */ }
+
+        //            OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH);
+        //        }
+
+        //        Log.Write(UnitName, "DirectionalPick",
+        //            $"Select GX={gx:F4} GY={gy:F4} Score={score:F3} Perp={best.Perp:F4} Along={best.Along:F4} (T={tDeg:F3}deg useAxis={(useXAxis ? "X" : "Y")})");
+
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+
+        //        return false;
+        //    }
+        //}
+
+        // mm 단위 Tolerance (레시피 값) → deg 변환 (arc length ≈ R*θ, θ(rad)=s/R)
+        private double ComputeResidualToleranceDegFromMm(double toleranceMm)
+        {
+            if (toleranceMm <= 0) return TRefineResidualToleranceDeg;
+            double waferDia = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe?.WaferDiameter ?? 100.0;
+            double radius = waferDia / 2.0;
+            if (radius <= 0) return TRefineResidualToleranceDeg;
+            double rad = toleranceMm / radius;            // θ(rad) = s / R
+            return rad * 180.0 / Math.PI;                // deg
+        }
+
+        // 웨이퍼/레시피 변경 후 호출 (Pitch, Residual 허용 각 재계산)
+        public void OnWaferOrRecipeChanged()
+        {
+            ApplyDynamicPitchParameters(); // Pitch 기반 파라미터 재설정
+            var recip = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            if (recip != null && recip.ToleranceMm > 0)
+            {
+                TRefineResidualToleranceDeg = ComputeResidualToleranceDegFromMm(recip.ToleranceMm);
+                Log.Write(UnitName, "ThetaTol", $"Recipe.ToleranceMm={recip.ToleranceMm:F4}mm -> ResidualTol={TRefineResidualToleranceDeg:F5}deg");
+            }
+        }
+
+        // === Pitch 기반 동적 파라미터 자동 적용 ===
+        private void ApplyDynamicPitchParameters()
+        {
+            try
+            {
+                var recip = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                // 사용자가 전달: 칩 간 거리 0.95mm
+                double pitchX = 0.95;
+                double pitchY = 0.95;
+
+                // 레시피가 이미 값 가지고 있으면 그 값 우선, 없으면 0.95 적용
+                if (recip != null)
+                {
+                    if (recip.ChipWidth > 0) pitchX = recip.ChipWidth;
+                    else recip.ChipWidth = pitchX;
+
+                    if (recip.ChipHeight > 0) pitchY = recip.ChipHeight;
+                    else recip.ChipHeight = pitchY;
+                }
+
+#if DEBUG
+                Log.Write(UnitName, $"[Pitch] ApplyDynamicPitchParameters pitchX={pitchX:F3} pitchY={pitchY:F3}");
+#endif
+
+                // 중복 병합 거리: 인접 셀 간섭 피하기 위해 0.45~0.50배
+                DuplicateDistMm = Math.Min(pitchX, pitchY) * 0.48;
+
+                // 수직 라인 허용 오차: 너무 크면 잘못된 라인, 너무 작으면 후보 소실 → 0.12~0.18배
+                DirectionalPerpendicularToleranceMm = Math.Min(pitchX, pitchY) * 0.15;
+
+                // 잔류 각 허용: 웨이퍼 직경 사용 (없으면 100mm 가정)
+                double waferDia = recip?.WaferDiameter > 0 ? recip.WaferDiameter : 100.0;
+                // 픽업/공정 허용 기준을 다소 보수적으로: 피치 기반 각 허용치(호도 법)
+                // 한 칩 오차(피치) 이상 회전 오차로 인한 단차: pitch ≈ R * θ  ⇒ θ ≈ pitch / R (라디안)
+                // deg = (pitch / (waferDia/2)) * (180/π)
+                double idealDeg = (pitchX / (waferDia / 2.0)) * (180.0 / Math.PI);
+                // 너무 작으면 반복 과보정 → 스케일 팩터 2~3배
+                TRefineResidualToleranceDeg = Math.Max(0.02, idealDeg * 2.5); // 대략 0.05~0.15 사이 기대
+
+                // 시프트 비율: ROI 폭/높이 없을 때 피치*2 사용 (최소 이격 확보)
+                // ROI는 레시피 로드 후 TryAcquireDualPointAngle 내부에서 재조정.
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "[Pitch] Exception: " + ex.Message);
+            }
+        }
+
+        // 각도 통계 + 대표값 (멀티결과 사용)
+        private bool TryGetRepresentativeTheta(out double repDeg, out double stdDeg, out int count)
+        {
+            repDeg = 0; stdDeg = 0; count = 0;
+            if (!TryGetMultiAngles(out var list) || list == null || list.Count == 0)
+                return false;
+
+            count = list.Count;
+            // 극단 제거: score/품질 안 들어오므로 단순 상하 1개씩 제거 (N>=5)
+            var ordered = list.OrderBy(a => a).ToList();
+            if (ordered.Count >= 5)
+                ordered = ordered.Skip(1).Take(ordered.Count - 2).ToList();
+
+            double avg = ordered.Average();
+            double var = 0;
+            if (ordered.Count > 1)
+                var = ordered.Sum(a => (a - avg) * (a - avg)) / (ordered.Count - 1);
+            stdDeg = Math.Sqrt(var);
+
+            // 대표값: avg 와 가장 가까운 원본
+            repDeg = list.OrderBy(a => Math.Abs(a - avg)).First();
+            return true;
+        }
+
+        // 기울기 계산(두 점 좌표 → 잔류 각도). 작은 기울기만 기대.
+        private static double ComputeSlopeDeg(bool useXAxis, double x1, double y1, double x2, double y2)
+        {
+            double dx = x2 - x1;
+            double dy = y2 - y1;
+            if (useXAxis)
+            {
+                // 수평 기준: ΔY / ΔX
+                if (Math.Abs(dx) < 1e-9) return 0;
+                return Math.Atan(dy / dx) * 180.0 / Math.PI;
+            }
+            else
+            {
+                // 수직 기준: ΔX / ΔY
+                if (Math.Abs(dy) < 1e-9) return 0;
+                return Math.Atan(dx / dy) * 180.0 / Math.PI;
+            }
+        }
+
+        private bool FindCenterDieXMove(double dx, double dy, int nDirection,int Step, bool bFineSpeed, out double dCenterX,out double dCenterY)
+        {
+            bool bRet = false;
+            dCenterX = dx;
+            dCenterY = dy;
+            int nRetryCount = 10;
+            for (int iter = 0; iter < nRetryCount; iter ++)
+            {
+                double dTargetX = dx + ChipPitchXmm * (Step +iter)* nDirection;
+                if (MoveStage(dTargetX, dy, bFineSpeed) != 0)
+                {
+                    Log.Write(UnitName, "DualPointAngle", "Move1 fail");
+                    return false;
+                }
+                if (WaitUntil(() => AxisX.InPosition(dTargetX) && AxisY.InPosition(dy), MoveTimeoutMs) != 0)
+                    return false;
+                bool bFind = TryGetMarkCenterGlobalDirectionalCenter(true, null, dTargetX, dy, out var g1x, out var g1y, out var s1);
+                //Thread.Sleep(100);
+                string strValue = "TargetX = " + dTargetX.ToString() + ","; ;
+                strValue += " dy = " + dy.ToString() + ",";
+                strValue += " g1x = " + g1x.ToString() + ",";
+                strValue += " g1y = " + g1y.ToString() + ",";
+
+
+                Log.Write(UnitName, "2PointAlign", strValue);   
+                if (bFind)
+                {
+                   // if (Math.Abs(g1x - dTargetX) < ChipPitchXmm * 0.9)
+                    {
+                        if (Math.Abs(g1y - dy) < ChipPitchYmm * 0.9)
+                        {
+                            dCenterX = g1x;
+                            dCenterY = g1y;
+
+                            return true;
+                        }
+                    }
+                }
+            }
+            return bRet;
+        }
+        /// <summary>
+        /// 듀얼 포인트(±X 또는 ±Y)에서 마크 두 점을 획득 후 기울기 각도 계산
+        /// useXAxis = true -> X 축 기준 (수평 기울기)
+        /// useXAxis = false -> Y 축 기준 (수직 기준에 대한 편차)
+        /// 반환: 성공 여부 / 측정각(deg)
+        /// </summary>
+        private bool TryAcquireDualPointAngle(bool useXAxis, out double angleDeg, bool bFineSpeed , int nStep)
+        {
+            int nRet = 0;
+            angleDeg = 0.0;
+            // ROI 정보 확보
+            double roiWmm = 0.0;
+            double roiHmm = 0.0;
+            try
+            {
+                if (PmRunner != null && PmRunner.IsRecipeLoaded)
+                {
+                    // 기존 코드에서 사용한 방식과 동일
+                    roiWmm = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                    roiHmm = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                }
+            }
+            catch { /* 접근 실패 시 fallback */ }
+
+            if (roiWmm <= 0) roiWmm = 0.85;
+            if (roiHmm <= 0) roiHmm = 0.70;
+
+            // 첫 마크: 수직축 중심선에 가장 가까운 후보 선택
+            if (!TryGetMarkCenterGlobalDirectional(useXAxis, null, out var gx, out var gy, out var s))
+            {
+                Log.Write(UnitName, "DualPointAngle", "Mark1 directional select fail");
+                return false;
+            }
+            if (MoveStage(gx, gy, bFineSpeed) != 0)
+            {
+                Log.Write(UnitName, "DualPointAngle", "Move1 fail");
+                return false;
+            }
+            if (WaitUntil(() => AxisX.InPosition(gx) && AxisY.InPosition(gy), MoveTimeoutMs) != 0)
+                return false;
+            Thread.Sleep(100);
+
+            double baseX = AxisX?.GetPosition() ?? 0.0;
+            double baseY = AxisY?.GetPosition() ?? 0.0;
+
+            //for(int iter = 0; iter < 5; iter ++)
+            {
+               
+                bool bFind = FindCenterDieXMove(baseX, baseY,-1, nStep, bFineSpeed, out var cx1, out var cy1);
+                bFind &= FindCenterDieXMove(baseX, baseY, 1, nStep, bFineSpeed, out var cx2, out var cy2);
+
+
+                if (bFind)
+                {
+                    angleDeg =  ComputeSlopeDeg(true, cx1, cy1, cx2, cy2);
+                   
+                    return true;
+                   // break;
+
+                }
+            }
+
+
+
+            return false;
+        }
+
+
+        private bool TryAcquireDualPointAngle79(bool useXAxis, out double angleDeg, bool bFineSpeed)
+        {
+            int nRet = 0;
+            angleDeg = 0.0;
+            // ROI 정보 확보
+            double roiWmm = 0.0;
+            double roiHmm = 0.0;
+            try
+            {
+                if (PmRunner != null && PmRunner.IsRecipeLoaded)
+                {
+                    // 기존 코드에서 사용한 방식과 동일
+                    roiWmm = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                    roiHmm = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                }
+            }
+            catch { /* 접근 실패 시 fallback */ }
+
+            if (roiWmm <= 0) roiWmm = 0.85;
+            if (roiHmm <= 0) roiHmm = 0.70;
+
+            //기존 고정 시프트 방식
+            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            TRefineShiftRatio = recipe.WaferDiameter / 2;
+            TRefineShiftRatio = TRefineShiftRatio / 3;
+            double shiftX = 0;// roiWmm / 2;
+            double shiftY = 0;//roiHmm / 2;
+            // 현재 센터 Teaching 혹은 현재 위치
+            string strCenterName = InputStageConfig.TeachingPositionName.CenterPoint.ToString();
+            var tp = this.Config.GetTeachingPosition(strCenterName);
+
+            double baseX = tp.GetAxisPosition(AxisNames.WaferStageX);
+            double baseY = tp.GetAxisPosition(AxisNames.WaferStageY);
+            //double baseX = AxisX?.GetPosition() ?? 0.0;
+            //double baseY = AxisY?.GetPosition() ?? 0.0;
+
+            // 이동 좌표 결정
+            double pos1X = baseX, pos1Y = baseY;
+            double pos2X = baseX, pos2Y = baseY;
+            if (useXAxis)
+            {
+                //TRefineShiftRatio = roiWmm / 2;
+                shiftX = TRefineShiftRatio;
+                shiftY = 0;
+                pos1X = baseX + shiftX;
+                pos2X = baseX - shiftX;
+            }
+            else
+            {
+                //TRefineShiftRatio = roiHmm / 2;
+                shiftX = 0;
+                shiftY = TRefineShiftRatio;// TRefineShiftRatio;
+                pos1Y = baseY + shiftY;
+                pos2Y = baseY - shiftY;
+            }
+            // 첫 지점 이동
+            if (MoveStage(pos1X, pos1Y, bFineSpeed) != 0)
+            {
+                Log.Write(UnitName, "DualPointAngle79", "Move1 fail");
+                return false;
+            }
+            if (WaitUntil(() => AxisX.InPosition(pos1X) && AxisY.InPosition(pos1Y), MoveTimeoutMs) != 0)
+                return false;
+
+            Thread.Sleep(100);
+            // 첫 마크: 수직축 중심선에 가장 가까운 후보 선택
+            if (!TryGetMarkCenterGlobalDirectional(useXAxis, null, out var g1x, out var g1y, out var s1))
+            {
+                Log.Write(UnitName, "DualPointAngle79", "Mark1 directional select fail");
+                return false;
+            }
+
+            // 두 번째 지점 이동
+            if (MoveStage(pos2X, pos2Y, bFineSpeed) != 0)
+            {
+                Log.Write(UnitName, "DualPointAngle79", "Move2 fail");
+                return false;
+            }
+            if (WaitUntil(() => AxisX.InPosition(pos2X) && AxisY.InPosition(pos2Y), MoveTimeoutMs) != 0)
+                return false;
+
+            Thread.Sleep(100);
+            // 두 번째 마크: 첫 지점과 같은 수직축(mm) 라인에 있는 후보 선택
+            double refPerp = useXAxis ? g1y : g1x;
+            if (!TryGetMarkCenterGlobalDirectional(useXAxis, refPerp, out var g2x, out var g2y, out var s2))
+            {
+                Log.Write(UnitName, "DualPointAngle79", "Mark2 directional select fail");
+                return false;
+            }
+
+            // 각도 계산
+            angleDeg = ComputeSlopeDeg(useXAxis, g1x, g1y, g2x, g2y);
+           
+            Log.Write(UnitName, "DualPointAngle79",
+                $"UseAxis={(useXAxis ? "X" : "Y")}, P1=({g1x:F3},{g1y:F3}), P2=({g2x:F3},{g2y:F3}), Angle={angleDeg:F4}deg");
+
+            return true;
+        }
+
+        /// <summary>
+        /// 추가 각도 보정 적용 (제한/로그/상태 갱신)
+        /// </summary>
+        private int ApplyThetaCorrection(double correctionDeg, bool isAuto, bool bFineSpeed)
+        {
+            double cur = AxisT.GetPosition();
+            double limited = Math.Max(-AngleMaxApplyDeg, Math.Min(AngleMaxApplyDeg, correctionDeg));
+            double target = cur + limited;
+
+            Log.Write(UnitName, "ThetaRefine",
+                $"Apply correction={correctionDeg:F4}deg (limited={limited:F4}) curT={cur:F4} -> target={target:F4}");
+
+            int rc = AxisT.MoveAbs(target, isAuto, bFineSpeed);
+            if (rc != 0) return rc;
+
+            rc = WaitUntil(() => InPos(AxisT, target), MoveTimeoutMs);
+            if (rc == 0)
+                IsStatus_LastAppliedTAngle += limited; // 누적 적용 각도
+
+            return rc;
+        }
+
+        public double AngleApplyGain { get; set; } = -1.0; // 방향 반전 필요 시 -1 사용
+        public bool SearchAroundReturnToCenter { get; set; } = false;
+
+        // === 센터 실패시 주변 탐색 설정 ===
+        public bool EnableSearchAroundCenter { get; set; } = true;
+        public int SearchAroundMaxRings { get; set; } = 2;          // 1=상하좌우+대각, 2=확장 한 번 더
+        public double SearchAroundPitchScale { get; set; } = 1.0;   // 피치 기준 이동 배율
+        public int SearchAroundMoveTimeoutMs { get; set; } = 3000;
+
+        /// <summary>
+        /// 센터에서 마크 실패 시 주변(상/하/좌/우/대각)으로 이동하며 패턴 탐색.
+        /// 성공하면 angleDeg 갱신 후 true.
+        /// </summary>
+        private bool TryFindAngleAroundCenter(out double angleDeg, bool bFineSpeed)
+        {
+            angleDeg = 0.0;
+            if (!EnableSearchAroundCenter) 
+                return false;
+
+            // 센터 Teaching 좌표
+            var tp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (tp == null) 
+                return false;
+
+            double baseX = tp.GetAxisPosition(AxisNames.WaferStageX);
+            double baseY = tp.GetAxisPosition(AxisNames.WaferStageY);
+
+            // 이동 스텝(px/mm)
+            double pitchX = ChipPitchXmm > 0 ? ChipPitchXmm : 0.8;
+            double pitchY = ChipPitchYmm > 0 ? ChipPitchYmm : pitchX;
+            double stepX = pitchX * SearchAroundPitchScale;
+            double stepY = pitchY * SearchAroundPitchScale;
+            double minStep = Math.Min(pitchX, pitchY) * 0.6;
+            if (stepX < minStep) stepX = minStep;
+            if (stepY < minStep) stepY = minStep;
+
+            // ROI 크기 일부 활용(칩이 더 작을 경우)
+            try
+            {
+                if (PmRunner.IsRecipeLoaded)
+                {
+                    double roiW = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                    double roiH = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                    if (roiW > 0 && roiW < stepX * 0.8) stepX = roiW * 0.8;
+                    if (roiH > 0 && roiH < stepY * 0.8) stepY = roiH * 0.8;
+                }
+            }
+            catch { /* ignore */ }
+
+            // 후보 방향 (링 확장)
+            var dirsBase = new List<(double dx, double dy)>
+            {
+                ( 0,  1),( 0, -1),( -1, 0),( 1, 0), // 상하좌우
+                ( 1,  1),( -1,  1),( 1, -1),( -1, -1) // 대각
+            };
+
+            // 안전 반경
+            double safeR = Config.SafeSatageRaius > 0 ? Config.SafeSatageRaius : 9999.0;
+
+            bool VisionTry(out double angle)
+            {
+                angle = 0.0;
+                VisionImage img;
+                int rcGrab = StageCamera.GrabSync(out img);
+                if (rcGrab != 0 || img == null) return false;
+
+                double a;
+                PmRunner.SearchTheta(img, out a);
+                if (Math.Abs(a) < 1e-9) return false;
+                angle = a;
+                return true;
+            }
+
+            for (int ring = 1; ring <= SearchAroundMaxRings; ring++)
+            {
+                foreach (var (dxUnit, dyUnit) in dirsBase)
+                {
+                    double tx = baseX + dxUnit * stepX * ring;
+                    double ty = baseY + dyUnit * stepY * ring;
+
+                    // 안전 반경 체크 (Ejector 안전 아닐 때만 제한 → 기존 IsStageInterLockOK 활용)
+                    if (!IsStageInterLockOK(tx, ty))
+                        continue;
+
+                    if (MoveStage(tx, ty, bFineSpeed) != 0)
+                        continue;
+
+                    if (WaitUntil(() => AxisX.InPosition(tx) && AxisY.InPosition(ty),
+                                  SearchAroundMoveTimeoutMs) != 0)
+                        continue;
+
+                    Thread.Sleep(100);
+
+                    if (VisionTry(out double found))
+                    {
+                        angleDeg = found;
+                        Log.Write(UnitName, "SearchAroundCenter",
+                            $"Found angle={found:F5}deg at ring={ring} offset=({tx - baseX:+0.000;-0.000},{ty - baseY:+0.000;-0.000})");
+                        
+                        // 필요하면 센터로 복귀 후 적용. 여기서는 바로 사용.
+                        if (SearchAroundReturnToCenter)
+                            MoveStage(baseX, baseY, bFineSpeed);
+
+                        return true;
+                    }
+                }
+            }
+
+            Log.Write(UnitName, "SearchAroundCenter", "Fail: no mark found around center");
+            return false;
+        }
+
         public int AlignTheta(bool bFineSpeed = false)
         {
             int nRet = 0;
-
-            if(Config.IsSimulation || this.Config.IsDryRun)
+            if (Config.IsSimulation || this.Config.IsDryRun)
             {
                 IsStatus_LastAppliedTAngle = 0;
                 IsStatus_TAlignDone = true;
                 return 0;
-
             }
-            try 
+            try
             {
-                VisionImage img = null;
-                double angle = 0;
-                StageCamera.GrabSync(out img);
-                PmRunner.SearchTheta(img, out angle);
-                if(angle == 0)
-                { 
-                    StageCamera.GrabSync(out img);
-                    PmRunner.SearchTheta(img, out angle);
+                PmRunner.LoadRecipe();
+                if (Config.IsSimulation == false
+                                && Config.IsDryRun == false)
+                {
+                    if (this.StageCamera.IsLiveOn)
+                    {
+                        this.StageCamera.StopLive();
+                        Thread.Sleep(100);
+                    }
                 }
-                double currentAngle = this.AxisT.GetPosition();
-                double dTarget = currentAngle + angle * AngleApplyGain;
-                Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4}");
+                
+                Thread.Sleep(100);
 
-                IsStatus_LastFoundTRawAngle = angle;
+                // 1) 멀티 패턴 각도 집계
+                double coarseAngle = 0, coarseStd = 0;
+                int coarseCount = 0;
+                bool coarseOk = TryGetRepresentativeTheta(out coarseAngle, out coarseStd, out coarseCount);
 
-                bool IsAuto = false;
-                if (RunMode == UnitRunMode.Auto)
-                    IsAuto = true;
+                if (!coarseOk)
+                {
+                    // fallback 단일
+                    VisionImage img;
+                    StageCamera.GrabSync(out img);
+                    double single;
+                    PmRunner.SearchTheta(img, out single);
+                    coarseAngle = single;
+                    coarseCount = (Math.Abs(single) > 1e-9) ? 1 : 0;
+
+                    // 추가: 센터/단일 모두 실패 시 주변 탐색
+                    if (coarseCount == 0)
+                    {
+                        if (TryFindAngleAroundCenter(out double aroundAngle, bFineSpeed))
+                        {
+                            coarseAngle = aroundAngle;
+                            coarseCount = 1;
+                        }
+                    }
+                }
+
+                // 무시 임계
+                if (Math.Abs(coarseAngle) < AngleIgnoreThresholdDeg)
+                {
+                    Log.Write(UnitName, "T_Align", $"Coarse angle {coarseAngle:F6}deg ignored (<{AngleIgnoreThresholdDeg})");
+                }
                 else
-                    IsAuto = false;
-                this.AxisT.MoveAbs(dTarget, IsAuto, bFineSpeed);
-                nRet = WaitUntil(() => InPos(this.AxisT , dTarget), MoveTimeoutMs);
+                {
+                    double currentAngle = AxisT.GetPosition();
+                    double apply = coarseAngle * AngleApplyGain;
+                    // Clamp
+                    AngleMaxApplyDeg = 5.0;
+                    if (Math.Abs(apply) > AngleMaxApplyDeg)
+                    {
+                        Log.Write(UnitName, "T_Align", $"Apply clamp: raw={apply:F4} limit={AngleMaxApplyDeg}");
+                        apply = Math.Sign(apply) * AngleMaxApplyDeg;
+                    }
+                    double target = currentAngle + apply;
+
+                    Log.Write(UnitName, "T_Align",
+                        $"CoarseRep={coarseAngle:F5} Std={coarseStd:F5} Count={coarseCount} Gain={AngleApplyGain:F2} -> MoveT target={target:F5}");
+
+                    IsStatus_LastFoundTRawAngle = coarseAngle;
+                    nRet = AxisT.MoveAbs(target, RunMode == UnitRunMode.Auto, bFineSpeed);
+                    if (nRet != 0) return -1;
+                    nRet = WaitUntil(() => InPos(AxisT, target), MoveTimeoutMs);
+                    if (nRet != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputStageAlignNotDone);
+                        Log.Write(UnitName, "T_Align", "Coarse move timeout");
+                        return -1;
+                    }
+                    IsStatus_LastAppliedTAngle += apply;
+                }
+
+                // 2) 듀얼 포인트 정밀 재보정 (수렴 로직)
+                if (EnableThetaDualPointRefine)
+                {
+                    int maxAttempts = Math.Max(1, MaxTRefineAttempts);
+                    double lastResidual = double.MaxValue;
+                    double waferDia = Equipment.Instance.EquipmentRecipe.CurrentRecipe.WaferDiameter;
+                    if (waferDia <= 0) waferDia = 100;
+
+                    // 허용각 (Pitch 기반 이미 세팅된 값 사용)
+                    double toleranceDeg = TRefineResidualToleranceDeg;
+
+                    for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                    {
+                        bool ok = TryAcquireDualPointAngle(true, out var slopeX, bFineSpeed, attempt);
+                        double residual = ok ? slopeX : double.NaN;
+
+                        double ToleranceMm = Equipment.Instance.EquipmentRecipe.CurrentRecipe.ToleranceMm;
+                        if(Math.Abs(slopeX)< ToleranceMm)
+                        {
+                            IsStatus_TAlignDone = true;
+                            return 0;
+                        }
+
+                        Log.Write(UnitName, "ThetaRefine",
+                            $"Attempt {attempt}: Residual={residual:F5}deg Tolerance={toleranceDeg:F5}");
+
+                        lastResidual = residual;
+
+                        // Correction = - residual (Gain 포함은 Apply에서 결정)
+                        double correction = -residual * AngleApplyGain;
+                        if (Math.Abs(correction) > AngleMaxApplyDeg)
+                            correction = Math.Sign(correction) * AngleMaxApplyDeg;
+
+                        nRet = ApplyThetaCorrection(correction, RunMode == UnitRunMode.Auto, bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: move fail rc={nRet} -> abort");
+                            break;
+                        }
+                        
+                    }
+                }
+
+
+                IsStatus_TAlignDone = true;
+                return 0;
+
+                //기존코드
+                //VisionImage img = null;
+                //double angle = 0;
+                //bool isAuto = (RunMode == UnitRunMode.Auto);
+
+                //if (true)
+                //{
+                //    StageCamera.GrabSync(out img);
+                //    PmRunner.SearchTheta(img, out angle);
+                //    if (Math.Abs(angle) < 1e-9)
+                //    {
+                //        // 재시도 1회
+                //        StageCamera.GrabSync(out img);
+                //        PmRunner.SearchTheta(img, out angle);
+                //    }
+                //    if (angle == 0)
+                //    {
+                //        Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} NG");
+                //        nRet = -1;
+                //        return nRet;
+                //    }
+                //    double currentAngle = this.AxisT.GetPosition();
+                //    double dTarget = currentAngle + angle * AngleApplyGain;
+                //    Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4} target={dTarget:F4}");
+
+                //    IsStatus_LastFoundTRawAngle = angle;
+                //    this.AxisT.MoveAbs(dTarget, isAuto, bFineSpeed);
+                //    nRet = WaitUntil(() => InPos(this.AxisT, dTarget), MoveTimeoutMs);
+                //    if (nRet != 0)
+                //    {
+                //        PostAlarm((int)AlarmKeys.eInputStageAlignNotDone);
+                //        Log.Write(UnitName, "T_Align", "Coarse move timeout");
+                //        IsStatus_TAlignDone = true;
+                //        return nRet;
+                //    }
+                //}
+                //IsStatus_LastAppliedTAngle = angle * AngleApplyGain;
+
+                //Thread.Sleep(100);
+
+                //// 정밀 재보정
+                //EnableThetaDualPointRefine = true;
+                //if (EnableThetaDualPointRefine)
+                //{
+                //    // 필요 시 레시피 로드
+                //    if (!PmRunner.IsRecipeLoaded)
+                //    {
+                //        try 
+                //        { 
+                //            PmRunner.LoadRecipe(); 
+                //        } 
+                //        catch (Exception ex) 
+                //        { Log.Write(ex); }
+                //    }
+
+                //    MaxTRefineAttempts = 7;
+                //    for (int attempt = 1; attempt <= MaxTRefineAttempts; attempt++)
+                //    {
+                //        // 먼저 X축 기준 시도
+                //        bool okX = TryAcquireDualPointAngle(true, out var dualAngleX, bFineSpeed);
+                //        double usedAngle = 0.0;
+                //        bool usedXAxis = false;
+
+                //        if (okX)
+                //        {
+                //            usedAngle = dualAngleX;
+                //            usedXAxis = true;
+                //        }
+                //        else
+                //        {
+                //            // X축 실패 → Y축 폴백
+                //            bool okY = TryAcquireDualPointAngle(false, out var dualAngleY, bFineSpeed);
+                //            if (!okY)
+                //            {
+                //                Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Dual point acquisition failed (X,Y). Stop refine.");
+                //                break;
+                //            }
+                //            usedAngle = dualAngleY;
+                //            usedXAxis = false;
+                //        }
+
+                //        double residual = usedAngle; // 현재 잔류 기울기
+                //        Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: ResidualAngle={residual:F4}deg (Axis={(usedXAxis ? "X" : "Y")})");
+
+                //        //ToleranceMm
+                //        var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                //        TRefineResidualToleranceDeg = recipe.ToleranceMm;
+                //        if (Math.Abs(residual) == 0)
+                //        {
+                //            nRet = -1;
+                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Correction fail. Abort refine.");
+                //            return nRet;
+                //        }
+                //        if (Math.Abs(residual) <= TRefineResidualToleranceDeg)
+                //        {
+                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Within tolerance ({TRefineResidualToleranceDeg}deg). Done.");
+                //            break;
+                //        }
+
+                //        // 각도 보정 (잔류 기울기 반대 방향)
+                //        double correction = -residual * AngleApplyGain;
+                //        int rc = ApplyThetaCorrection(correction, isAuto, bFineSpeed);
+                //        if (rc != 0)
+                //        {
+                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Correction move fail rc={rc}. Abort refine.");
+                //            break;
+                //        }
+                //    }
+                //}
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Write(UnitName, "T_Align", $"Exception: {ex.Message}");
                 return -1;
             }
-            
+
             IsStatus_TAlignDone = true;
             return nRet;
+
         }
         public int AlignXYPrepare(bool bFineSpeed = false)
         {
@@ -1880,7 +3583,6 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
-            
             IsStatus_XYAlignPrepared = true;
             return 0;
         }
@@ -1897,21 +3599,17 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_XYAlignDone = true;
             return 0;
         }
+
         public int MoveStage(double x, double y, bool bFineSpeed = false)
         {
             int ret = 0;
-
-            //if (WaitUntil(() =>
-            //    this.InputStageEjector.IsAnyAxisMoving(),
-            //    MappingMoveTimeoutMs) != 0)
-            //    return -1;
-
             if (!this.InputStageEjector.IsPinZSafetyPos())
             {
                 AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafety);
                 return -1;
             }
+
             if (IsStageInterLockOK(x, y))
             {
                 ret = 0;
@@ -1941,7 +3639,8 @@ namespace QMC.LCP_280.Process.Unit
                         () => AxisX.IsMoveDone() && AxisY.IsMoveDone() &&
                               AxisX.InPosition(x) && AxisY.InPosition(y),
                         MappingMoveTimeoutMs,
-                        stableHoldMs: 50 // 50ms ���� ���� Ȯ��
+                        2,
+                        stableHoldMs: 50 // 50ms 연속 안정 확인
 );
                 if (rc != 0)
                 {
@@ -1952,9 +3651,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-
             return ret;
         }
+
         private bool IsStageInterLockOK(double x, double y)
         {
             bool bRet = false;
@@ -1986,29 +3685,31 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsStageInterLockOK()
         {
-            // Ejector / Pin Z �� �̹� Safety �̸� ���� ���� ���� ��� (ȣ��� ���� ����)
+            // Ejector / Pin Z 가 이미 Safety 이면 별도 제한 없이 통과 (호출부 로직 유지)
             if (InputStageEjector == null ||
                 (InputStageEjector.IsPinZSafetyPos() && InputStageEjector.IsEjectorZSafetyPos()))
+            {
                 return true;
+            }
 
             var tp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
             if (tp == null || tp.AxisPositions == null)
             {
-                Log.Write(UnitName, "MoveSafety", "CenterPoint teaching not found");
+                Log.Write(UnitName, "IsStageInterLockOK", "CenterPoint teaching not found");
                 return false;
             }
 
-            if (!tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out var centerX) ||
-                !tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out var centerY))
+            if (tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out var centerX) == false ||
+                tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out var centerY) == false)
             {
-                Log.Write(UnitName, "MoveSafety", "CenterPoint X/Y value missing");
+                Log.Write(UnitName, "IsStageInterLockOK", "CenterPoint X/Y value missing");
                 return false;
             }
 
             double radius = Config.SafeSatageRaius;
             if (radius <= 0)
             {
-                Log.Write(UnitName, "MoveSafety", $"Invalid SafeSatageRaius={radius}");
+                Log.Write(UnitName, "IsStageInterLockOK", $"Invalid SafeSatageRaius={radius}");
                 return false;
             }
 
@@ -2023,18 +3724,38 @@ namespace QMC.LCP_280.Process.Unit
                 $"Fail: Current XY out of safe radius while Ejector/PinZ unsafe. Dist={dDist:F3} Limit={radius:F3} Center=({centerX:F3},{centerY:F3}) Cur=({curX:F3},{curY:F3})");
             return false;
         }
+
         PointD GetPixelToMmScale(double dX,double dY)
         {
             double mmPerPixelX = (dX - StageCamera.CameraConfig.Resolution.Width /2 ) * StageCamera.CameraConfig.Scale.X;
             double mmPerPixelY = (dY - StageCamera.CameraConfig.Resolution.Height /2 ) * StageCamera.CameraConfig.Scale.Y;
             return new PointD(mmPerPixelX, mmPerPixelY);
         }
+
         public int SearchDies(VisionImage visionImage, ref List<PointD> points, double x, double y)
         {
             int ret = 0;
             var result = this.PmRunner.Search(visionImage);
+            if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
+            {
+                int repIdx = 0;
+                int trainW = 0, trainH = 0;
+                try
+                {
+                    var ti = PmRunner.Parameters?.TrainImages?
+                        .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                    if (ti != null)
+                    {
+                        trainW = ti.Header.Width;
+                        trainH = ti.Header.Height;
+                    }
+                }
+                catch { /* ignore */ }
+                OnRawMatchesFound(visionImage, result.Matches, repIdx, trainW, trainH);
+                StageCamera.SuspendedImageDisplay = false;
+            }
 
-            if(result.Success)
+            if (result.Success)
             {
                 foreach(var v in result.Matches)
                 {
@@ -2054,12 +3775,6 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 MaterialWafer materialWafer = GetMaterialWafer();
-                //if(materialWafer != null)
-                //{
-                //    Log.Write(UnitName, "ChipMap", $"Total Chips found: {chips.Count}");
-                //    return;
-                //}
-
                 materialWafer.Dies.Clear();
                 materialWafer.MakeWaferInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
                 var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
@@ -2077,103 +3792,14 @@ namespace QMC.LCP_280.Process.Unit
                 EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
             }
         }
-        private void MakeScanPath(out List<PointD> path)
-        {
-            path = new List<PointD>();
-            try
-            {
-                double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
-                double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
-                var eq = Equipment.Instance;
-                var recip = eq.EquipmentRecipe.CurrentRecipe;
-                double dRadius = recip.WaferDiameter / 2;
-                 
-                try
-                {
-                    if (Config.IsSimulation == false && this.Config.IsDryRun == false)
-                    {
-                        if (PmRunner.IsRecipeLoaded == false)
-                        {
-                            PmRunner.LoadRecipe();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                    Log.Write(ex);
-                }
-
-                double dRoiWidth = 0.0;// Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
-                double dRoiHeight = 0.0;//Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
-                if (Config.IsSimulation == false && this.Config.IsDryRun == false)
-                {
-                    dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
-                    dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
-                }
-                else
-                {
-                    dRoiWidth = 2;
-                    dRoiHeight = 2;
-                }
-
-                double dChipPitchX = ChipPitchXmm;
-                double dChipPitchY = ChipPitchYmm;
-
-                if (dChipPitchX <= 0) dChipPitchX = 0.5;
-                if (dChipPitchY <= 0) dChipPitchY = 0.5;
-
-                dRoiWidth -= dChipPitchX * 2;
-                dRoiHeight -= dChipPitchY * 2;
-                int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;
-                int nVertCount = (int)((dRadius - dChipPitchY) * 2 / dRoiHeight) + 1;
-                if (nHorzCount < 1) nHorzCount = 1;
-                if (nVertCount < 1) nVertCount = 1;
-                double startX = centerTpX - (nHorzCount - 1) * dRoiWidth / 2;
-                double startY = centerTpY - (nVertCount - 1) * dRoiHeight / 2;
-
-                for (int ix = 0; ix < nHorzCount; ix++)
-                {
-                    double x = startX + ix * dRoiWidth;
-                    for (int iy = 0; iy < nVertCount; iy++)
-                    {
-                        double y = startY + iy * dRoiHeight;
-
-                        // ������� ����: X �� �������� Y ��ĵ ���� ��ȯ
-                        if (ix % 2 == 1)
-                        {
-                            // Ȧ�� ���� Y�� �ݴ� �������� ��ĵ
-                            y = startY + (nVertCount - 1 - iy) * dRoiHeight;
-                        }
-
-                        double dx = x - centerTpX;
-                        double dy = y - centerTpY;
-                       
-                        double dist = Math.Sqrt(dx * dx + dy * dy);
-                        double offsetDist = GetDistance(dRoiWidth / 2, dRoiHeight / 2);
-                        if (dist <= dRadius + offsetDist)
-                        {
-                            path.Add(new PointD(x, y));
-                        }
-                    }
-                }
-                Log.Write(UnitName, "MakeScanPath", $"Count={path.Count} Radius={dRadius} Center=({centerTpX:F3},{centerTpY:F3}) ROI=({dRoiWidth:F3},{dRoiHeight:F3}) ChipPitch=({dChipPitchX:F3},{dChipPitchY:F3})");
-
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
-            //StageCamera.CameraConfig.Scale
-        }
+        
         public int PrepareInputStageUnloadingWafer()
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
 
-            // ��ε� �غ� ���� �� �� ���� ����
+            // 언로딩 준비 진입 → 맵 상태 리셋
             ResetChipMappingState();
-
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
@@ -2191,13 +3817,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-
             ClampLiftDown();
             if (nRtn != 0)
             {
                 return -1;
             }
-
             PlateDown();
             if (nRtn != 0)
             {
@@ -2211,9 +3835,9 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToStageUnloadPosition(bool isFine = false)
         {
             int nRet = 0;
-            if (IsWaferUnloadingPosition())
+            if (IsPositionWaferUnloading())
             {
-                return 0; // �̹� �ε� ��ġ�� ������ ����
+                return 0; // 이미 로딩 위치에 있으면 무시
             }
 
             nRet = this.InputStageEjector.MovePositionEjectBlockSafety();
@@ -2238,7 +3862,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToStageUnloadPositionAsync();
             while (IsEndTask(task) == false)
             {
-                // Check Interlock.!!! ���� ������.!!!
+                // Check Interlock.!!! 구문 넣을것.!!!
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     this.AxisX.EmgStop();
@@ -2267,7 +3891,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederZSafetyPosition())
+                if (!InputFeeder.IsPositionFeederZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -2276,7 +3900,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!InputFeeder.IsFeederYSafetyPosition())
+                if (!InputFeeder.IsPositionFeederYSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -2285,7 +3909,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -2318,7 +3942,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region CHIP MAPPING / PICKUP
-        // ���� �Ķ���� (Config �� �°� ����)
+        // 매핑 파라미터 (Config 로 승격 가능)
         public double MappingRoiWidthMm { get; set; } = 2.0;
         public double MappingRoiHeightMm { get; set; } = 2.0;
         public double ChipPitchXmm 
@@ -2351,22 +3975,16 @@ namespace QMC.LCP_280.Process.Unit
                 recip.ChipHeight = value;
             }
         }
-        public double DuplicateDistMm { get; set; } = 0.8;          // �ߺ� �Ǵ�
-        public double MarkMinScore { get; set; } = 0.6;             // Vision ���� ���� (����)
+        public double DuplicateDistMm { get; set; } = 0.8;          // 중복 판단
+        public double MarkMinScore { get; set; } = 0.8;             // Vision 점수 기준 (예시)
         public double MissingAllowScore { get; set; } = 0.5;
         public int MappingMoveTimeoutMs { get; set; } = 4000;
-        public bool UseVisionOffsetApply { get; set; } = false;   // �ʿ�� Vision �̼� �߽� ����
+        public bool UseVisionOffsetApply { get; set; } = false;   // 필요시 Vision 미세 중심 보정
 
-        public ChipMapResult CurrentChipMap { get; private set; }
-        public bool ChipMappingDone { get; private set; }
+        public ChipMapResult CurrentChipMap { get; set; }
+        public bool ChipMappingDone { get; set; }
         private int _chipPickupCursor = 0;
-        private void ResetChipMappingState()
-        {
-            // ���� ����/Ŀ��/��� �ʱ�ȭ
-            ChipMappingDone = false;
-            _chipPickupCursor = 0;
-            CurrentChipMap = null;
-        }
+        
 
         public class ChipMapEntry
         {
@@ -2413,7 +4031,7 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToNextChipForPickup()
         {
             if (!TryGetNextPickupPosition(out var x, out var y, out var idx))
-                return 1; // �Ϸ�
+                return 1; // 완료
 
             if (AxisX != null && MoveAxisPositionOne(AxisX, x) != 0) return -1;
             if (AxisY != null && MoveAxisPositionOne(AxisY, y) != 0) return -1;
@@ -2432,7 +4050,7 @@ namespace QMC.LCP_280.Process.Unit
             return _chipPickupCursor >= CurrentChipMap.EnumeratePickup().Count();
         }
 
-        // �ܺ�(InputDieTransfer) ��û ó�� ����
+        // 외부(InputDieTransfer) 요청 처리 예시
         public int OnPickupRequestFromDieTransfer()
         {
             if (!ChipMappingDone) return -1;
@@ -2453,9 +4071,9 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (wafer == null)
                         {
-                            //�˶� �߻� �ؾ���.
-                            // ��ǰ�� �ִµ� wafer ������ ������ �̻�
-                            //�̰� �ٸ������� Ȯ���ؾ� �ϳ�? �� �Լ�������,,
+                            //알람 발생 해야함.
+                            // 제품이 있는데 wafer 정보가 없으면 이상
+                            //이건 다른곳에서 확인해야 하나? 이 함수에서는,,
                             Log.Write(UnitName, "IsWorkCompleted", "Wafer present but wafer info is null");
                             return false;
                         }
@@ -2479,11 +4097,13 @@ namespace QMC.LCP_280.Process.Unit
                 if (Config.IsSimulation == false
                    && Config.IsDryRun == false)
                 {
-                    if (IsRingPresent() == false)
+                    if (IsRingPresent() == false ||
+                        IsPositionWaferLoading() ||
+                        IsPositionWaferUnloading())
                     {
                         return false;
                     }
-                    else //��ǰ�� �ְ� wafer���°� Completed �� �ƴϸ� �۾������� ����
+                    else //제품이 있고 wafer상태가 Completed 가 아니면 작업중으로 간주
                     {
                         if (wafer.Presence == Material.MaterialPresence.Exist)
                         {
@@ -2500,7 +4120,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
                         {
-                            // �۾� ����.
+                            // 작업 중임.
                             bRet = true;
                         }
                     }
@@ -2531,10 +4151,10 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         /// <summary>
-        /// ���� �Ⱦ� ������ ���� ���� ���� Ȯ��.
-        /// - �����۰� �����ϰ� Completed�� �ƴϾ�� ��
-        /// - Dies �� Presence == Exist && State == Mapped �� �ϳ� �̻� �־�� ��
-        /// - ������ ������ ���¸� Completed�� ��ȯ
+        /// 다음 픽업 가능한 다이 존재 여부 확인.
+        /// - 웨이퍼가 존재하고 Completed가 아니어야 함
+        /// - Dies 중 Presence == Exist && State == Mapped 가 하나 이상 있어야 함
+        /// - 없으면 웨이퍼 상태를 Completed로 전환
         /// </summary>
         public bool HasNextDie()
         {
@@ -2544,7 +4164,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (wafer == null) 
                     return false;
 
-                // ������ ���� �� ������ ���� ���� �������� ��� (���� ����)
+                // 맵핑이 아직 안 됐으면 다음 다이 없음으로 취급 (안전 가드)
                 if (ChipMappingDone == false)
                     return false;
 
@@ -2630,6 +4250,61 @@ namespace QMC.LCP_280.Process.Unit
             return die;
         }
 
+
+        // 좌표만 보정: 기존 Die Index/순서/상태/Presence 유지
+        private void UpdateDieCentersInPlace(MaterialWafer wafer, List<PointD> detected, double pitchX, double pitchY)
+        {
+            if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
+                return;
+
+            var pts = detected != null ? new List<PointD>(detected) : new List<PointD>();
+
+            double pitchMin = double.MaxValue;
+            if (pitchX > 0) pitchMin = Math.Min(pitchMin, pitchX);
+            if (pitchY > 0) pitchMin = Math.Min(pitchMin, pitchY);
+
+            double tol = DuplicateDistMm;
+            if (pitchMin < double.MaxValue)
+                tol = Math.Min(tol, 0.49 * pitchMin);
+            double tol2 = tol * tol;
+
+            // 인덱스 순서대로 1:1 매칭하여 좌표만 업데이트
+            var ordered = wafer.Dies.Where(d => d != null).OrderBy(d => d.Index).ToList();
+
+            for (int di = 0; di < ordered.Count; di++)
+            {
+                var d = ordered[di];
+
+                // 기준점: 기존 Center (초기 맵핑 기준)
+                double bx = d.CenterX;
+                double by = d.CenterY;
+
+                int bestIdx = -1;
+                double bestD2 = double.MaxValue;
+
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    double dx = pts[i].X - bx;
+                    double dy = pts[i].Y - by;
+                    double d2 = dx * dx + dy * dy;
+                    if (d2 < bestD2)
+                    {
+                        bestD2 = d2;
+                        bestIdx = i;
+                    }
+                }
+
+                // 허용 오차 내에서만 좌표 보정. Presence/State/Index/Name은 변경하지 않음
+                if (bestIdx >= 0 && bestD2 <= tol2)
+                {
+                    d.CenterX = pts[bestIdx].X;
+                    d.CenterY = pts[bestIdx].Y;
+                    pts.RemoveAt(bestIdx);
+                }
+            }
+        }
+
+
         public int RecheckDieAndAlign(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -2637,36 +4312,44 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> tImageProcess = null;
             try
             {
-                if (this.IsStop) {  return 0; }
+                if (this.IsStop) 
+                {
+                    Log.Write(UnitName, "RecheckDieAndAlign", "IsStop");
+                    return 0; 
+                }
 
                 if (this.Config.IsSimulation == false && this.Config.IsDryRun == false)
                 {
+                    Log.Write(UnitName, "RecheckDieAndAlign", "Start");
                     double dpoX = AxisX.GetPosition();
                     double dpoY = AxisY.GetPosition();
 
-                    StageCamera.GrabSync(out VisionImage grabImage);
                     if (tImageProcess != null)
                     {
                         tImageProcess.Wait();
                     }
+
                     double dx = dpoX;
                     double dy = dpoY;
+                    StageCamera.SuspendedImageDisplay = true;
+                    StageCamera.GrabSync(out VisionImage grabImage);
                     tImageProcess = Task.Factory.StartNew(() =>
                     {
+                        Log.Write(UnitName, "RecheckDieAndAlign", "SearchDies");
                         return SearchDies(grabImage, ref chips, dx, dy);
                     });
                     tImageProcess.Wait();
 
                     var wafer = GetMaterialWafer();
+                    // 병합 임계값 클램프
+                    double tol = DuplicateDistMm;
+                    double pitchMin = double.MaxValue;
+                    if (ChipPitchXmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchXmm);
+                    if (ChipPitchYmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchYmm);
 
 
-
-                    //Update Chip Info�� �Ǿ�� �Ѵ�.....
-                    //wafer die ������ ���ŵǾ�� �Ѵ�.
                     wafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
-
-
-
+                    Log.Write(UnitName, "RecheckDieAndAlign", "End");
                 }
                 if (nRet != 0)
                 {
@@ -2687,7 +4370,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // === Cylinder ������ ����(�Ϸ� ��� ����) ===
+        // === Cylinder 고레벨 제어(완료 대기 포함) ===
         public int PlateUp()
         {
             SetClampPlate(true);
@@ -2714,7 +4397,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public int ClampLiftDown()
         {
-            // ���Ͷ��� SetClampLift(false) ���ο��� IsClampBwd() Ȯ��
+            // 인터락은 SetClampLift(false) 내부에서 IsClampBwd() 확인
             bool issued = SetClampLift(false);
             if (!issued && !(Config.IsSimulation || Config.IsDryRun))
             {
@@ -2730,7 +4413,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public int ClampForward()
         {
-            // ���Ͷ��� SetClampFB(true) ���ο��� IsClampLiftUp() Ȯ��
+            // 인터락은 SetClampFB(true) 내부에서 IsClampLiftUp() 확인
             bool issued = SetClampFB(true);
             if (!issued && !(Config.IsSimulation || Config.IsDryRun))
             {
@@ -2762,6 +4445,290 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        // 클래스 내부에 추가
+        public void ResetForNewRun(bool moveToSafeReady = true, bool clearOffsets = true, bool clearStageMaterial = true)
+        {
+            // 1) 얼라인/검출 상태 초기화
+            IsStatus_TAlignPrepared = false;
+            IsStatus_TAlignDone = false;
+            IsStatus_LastFoundTRawAngle = 0;
+            IsStatus_LastAppliedTAngle = 0;
+
+            IsStatus_XYAlignPrepared = false;
+            IsStatus_XYAlignDone = false;
+            IsStatus_LastFoundDx = 0;
+            IsStatus_LastFoundDy = 0;
+
+            _lastCenterAlignTp = null;
+
+            // 2) 매핑 상태 초기화
+            ResetChipMappingState(); // ChipMappingDone=false, _chipPickupCursor=0, CurrentChipMap=null
+
+            // 3) 시퀀스/요청 플래그 초기화
+            RequestOutputDie = false;
+            IsStatus_RequestWafer = false;
+            this.CurrentFunc = null;
+
+            // 4) 비전 러너(선택) 재초기화 트리거
+            _runnerInitTried = false;
+
+            // 5) 스테이지 보유 머티리얼(선택)
+            if (clearStageMaterial)
+            {
+                try 
+                { 
+                    this.SetMaterial(null); 
+                } 
+                catch (Exception ex) 
+                {
+                    Log.Write(ex);
+                }
+            }
+
+            // 7) 안전 IO/Ready 복귀(선택)
+            if (moveToSafeReady)
+            {
+                try
+                {
+                    // 안전한 기본 상태로 복귀
+                    // 순서: 클램프 후퇴 → 리프트 다운 → 플레이트 다운 → Ready 위치 복귀
+                    ClampBackward();
+                    ClampLiftDown();
+                    PlateDown();
+
+                    // 인터락을 통과할 수 있는 경우에만 Ready 복귀
+                    //MoveToStageReadyPosition();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(this, $"ResetForNewRun MoveToSafeReady failed: {ex.Message}");
+                }
+            }
+            UpdateUI();
+        }
         #endregion
+
+
+
+        // === 맵 순서 지정 옵션 ===
+        public enum PathStartCorner
+        {
+            BottomLeft,
+            BottomRight,
+            TopLeft,
+            TopRight
+        }
+
+        public enum PathPrimaryAxis
+        {
+            XFirst, // 행 우선(가로 먼저)
+            YFirst  // 열 우선(세로 먼저)
+        }
+
+        public enum PathTraversalMode
+        {
+            Raster,     // 래스터(매 줄/열 동일 방향)
+            Serpentine  // 지그재그(매 줄/열마다 방향 반전)
+        }
+
+        // 기본값: 좌하단 시작, X 먼저, 지그재그
+        public PathStartCorner MapStartCorner { get; set; } = PathStartCorner.TopRight;
+        public PathPrimaryAxis MapPrimaryAxis { get; set; } = PathPrimaryAxis.XFirst;
+        public PathTraversalMode MapTraversal { get; set; } = PathTraversalMode.Serpentine;
+
+        // 옵션에 따라 인덱스만 재부여(좌표/리스트 순서는 유지)
+        private void ApplyDieOrderByPathSettings(MaterialWafer wafer)
+        {
+            try
+            {
+                if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
+
+                // 0) 셀 기준축(MapX/MapY) 구성: 정수 그리드로 간주(반올림 후 distinct)
+                var xs = wafer.Dies
+                    .Where(d => d != null)
+                    .Select(d => (int)d.MapX)
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .ToList();
+
+                var ys = wafer.Dies
+                    .Where(d => d != null)
+                    .Select(d => (int)d.MapY)
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .ToList();
+
+                if (xs.Count == 0 || ys.Count == 0) return;
+
+                // 1) (ix,iy) -> bucket (동일 셀에 여러 개 있더라도 모두 포함)
+                var grid = new Dictionary<(int ix, int iy), List<MaterialDie>>();
+                foreach (var d in wafer.Dies.Where(d => d != null))
+                {
+                    int mx = (int)d.MapX;
+                    int my = (int)d.MapY;
+                    int ix = xs.IndexOf(mx);
+                    int iy = ys.IndexOf(my);
+                    if (ix < 0 || iy < 0) continue;
+
+                    var key = (ix, iy);
+                    if (!grid.TryGetValue(key, out var bucket))
+                    {
+                        bucket = new List<MaterialDie>();
+                        grid[key] = bucket;
+                    }
+                    bucket.Add(d);
+                }
+
+                // 2) 진행 방향(시작 코너) → 부호만 바꿔서 순회 방향 결정
+                int xDir, yDir;
+                switch (MapStartCorner)
+                {
+                    default:
+                    case PathStartCorner.BottomLeft: xDir = +1; yDir = +1; break;
+                    case PathStartCorner.BottomRight: xDir = -1; yDir = +1; break;
+                    case PathStartCorner.TopLeft: xDir = +1; yDir = -1; break;
+                    case PathStartCorner.TopRight: xDir = -1; yDir = -1; break;
+                }
+
+                IEnumerable<int> RangeDir(int count, int dir)
+                {
+                    if (dir > 0) { for (int i = 0; i < count; i++) yield return i; }
+                    else { for (int i = count - 1; i >= 0; i--) yield return i; }
+                }
+
+                var xLineF = RangeDir(xs.Count, xDir).ToList();
+                var xLineR = xLineF.AsEnumerable().Reverse().ToList();
+                var yLineF = RangeDir(ys.Count, yDir).ToList();
+                var yLineR = yLineF.AsEnumerable().Reverse().ToList();
+
+                // 3) 옵션 경로 순서대로 모든 다이를 나열(버킷 내 tie-break는 안정적으로)
+                var ordered = new List<MaterialDie>(wafer.Dies.Count);
+                Action<IEnumerable<int>, IEnumerable<int>> addBy = (xSeq, ySeq) =>
+                {
+                    foreach (var iy in ySeq)
+                    {
+                        foreach (var ix in xSeq)
+                        {
+                            if (!grid.TryGetValue((ix, iy), out var bucket) || bucket.Count == 0)
+                                continue;
+
+                            // 같은 셀 내 다이 순서는 안정적으로(가까움 → Map → Center)
+                            var cx = xs[ix];
+                            var cy = ys[iy];
+                            var sel = bucket
+                                .OrderBy(d => (d.CenterX - cx) * (d.CenterX - cx) + (d.CenterY - cy) * (d.CenterY - cy))
+                                .ThenBy(d => d.MapY)
+                                .ThenBy(d => d.MapX)
+                                .ThenBy(d => d.CenterY)
+                                .ThenBy(d => d.CenterX);
+
+                            foreach (var dd in sel) ordered.Add(dd);
+                        }
+                    }
+                };
+
+                if (MapPrimaryAxis == PathPrimaryAxis.XFirst)
+                {
+                    // 행 우선(Y 바깥, X 안쪽) + 지그재그
+                    for (int row = 0; row < ys.Count; row++)
+                    {
+                        var xSeq = (MapTraversal == PathTraversalMode.Serpentine && (row % 2 == 1)) ? xLineR : xLineF;
+                        addBy(xSeq, new[] { yLineF[row] });
+                    }
+                }
+                else
+                {
+                    // 열 우선(X 바깥, Y 안쪽) + 지그재그
+                    for (int col = 0; col < xs.Count; col++)
+                    {
+                        var ySeq = (MapTraversal == PathTraversalMode.Serpentine && (col % 2 == 1)) ? yLineR : yLineF;
+                        addBy(new[] { xLineF[col] }, ySeq);
+                    }
+                }
+
+                // 4) 인덱스만 재부여(좌표/리스트 순서는 그대로)
+                if (ordered.Count != wafer.Dies.Count)
+                    Log.Write(UnitName, "ChipMap", $"[WARN] Indexing size mismatch: before={wafer.Dies.Count} after={ordered.Count}");
+
+                for (int i = 0; i < ordered.Count; i++)
+                {
+                    ordered[i].Index = i;
+                    if (!string.IsNullOrEmpty(wafer.WaferId))
+                        ordered[i].Name = $"{wafer.WaferId}_{i}";
+                }
+
+                // wafer.Dies 순서는 유지합니다(= 좌표 배열은 그대로).
+                // GetNextDie()는 Index 오름차순을 사용하므로 옵션 경로대로 동작합니다.
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ApplyDieOrderByPathSettings", ex.Message);
+            }
+        }
+
+        public bool IsWaferExchangeReady()
+        {
+            var wafer = GetMaterialWafer();
+            if (wafer == null) return false;
+
+            // 웨이퍼 존재하지 않으면 이미 교체된 상태
+            if (wafer.Presence != Material.MaterialPresence.Exist)
+                return false;
+
+            // 아직 처리 중 상태가 아니라면(Completed 전환되어 있지 않다면) 검사
+            // 남은 Mapped 다이(실제 물리적으로 아직 픽업되지 않은 다이)가 있는지 확인
+            bool hasRemaining =
+                wafer.Dies != null &&
+                wafer.Dies.Any(d => d != null
+                                    && d.Presence == Material.MaterialPresence.Exist
+                                    && d.State == DieProcessState.Mapped);
+
+            if (hasRemaining)
+                return false;
+
+            // Transfer 쪽에 들고 있는 다이가 없는지 (_currentDie 등) 추가 확인 필요
+            var dieTr = Equipment.Instance.GetUnit(UnitKeys.InputDieTransfer) as InputDieTransfer;
+            if (dieTr != null && dieTr.GetHeldDieExists())
+                return false;
+
+            // 모든 조건 OK
+            return true;
+        }
+
+
+        // PmRunner.Search() 직접 결과를 받을 때 사용하는 오버로드
+        private void OnRawMatchesFound(VisionImage img,
+                                   IEnumerable<QMC.Common.Vision.Tools.PatternMatchingResult.PatternMatchingResultValue> rawMatches,
+                                   int representativeIndex,
+                                   int trainW,
+                                   int trainH)
+        {
+            var e = new PatternMarksFoundEventArgs
+            {
+                Suspended = false,
+                Image = img,
+                RepresentativeIndex = representativeIndex
+            };
+            if (rawMatches == null || img == null)
+            {
+                try { MarksFound?.Invoke(this, e); } catch { }
+                return;
+            }
+
+           
+            foreach (var m in rawMatches)
+            {
+                e.Marks.Add(new PatternMatchInfo
+                {
+                    X = m.X,
+                    Y = m.Y,
+                    AngleDeg = m.R,
+                    Score = m.Score,
+                    TrainW = trainW,
+                    TrainH = trainH
+                });
+            }
+            try { MarksFound?.Invoke(this, e); } catch { }
+        }
     }
 }

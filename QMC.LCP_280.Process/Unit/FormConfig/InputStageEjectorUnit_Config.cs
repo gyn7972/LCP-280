@@ -245,35 +245,116 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_unit == null) return;
+                if (_unit == null)
+                    return;
 
-                var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
+                int nRet = 0;
 
-                using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
+                string tpName = string.Empty;
+                var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
+
+                if (hasName)
                 {
-                    var dr = pf.ShowDialog(this);
-                    if (dr == DialogResult.Cancel)
+                    InputStageEjectorConfig.TeachingPositionName en;
+                    if (Enum.TryParse(tpName, out en))
                     {
-                        _unit.StopTeachingPositionOnce(e.Index);
-                        return;
+                        switch (en)
+                        {
+                            case InputStageEjectorConfig.TeachingPositionName.EjectBlockUp:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectBlockUp(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectBlockUp 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputStageEjectorConfig.TeachingPositionName.EjectBlockReady:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectBlockReady(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectBlockReady 이동 실패");
+                                    return;
+                                }
+                                break;
+                                case InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectBlockSafety(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectBlockSafety 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputStageEjectorConfig.TeachingPositionName.EjectPinChange:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectPinChange(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectPinChange 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputStageEjectorConfig.TeachingPositionName.EjectPinOffset:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectPinOffset(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectPinOffset 이동 실패");
+                                    return;
+                                }
+                                break;
+                            case InputStageEjectorConfig.TeachingPositionName.EjectPinReady:
+                                nRet = await Task.Run(() => _unit.MovePositionEjectPinReady(e.IsFine));
+                                if (nRet != 0)
+                                {
+                                    new MessageBoxOk().ShowDialog("Error.", "EjectPinReady 이동 실패");
+                                    return;
+                                }
+                                break;
+
+                            default:
+                                nRet = -1; // Unknown position
+                                break;
+                        }
                     }
                 }
 
-                var result = await task;
-                var mb = new MessageBoxOk();
-                if (result == 0)
-                {
-                    mb.ShowDialog("Information.", "Teaching Position 이동 완료");
-                }
-                else
-                {
-                    mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
-                }
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
+
+            new MessageBoxOk().ShowDialog("Infor.", "이동 완료");
+
+            //try
+            //{
+            //    if (_unit == null) return;
+
+            //    var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
+
+            //    using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
+            //    {
+            //        var dr = pf.ShowDialog(this);
+            //        if (dr == DialogResult.Cancel)
+            //        {
+            //            _unit.StopTeachingPositionOnce(e.Index);
+            //            return;
+            //        }
+            //    }
+
+            //    var result = await task;
+            //    var mb = new MessageBoxOk();
+            //    if (result == 0)
+            //    {
+            //        mb.ShowDialog("Information.", "Teaching Position 이동 완료");
+            //    }
+            //    else
+            //    {
+            //        mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
         }
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)

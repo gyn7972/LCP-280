@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace QMC.Common.UI
 {
@@ -62,7 +63,6 @@ namespace QMC.Common.UI
                 timerCheckProcess.Start();
             }
             m_obj = target;
-
         }
 
         private void TimerCheckProcess_Tick(object sender, EventArgs e)
@@ -122,6 +122,76 @@ namespace QMC.Common.UI
                 StopProcess(m_obj);
             DialogResult = DialogResult.Cancel;
             //m_AsyncResult.Dispose();
+        }
+
+        public Func<Tuple<int, string>> CustomStatusProvider { get; set; }
+        // 기존 컨트롤 재사용을 위한 원본 메시지 저장용(초기화 이후 1회만 설정)
+        private string _baseContentMessage;
+        private string _lastStatusText;
+        private int _lastPercent;
+
+        private void CacheBaseMessageOnce()
+        {
+            if (_baseContentMessage == null)
+                _baseContentMessage = labelContent != null ? labelContent.Text : "";
+        }
+
+        // 기존 timerCheckProcess 와 별도로 진행률 갱신이 필요하면 디자이너에서 연결된 timerUpdate 활용
+        // (progressBar / lblStatus 컨트롤이 없으므로 labelContent 를 재사용)
+        private void timerUpdate_Tick(object sender, EventArgs e)
+        {
+            if (CustomStatusProvider == null)
+                return;
+
+            CacheBaseMessageOnce();
+
+            Tuple<int, string> tup = null;
+            try
+            {
+                tup = CustomStatusProvider();
+            }
+            catch
+            {
+                // 공급자 실행 실패는 무시
+            }
+
+            if (tup == null)
+                return;
+
+            int percent = tup.Item1;
+            string status = tup.Item2 ?? "";
+
+            // 이전 값과 동일하면 불필요한 UI 갱신 최소화
+            if (percent == _lastPercent && status == _lastStatusText)
+                return;
+
+            _lastPercent = percent;
+            _lastStatusText = status;
+
+            // 기존 labelContent 재사용
+            // (원래 메시지 + 진행률 + 상태)
+            if (labelContent != null)
+            {
+                // 퍼센트 범위 안전화
+                if (percent < 0) percent = 0;
+                if (percent > 100) percent = 100;
+
+                labelContent.Text =
+                    $"{_baseContentMessage}\r\n" +
+                    $"Progress: {percent}%\r\n" +
+                    $"{status}";
+            }
+
+            // 제목에도 퍼센트 반영(선택)
+            if (labelTitle != null)
+            {
+                // 기존 제목에 퍼센트만 덧붙이기 (중복 방지 위해 괄호 영역만 대체)
+                string t = labelTitle.Text;
+                int idx = t.LastIndexOf(" (");
+                if (idx >= 0)
+                    t = t.Substring(0, idx);
+                labelTitle.Text = $"{t} ({percent}%)";
+            }
         }
     }
 }

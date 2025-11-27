@@ -1,10 +1,12 @@
 ﻿using LCP_280;
 using QMC.Common;
+using QMC.Common.Account;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.Unit.BaseUnit;
@@ -35,6 +37,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private bool _preloadRequested;
         private bool _deferredInitDone; // 지연 초기화 완료 여부
 
+        private DateTime _lastMarkDrawUtc = DateTime.MinValue;
+        private TimeSpan _markDrawMinInterval = TimeSpan.FromMilliseconds(120); // 과도한 갱신 억제
+
 
         public InputWafer_Working() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
@@ -56,6 +61,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             _InputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
             waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+
+            comboBoxSlot.SelectedIndex = 0;
         }
 
         /// <summary>
@@ -115,6 +122,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 BindDioControls();
                 BindCamera();
                 InitSequences();
+                SubscribeInputStageMarkEvents();   // ★ 추가: 마크 이벤트 구독
             }
             catch { }
         }
@@ -190,7 +198,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (InputFeeder == null || dioControl == null) return;
 
             // 간단 디바운스: required회 연속으로 true가 나와야 true로 인정
-            bool ConsecutiveTrue(Func<bool> read, int required = 2, int intervalMs = 10)
+            bool ConsecutiveTrue(Func<bool> read, int required = 3, int intervalMs = 2)
             {
                 int count = 0;
                 for (int i = 0; i < required; i++)
@@ -198,7 +206,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     bool v = false;
                     try { v = read(); } catch { v = false; }
                     if (v) count++; else count = 0;
-                    if (i < required - 1) System.Threading.Thread.Sleep(intervalMs);
+                    if (i < required - 1) 
+                        System.Threading.Thread.Sleep(intervalMs);
                 }
                 return count >= required;
             }
@@ -307,7 +316,116 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void InputWafer_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try { } catch { }
+            try
+            {
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
+        }
+
+        // 마크 이벤트 구독 / 해제 메서드 추가
+        private void SubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (InputStage != null)
+                {
+                    // 중복 방지 위해 먼저 제거
+                    InputStage.MarksFound -= InputStage_MarksFound;
+                    InputStage.MarksFound += InputStage_MarksFound;
+                }
+            }
+            catch { }
+        }
+
+        private void UnsubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (InputStage != null)
+                    InputStage.MarksFound -= InputStage_MarksFound;
+            }
+            catch { }
+        }
+
+        // 이벤트 핸들러 구현
+        private void InputStage_MarksFound(object sender, PatternMarksFoundEventArgs e)
+        {
+            // 스로틀
+            var now = DateTime.UtcNow;
+            if (now - _lastMarkDrawUtc < _markDrawMinInterval)
+                return;
+            _lastMarkDrawUtc = now;
+
+            // UI 스레드 처리
+            if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed)
+                return;
+
+
+            //_InputWaferCameraviewer.ResumeDisplay();
+            if (_InputWaferCameraviewer.InvokeRequired)
+            {
+                _InputWaferCameraviewer.Invoke(new Action(() => ApplyInputStageMarkOverlays(e)));
+            }
+            else
+            {
+                ApplyInputStageMarkOverlays(e);
+            }
+        }
+
+        // Overlay 적용 메서드
+        private void ApplyInputStageMarkOverlays(PatternMarksFoundEventArgs e)
+        {
+            try
+            {
+                if (_InputWaferCameraviewer == null) return;
+
+                // 라이브 그랩 중이라면 이미지 교체는 선택 – 필요 시만 적용
+                // if (e.Image != null && !_InputWaferCameraviewer.Simulated)
+                //     _InputWaferCameraviewer.InputImage = e.Image;  // 프로젝트의 실제 이미지 교체 API에 맞게 조정
+
+                // ResultOverlays 컬렉션 반영 (VisionImageViewer 내부 구현이 해당 컬렉션을 그리는 구조라고 가정)
+                var overlaysProp = _InputWaferCameraviewer.GetType().GetProperty("ResultOverlays");
+                var list = overlaysProp?.GetValue(_InputWaferCameraviewer) as System.Collections.IList;
+
+                if (list != null)
+                {
+                    lock (list)
+                    {
+                        list?.Clear();
+
+                        if (e.Marks == null || e.Marks.Count == 0)
+                        {
+                            _InputWaferCameraviewer.Refresh();
+                            return;
+                        }
+
+                        for (int i = 0; i < e.Marks.Count; i++)
+                        {
+                            var m = e.Marks[i];
+                            var ov = new QMC.Common.Vision.PatternMatchResultOverlay
+                            {
+                                Center = new System.Drawing.PointF((float)m.X, (float)m.Y),
+                                PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
+                                PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
+                                AngleDeg = (float)m.AngleDeg,
+                                CrossHalfLenPx = (i == e.RepresentativeIndex) ? 24 : 16,
+                                Highlight = (i == e.RepresentativeIndex),
+                                Index = i,
+                                Color = (i == e.RepresentativeIndex) ? System.Drawing.Color.Yellow : System.Drawing.Color.Lime,
+                                Thickness = (i == e.RepresentativeIndex) ? 2f : 1f,
+                                Visible = true
+                            };
+                            list?.Add(ov);
+                        }
+                    }
+                }
+                _InputWaferCameraviewer.Refresh();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("InputWafer_Working", "ApplyInputStageMarkOverlays", ex.Message);
+            }
         }
 
         private void btnMapping_Click(object sender, EventArgs e)
@@ -434,5 +552,126 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.Activate();
         }
 
+        private async void buttonMoveToSlot_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Are you sure you want Move?") != DialogResult.Yes)
+                return;
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+            SetUnitsManualRunning(true);
+
+            var t = Task.Run(async () =>
+            {
+                token.ThrowIfCancellationRequested();
+
+                nRet = await Task.Run(() => MoveToSlotAsync(token), token).ConfigureAwait(false);
+                if (nRet != 0)
+                {
+                    Log.Write("LCP-280", "buttonMoveToSlot_Click", "MoveToSlotAsync failed");
+                    return nRet;
+                }
+                return nRet;
+
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "Move To Slot", t, null);
+            try
+            {
+                var mb = new MessageBoxOk();
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    //mb.ShowDialog("MoveToSlot Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    //mb.ShowDialog("MoveToSlot Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    //MessageBox.Show("MoveToSlot Fail",
+                    //    "MoveToSlot Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+        }
+
+        private int _nSelectSlot = 0;
+        private void SetUnitsManualRunning(bool running)
+        {
+            try
+            {
+                if (running)
+                {
+                    InputCassetteLifter.StartManual();
+                    InputFeeder.StartManual();
+                    InputStage.StartManual();
+                }
+                else
+                {
+                    InputCassetteLifter.Stop();
+                    InputFeeder.Stop();
+                    InputStage.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private async Task<int> MoveToSlotAsync(CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                int nRet = 0;
+
+                if (_nSelectSlot == -1)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Warring", "No Select Slot.");
+                }
+
+                nRet = this.InputCassetteLifter.MoveToSlot(_nSelectSlot); // 언로딩 해야하는 Slot으로 이동 요청.
+                if (nRet != 0)
+                {
+                    Log.Write("LCP-280", "buttonMoveToSlot_Click", "MoveToSlot Fail.");
+                    return nRet;
+                }
+
+                return nRet;
+            }, ct).ConfigureAwait(false);
+        }
+
+        private void comboBoxSlot_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _nSelectSlot = comboBoxSlot.SelectedIndex;
+        }
+
+        private void btnTest_Click(object sender, EventArgs e)
+        {
+            InputStage.TryGetMarkCenterGlobalDirectional(true, null, out var gx, out var gy, out var s);
+        }
     }
 }

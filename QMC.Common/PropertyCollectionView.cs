@@ -23,7 +23,7 @@ namespace QMC.Common
         private GroupBox groupBox; // GroupBox to wrap the property controls
 
         // 디자이너에서 편집 가능한 속성의 기본값
-        protected Font _textBoxFont = new Font("맑은 고딕", 9f); // Windows Forms 기본 폰트와 크기
+        protected Font _textBoxFont = new Font("맑은 고딕", 10f); // Windows Forms 기본 폰트와 크기
         private HorizontalAlignment _textBoxTextAlign = HorizontalAlignment.Left;
 
         private const int MinVisibleRows = 3; // 최소 보이는 행 수 줄임

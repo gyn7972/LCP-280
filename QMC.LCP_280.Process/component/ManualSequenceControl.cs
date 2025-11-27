@@ -80,7 +80,7 @@ namespace QMC.LCP_280.Process.Component
                 if (func != null)
                 {
                     Task<int> t = m_ParentUnit.RunManualFunction(func);
-                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
+                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
 
                     UpdateSeqList();
                     ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
@@ -93,18 +93,19 @@ namespace QMC.LCP_280.Process.Component
                             {
                                 m_ParentUnit.CancelSequence();
                             }
+
                             if (t.Status == TaskStatus.RanToCompletion && t.Result == 0)
                             {
                                 this.SelectedIndex++;
                                 this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
                                 this._lstSteps.SelectedIndex = this.SelectedIndex;
+                                Log.Write("LCP_280", "_btnNext_Click", $"{func.ToString()},{this.SelectedIndex}");
                             }
                             else if (t.IsFaulted)
                             {
                                 // 예외 메시지 표시
                                 var mb = new MessageBoxOk();
                                 mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
-
                             }
                         }
                         catch (Exception ex)
@@ -131,7 +132,7 @@ namespace QMC.LCP_280.Process.Component
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 
                 Task<int> t = m_ParentUnit.RunManualFunction(func);
-                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
+                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
 
                 SelectedIndex = this._lstSteps.SelectedIndex;
                 UpdateSeqList();
@@ -176,7 +177,7 @@ namespace QMC.LCP_280.Process.Component
                 }
 
                 // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.ManualRunning)
                 {
                     var mb = new MessageBoxOk();
                     mb.ShowDialog("Info!", $"Unit '{unitName}' 는 이미 실행 중입니다.");

@@ -41,16 +41,35 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 {
                     this.Cursor = Cursors.WaitCursor;
                     patternMatchingControl1.SetCameras(eq.Cameras.Values);
+                    patternMatchingControl1.SelectCamera(0); // 추가: 카메라 선택과 동시에 파라미터 로드
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Write(ex);
                 // 필요 시 Log.Write(ex);
             }
             finally
             {
                 this.Cursor = Cursors.Default;
             }
+            //try
+            //{
+            //    var eq = Equipment.Instance;
+            //    if (eq != null && eq.Cameras.Count > 0)
+            //    {
+            //        this.Cursor = Cursors.WaitCursor;
+            //        patternMatchingControl1.SetCameras(eq.Cameras.Values);
+            //    }
+            //}
+            //catch (Exception)
+            //{
+            //    // 필요 시 Log.Write(ex);
+            //}
+            //finally
+            //{
+            //    this.Cursor = Cursors.Default;
+            //}
         }
 
         private void Vision_Recipe_Load(object sender, EventArgs e)

@@ -143,16 +143,18 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 var currentRecipe = eq.EquipmentRecipe.CurrentRecipe;
 
                 var tester = Equipment.Instance.Tester;
-                int retLoadTestCondSet = tester.ConditionSet.LoadFromFile(currentRecipe.TestConditionSetPath);
-                int retLoadBinningSpec = tester.BinningSpecSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath);
-
-                if (retLoadBinningSpec != 0 || retLoadTestCondSet != 0)
+                int retLoadTestCondSet = tester.ConditionSet.LoadFromFile(currentRecipe.TestConditionSetFile);
+                //int retLoadBinningSpec = tester.BinningSpecSheet.LoadFromFile(currentRecipe.BinningSpecSheetFile);
+                int retLoadBinning = tester.LoadBinningModel(currentRecipe.BinningSpecSheetFile);
+                if (retLoadBinning != 0 || retLoadTestCondSet != 0)
                 {
                     string confirmMessage = "The recipe was opened, but the file below failed to load. Please check.";
                     if (retLoadTestCondSet != 0)
-                        confirmMessage += Environment.NewLine + $"- Test Condition Set: {currentRecipe.TestConditionSetPath}";
-                    if (retLoadBinningSpec != 0)
-                        confirmMessage += Environment.NewLine + $"- Binning Spec Sheet: {currentRecipe.BinningSpecSheetPath}";
+                        confirmMessage += Environment.NewLine + $"- Test Condition Set: {currentRecipe.TestConditionSetFile}";
+                    if (retLoadBinning != 0)
+                        confirmMessage += Environment.NewLine + $"- Binning Spec Sheet: {currentRecipe.BinningSpecSheetFile}";
+
+                    Equipment.Instance.ResultWriterManager.CurrentTestConditionSet = tester.ConditionSet;
 
                     MessageBox.Show(confirmMessage, "Confirm");
                 }
@@ -347,10 +349,25 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             try
             {
                 File.Copy(_clipboardRecipePath, dst, overwrite: false);
+
                 // 전역 전환
                 LoadRecipe(newName);
+
+                // 복사된 레시피의 내부 Name을 새 이름으로 동기화 후 저장
                 var eq = Equipment.Instance;
-                eq.EquipmentRecipe.SaveCurrentRecipe(); // Config에 이름 반영
+                var current = eq.EquipmentRecipe?.CurrentRecipe;
+                if (current != null && !string.Equals(current.Name, newName, StringComparison.OrdinalIgnoreCase))
+                {
+                    current.Name = newName;
+                    // Name 변경이 저장 경로에 반영되도록 현재 레시피 재설정 + 저장
+                    eq.EquipmentRecipe.SetCurrentRecipe(current, save: true);
+                }
+                else
+                {
+                    // Config에 현재 레시피 이름 반영
+                    eq.EquipmentRecipe.SaveCurrentRecipe();
+                }
+
                 RefreshRecipeList();
                 SelectRecipeInList(newName);
             }

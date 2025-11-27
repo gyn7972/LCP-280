@@ -14,7 +14,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
 using static QMC.Common.Component.BaseComponent;
+using static QMC.Common.CycleTimer;
 using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
@@ -37,12 +39,13 @@ namespace QMC.Common.Unit
         /// </summary>
         public enum UnitStatus
         {
+            Error = -1,
             Stopped = 0,
             Starting,
-            Running,
+            AutoRunning,
+            ManualRunning,
             Stopping,
             CycleStop,
-            Error,
             Unknown
         }
 
@@ -52,6 +55,8 @@ namespace QMC.Common.Unit
             Manual = 1
         }
 
+        //Autto시에 사용되는 ProcessStage다.
+        //OnRun 에서 사용한다고 생각하자.
         public enum ProcessState
         {
             None = 0,
@@ -59,8 +64,7 @@ namespace QMC.Common.Unit
             Ready = 2,
             Work = 3,
             Complete = 4,
-            Error = 5,
-            Manual = 6
+            Error = 5
         }
 
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
@@ -108,16 +112,22 @@ namespace QMC.Common.Unit
         public BaseConfig Config { get; internal set; }
         public Thread m_workThread { get; set; }
 
-        //public UnitStatus RunUnitStatus { get; set; } = UnitStatus.Stopped;
+
+        public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
+        public bool IsAutoMode => RunMode == UnitRunMode.Auto;
+        public bool IsManualMode => RunMode == UnitRunMode.Manual;
+
+
         private UnitStatus _runUnitStatus = UnitStatus.Stopped;
         public UnitStatus RunUnitStatus
         {
             get => _runUnitStatus;
             set
             {
-                if (_runUnitStatus == value) return;
-                _runUnitStatus = value;
+                if (_runUnitStatus == value) 
+                    return;
 
+                _runUnitStatus = value;
                 var eq = EquipmentLocator.Instance as IEquipment;
                 //eq.TryGet(out var eq);
                 eq?.SetAndRaiseUnitState(this.UnitName, value);
@@ -126,21 +136,18 @@ namespace QMC.Common.Unit
                 //eq?.SetAndRaiseUnitState(this.UnitName, value);
             }
         }
-        public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
-
-        public bool IsRunning => RunUnitStatus == UnitStatus.Running;
-        public bool IsStop => RunUnitStatus == UnitStatus.Stopped;
-        public bool IsAutoMode => RunMode == UnitRunMode.Auto;
-        public bool IsManualMode => RunMode == UnitRunMode.Manual;
-        public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
         
-        public CancellationTokenSource CalcelToken { get;  set; }
+        public bool IsRunning => RunUnitStatus == UnitStatus.AutoRunning;
+        public bool IsStop => RunUnitStatus == UnitStatus.Stopped; 
+        public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
         public ProcessState State { get; set; }
-        
+
+
+
+        public CancellationTokenSource CalcelToken { get;  set; }
         // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
-
         public List<TeachingPosition> TeachingPositions
         {
             get => Config.TeachingPositions;
@@ -161,12 +168,13 @@ namespace QMC.Common.Unit
             
         }
 
+
+        private static readonly object _alarmLogLock = new object();
         private void MakeAlarm()
         {
             m_dicAlarms = new Dictionary<int, AlarmInfo>();
             InitAlarm();
         }
-
         protected virtual void InitAlarm()
         {
             // 원래 코드 구조 유지 (AlarmPost가 먼저 호출되는 구조 그대로 둠)
@@ -187,26 +195,13 @@ namespace QMC.Common.Unit
             };
             m_dicAlarms.Add(alarm.Code, alarm);
         }
-
-        
-        private Material m_currentMaterial;
-
-        public virtual void AddComponents() { }
-
-        public bool IsEndTask(Task<int> task)
-            => task.IsCompleted || task.IsFaulted || task.IsCanceled;
-
-        private static readonly object _alarmLogLock = new object();
-
-        public double GetDistance(double deltaX, double deltaY)
-        {
-            return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        }
-
         public int PostAlarm(int alarmCode)
         {
             try
             {
+                this.State = ProcessState.Error;
+                this.RunUnitStatus = UnitStatus.Error;
+
                 AlarmInfo alarm = GetAlarm(alarmCode);
                 alarm.GeneratedTime = DateTime.Now;
 
@@ -236,6 +231,19 @@ namespace QMC.Common.Unit
                 Log.Write(ex);
             }
             return alarmCode;
+        }
+
+
+
+        private Material m_currentMaterial;
+
+        public virtual void AddComponents() { }
+        public bool IsEndTask(Task<int> task)
+            => task.IsCompleted || task.IsFaulted || task.IsCanceled;
+
+        public double GetDistance(double deltaX, double deltaY)
+        {
+            return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
         }
 
         public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
@@ -272,6 +280,7 @@ namespace QMC.Common.Unit
             return true;
         }
 
+
         public MotionAxis GetAxis(string axisName)
         {
             if (Axes.TryGetValue(axisName, out var axis))
@@ -307,12 +316,18 @@ namespace QMC.Common.Unit
             }
 
             SetRunMode(UnitRunMode.Auto);
-            RunUnitStatus = UnitStatus.Running;
+            RunUnitStatus = UnitStatus.AutoRunning;
             
-           
-           
             this.CalcelToken = new CancellationTokenSource();
             return OnStart();
+        }
+
+        public int StartManual()
+        {
+            SetRunMode(UnitRunMode.Auto);
+            RunUnitStatus = UnitStatus.ManualRunning;
+
+            return 0;
         }
 
         private void SetRunMode(UnitRunMode mode) => RunMode = mode;
@@ -325,11 +340,10 @@ namespace QMC.Common.Unit
 
         public virtual int OnStop()
         {
-            
-            
+
+            SetRunMode(UnitRunMode.Manual);
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
-            
             
             return 0;
         }
@@ -364,24 +378,6 @@ namespace QMC.Common.Unit
                 if (m_bExit)
                     break;
 
-                if (State == ProcessState.Manual)
-                {
-                    switch (EquipmentLocator.Instance.EqState)
-                    {
-                        case EquipmentState.Stopped:
-                        case EquipmentState.Error:
-                        case EquipmentState.Stopping:
-                           
-                            break;
-                        default:
-                            break;
-                    }
-                    Thread.Sleep(10); 
-                    continue;
-                }
-                
-
-
                 if ((ret = OnRun()) != 0)
                 {
                     //Log.Write(this, $"OnRun Return: {ret}");
@@ -393,15 +389,17 @@ namespace QMC.Common.Unit
             }
             //OnStop();
         }
+
         public void Terminate() { m_bExit = true; }
         public string GetUnitName() => UnitName;
+
+
         public Material GetMaterial() => m_currentMaterial;
         //public virtual void SetMaterial(Material m) => m_currentMaterial = m;
         public virtual void SetMaterial(Material m)
         {
             m_currentMaterial = m;
         }
-
         public virtual void MoveMaterial(Material  material , BaseUnit destinyUnit)
         {
             Material temp = GetMaterial();
@@ -458,28 +456,43 @@ namespace QMC.Common.Unit
             if (pi == null) return null;
             return pi.GetValue(tp, null) as IDictionary<string, double>;
         }
-        private static IDictionary<string, MotionAxis> GetAxisObjects(object tp)
+        public static IDictionary<string, MotionAxis> GetAxisObjects(object tp)
         {
             if (tp == null) return null;
             var pi = tp.GetType().GetProperty("Axes");
             if (pi == null) return null;
             return pi.GetValue(tp, null) as IDictionary<string, MotionAxis>;
         }
-        private static string GetTpName(object tp)
+
+
+        //public virtual Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
+        //    => Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+        public virtual Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
         {
-            if (tp == null) return string.Empty;
-            var pi = tp.GetType().GetProperty("Name");
-            if (pi == null) return string.Empty;
-            try { return pi.GetValue(tp, null) as string ?? string.Empty; }
-            catch { return string.Empty; }
+            var token = this.CalcelToken?.Token ?? CancellationToken.None;
+
+            return Task.Run(() =>
+            {
+                try
+                {
+                    int result = MoveTeachingPositionOnce(selIndex, isFine);
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return -1;
+                }
+            }, token);
         }
+
         public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
         {
             int waitErrors = 0;
             string teachName = string.Empty;
-            bool bSuccssed = Config.GetTeachingPositionName(selIndex,out teachName);
+            bool bSuccssed = Config.GetTeachingPositionName(selIndex, out teachName);
 
-            if(bSuccssed==false)
+            if (bSuccssed == false)
             {
                 Log.Write(UnitName, "MoveTeachingPositionOnce", $"[TEACH 이동 오류] 인덱스 '{selIndex}' 티칭포지션 이름을 찾을 수 없습니다.");
                 return -1;
@@ -487,7 +500,7 @@ namespace QMC.Common.Unit
             TeachingPosition tp = TeachingPositions.FirstOrDefault(t => t.Name == teachName);
 
             var axisPos = GetAxisPositions(tp);
-            if (axisPos == null) 
+            if (axisPos == null)
                 return -1;
             var axisObj = GetAxisObjects(tp);
 
@@ -499,7 +512,7 @@ namespace QMC.Common.Unit
                 double target = kv.Value;
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(key, out var direct)) 
+                if (axis == null && Axes.TryGetValue(key, out var direct))
                     axis = direct;
 
                 if (axis == null)
@@ -515,15 +528,19 @@ namespace QMC.Common.Unit
                         }
                     }
                 }
-                if (axis == null) 
+                if (axis == null)
                     continue;
 
                 bool IsAuto = false;
-                if (RunMode == UnitRunMode.Auto)
-                    IsAuto = true;
-                else
-                    IsAuto = false;
 
+                if (RunMode == UnitRunMode.Auto)
+                {
+                    IsAuto = true;
+                }
+                else
+                {
+                    IsAuto = false;
+                }
                 waitErrors = axis.MoveAbs(target, IsAuto, isFine);
             }
 
@@ -535,6 +552,8 @@ namespace QMC.Common.Unit
             foreach (var kv in axisPos)
             {
                 MotionAxis axis = null;
+                double target = kv.Value;
+
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
                 if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis))
                     axis = directAxis;
@@ -542,15 +561,83 @@ namespace QMC.Common.Unit
                 if (axis == null)
                     continue;
 
-                if (axis.WaitMoveDone(-1) != 0)
+
+                double timeoutMs = 2000;
+                if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (axis.InPosition(target))
+                    {
+                        break;
+                    }
+                    Thread.Sleep(1);
+                }
+
+                if (axis.WaitMoveDone(-1) != 0 && axis.InPosition(target) == false)
                 {
                     waitErrors++;
                 }
             }
             return waitErrors == 0 ? 0 : -1;
         }
-        public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
-            => Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+
+        protected virtual bool IsAxisAtTarget(MotionAxis axis, double target,
+                                              double multiplier = 2.0,
+                                              int stableSamples = 5,
+                                              int sampleDelayMs = 2,
+                                              double minEpsilon = 0.010)
+        {
+            if (axis == null) return true;
+
+            // 드라이버 자체 InPosition 먼저 이용 (정확하면 빠르게 통과)
+            try
+            {
+                if (axis.InPosition(target))
+                    return true;
+            }
+            catch { }
+
+            double tol = 0.0;
+            try
+            {
+                tol = axis.Config != null ? Math.Max(0.0, axis.Config.InposTolerance) : 0.0;
+            }
+            catch { }
+            double relaxedTol = (tol * multiplier) + minEpsilon;
+
+            // 축 이동이 아직 끝나지 않았다면 불안정
+            if (!axis.IsMoveDone())
+                return false;
+
+            int okCount = 0;
+            for (int i = 0; i < stableSamples; i++)
+            {
+                double cur;
+                try { cur = axis.GetPosition(); }
+                catch { return false; }
+
+                if (double.IsNaN(cur) || double.IsInfinity(cur))
+                    return false;
+
+                if (Math.Abs(cur - target) <= relaxedTol)
+                {
+                    okCount++;
+                    if (okCount >= stableSamples)
+                        return true;
+                }
+                else
+                {
+                    okCount = 0; // 연속 조건 끊김
+                }
+
+                if (sampleDelayMs > 0)
+                    Thread.Sleep(sampleDelayMs);
+            }
+            return false;
+        }
+
+
         public virtual void StopTeachingPositionOnce(int selIndex)
         {
             var list = ResolveTeachingPositionObjectList();
@@ -594,59 +681,33 @@ namespace QMC.Common.Unit
             }
             if (axis == null) 
                 return false;
-            return !axis.IsMoveDone();
+
+            bool IsDone = axis.IsMoveDone();
+            if(IsDone == false)
+            {
+                return !IsDone;
+            }
+            else
+            {
+                return !IsDone;
+            }
+            //return !axis.IsMoveDone();
         }
         // 이동 완료 여부 바로 얻고 싶을 때(가독성):
         public virtual bool IsAxisStopped(string axisKeyOrName) => !IsAxisMoving(axisKeyOrName);
-
-
         // 하나라도 이동 중이면 true, 전부 멈췄으면 false
         public virtual bool IsAnyAxisMoving()
         {
             foreach (var ax in Axes.Values)
             {
-                if (ax != null && !ax.IsMoveDone())
+                if (ax != null && ax.IsMoveDone() == false)
                     return true;
             }
             return false;
         }
-        // 모든 축이 멈췄는지 확인 (가독성 보조용)
-        public virtual bool AreAllAxesStopped()
-        {
-            foreach (var ax in Axes.Values)
-            {
-                if (ax != null && !ax.IsMoveDone())
-                    return false;
-            }
-            return true;
-        }
-
-        public virtual IDictionary<string, bool> GetAxesMovingMap()
-        {
-            var map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in Axes)
-            {
-                if (kv.Value != null)
-                    map[kv.Key] = !kv.Value.IsMoveDone();
-            }
-            return map;
-        }
         #endregion
 
         #region 공통 Safety 축 이동
-        /// <summary>
-        /// 축 Key 또는 MotionAxis.Name 으로 안전 이동.
-        /// </summary>
-        public virtual int MoveAxisWithSafety(string axisKeyOrName, double target, bool isFine = false)
-        {
-            var axis = ResolveAxis(axisKeyOrName);
-            if (axis == null)
-            {
-                Log.Write(UnitName, "MoveAxisWithSafety", $"Axis not found : {axisKeyOrName}");
-                return -1;
-            }
-            return OnMoveAxisPositionOne(axis, target, isFine);
-        }
         /// <summary>
         /// 단일 축 안전 이동(비동기).
         /// </summary>
@@ -655,6 +716,8 @@ namespace QMC.Common.Unit
         /// <summary>
         /// 실제 이동 실행 (파생 Override 가능).
         /// </summary>
+        /// 
+        //Todo: 20251105 이 함수 완료 신호 받을떄 포지션값 비교도 같이 해야함.!
         public virtual int OnMoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) 
@@ -662,9 +725,10 @@ namespace QMC.Common.Unit
 
             try
             {
-                LogAxisMove(axis, target, isFine);
+                //LogAxisMove(axis, target, isFine);
                 var cfg = axis.Config;
-                double cur = axis.GetPosition();
+                //double cur = axis.GetPosition();
+                double cur = axis.Status.PV.ActualPosition;
                 if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
                 {
                     return 0;
@@ -685,6 +749,18 @@ namespace QMC.Common.Unit
                     return -1;
                 }
 
+                double timeoutMs = 2000;
+                if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (axis.InPosition(target))
+                    {
+                        break;
+                    }
+                    Thread.Sleep(1);
+                }
+
                 if (axis.WaitMoveDone(-1) != 0)
                 {
                     Log.Write(UnitName, "MoveAxisWithSafety",
@@ -699,11 +775,12 @@ namespace QMC.Common.Unit
 
             }finally
             {
-                LogAxisMoveDone(axis, target, isFine);
+                //LogAxisMoveDone(axis, target, isFine);
             }
             
             return 0;
         }
+       
         protected void LogAxisMoveDone(MotionAxis axis, double target, bool isFine)
         {
             Log.Write(UnitName, "MoveAxisWithSafety",
@@ -716,35 +793,13 @@ namespace QMC.Common.Unit
                 $"MoveAxisWithSafety axis={axis.Name} target={target} isFine={isFine} " +
                 $"cur={axis.GetPosition()}");
         }
-        /// <summary>
-        /// 기본 축 검색 (Key 우선 → Name 매칭). 파생에서 필요 시 Override.
-        /// </summary>
-        protected virtual MotionAxis ResolveAxis(string axisKeyOrName)
-        {
-            if (string.IsNullOrWhiteSpace(axisKeyOrName))
-                return null;
-
-            if (Axes.TryGetValue(axisKeyOrName, out var ax) && ax != null)
-                return ax;
-
-            foreach (var kv in Axes)
-            {
-                if (kv.Value == null) continue;
-                if (kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
-                    kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
-                    return kv.Value;
-            }
-            return null;
-        }
-
-
 
         //Position 확인
         // BaseUnit 클래스 내부에 추가: Teaching 전용 판정 파라미터(필요 시 파생 클래스에서 override 가능)
         protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
         protected virtual double TeachingInposEpsilon => 0.010;//1e-6;            // 부동소수 잡음 보정
         protected virtual int TeachingInposStableSampleCount => 5;         // 안정 샘플 횟수
-        protected virtual int TeachingInposSampleDelayMs => 8;             // 샘플 간 간격(ms)
+        protected virtual int TeachingInposSampleDelayMs => 2;             // 샘플 간 간격(ms)
                                                                            // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
         protected bool InPosTeachingAxis(MotionAxis ax, double target)
         {
@@ -759,8 +814,10 @@ namespace QMC.Common.Unit
             var relaxedTol = (tol * TeachingInposToleranceMultiplier) + TeachingInposEpsilon;
 
             // 이동 중이면 아직 도달 아님
-            if (!ax.IsMoveDone()) 
+            if (ax.IsMoveDone() == false)
+            {
                 return false;
+            }
 
             // 3) 디바운싱: 짧게 N회 연속 허용오차 내 유지되는지 확인
             for (int i = 0; i < TeachingInposStableSampleCount; i++)
@@ -777,8 +834,6 @@ namespace QMC.Common.Unit
             }
             return true;
         }
-
-
         public bool InPosTeaching(TeachingPosition tp)
         {
             if (tp == null)
@@ -801,22 +856,7 @@ namespace QMC.Common.Unit
             }
             return true;
         }
-        //public bool InPosTeaching(string positionName)
-        //{
-        //    var tp = Config.GetTeachingPosition(positionName);
-
-        //    if (tp == null) 
-        //        return false;
-
-        //    foreach (var kv in tp.AxisPositions)
-        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
-        //            return false;
-
-        //    return true;
-        //}
-
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-
         public double GetTP(string tpName, string axisName)
         {
             var tp = Config.GetTeachingPosition(tpName);
@@ -825,7 +865,6 @@ namespace QMC.Common.Unit
 
             return 0.0;
         }
-
         #endregion
 
         #region IDisposable
@@ -898,7 +937,6 @@ namespace QMC.Common.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-
             }
         }
 
@@ -909,7 +947,7 @@ namespace QMC.Common.Unit
         #endregion
 
         #region Timing Helpers
-        public void WaitByTime(int milliseconds, int pollMs = 1)
+        public void WaitByTime(int milliseconds, int pollMs = 2)
         {
             if (milliseconds <= 0) return;
             if (pollMs < 0) pollMs = 0;
@@ -932,5 +970,188 @@ namespace QMC.Common.Unit
             return task;
         }
         #endregion
+
+
+        #region TaktTime (공통 계측/저장)
+        private readonly object _taktLock = new object();
+        private readonly Dictionary<string, QMC.Common.CycleTimer> _taktTimers
+            = new Dictionary<string, QMC.Common.CycleTimer>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 태그별 CycleTimer 가져오거나 생성. 기본 Capacity=100
+        /// </summary>
+        protected QMC.Common.CycleTimer GetOrCreateTaktTimer(string tag, int capacity = 100)
+        {
+            if (string.IsNullOrWhiteSpace(tag)) tag = "Unnamed";
+            lock (_taktLock)
+            {
+                if (!_taktTimers.TryGetValue(tag, out var ct))
+                {
+                    ct = new QMC.Common.CycleTimer(this) { Capacity = capacity };
+                    _taktTimers[tag] = ct;
+                }
+                return ct;
+            }
+        }
+
+        /// <summary>
+        /// 태그 시작(측정 시작)
+        /// </summary>
+        public void TaktStart(string tag)
+        {
+            try
+            {
+                var ct = GetOrCreateTaktTimer(tag);
+                ct.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName ?? "BaseUnit", $"[TaktStart:{tag}] {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 태그 종료(측정 종료 및 파일 저장). IntervalMs <= 0은 저장 생략
+        /// </summary>
+        public void TaktEnd(string tag, bool saveToFile = true)
+        {
+            try
+            {
+                var ct = GetOrCreateTaktTimer(tag);
+                ct.End();
+
+                if (!saveToFile) return;
+
+                var latest = ct.Latest;
+                var intervalMs = latest.Interval.TotalMilliseconds;
+
+                // IntervalMs가 0 이하인 경우 저장 안 함
+                if (intervalMs <= 0) return;
+
+                AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName ?? "BaseUnit", $"[TaktEnd:{tag}] {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 현재까지의 태그별 평균/최소/최대/개수 요약을 CSV로 저장(스냅샷).
+        /// IntervalMs <= 0인 최신 항목은 생략
+        /// </summary>
+        public void SaveAllTaktSummaries()
+        {
+            try
+            {
+                lock (_taktLock)
+                {
+                    foreach (var kv in _taktTimers)
+                    {
+                        var tag = kv.Key;
+                        var ct = kv.Value;
+                        var latest = ct.Latest;
+                        if (latest.Interval.TotalMilliseconds <= 0) continue; // 생략
+                        AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName ?? "BaseUnit", $"[SaveAllTaktSummaries] {ex.Message}");
+            }
+        }
+
+        private static string SanitizeFilePart(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "Unnamed";
+            foreach (var ch in Path.GetInvalidFileNameChars())
+                s = s.Replace(ch, '_');
+            return s;
+        }
+
+        protected virtual string GetTaktLogRootPath()
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log", "TaktTime");
+        }
+
+        protected virtual string GetTaktLogFilePath(string unitName, string tag)
+        {
+            var root = GetTaktLogRootPath();
+            var unitDir = Path.Combine(root, SanitizeFilePart(unitName ?? "Unit"));
+            Directory.CreateDirectory(unitDir);
+
+            var tagSafe = SanitizeFilePart(tag);
+            var file = $"{SanitizeFilePart(unitName)}_{tagSafe}_{DateTime.Now:yyyyMMdd}.csv";
+            return Path.Combine(unitDir, file);
+        }
+
+        private void AppendTaktCsv(string unitName, string tag, QMC.Common.CycleTimer timer, QMC.Common.CycleTime latest)
+        {
+            try
+            {
+                // 방어: IntervalMs <= 0 은 저장하지 않음
+                double intervalMs = latest.Interval.TotalMilliseconds;
+                if (intervalMs <= 0) return;
+
+                var path = GetTaktLogFilePath(unitName, tag);
+                var exists = File.Exists(path);
+
+                // 요약값
+                double avgMs = timer.Average.TotalMilliseconds;
+                double minMs = timer.Minimum.TotalMilliseconds;
+                double maxMs = timer.Maximum.TotalMilliseconds;
+                int count = timer.CycleTimes.Count;
+
+                var startStr = latest.Start != DateTime.MinValue
+                               ? latest.Start.ToString("yyyy-MM-dd HH:mm:ss.fff")
+                               : "";
+                var endStr = latest.End != DateTime.MinValue
+                               ? latest.End.ToString("yyyy-MM-dd HH:mm:ss.fff")
+                               : "";
+
+                using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+                using (var sw = new StreamWriter(fs, Encoding.UTF8))
+                {
+                    fs.Seek(0, SeekOrigin.End);
+                    if (!exists || fs.Length == 0)
+                    {
+                        sw.WriteLine("Date,Unit,Tag,IntervalMs,Start,End,AverageMs,MinMs,MaxMs,Count");
+                    }
+                    var line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        unitName,
+                        tag,
+                        intervalMs.ToString("0.###"),
+                        startStr,
+                        endStr,
+                        avgMs.ToString("0.###"),
+                        minMs.ToString("0.###"),
+                        maxMs.ToString("0.###"),
+                        count);
+                    sw.WriteLine(line);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName ?? "BaseUnit", $"[AppendTaktCsv:{tag}] {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 읽기 전용으로 현재 태그 타이머 맵을 반환
+        /// </summary>
+        public IReadOnlyDictionary<string, QMC.Common.CycleTimer> TaktTimers
+        {
+            get
+            {
+                lock (_taktLock)
+                {
+                    return new Dictionary<string, QMC.Common.CycleTimer>(_taktTimers);
+                }
+            }
+        }
+        #endregion
+
     }
 }

@@ -336,7 +336,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"? PropertyPosition SetValue ¿À·ù: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

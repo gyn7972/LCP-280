@@ -152,7 +152,9 @@ namespace QMC.LCP_280.Process.Component
         #region Fields
         private readonly List<InterlockRule> _rules = new List<InterlockRule>();
         private readonly object _ruleLock = new object();
-        private Thread _worker; private volatile bool _run; private int _periodMs = 50;
+        private Thread _worker; 
+        private volatile bool _run; 
+        private int _periodMs = 2; //50
         private readonly List<string> _lastViolations = new List<string>();
         public event Action<IReadOnlyList<string>> ViolationsUpdated;
         #endregion
@@ -260,17 +262,20 @@ namespace QMC.LCP_280.Process.Component
             while (_run)
             {
                 var cur = new List<string>();
-                InterlockRule[] copy; lock (_ruleLock) copy = _rules.ToArray();
+                InterlockRule[] copy; 
+                lock (_ruleLock) copy = _rules.ToArray();
                 for (int i = 0; i < copy.Length; i++)
                 {
                     try
                     {
                         var msg = copy[i].Evaluate();
-                        if (!string.IsNullOrEmpty(msg)) cur.Add(msg);
+                        if (!string.IsNullOrEmpty(msg)) 
+                            cur.Add(msg);
                     }
                     catch (Exception ex)
                     {
                         cur.Add(copy[i].Name + " EvaluateEx:" + ex.Message);
+                        Log.Write(ex);
                     }
                 }
                 bool changed = !Enumerable.SequenceEqual(prev, cur);
@@ -282,7 +287,16 @@ namespace QMC.LCP_280.Process.Component
                         _lastViolations.AddRange(cur);
                     }
                     prev = cur;
-                    var h = ViolationsUpdated; if (h != null) { try { h(GetLastViolations()); } catch { } }
+                    var h = ViolationsUpdated; 
+                    if (h != null) 
+                    { 
+                        try 
+                        { 
+                            h(GetLastViolations()); 
+                        } 
+                        catch (Exception ex)
+                        { Log.Write(ex); } 
+                    }
                 }
                 Thread.Sleep(_periodMs);
             }

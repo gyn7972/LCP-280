@@ -63,8 +63,13 @@ namespace QMC.Common.Motions
                 if (_currentKey == null) _currentKey = key;
             }
 
-            var added = AxisAdded; if (added != null) added(axis);
-            var changed = CurrentAxisChanged; if (_currentKey == key && changed != null) changed(axis);
+            var added = AxisAdded; 
+            if (added != null) 
+                added(axis);
+
+            var changed = CurrentAxisChanged; 
+            if (_currentKey == key && changed != null) 
+                changed(axis);
         }
 
         public bool Unregister(string unitName, string axisName)

@@ -376,5 +376,51 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             popupForm.Show();
             this.Activate();
         }
+
+        private void ButtonMapChange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var inputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
+                if (OutputStage == null || inputStage == null)
+                {
+                    MessageBox.Show("Stage 단위가 준비되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 예: 180도 회전(상하반전)만 적용하여 동일 패턴 맞추기
+                bool rotate180 = true;
+                bool swapXY = false;
+                bool mirrorX = false;
+                bool mirrorY = false;
+
+                int rc = OutputStage.CloneDieMapFromInputStage(inputStage,
+                                                               rotate180: rotate180,
+                                                               swapXY: swapXY,
+                                                               mirrorX: mirrorX,
+                                                               mirrorY: mirrorY);
+                if (rc == -1)
+                {
+                    MessageBox.Show("InputStage 맵이 비어 있습니다.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                if (rc == -2)
+                {
+                    MessageBox.Show("이미 배치된 다이가 있어 맵 복사를 할 수 없습니다.", "경고",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                MessageBox.Show("맵 복사 완료 (InputStage → OutputStage)", "정보",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("맵 복사 중 오류: " + ex.Message, "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }

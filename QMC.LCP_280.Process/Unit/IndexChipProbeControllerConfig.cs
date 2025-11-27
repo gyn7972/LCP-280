@@ -36,22 +36,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            TopContact_Index1_Up,
-            TopContact_Index1_Ready,
-            TopContact_Index2_Up,
-            TopContact_Index2_Ready,
-            TopContact_Index3_Up,
-            TopContact_Index3_Ready,
-            TopContact_Index4_Up,
-            TopContact_Index4_Ready,
-            TopContact_Index5_Up,
-            TopContact_Index5_Ready,
-            TopContact_Index6_Up,
-            TopContact_Index6_Ready,
-            TopContact_Index7_Up,
-            TopContact_Index7_Ready,
-            TopContact_Index8_Up,
-            TopContact_Index8_Ready,
+            Top_Index1_Up,
+            Top_Index1_Ready,
+            Top_Index2_Up,
+            Top_Index2_Ready,
+            Top_Index3_Up,
+            Top_Index3_Ready,
+            Top_Index4_Up,
+            Top_Index4_Ready,
+            Top_Index5_Up,
+            Top_Index5_Ready,
+            Top_Index6_Up,
+            Top_Index6_Ready,
+            Top_Index7_Up,
+            Top_Index7_Ready,
+            Top_Index8_Up,
+            Top_Index8_Ready,
             Bottom_Index1_Up,
             Bottom_Index1_Ready,
             Bottom_Index2_Up,
@@ -71,6 +71,41 @@ namespace QMC.LCP_280.Process.Unit
             SphereZ_Ready,
             SphereZ_Down,
             SafetyZone,
+            //TopContact_Index1_Up,
+            //TopContact_Index1_Ready,
+            //TopContact_Index2_Up,
+            //TopContact_Index2_Ready,
+            //TopContact_Index3_Up,
+            //TopContact_Index3_Ready,
+            //TopContact_Index4_Up,
+            //TopContact_Index4_Ready,
+            //TopContact_Index5_Up,
+            //TopContact_Index5_Ready,
+            //TopContact_Index6_Up,
+            //TopContact_Index6_Ready,
+            //TopContact_Index7_Up,
+            //TopContact_Index7_Ready,
+            //TopContact_Index8_Up,
+            //TopContact_Index8_Ready,
+            //Bottom_Index1_Up,
+            //Bottom_Index1_Ready,
+            //Bottom_Index2_Up,
+            //Bottom_Index2_Ready,
+            //Bottom_Index3_Up,
+            //Bottom_Index3_Ready,
+            //Bottom_Index4_Up,
+            //Bottom_Index4_Ready,
+            //Bottom_Index5_Up,
+            //Bottom_Index5_Ready,
+            //Bottom_Index6_Up,
+            //Bottom_Index6_Ready,
+            //Bottom_Index7_Up,
+            //Bottom_Index7_Ready,
+            //Bottom_Index8_Up,
+            //Bottom_Index8_Ready,
+            //SphereZ_Ready,
+            //SphereZ_Down,
+            //SafetyZone,
         }
         
         public override bool GetTeachingPositionName(int selIndex, out string name)
@@ -89,22 +124,22 @@ namespace QMC.LCP_280.Process.Unit
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
             // 기본: 2축 모두 사용. 필요 시 특정 포지션에서 한 축만 사용하도록 배열 수정.
-            { TeachingPositionName.TopContact_Index1_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index1_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index2_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index2_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index3_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index3_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index4_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index4_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index5_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index5_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index6_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index6_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index7_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index7_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index8_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.TopContact_Index8_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index1_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index1_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index2_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index2_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index3_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index3_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index4_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index4_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index5_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index5_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index6_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index6_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index7_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index7_Ready,     new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index8_Up,        new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.Top_Index8_Ready,     new [] { AxisNames.ProbeZ } },
             { TeachingPositionName.SphereZ_Ready,               new [] { AxisNames.SphereZ } },
             { TeachingPositionName.SphereZ_Down,                new [] { AxisNames.SphereZ } },
             { TeachingPositionName.SafetyZone,                  new [] { AxisNames.ProbeZ, AxisNames.ProbeCardZ } },
@@ -152,13 +187,18 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int IndexOfProbe { get; set; } = 0;
 
-        [Category("SetupConfig"), DisplayName("ContectTopMode")]
-        [DefaultValue(false)]
-        public bool ContectTopMode { get; set; } = false;
+        //[Category("SetupConfig"), DisplayName("ContectTopMode")]
+        //[DefaultValue(false)]
+        //public bool ContectTopMode { get; set; } = false;
 
         [Category("SetupConfig"), DisplayName("InspectTimeOut (ms)")]
         [DefaultValue(0)]
         public int ProbeInspectTimeOutms { get; set; } = 60000;
+
+        [Category("SetupConfig"), DisplayName("Upper WaitTime (ms)")]
+        [DefaultValue(0)]
+        public int UpperWaitTime { get; set; } = 0;
+
 
         public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
 

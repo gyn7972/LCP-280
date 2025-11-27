@@ -13,12 +13,13 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             Empty,          // 흰색
             Present,        // 검은색
             AfterPickUp,   // 흰색
-            PickedUp        // 초록색
+            PickedUp,        // 초록색
+            Error
         }
 
         public class DisplayItem
         {
-            public Point Position { get; set; }   // 중심 (0,0) 기준 좌표
+            public PointD Position { get; set; }   // 중심 (0,0) 기준 좌표
             public ItemState State { get; set; }  // 상태
             public string Info { get; set; } = "";  // 추가 정보 (BinCode, Test결과 등)
             public int DieId { get; set; }       // 다이 ID
@@ -87,12 +88,12 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             int cy = this.Height / 2;
 
             // 데이터 범위 계산
-            int maxX = _items.Max(d => Math.Abs(d.Position.X));
-            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            double maxX = _items.Max(d => Math.Abs(d.Position.X));
+            double maxY = _items.Max(d => Math.Abs(d.Position.Y));
             if (maxX == 0) maxX = 1;
             if (maxY == 0) maxY = 1;
 
-            float baseScale = Math.Min(
+            double baseScale = Math.Min(
                 (float)(this.Width / 2 - 20) / maxX,
                 (float)(this.Height / 2 - 20) / maxY
             );
@@ -173,7 +174,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                 // 툴팁 표시
                 string tooltipText = $"Position: ({_hoveredItem.Position.X}, {_hoveredItem.Position.Y})\n";
                 tooltipText += $"State: {_hoveredItem.State}\n";
-                tooltipText += $"Die ID: {_hoveredItem.DieId}";
+                tooltipText += $"Die ID: {_hoveredItem.DieId + 1}";
 
                 if (!string.IsNullOrEmpty(_hoveredItem.Info))
                     tooltipText += $"\nInfo: {_hoveredItem.Info}";
@@ -213,7 +214,6 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                     this.Invalidate();
                     break;
             }
-
         }
 
 
@@ -243,7 +243,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         private void ShowMotorMovePopup(DisplayItem item)
         {
             var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("모터 이동 확인", $"모터 좌표 X:{item.Position.X}, Y:{item.Position.Y} 로 이동하시겠습니까?") == DialogResult.Yes)
+            if (ask.ShowDialog("모터 이동 확인", $"Die:{item.DieId + 1}로 이동하시겠습니까?") == DialogResult.Yes)
             {
                 // 모터 이동 이벤트 발생
                 MotorMoveRequested?.Invoke(this, new DisplayItemEventArgs
@@ -267,13 +267,13 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             int cy = this.Height / 2;
 
             // 데이터 범위 계산
-            int maxX = _items.Max(d => Math.Abs(d.Position.X));
-            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            double maxX = _items.Max(d => Math.Abs(d.Position.X));
+            double maxY = _items.Max(d => Math.Abs(d.Position.Y));
             if (maxX == 0) maxX = 1;
             if (maxY == 0) maxY = 1;
 
             // 전체 데이터가 화면에 들어오도록 기본 스케일
-            float baseScale = Math.Min(
+            double baseScale = Math.Min(
                 (float)(this.Width / 2 - 20) / maxX,
                 (float)(this.Height / 2 - 20) / maxY
             );
@@ -297,8 +297,12 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                         pen = Pens.Green;
                         break;
                     case ItemState.AfterPickUp:
-                        brush = Brushes.White;      // 요청대로 흰색
+                        brush = Brushes.Green;      // 요청대로 흰색
                         pen = Pens.DodgerBlue;      // Empty와 구분 위해 파란 테두리
+                        break;
+                    case ItemState.Error:
+                        brush = Brushes.Red;
+                        pen = Pens.LightGray;
                         break;
                     case ItemState.Empty:
                     default:

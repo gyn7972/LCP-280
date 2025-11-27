@@ -162,8 +162,6 @@ namespace QMC.Common.Cameras
 
         public VisionImage LatestImage
         {
-
-
             get
             {
                 lock (m_ImageLock)
@@ -493,7 +491,7 @@ namespace QMC.Common.Cameras
             //if ((ret = alarm.Post(this)) != 0) return ret;
 
             //this.WriteLog(LogLevel.Highest, "{0}", code);
-            Console.WriteLine(string.Format("Error : {0}", alarmKey));
+            //Console.WriteLine(string.Format("Error : {0}", alarmKey));
 
             return ret;
         }
@@ -597,7 +595,7 @@ namespace QMC.Common.Cameras
             {
                 this.StopLive();
                 this.Sleep = true;
-                Console.WriteLine("AutoSleep : Live Off");
+                //Console.WriteLine("AutoSleep : Live Off");
             }
         }
 
@@ -866,8 +864,7 @@ namespace QMC.Common.Cameras
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-
+                Log.Write(ex);
             }
 
             return ret;
@@ -900,7 +897,7 @@ namespace QMC.Common.Cameras
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Log.Write(ex);
             }
 
             return ret;
@@ -957,7 +954,7 @@ namespace QMC.Common.Cameras
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Log.Write(ex);
                 }
                 Console.WriteLine("GrabSemaphore Release");
             }
@@ -1006,7 +1003,10 @@ namespace QMC.Common.Cameras
                 if (purpose != Purpose.Display)
                     m_CycleTimer.Start();
 
+
                 {
+                    StopLive();
+
                     if (purpose == Purpose.Display/* && this.IsControl() == false*/)
                     {
                         image = this.LatestImage;
@@ -1059,7 +1059,6 @@ namespace QMC.Common.Cameras
             finally
             {
                 ret = this.ReleaseToGrab();
-
             }
 
             return ret;

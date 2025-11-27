@@ -104,7 +104,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"EnsureFirstTabLoaded(Recipe) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -138,7 +138,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"recipe 폼 로드 중 오류: {ex.Message}");
+                Log.Write(ex);
 
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"recipe 폼 로드 중 오류 발생: {ex.Message}");
@@ -236,7 +236,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateActiveChildSize(Recipe) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

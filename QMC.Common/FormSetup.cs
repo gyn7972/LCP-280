@@ -106,7 +106,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"EnsureFirstTabLoaded(Setup) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 
@@ -207,7 +207,7 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"UpdateActiveChildSize(Setup) 실패: {ex.Message}");
+                Log.Write(ex);
             }
         }
 

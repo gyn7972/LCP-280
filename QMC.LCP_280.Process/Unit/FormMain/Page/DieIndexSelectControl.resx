@@ -130,13 +130,13 @@
     <value>맑은 고딕, 10.2pt, style=Bold</value>
   </data>
   <data name="lblDieId.Location" type="System.Drawing.Point, System.Drawing">
-    <value>145, 3</value>
+    <value>115, 3</value>
   </data>
   <data name="lblDieId.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>3, 3, 3, 3</value>
   </data>
   <data name="lblDieId.Size" type="System.Drawing.Size, System.Drawing">
-    <value>59, 25</value>
+    <value>89, 25</value>
   </data>
   <data name="lblDieId.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -202,13 +202,13 @@
     <value>맑은 고딕, 10.2pt, style=Bold</value>
   </data>
   <data name="lblDieNumber.Location" type="System.Drawing.Point, System.Drawing">
-    <value>103, 34</value>
+    <value>56, 34</value>
   </data>
   <data name="lblDieNumber.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
     <value>3, 3, 3, 3</value>
   </data>
   <data name="lblDieNumber.Size" type="System.Drawing.Size, System.Drawing">
-    <value>101, 26</value>
+    <value>148, 26</value>
   </data>
   <data name="lblDieNumber.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -351,6 +351,9 @@
   <data name="btnRotateCounterClockwise.Text" xml:space="preserve">
     <value>Next Index</value>
   </data>
+  <data name="btnRotateCounterClockwise.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="&gt;&gt;btnRotateCounterClockwise.Name" xml:space="preserve">
     <value>btnRotateCounterClockwise</value>
   </data>
@@ -387,6 +390,9 @@
   <data name="btnAutoSequence.Text" xml:space="preserve">
     <value>Auto Sequence</value>
   </data>
+  <data name="btnAutoSequence.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
   <data name="&gt;&gt;btnAutoSequence.Name" xml:space="preserve">
     <value>btnAutoSequence</value>
   </data>
@@ -422,6 +428,9 @@
   </data>
   <data name="btnReset.Text" xml:space="preserve">
     <value>Reset All</value>
+  </data>
+  <data name="btnReset.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
   </data>
   <data name="&gt;&gt;btnReset.Name" xml:space="preserve">
     <value>btnReset</value>

@@ -87,7 +87,9 @@ namespace QMC.Common.Unit
             var dio = eq?.DioScan; if (dio == null) return false;
 
             foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) 
+                    return v;
+
             return false;
         }
     }

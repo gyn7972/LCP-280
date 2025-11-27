@@ -192,7 +192,7 @@ namespace QMC.LCP_280.Process.Unit
             _scan.RefreshOnce();
             bool after = before;
             _scan.TryGetOutput(m.ModuleName, key, out after);
-            new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
+            //new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
         }
 
         // ===== Channel Binding =====

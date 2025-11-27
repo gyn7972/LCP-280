@@ -1,29 +1,32 @@
 ﻿using QMC.Common;
 using QMC.Common.PKGTester;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 {
     public partial class RankSetPage : UserControl
     {
         private Equipment equipment => Equipment.Instance;
-        private Component.MeasurementRecipe currentRecipe => equipment.EquipmentRecipe.CurrentRecipe;
+        private Component.MeasurementRecipe currentRecipe
+        {
+            get
+            {
+                if (DesignModeHelper.IsDesignMode(this)) return null;
+                var eq = Equipment.Instance;
+                return eq?.EquipmentRecipe?.CurrentRecipe;
+            }
+        }
 
-        private BinningSpecSheet tempSheet = new BinningSpecSheet();
-        private PropertyCollection pc;
-
-        private string filePath = "";
+        // --- Excel 기반 모델 ---
+        private ExcelBinningModel excelModel = new ExcelBinningModel();
+        private string excelFilePath = "";
         private bool isModified = false;
 
-        private int defaultColumnCount = 0;
+        private PropertyCollection pc;
 
         public RankSetPage()
         {
@@ -33,220 +36,322 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void RankSetPage_Load(object sender, EventArgs e)
         {
-            if (currentRecipe != null)
+            if (DesignModeHelper.IsDesignMode(this)) return;
+
+            var recipe = currentRecipe;
+            if (recipe == null) return;
+
+            excelModel.Clear();
+            excelFilePath = recipe.BinningSpecSheetFile; // 경로는 그대로 사용(확장자만 xlsx로 변경 가능)
+
+            if (!string.IsNullOrEmpty(excelFilePath) && File.Exists(excelFilePath))
             {
-                if (tempSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) == 0)
-                {
-                    filePath = currentRecipe.BinningSpecSheetPath;
-                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
-                }
+                //excelModel = DataBinningExcelLoader.Load(excelFilePath) ?? new ExcelBinningModel();
+                //lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                if (LoadSpecFile(excelFilePath))
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
                 else
-                {
-                    filePath = "";
                     lbSetNameValue.Text = "No file";
-                }
+            }
+            else
+            {
+                lbSetNameValue.Text = "No file";
             }
 
-            UpdateRankSetGrid();
+            UpdateRankSetGridExcel();
         }
 
         private void RankSetPage_VisibleChanged(object sender, EventArgs e)
         {
-            // 수정 후 저장하지 않고 다른 Page로 이동 시, 적용되지 않은 상태로 유지하기 위함
-            if (Visible)
+            if (!Visible) return;
+            if (DesignModeHelper.IsDesignMode(this)) return;
+
+            var recipe = currentRecipe;
+            if (recipe == null) return;
+
+            if (excelFilePath != recipe.BinningSpecSheetFile || isModified)
             {
-                if (currentRecipe != null)
+                excelFilePath = recipe.BinningSpecSheetFile;
+                if (!string.IsNullOrEmpty(excelFilePath) && File.Exists(excelFilePath))
                 {
-                    if (filePath != currentRecipe.BinningSpecSheetPath || isModified)
-                    {
-                        if (tempSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) == 0)
-                        {
-                            filePath = currentRecipe.BinningSpecSheetPath;
-                            lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
-                            UpdateRankSetGrid();
-                        }
-                        else
-                        {
-                            filePath = "";
-                            lbSetNameValue.Text = "";
-                            ClearRankSetGrid();
-                        }
-                    }                
+                    //excelModel = DataBinningExcelLoader.Load(excelFilePath) ?? new ExcelBinningModel();
+                    //lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                    if (LoadSpecFile(excelFilePath))
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                    else
+                        lbSetNameValue.Text = "No file";
+                    UpdateRankSetGridExcel();
                 }
+                else
+                {
+                    excelModel.Clear();
+                    lbSetNameValue.Text = "No file";
+                    dataGridRank.Rows.Clear();
+                    dataGridRank.Columns.Clear();
+                }
+                isModified = false;
             }
         }
 
         private void InitRankSetGrid()
         {
             dataGridRank.Font = new Font("맑은 고딕", 8);
+            dataGridRank.EnableHeadersVisualStyles = false;
+            dataGridRank.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.EnableResizing;
+            dataGridRank.ColumnHeadersHeight = 60;
+            dataGridRank.AllowUserToAddRows = false;
+            dataGridRank.AllowUserToDeleteRows = false;
+            dataGridRank.RowHeadersVisible = false;
 
+            dataGridRank.CellPainting += dataGridRank_CellPainting;
+        }
+
+        #region Grid Build / Update
+
+        private void UpdateRankSetGridExcel()
+        {
+            dataGridRank.SuspendLayout();
             dataGridRank.Columns.Clear();
-
-            // Bin No
-            DataGridViewColumn colBinNo = new DataGridViewTextBoxColumn();
-            colBinNo.Name = "Bin No";
-            colBinNo.HeaderText = "Bin No";
-            colBinNo.ReadOnly = true;
-            colBinNo.SortMode = DataGridViewColumnSortMode.NotSortable;
-            dataGridRank.Columns.Add(colBinNo);
-            defaultColumnCount++;
-
-            // Bin Label
-            DataGridViewColumn colBinLabel = new DataGridViewTextBoxColumn();
-            colBinLabel.Name = "Bin Label";
-            colBinLabel.HeaderText = "Bin Label";
-            colBinLabel.ReadOnly = false;
-            colBinLabel.SortMode = DataGridViewColumnSortMode.NotSortable;
-            dataGridRank.Columns.Add(colBinLabel);
-            defaultColumnCount++;
-        }
-
-        private void ClearRankSetGrid()
-        {
-            dataGridRank.SuspendLayout();
             dataGridRank.Rows.Clear();
-            for (int i = dataGridRank.Columns.Count - 1; i >= defaultColumnCount; i--)
+
+            // 왼쪽 고정 컬럼들
+            dataGridRank.Columns.Add("No", "No");
+            dataGridRank.Columns.Add("BIN", "BIN");
+            dataGridRank.Columns.Add("Sub", "Sub");
+            dataGridRank.Columns.Add("Name", "Name");
+            dataGridRank.Columns.Add("OP", "OP");
+            dataGridRank.Columns.Add("NG", "NG");
+
+            foreach (DataGridViewColumn c in dataGridRank.Columns)
             {
-                dataGridRank.Columns.RemoveAt(i);
+                c.SortMode = DataGridViewColumnSortMode.NotSortable;
+                c.ReadOnly = false;
             }
-            dataGridRank.ResumeLayout();
-        }
 
-        private void UpdateRankSetGrid()
-        {
-            dataGridRank.SuspendLayout();
-
-            // 1. Clear existing rows
-            ClearRankSetGrid();
-
-            // 2. Add header Columns
-            foreach (var header in tempSheet.Headers)
+            // Item 컬럼들
+            foreach (var key in excelModel.ItemKeys)
             {
-                DataGridViewColumn col = new DataGridViewTextBoxColumn();
-                col.Name = header;
-                col.HeaderText = header;
-                col.ReadOnly = true;
+                var col = new DataGridViewTextBoxColumn();
+                col.Name = key;
+                col.HeaderText = key; // 실제 헤더 텍스트는 CellPainting에서 그림
+                col.ReadOnly = false;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGridRank.Columns.Add(col);
             }
 
-            // 3. Add rows
-            for (int binIndex = 0; binIndex < tempSheet.Specs.Count; binIndex++)
+            // 행 채우기
+            foreach (var bin in excelModel.Bins)
             {
-                var spec = tempSheet.Specs[binIndex];
+                int rowIdx = dataGridRank.Rows.Add();
+                var row = dataGridRank.Rows[rowIdx];
 
-                var row = new DataGridViewRow();
-                row.CreateCells(dataGridRank);
-                row.Cells[0].Value = (binIndex + 1).ToString(); // BIN No.
-                row.Cells[1].Value = spec.BinLabel; // Label
+                row.Cells["No"].Value = bin.No;
+                row.Cells["BIN"].Value = bin.Bin;
+                row.Cells["Sub"].Value = bin.Sub;
+                row.Cells["Name"].Value = bin.Name;
+                row.Cells["OP"].Value = bin.Op;
+                row.Cells["NG"].Value = bin.Ng;
 
-                // Items
-                for (int headerIndex = 0; headerIndex < tempSheet.Headers.Count; headerIndex++)
+                foreach (var key in excelModel.ItemKeys)
                 {
-                    var header = tempSheet.Headers[headerIndex];
-                    var item = spec.Items[header];
-
-                    row.Cells[defaultColumnCount + headerIndex].Value = item.ToString();
+                    if (bin.Items.TryGetValue(key, out var range) && !range.Ignore)
+                        row.Cells[key].Value = $"{range.Min}~{range.Max}";
+                    else
+                        row.Cells[key].Value = "";
                 }
-                dataGridRank.Rows.Add(row);
             }
 
             dataGridRank.ResumeLayout();
         }
 
+        #endregion
+
+        #region Grid Events
+
+        // 헤더 3줄(ITEM / CH1 / UNIT) 커스텀 그리기
+        private void dataGridRank_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex != -1 || excelModel == null)
+                return;
+
+            string colName = dataGridRank.Columns[e.ColumnIndex].Name;
+
+            // 기본 컬럼들은 1줄 헤더
+            if (colName == "No" || colName == "BIN" || colName == "Sub" ||
+                colName == "Name" || colName == "OP" || colName == "NG")
+            {
+                e.PaintBackground(e.CellBounds, false);
+
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    colName,
+                    e.CellStyle.Font,
+                    e.CellBounds,
+                    e.CellStyle.ForeColor,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
+                e.Handled = true;
+                return;
+            }
+
+            int idx = excelModel.ItemKeys.IndexOf(colName);
+            if (idx < 0) return;
+
+            e.PaintBackground(e.CellBounds, false);
+
+            string item = excelModel.ItemDisplayNames[idx];
+            string ch = "CH1";
+            string unit = excelModel.ItemUnits.Count > idx ? excelModel.ItemUnits[idx] : "";
+
+            Rectangle r1 = new Rectangle(e.CellBounds.Left, e.CellBounds.Top, e.CellBounds.Width, e.CellBounds.Height / 3);
+            Rectangle r2 = new Rectangle(e.CellBounds.Left, e.CellBounds.Top + e.CellBounds.Height / 3, e.CellBounds.Width, e.CellBounds.Height / 3);
+            Rectangle r3 = new Rectangle(e.CellBounds.Left, e.CellBounds.Top + (e.CellBounds.Height * 2 / 3), e.CellBounds.Width, e.CellBounds.Height / 3);
+
+            TextRenderer.DrawText(e.Graphics, item, e.CellStyle.Font, r1, e.CellStyle.ForeColor,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(e.Graphics, ch, e.CellStyle.Font, r2, Color.Black,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(e.Graphics, unit, e.CellStyle.Font, r3, Color.Black,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
+            e.Handled = true;
+        }
+
         private void dataGridRank_SelectionChanged(object sender, EventArgs e)
         {
-            int rowIndex = dataGridRank.CurrentCell?.RowIndex ?? -1;
-            int colIndex = dataGridRank.CurrentCell?.ColumnIndex ?? -1;
+            if (excelModel == null || dataGridRank.CurrentCell == null)
+                return;
+
+            int rowIndex = dataGridRank.CurrentCell.RowIndex;
+            int colIndex = dataGridRank.CurrentCell.ColumnIndex;
 
             if (rowIndex < 0 || colIndex < 0)
                 return;
 
-            int binIndex = rowIndex;
+            if (rowIndex >= excelModel.Bins.Count)
+            {
+                pcvEdit.SetProperties(null);
+                return;
+            }
+
             string header = dataGridRank.Columns[colIndex].Name;
 
-            if ((0 <= binIndex && binIndex < tempSheet.Specs.Count) && tempSheet.Headers.Contains(header))
+            if (!excelModel.ItemKeys.Contains(header))
             {
-                BinningRange item = tempSheet.Specs[binIndex].Items[header];
-                pc = item.GetPropertyCollection();
-                pcvEdit.SetProperties(pc);
-            }
-            else
-            {
-                pc = null;
                 pcvEdit.SetProperties(null);
+                return;
             }
+
+            var binItem = excelModel.Bins[rowIndex];
+            if (!binItem.Items.TryGetValue(header, out var range))
+            {
+                range = new BinningRange(header) { Ignore = true };
+                binItem.Items[header] = range;
+            }
+
+            pc = range.GetPropertyCollection();
+            pcvEdit.SetProperties(pc);
         }
 
         private void dataGridRank_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
+            if (excelModel == null) return;
+
             int rowIndex = e.RowIndex;
             int colIndex = e.ColumnIndex;
+            if (rowIndex < 0 || colIndex < 0) return;
+            if (rowIndex >= excelModel.Bins.Count) return;
 
-            if (rowIndex < 0 || colIndex < 0)
-                return;
+            var bin = excelModel.Bins[rowIndex];
+            string colName = dataGridRank.Columns[colIndex].Name;
+            var cellVal = dataGridRank.Rows[rowIndex].Cells[colIndex].Value?.ToString() ?? "";
 
-            if (dataGridRank.Columns[colIndex].Name == "Bin Label")
+            switch (colName)
             {
-                int binIndex = rowIndex;
-                string newLabel = dataGridRank.Rows[rowIndex].Cells[colIndex].Value?.ToString() ?? "";
-                if ((0 <= binIndex && binIndex < tempSheet.Specs.Count) && !string.IsNullOrEmpty(newLabel))
-                {
-                    tempSheet.Specs[binIndex].BinLabel = newLabel;
-                }
-                else
-                {
-                    // Invalid index or empty label, revert to old value
-                    dataGridRank.Rows[rowIndex].Cells[colIndex].Value = tempSheet.Specs[binIndex].BinLabel;
-                }
-                
+                case "No":
+                    bin.No = SafeInt(cellVal);
+                    break;
+                case "BIN":
+                    bin.Bin = SafeInt(cellVal);
+                    break;
+                case "Sub":
+                    bin.Sub = SafeInt(cellVal);
+                    break;
+                case "Name":
+                    bin.Name = cellVal;
+                    break;
+                case "OP":
+                    bin.Op = cellVal;
+                    break;
+                case "NG":
+                    bin.Ng = cellVal;
+                    break;
+                default:
+                    // Item Range 직접 입력 허용 (ex: "0~1")
+                    if (!excelModel.ItemKeys.Contains(colName)) break;
+
+                    if (string.IsNullOrWhiteSpace(cellVal))
+                    {
+                        if (bin.Items.ContainsKey(colName))
+                            bin.Items[colName].Ignore = true;
+                    }
+                    else if (DataBinningExcelLoader.TryRange(cellVal, out double min, out double max))
+                    {
+                        if (!bin.Items.TryGetValue(colName, out var range))
+                        {
+                            range = new BinningRange(colName);
+                            bin.Items[colName] = range;
+                        }
+                        range.Min = min;
+                        range.Max = max;
+                        range.Ignore = false;
+                    }
+                    else
+                    {
+                        MessageBox.Show("잘못된 Range 형식입니다. 예) 0~1", "Error");
+                        dataGridRank.Rows[rowIndex].Cells[colIndex].Value = "";
+                    }
+                    break;
             }
+
             isModified = true;
         }
 
-        private void btnMaxRankUpdate_Click(object sender, EventArgs e)
-        {
-            int maxRank = (int)nudMaxRank.Value;
-            if (tempSheet.Specs.Count > maxRank)
-            {
-                // max rank가 적은 경우 제거한다.
-                int deleteCount = tempSheet.Specs.Count - maxRank;
-                tempSheet.RemoveBinsFromLastBin(deleteCount);
-            }
-            else
-            {
-                // max rank가 많은 경우 추가한다.
-                int addCount = maxRank - tempSheet.Specs.Count;
-                for (int i = 0; i < addCount; i++)
-                {
-                    tempSheet.AddNewBin("NewBinLabel");
-                }
-            }
-            isModified = true;
+        #endregion
 
-            UpdateRankSetGrid();
-        }
+        #region Buttons
 
         private void btnNew_Click(object sender, EventArgs e)
         {
-            // 현재 tester에 있는 측정 아이템들을 기반으로 Header Columns을 생성한다.
-            tempSheet.Clear();
+            excelModel.Clear();
 
-            var testerHeaders = equipment.Tester.Result.Items.Keys;
-            foreach (var header in testerHeaders)
+            // Tester 결과의 헤더를 기준으로 ItemKeys 생성
+            var testerHeaders = equipment?.Tester?.Result?.Items?.Keys;
+            if (testerHeaders != null)
             {
-                tempSheet.AddHeader(header);
+                foreach (var h in testerHeaders)
+                {
+                    excelModel.ItemKeys.Add(h);
+                    excelModel.ItemDisplayNames.Add(h);
+                    excelModel.ItemUnits.Add(""); // Unit은 나중에 입력
+                }
             }
 
-            // max Rank 갯수만큼 빈을 추가한다.
             int maxRank = (int)nudMaxRank.Value;
             for (int i = 0; i < maxRank; i++)
             {
-                tempSheet.AddNewBin("NewBinLabel");
+                var bin = new ExcelBinItem
+                {
+                    No = i + 1,
+                    Bin = i + 1,
+                    Sub = 0,
+                    Name = $"SV700-HA-A-{(i + 1):D2}"
+                };
+                excelModel.Bins.Add(bin);
             }
-            isModified = true;
 
-            UpdateRankSetGrid();
+            isModified = true;
+            UpdateRankSetGridExcel();
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -254,32 +359,37 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             using (OpenFileDialog dialog = new OpenFileDialog())
             {
                 dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "BinningSpecSheet");
-                dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
-                dialog.Title = "Open Binning Spec Sheet";
+                dialog.Filter =
+                        "Spec Files (*.xlsx;*.xls;*.bin)|*.xlsx;*.xls;*.bin|Excel (*.xlsx;*.xls)|*.xlsx;*.xls|BIN (*.bin)|*.bin";
+
+                dialog.Title = "Open Excel Spec Sheet";
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var filePath = dialog.FileName;
-                    if (tempSheet.LoadFromFile(dialog.FileName) == 0)
-                    {
-                        // Apply
-                        equipment.Tester.LoadBinningSpecSheet(filePath);
-                        if (currentRecipe != null)
-                        {
-                            currentRecipe.BinningSpecSheetPath = filePath;
-                            currentRecipe.Save();
-                        }
-
-                        this.filePath = filePath;
-                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
-                        isModified = false;
-
-                        UpdateRankSetGrid();
-                    }
-                    else
+                    var path = dialog.FileName;
+                    //var model = DataBinningExcelLoader.Load(path);
+                    //if (model == null)
+                    //{
+                    //    MessageBox.Show("Failed to load excel file.", "Error");
+                    //    return;
+                    //}
+                    if (!LoadSpecFile(path))
                     {
                         MessageBox.Show("Failed to load file.", "Error");
+                        return;
                     }
+                    //excelModel = model;
+                    excelFilePath = path;
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                    isModified = false;
+
+                    if (currentRecipe != null)
+                    {
+                        currentRecipe.BinningSpecSheetFile = excelFilePath;
+                        currentRecipe.Save();
+                    }
+
+                    UpdateRankSetGridExcel();
                 }
             }
         }
@@ -289,63 +399,176 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
                 dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "BinningSpecSheet");
-                dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
-                dialog.Title = "Save Binning Spec Sheet";
+                //dialog.Filter = "Excel Files (*.xlsx)|*.xlsx|All Files (*.*)|*.*";
+                dialog.Filter =
+                        "Spec Files (*.xlsx;*.xls;*.bin)|*.xlsx;*.xls;*.bin|Excel (*.xlsx)|*.xlsx|BIN (*.bin)|*.bin";
+
+                dialog.Title = "Save Excel Spec Sheet";
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var filePath = dialog.FileName;
-                    if (tempSheet.SaveToFile(dialog.FileName) == 0)
+                    var path = dialog.FileName;
+                    if (SaveSpecFile(path))
                     {
-                        // Apply
-                        equipment.Tester.LoadBinningSpecSheet(filePath);
+                        excelFilePath = path;
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                        isModified = false;
+
                         if (currentRecipe != null)
                         {
-                            currentRecipe.BinningSpecSheetPath = filePath;
+                            currentRecipe.BinningSpecSheetFile = excelFilePath;
                             currentRecipe.Save();
                         }
 
-                        this.filePath = filePath;
-                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
-                        isModified = false;
+                        MessageBox.Show("Saved.");
                     }
                     else
                     {
-                        MessageBox.Show("Failed to save file.", "Error");
+                        MessageBox.Show("Failed to save spec file.", "Error");
                     }
+                    //if (DataBinningExcelLoader.Save(path, excelModel) == 0)
+                    //{
+                    //    excelFilePath = path;
+                    //    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(excelFilePath);
+                    //    isModified = false;
+
+                    //    if (currentRecipe != null)
+                    //    {
+                    //        currentRecipe.BinningSpecSheetFile = excelFilePath;
+                    //        currentRecipe.Save();
+                    //    }
+
+                    //    MessageBox.Show("Saved.");
+                    //}
+                    //else
+                    //{
+                    //    MessageBox.Show("Failed to save excel file.", "Error");
+                    //}
                 }
             }
+        }
+
+        private void btnMaxRankUpdate_Click(object sender, EventArgs e)
+        {
+            int maxRank = (int)nudMaxRank.Value;
+            if (excelModel == null) return;
+
+            if (excelModel.Bins.Count > maxRank)
+            {
+                excelModel.Bins.RemoveRange(maxRank, excelModel.Bins.Count - maxRank);
+            }
+            else
+            {
+                for (int i = excelModel.Bins.Count; i < maxRank; i++)
+                {
+                    var bin = new ExcelBinItem
+                    {
+                        No = i + 1,
+                        Bin = i + 1,
+                        Sub = 0,
+                        Name = $"SV700-HA-A-{(i + 1):D2}"
+                    };
+                    excelModel.Bins.Add(bin);
+                }
+            }
+
+            isModified = true;
+            UpdateRankSetGridExcel();
         }
 
         private void btnModify_Click(object sender, EventArgs e)
         {
-            int rowIndex = dataGridRank.CurrentCell?.RowIndex ?? -1;
-            int colIndex = dataGridRank.CurrentCell?.ColumnIndex ?? -1;
-
-            if (rowIndex < 0 || colIndex < 0)
+            if (excelModel == null || dataGridRank.CurrentCell == null || pc == null)
                 return;
 
-            int binIndex = rowIndex;
-            string header = dataGridRank.Columns[colIndex].Name;
+            int rowIndex = dataGridRank.CurrentCell.RowIndex;
+            int colIndex = dataGridRank.CurrentCell.ColumnIndex;
 
-            if ((0 <= binIndex && binIndex < tempSheet.Specs.Count) && tempSheet.Headers.Contains(header))
+            if (rowIndex < 0 || colIndex < 0 || rowIndex >= excelModel.Bins.Count)
+                return;
+
+            string key = dataGridRank.Columns[colIndex].Name;
+            if (!excelModel.ItemKeys.Contains(key))
+                return;
+
+            pcvEdit.Apply();
+
+            var tmp = new BinningRange(key);
+            tmp.ApplyValueFromPropertyCollection(pc);
+            if (!tmp.Validate())
             {
-                pcvEdit.Apply();
-
-                BinningRange tempItem = new BinningRange("");
-                tempItem.ApplyValueFromPropertyCollection(pc);
-                if (!tempItem.Validate())
-                {
-                    MessageBox.Show("Invalid value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                BinningRange item = tempSheet.Specs[binIndex].Items[header];
-                item.CopyFrom(tempItem);
-                isModified = true;
-
-                UpdateRankSetGrid();
+                MessageBox.Show("Invalid value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            var bin = excelModel.Bins[rowIndex];
+            if (!bin.Items.TryGetValue(key, out var range))
+            {
+                range = new BinningRange(key);
+                bin.Items[key] = range;
+            }
+            range.CopyFrom(tmp);
+
+            isModified = true;
+            UpdateRankSetGridExcel();
         }
+
+        #endregion
+
+        #region Util
+
+        private int SafeInt(string s)
+        {
+            if (int.TryParse(s, out var v)) return v;
+            return 0;
+        }
+
+
+        // ------------------------------------------------------------------
+        // 파일 타입 자동 구분 로더
+        // ------------------------------------------------------------------
+        private bool LoadSpecFile(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return false;
+
+            string ext = Path.GetExtension(path).ToLower();
+
+            if (ext == ".xlsx" || ext == ".xls")
+            {
+                excelModel = DataBinningExcelLoader.Load(path) ?? new ExcelBinningModel();
+                return true;
+            }
+            else if (ext == ".bin")
+            {
+                excelModel = DataBinningBinLoader.LoadBIN(path) ?? new ExcelBinningModel();
+                return true;
+            }
+
+            return false;
+        }
+
+        // ------------------------------------------------------------------
+        // 파일 타입 자동 구분 저장
+        // ------------------------------------------------------------------
+        private bool SaveSpecFile(string path)
+        {
+            string ext = Path.GetExtension(path).ToLower();
+
+            if (ext == ".xlsx" || ext == ".xls")
+            {
+                return DataBinningExcelLoader.Save(path, excelModel) == 0;
+            }
+            else if (ext == ".bin")
+            {
+                return DataBinningBinLoader.SaveBIN(path, excelModel) == 0;
+            }
+
+            return false;
+        }
+
+
+
+        #endregion
     }
 }

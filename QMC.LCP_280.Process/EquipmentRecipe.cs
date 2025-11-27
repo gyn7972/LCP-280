@@ -11,7 +11,7 @@ namespace QMC.LCP_280.Process
         // ===== Global MeasurementRecipe System =====
         #region Global MeasurementRecipe
 
-        public MeasurementRecipe CurrentRecipe { get; private set; }
+        public MeasurementRecipe CurrentRecipe { get; set; }
         public string CurrentRecipeName => CurrentRecipe?.Name ?? _currentRecipeNameFallback;
         public static event EventHandler<MeasurementRecipeChangedEventArgs> CurrentRecipeChanged;
 

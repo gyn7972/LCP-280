@@ -885,7 +885,7 @@ namespace QMC.LCP_280.Process.Component
                 list_SelectedSlots.Items.Clear();
                 if (selectedInOrder.Count == 0)
                 {
-                    list_SelectedSlots.Items.Add("없음");
+                    list_SelectedSlots.Items.Add("None");
                 }
                 else
                 {

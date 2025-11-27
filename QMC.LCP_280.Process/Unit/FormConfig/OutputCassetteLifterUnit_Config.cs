@@ -274,6 +274,47 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(ex);
             }
+
+            //교체하자.
+            //try
+            //{
+            //    if (_unit == null)
+            //        return;
+
+            //    int nRet = 0;
+
+            //    string tpName = string.Empty;
+            //    var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
+            //    if (hasName)
+            //    {
+            //        InputCassetteLifterConfig.TeachingPositionName en;
+            //        if (Enum.TryParse(tpName, out en))
+            //        {
+            //            switch (en)
+            //            {
+            //                case InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1:
+            //                    //nRet = await Task.Run(() => _unit.Move(e.IsFine));
+            //                    //if (nRet != 0)
+            //                    //{
+            //                    //    new MessageBoxOk().ShowDialog("Error.", "UnloadOffset 이동 실패");
+            //                    //    return;
+            //                    //}
+            //                    break;
+
+            //                default:
+            //                    nRet = -1; // Unknown position
+            //                    break;
+            //            }
+            //        }
+            //    }
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+
+            //new MessageBoxOk().ShowDialog("Infor.", "이동 완료");
         }
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)

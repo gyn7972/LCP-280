@@ -410,9 +410,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             btnNextIndex.Enabled = btnPrevIndex.Enabled = true;
             // 필요시 한 번만 구독 유지: 해제
-            var r = sender as Rotary;
-            if (r != null)
-                r.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
+            //var r = sender as Rotary;
+            //if (r != null)
+            //    r.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
         }
 
         private void btnStop_Click(object sender, EventArgs e)

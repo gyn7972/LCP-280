@@ -306,7 +306,7 @@ namespace QMC.Common
             //AutoRunTracker.OnAutoStop();
 
             // 로그를 기록한다.
-            Console.WriteLine(string.Format("[Cycle Time] Interval: {0} msec, Start: {1}, End: {2}", cycleTime.Interval.TotalMilliseconds, cycleTime.Start.ToString("yyyy-MM-dd HH:mm:ss.fff"), cycleTime.End.ToString("yyyy-MM-dd HH:mm:ss.fff")));
+            //Console.WriteLine(string.Format("[Cycle Time] Interval: {0} msec, Start: {1}, End: {2}", cycleTime.Interval.TotalMilliseconds, cycleTime.Start.ToString("yyyy-MM-dd HH:mm:ss.fff"), cycleTime.End.ToString("yyyy-MM-dd HH:mm:ss.fff")));
         }
 
         /// <summary>

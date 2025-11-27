@@ -298,8 +298,9 @@ namespace QMC.Common.PKGTester
                         break;
                     }
                 }
-                if (allIgnore)
-                    return false;
+                //allIgnore 여도 상관없잖아? 
+                //if (allIgnore)
+                //    return false;
             }
 
             // 판단 기준이 중복되는 BinningSpec이 있는지 검사
@@ -316,8 +317,9 @@ namespace QMC.Common.PKGTester
                             break;
                         }
                     }
-                    if (allSame)
-                        return false;
+                    //중복되도 상관없잖아?
+                    //if (allSame)
+                    //    return false;
                 }
             }
             return true;
