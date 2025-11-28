@@ -1,4 +1,5 @@
-﻿using QMC.Common.Alarm;
+﻿using NPOI.SS.Formula.Functions;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion.Ajin;
 // CKD
@@ -665,14 +666,21 @@ namespace QMC.Common.Motions
                     {
                         return 0;
                     }
-                    //bool b1 = Status.State.InpositionDone;
-                    //bool b2 = Status.State.Inposition;
-                    //bool b3 = Status.State.Done;
-                    //if (b1 && b2 && b3)
-                    //{
-                    //    return 0;
-                    //}
-                    Thread.Sleep(2);
+                    double dCurPos = this.GetPosition() * 1000;
+                    double dRemainPos = dCurPos % 45;
+                    if(dRemainPos >(45 - this.Config.InposTolerance))
+                    {
+                        Log.Write("KKKKK", "End First _ " + dRemainPos.ToString());
+                        return 0;
+                    }
+                        //bool b1 = Status.State.InpositionDone;
+                        //bool b2 = Status.State.Inposition;
+                        //bool b3 = Status.State.Done;
+                        //if (b1 && b2 && b3)
+                        //{
+                        //    return 0;
+                        //}
+                        Thread.Sleep(2);
                 }
             }
             else

@@ -107,6 +107,16 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(20.0)]
         public double SafeStageRectHalfHeightY { get; set; }
 
+        [Category("TCorrection"), DisplayName("TCorrection Use")]
+        [DefaultValue(false)]
+        [JsonProperty("TCorrectionMode")]
+        public bool TCorrectionMode { get; set; }
+
+        [Category("TCorrectionFile"), DisplayName("TCorrectionFile")]
+        [DefaultValue("")]
+        [JsonProperty("TCorrectionFile")]
+        public string TCorrectionFile { get; set; }
+
 
         public OutputStageConfig() : base("OutputStageConfig") { }
 

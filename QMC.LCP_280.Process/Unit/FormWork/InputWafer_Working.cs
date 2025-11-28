@@ -420,7 +420,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         }
                     }
                 }
-                _InputWaferCameraviewer.Refresh();
+                _InputWaferCameraviewer.ResumeDisplay();
             }
             catch (Exception ex)
             {

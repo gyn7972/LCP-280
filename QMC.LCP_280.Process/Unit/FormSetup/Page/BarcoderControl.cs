@@ -216,6 +216,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                     return;
                 }
 
+                isAutoTriggerMode = true;
                 // 부모 Form으로 이벤트 전달
                 ScanRequested?.Invoke(this, new BarcoderScanEventArgs
                 {

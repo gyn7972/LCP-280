@@ -548,6 +548,7 @@
     </Compile>
     <Compile Include="StrainGage\StrainGageLookupTable.cs" />
     <Compile Include="StrainGage\StrainGageMonitor.cs" />
+    <Compile Include="ThetaCorrection\LinkTypeXYTStageCorrection.cs" />
     <Compile Include="TopContentsIOStatusControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

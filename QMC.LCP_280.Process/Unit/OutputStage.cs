@@ -7,11 +7,15 @@ using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.PKGTester;
+using QMC.Common.ThetaCorrection;
 using QMC.Common.Unit;
+using QMC.Common.Vision;
 using QMC.Common.VisionPart;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System; // added for Obsolete attribute
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -27,7 +31,9 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit<OutputStageConfig>
     {
-        // 다이 배치 이벤트
+        public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
+
+        public LinkTypeXYTStageCorrection linkTypeXYTStageCorrection { get; set; }
         public sealed class DiePlacedEventArgs : EventArgs
         {
             public MaterialDie Die { get; }
@@ -155,7 +161,22 @@ namespace QMC.LCP_280.Process.Unit
         // OutStage camera
         public HIKGigECamera OutStageCamera { get; private set; }
         public string OutStageCameraKey { get; set; } = "Out_Stage";
+        public PatternMatchingRunner _pmRunner;
+        // Pattern Matching Runner (간소화: Recipe 자동 관리)
+        public PatternMatchingRunner PmRunner
+        {
+            get
+            {
+                if (_pmRunner == null)
+                {
+                    _pmRunner = VisionRunnerHub.GetOrCreate(OutStageCameraKey);
+                }
+                return _pmRunner;
+            }
+        }
 
+
+        //Unit
         OutputDieTransfer OutputDieTransfer { get; set; }
         OutputFeeder OutputFeeder { get; set; }
         OutputCassetteLifter OutputCassetteLifter { get; set; }
@@ -177,6 +198,11 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
             BindCamera();
+
+            if(Config.TCorrectionMode)
+            {
+                LoadTCorrectionCsvAndApply(Config.TCorrectionFile);
+            }
         }
 
         protected override void OnBindUnit()
@@ -604,6 +630,7 @@ namespace QMC.LCP_280.Process.Unit
             return this.IsOutputOn(OutputStageConfig.IO.VACUUM);
         }
         #endregion
+
 
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
         /// <summary>
@@ -1589,21 +1616,10 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        private IOrderedEnumerable<MaterialDie> OrderEmptyDiesForPlacement(IEnumerable<MaterialDie> dies)
-        {
-            // 좌하단부터: 현재 좌표계가 우상단 원점(0,0)처럼 동작하는 경우
-            // BinY, BinX 모두 내림차순으로 정렬하면 물리적 좌하단부터 선택됨
-            return dies
-                .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
-                .OrderByDescending(d => d.BinY)
-                .ThenByDescending(d => d.BinX);
-        }
-
-
         // 다음 빈 Bin 예약: 정렬 제거, 리스트 순서(경로 순서) 사용
-        public bool TryReserveNextEmptyBin(out double binX, out double binY, out MaterialDie slot)
+        public bool TryReserveNextEmptyBin(MaterialDie die, out double binX, out double binY, out double dT, out MaterialDie slot)
         {
-            binX = binY = -1;
+            binX = binY = dT = -1;
             slot = null;
 
             var wafer = GetMaterialWafer();
@@ -1636,8 +1652,42 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
 
             _currentDie = next;
+
+            double dx = 0; 
+            double dy = 0; 
+            double dt = 0;
+            if(die != null)
+            {
+                dx = die.UnloadAlignOffsetX;
+                dy = die.UnloadAlignOffsetY;
+                dt = die.UnloadAlignOffsetT;
+            }
+            
+            double dStagePosT = AxisT?.GetPosition() ?? 0.0;
+
+            // 지정 Bin 위치로 XY 이동
             binX = next.BinX;
             binY = next.BinY;
+            var (tx, ty) = GetBinWorldPosition(binX, binY);
+
+            if(Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
+            {
+                XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
+                XyCoordinate xyCoordinateVision = new XyCoordinate(dx, dy);
+
+                this.linkTypeXYTStageCorrection.GetCorrectionPoint(dt, xyCoordinateTarget, xyCoordinateVision, out var pointD, out double t);
+                binX = pointD.X;
+                binY = pointD.Y;
+                dT = t;
+            }
+            else
+            {
+                double baseT = GetTeahcingPosCenterT();
+                binX = tx + dx;
+                binY = ty + dy;
+                dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
+            }
+
             slot = next;
 
             bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
@@ -1647,50 +1697,9 @@ namespace QMC.LCP_280.Process.Unit
                 $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByOutTr={matchedOutTr}, MatchedByRotary={matchedRotary}");
 
             return true;
-
-
-
-            //binX = binY = -1;
-            //slot = null;
-            //var wafer = GetMaterialWafer();
-            //if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
-            //    return false;
-
-            //// “미배치 대상” 정의: Placed/Rejected가 아닌 다이
-            //Func<MaterialDie, bool> isUnplaced = d =>
-            //    d != null &&
-            //    d.State != DieProcessState.Placed &&
-            //    d.State != DieProcessState.Rejected;
-
-            //var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
-            //var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
-            //MaterialDie next = null;
-
-            //if (dieRotary != null)
-            //    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
-
-            //if (next == null && dieOutTr != null)
-            //    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
-
-            //if (next == null)
-            //    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d));
-
-            //if (next == null)
-            //    return false;
-
-            //_currentDie = next;
-            //binX = next.BinX;
-            //binY = next.BinY;
-            //slot = next;
-
-            //bool matched = (dieRotary != null && next.Index == dieRotary.Index);
-            //Log.Write(UnitName, "TryReserveNextEmptyBin",
-            //    $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByRotaryIndex={matched}");
-            //return true;
-
-
         }
-       
+
+
         public (double x, double y) GetBinWorldPosition(double binX, double binY)
         {
             var eq = Equipment.Instance;
@@ -1771,20 +1780,65 @@ namespace QMC.LCP_280.Process.Unit
         //    return (targetX, targetY);
         //}
 
-        public int MoveToBinPosition(double binX, double binY, bool isFine = false)
+        public int MoveToBinPosition(double binX, double binY, double dT, bool isFine = false)
         {
             // 지정 Bin 위치로 XY 이동
-            var (tx, ty) = GetBinWorldPosition(binX, binY);
+            //var (tx, ty) = GetBinWorldPosition(binX, binY);
 
             int rc = 0;
-            if (AxisX != null) rc |= MoveAxisPositionOne(AxisX, tx, isFine);
-            if (AxisY != null) rc |= MoveAxisPositionOne(AxisY, ty, isFine);
+            List<Task<int>> tasks = new List<Task<int>>();
+            Task<int> t = MoveAxisPositionOneAsync(AxisX, binX, isFine);
+            tasks.Add(t);
+            t = MoveAxisPositionOneAsync(AxisY, binY, isFine);
+            tasks.Add(t);
+            t = MoveAxisPositionOneAsync(AxisT, dT, isFine);
             
+            tasks.Add(t);
+            foreach(var v in tasks)
+            {
+                v.Wait();
+                if(v.Result != 0)
+                {
+                    rc = v.Result;
+                }
+            }
+
             if (rc != 0) 
                 return -1;
 
             return 0;
         }
+
+        public int MoveToPositionXY(double dX, double dY, bool isFine = true)
+        {
+            double tx = dX;// + (AxisX?.GetPosition() ?? 0.0);
+            double ty = dY;// + (AxisY?.GetPosition() ?? 0.0);
+            
+            int rc = 0;
+            if (AxisX != null) rc |= MoveAxisPositionOne(AxisX, tx, isFine);
+            if (AxisY != null) rc |= MoveAxisPositionOne(AxisY, ty, isFine);
+
+            if (rc != 0)
+                return -1;
+
+            return 0;
+        }
+
+        public int MoveToPositionT(double dT, bool isFine = true)
+        {
+            double tT = dT + (AxisT?.GetPosition() ?? 0.0);
+
+            int rc = 0;
+            if (AxisT != null) rc |= MoveAxisPositionOne(AxisT, tT, isFine);
+
+            if (rc != 0)
+                return -1;
+
+            return 0;
+        }
+
+
+
         #region Update UI
         public void OnDiePlaced(MaterialDie die)
         {
@@ -2270,6 +2324,632 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
+        public bool IsStatus_AlignDoneXY { get; set; }
+        public bool IsAlignResult { get; set; }
+        public double dLastFoundX { get; set; }
+        public double dLastFoundY { get; set; }
+        public double dLastFoundAngle { get; private set; }
 
+
+        public int AlignXY(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            IsStatus_AlignDoneXY = false;
+            IsAlignResult = false;
+            dLastFoundX = 0.0;
+            dLastFoundY = 0.0;
+            dLastFoundAngle = 0.0;
+
+            if (Config.IsSimulation || this.Config.IsDryRun)
+            {
+                IsAlignResult = true;
+                IsStatus_AlignDoneXY = true;
+                dLastFoundX = 0.0;
+                dLastFoundY = 0.0;
+                dLastFoundAngle = 0.0;
+                return 0;
+            }
+            try
+            {
+                VisionImage img = null;
+                double dX = 0;
+                double dY = 0;
+                double dAngle = 0;
+                OutStageCamera.SuspendedImageDisplay = true;
+                OutStageCamera.GrabSync(out img);
+                var result = PmRunner.Search(img);
+                if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
+                {
+                    int repIdx = 2;// (result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count) ? result.ReferenceIndex : 0;
+                    RaiseMarks(img, result.Matches.ToArray(), repIdx);
+                    OutStageCamera.SuspendedImageDisplay = false;
+                }
+
+                if (result.Success)
+                {
+                    IsAlignResult = true;
+                    dX = result.X;
+                    dY = result.Y;
+                    dAngle = result.R;
+                }
+                else
+                {
+                    IsAlignResult = false;
+                    dX = 0;
+                    dY = 0;
+                    dAngle = 0;
+                }
+
+                PointD pt = GetPixelToMmScale(dX, dY);
+                dLastFoundX = pt.X;
+                dLastFoundY = pt.Y;
+                dLastFoundAngle = dAngle;
+                Log.Write(UnitName, "AlignXY",
+                    $"VisionX={dLastFoundX:F4}, " +
+                    $"VisionY={dLastFoundY:F4}, " +
+                    $"VisionAngle={dLastFoundAngle:F4}");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                IsStatus_AlignDoneXY = true;
+            }
+            return nRet;
+        }
+
+        PointD GetPixelToMmScale(double dX, double dY)
+        {
+            double mmPerPixelX = (dX - OutStageCamera.CameraConfig.Resolution.Width / 2) * OutStageCamera.CameraConfig.Scale.X;
+            double mmPerPixelY = (dY - OutStageCamera.CameraConfig.Resolution.Height / 2) * OutStageCamera.CameraConfig.Scale.Y;
+            return new PointD(mmPerPixelX, mmPerPixelY);
+        }
+
+        private void RaiseMarks(VisionImage img,
+                            QMC.Common.Vision.Tools.PatternMatchingResult.PatternMatchingResultValue[] matches,
+                            int representativeIndex)
+        {
+            int trainW = 0, trainH = 0;
+            try
+            {
+                var ti = PmRunner?.Parameters?.TrainImages?
+                         .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
+            }
+            catch { }
+
+            var e = new PatternMarksFoundEventArgs
+            {
+                Image = img,
+                RepresentativeIndex = representativeIndex
+            };
+            foreach (var m in matches)
+            {
+                e.Marks.Add(new PatternMatchInfo
+                {
+                    X = m.X,
+                    Y = m.Y,
+                    AngleDeg = m.R,
+                    Score = m.Score,
+                    TrainW = trainW,
+                    TrainH = trainH
+                });
+            }
+            try { MarksFound?.Invoke(this, e); } catch { }
+        }
+
+
+
+        
+
+        // T 보정 스캔 결과 레코드
+        public sealed class TCorrectionRecord
+        {
+            public int MarkIndex { get; set; }
+            public double AngleDeg { get; set; }          // 기준 T + 상대각
+            public double StageX { get; set; }
+            public double StageY { get; set; }
+            public double StageT { get; set; }            // 실제 스테이지 T 절대값
+            public double FoundOffsetX { get; set; }      // Vision 결과(mm) 기준 중심 대비 오프셋
+            public double FoundOffsetY { get; set; }
+            public double FoundAngle { get; set; }        // Vision이 찾은 패턴 각도(AlignXY에서 dLastFoundAngle)
+            public bool AlignSuccess { get; set; }
+        }
+
+        // T 보정 전체 결과 (마크1~4)
+        public List<TCorrectionRecord> TCorrectionResults { get; } = new List<TCorrectionRecord>();
+
+        // 스캔 샘플 캡쳐 시 UI 갱신용 이벤트
+        public event EventHandler<TCorrectionRecord> TCorrectionSampleCaptured;
+
+        public double GetTeahcingPosCenterT()
+        {
+            //1) T축 보정 시작
+            // 기준 T: CenterPoint Teaching의 T 사용
+            var tpCenter = Config.GetTeachingPosition(OutputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            double baseT = 0.0;
+            if (tpCenter?.AxisPositions != null &&
+                tpCenter.AxisPositions.TryGetValue(AxisNames.BinStageT, out var centerT))
+            {
+                baseT = centerT;
+            }
+            //else
+            //{
+            //    baseT = AxisT.GetPosition();
+            //}
+
+            return baseT;
+        }
+
+        public int StartTCorrection(IReadOnlyList<(double X, double Y)> marks,
+            double rangeDeg, double stepDeg, bool fineSpeed,
+            System.Threading.CancellationToken ct)
+        {
+            int nRet = 0;
+
+            if (marks == null || marks.Count < 4)
+            {
+                Log.Write(UnitName, "StartTCorrection", "marks 부족(4개 필요)");
+                return -1;
+            }
+
+            if (rangeDeg <= 0) rangeDeg = 4.0;
+            if (stepDeg <= 0) stepDeg = 0.1;
+            if (stepDeg > rangeDeg) stepDeg = rangeDeg;
+
+            TCorrectionResults.Clear();
+            if (AxisT == null || AxisX == null || AxisY == null)
+            {
+                Log.Write(UnitName, "StartTCorrection", "Axis binding missing");
+                return -1;
+            }
+
+            if (!Config.IsSimulation && OutStageCamera == null)
+            {
+                Log.Write(UnitName, "StartTCorrection", "Camera not bound");
+                return -1;
+            }
+
+            try
+            {
+                ////1) T축 보정 시작
+                double baseT = GetTeahcingPosCenterT();
+
+                // 마크 1~4 순회
+                //for (int markIndex = 0; markIndex < 4; markIndex++)
+                for (int markIndex = 0; markIndex < 4; markIndex++)
+                {
+                    if (ct.IsCancellationRequested) { Log.Write(UnitName, "StartTCorrection", "Cancelled before mark loop"); return -2; }
+
+                    var (mx, my) = marks[markIndex];
+                    // XY 이동
+                    int rc = MoveToPositionXY(mx, my, isFine: fineSpeed);
+                    if (rc != 0)
+                    {
+                        Log.Write(UnitName, "StartTCorrection", $"MoveToPositionXY Mark{markIndex + 1} Fail");
+                        return rc;
+                    }
+
+                    // 기준 T로 이동
+                    rc = MoveAxisPositionOne(AxisT, baseT, isFine: fineSpeed);
+                    if (rc != 0)
+                    {
+                        Log.Write(UnitName, "StartTCorrection", $"MoveAxisPositionOne(T) Mark{markIndex + 1} Fail");
+                        return rc;
+                    }
+
+                    // 각도 스캔: -range ~ +range
+                    double startDeg = -rangeDeg;
+                    double endDeg = +rangeDeg;
+                    // 방향: 사용자가 예시로 -4~+4라 했으므로 오름차순
+                    for(int iter = 0; iter < 2; iter ++)
+                    {
+                        int nDir = 1;
+                        if (iter == 0)
+                        {
+                            nDir = -1;
+                        }
+                        rc = MoveToPositionXY(mx, my, isFine: fineSpeed);
+                        if (rc != 0)
+                        {
+                            Log.Write(UnitName, "StartTCorrection", $"MoveToPositionXY Mark{markIndex + 1} Fail");
+                            return rc;
+                        }
+                        for (double rel = stepDeg*iter; rel <= rangeDeg; rel += stepDeg)
+                        {
+                            if (ct.IsCancellationRequested) { Log.Write(UnitName, "StartTCorrection", "Cancelled during angle scan"); return -2; }
+
+                            double targetT = baseT + rel * nDir;
+                            rc = MoveAxisPositionOne(AxisT, targetT, isFine: fineSpeed);
+                            if (rc != 0)
+                            {
+                                Log.Write(UnitName, "StartTCorrection", $"T move failed Mark{markIndex + 1} rel={rel:F3}");
+                                return rc;
+                            }
+
+                            rc = AlignXY(bFineSpeed: fineSpeed);
+                            bool success = (rc == 0) && IsAlignResult;
+
+                            var rec = new TCorrectionRecord
+                            {
+                                MarkIndex = markIndex + 1,
+                                AngleDeg = rel,
+                                StageX = AxisX.GetPosition(),
+                                StageY = AxisY.GetPosition(),
+                                StageT = AxisT.GetPosition(),
+                                FoundOffsetX = dLastFoundX,
+                                FoundOffsetY = dLastFoundY,
+                                FoundAngle = dLastFoundAngle,
+                                AlignSuccess = success
+                            };
+                            TCorrectionResults.Add(rec);
+                            try { TCorrectionSampleCaptured?.Invoke(this, rec); } catch { }
+
+                            //rc = MoveToPositionXY(mx, my, isFine: fineSpeed);
+                            //if (rc != 0)
+                            //{
+                            //    Log.Write(UnitName, "StartTCorrection", $"MoveToPositionXY Mark{markIndex + 1} Fail");
+                            //    return rc;
+                            //}
+
+                            double dX = AxisX.GetPosition() + dLastFoundX;
+                            double dY = AxisY.GetPosition() + dLastFoundY;
+
+                            rc = MoveToPositionXY(dX, dY, isFine: fineSpeed);
+                            if (rc != 0)
+                            {
+                                Log.Write(UnitName, "StartTCorrection", $"MoveToPositionXY Mark{markIndex + 1} Fail");
+                                return rc;
+                            }
+
+
+                            Log.Write(UnitName, "TCorrectionSample",
+                                $"Mark={markIndex + 1}, RelT={rel:F3}, StageT={rec.StageT:F3}, " +
+                                $"FoundX={rec.FoundOffsetX:F4}, FoundY={rec.FoundOffsetY:F4}, " +
+                                $"Angle={rec.FoundAngle:F4}, Success={success}");
+                        }
+                    }
+                    
+                }
+
+                Log.Write(UnitName, "StartTCorrection", $"Completed. Total samples={TCorrectionResults.Count}");
+                return 0;
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                Log.Write(UnitName, "StartTCorrection", ex.Message);
+                return -1;
+            }
+        }
+
+        // OutputStage 클래스 내부에 CSV 저장 메서드 추가
+        public void SaveTCorrectionCsv(string path,
+                                       IReadOnlyList<(double X, double Y)> marks,
+                                       double rangeDeg,
+                                       double stepDeg)
+        {
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("path");
+            if (marks == null || marks.Count < 4) throw new ArgumentException("marks must have 4 points");
+
+            using (var w = new StreamWriter(path, false, Encoding.UTF8))
+            {
+                // Meta header
+                w.WriteLine("#TCorrectionMeta");
+                w.WriteLine(string.Format(CultureInfo.InvariantCulture, "RangeDeg={0:F3}", rangeDeg));
+                w.WriteLine(string.Format(CultureInfo.InvariantCulture, "StepDeg={0:F3}", stepDeg));
+                for (int i = 0; i < 4; i++)
+                {
+                    var (mx, my) = marks[i];
+                    // 이미지 포맷 예시에 맞춰 "MarkN=X,Y"
+                    w.WriteLine(string.Format(CultureInfo.InvariantCulture, "Mark{0}={1:F6},{2:F6}", i + 1, mx, my));
+                }
+
+                // Data section
+                w.WriteLine("---DATA---");
+                w.WriteLine("MarkIndex,Index,Angle,ImageX,ImageY,ImageT,StageX,StageY,StageT,CalX,CalY,CalT");
+
+                // Index는 1부터 증가
+                int index = 0;
+                foreach (var r in TCorrectionResults)
+                {
+                    index++;
+
+                    // ImageX/ImageY: FoundOffsetX/FoundOffsetY 사용
+                    // Score: AlignSuccess -> 1/0
+                    string calX = ""; string calY = ""; string calT = "";
+
+                    w.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "{0},{1},{2:F3},{3:F3},{4:F3},{5:F3},{6:F3},{7:F3},{8:F3},{9:F3},{10:F3},{11:F3}",
+                        r.MarkIndex,
+                        index,
+                        r.AngleDeg,
+                        r.FoundOffsetX,
+                        r.FoundOffsetY,
+                        r.FoundAngle,
+                        r.StageX,
+                        r.StageY,
+                        r.StageT,
+                        calX,
+                        calY,
+                        calT));
+                }
+            }
+        }
+
+        // 필요 시: 보정 실행 후 바로 저장하는 헬퍼
+        public int StartTCorrectionAndSave(IReadOnlyList<(double X, double Y)> marks,
+                                           double rangeDeg, double stepDeg, bool fineSpeed,
+                                           System.Threading.CancellationToken ct,
+                                           string saveCsvPath)
+        {
+            var rc = StartTCorrection(marks, rangeDeg, stepDeg, fineSpeed, ct);
+            if (rc == 0)
+            {
+                try
+                {
+                    SaveTCorrectionCsv(saveCsvPath, marks, rangeDeg, stepDeg);
+                    Log.Write(UnitName, "StartTCorrectionAndSave", $"Saved: {saveCsvPath}");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "StartTCorrectionAndSave", $"Save failed: {ex.Message}");
+                    return -3;
+                }
+            }
+            return rc;
+        }
+
+        /// <summary>
+        /// SaveTCorrectionCsv로 저장된 CSV를 로드하여 TCorrectionResults를 채우고,
+        /// 메타 정보(marks, rangeDeg, stepDeg)를 반환합니다.
+        /// </summary>
+        /// <param name="path">CSV 파일 경로</param>
+        /// <param name="marks">Mark1~4의 (X,Y) 목록</param>
+        /// <param name="rangeDeg">스캔 각 범위</param>
+        /// <param name="stepDeg">스캔 각 스텝</param>
+        /// <returns>파싱된 레코드 리스트(또는 null: 실패)</returns>
+        public List<TCorrectionRecord> LoadTCorrectionCsv(string path,
+                                                          out List<(double X, double Y)> marks,
+                                                          out double rangeDeg,
+                                                          out double stepDeg)
+        {
+            marks = new List<(double X, double Y)>(capacity: 4);
+            rangeDeg = 0.0;
+            stepDeg = 0.0;
+
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                Log.Write(UnitName, "LoadTCorrectionCsv", $"파일 없음: {path}");
+                return null;
+            }
+
+            var records = new List<TCorrectionRecord>();
+            try
+            {
+                using (var r = new StreamReader(path, Encoding.UTF8))
+                {
+                    // 1) 메타 섹션 파싱
+                    // 첫 줄 "#TCorrectionMeta" 기대
+                    string line = r.ReadLine();
+                    if (line == null || !line.Trim().StartsWith("#TCorrectionMeta"))
+                    {
+                        Log.Write(UnitName, "LoadTCorrectionCsv", "메타 헤더('#TCorrectionMeta') 누락");
+                        return null;
+                    }
+
+                    // RangeDeg=..., StepDeg=...
+                    // MarkN=X,Y (N=1..4)
+                    var ci = CultureInfo.InvariantCulture;
+                    for (; ; )
+                    {
+                        line = r.ReadLine();
+                        if (line == null) { Log.Write(UnitName, "LoadTCorrectionCsv", "예상치 못한 EOF(메타)"); return null; }
+                        line = line.Trim();
+
+                        if (line == "---DATA---")
+                        {
+                            break; // 데이터 섹션으로 진입
+                        }
+
+                        if (line.Length == 0) continue;
+
+                        if (line.StartsWith("RangeDeg=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var val = line.Substring("RangeDeg=".Length).Trim();
+                            if (!double.TryParse(val, NumberStyles.Float, ci, out rangeDeg))
+                                Log.Write(UnitName, "LoadTCorrectionCsv", $"RangeDeg 파싱 실패: '{val}'");
+                        }
+                        else if (line.StartsWith("StepDeg=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var val = line.Substring("StepDeg=".Length).Trim();
+                            if (!double.TryParse(val, NumberStyles.Float, ci, out stepDeg))
+                                Log.Write(UnitName, "LoadTCorrectionCsv", $"StepDeg 파싱 실패: '{val}'");
+                        }
+                        else if (line.StartsWith("Mark", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // 형식: MarkN=X,Y
+                            int eqIdx = line.IndexOf('=');
+                            if (eqIdx > 0 && eqIdx + 1 < line.Length)
+                            {
+                                var rhs = line.Substring(eqIdx + 1).Trim();
+                                var parts = rhs.Split(new[] { ',' }, StringSplitOptions.None);
+                                if (parts.Length >= 2 &&
+                                    double.TryParse(parts[0], NumberStyles.Float, ci, out var mx) &&
+                                    double.TryParse(parts[1], NumberStyles.Float, ci, out var my))
+                                {
+                                    marks.Add((mx, my));
+                                }
+                                else
+                                {
+                                    Log.Write(UnitName, "LoadTCorrectionCsv", $"Mark 파싱 실패: '{line}'");
+                                }
+                            }
+                        }
+                        // 그 외 라인은 무시(코멘트 확장 대비)
+                    }
+
+                    // 2) 데이터 섹션 헤더 라인
+                    line = r.ReadLine();
+                    if (line == null)
+                    {
+                        Log.Write(UnitName, "LoadTCorrectionCsv", "데이터 헤더 누락");
+                        return null;
+                    }
+                    // 기대 헤더:
+                    // MarkIndex,Index,Angle,ImageX,ImageY,ImageT,StageX,StageY,StageT,CalX,CalY,CalT
+                    // 헤더 검증은 느슨하게(열 수만 확인)
+                    var headerCols = line.Split(',');
+                    if (headerCols.Length < 12)
+                    {
+                        Log.Write(UnitName, "LoadTCorrectionCsv", $"데이터 헤더 열 개수 부족({headerCols.Length})");
+                        // 계속 진행 시도
+                    }
+
+                    // 3) 데이터 행 파싱
+                    while ((line = r.ReadLine()) != null)
+                    {
+                        line = line.Trim();
+                        if (line.Length == 0) continue;
+
+                        var cols = line.Split(',');
+                        // 최소 12열 기대
+                        if (cols.Length < 12)
+                        {
+                            Log.Write(UnitName, "LoadTCorrectionCsv", $"열 개수 부족({cols.Length}) 라인: {line}");
+                            continue;
+                        }
+
+                        // 안전 파싱 헬퍼
+                        int ParseInt(string s, int def = 0)
+                        {
+                            return int.TryParse(s, NumberStyles.Integer, ci, out var v) ? v : def;
+                        }
+                        double ParseDouble(string s, double def = 0)
+                        {
+                            if (string.IsNullOrWhiteSpace(s)) return def;
+                            return double.TryParse(s, NumberStyles.Float, ci, out var v) ? v : def;
+                        }
+
+                        var rec = new TCorrectionRecord
+                        {
+                            MarkIndex = ParseInt(cols[0]),
+                            AngleDeg = ParseDouble(cols[2]),
+                            FoundOffsetX = ParseDouble(cols[3]),
+                            FoundOffsetY = ParseDouble(cols[4]),
+                            FoundAngle = ParseDouble(cols[5]),
+                            StageX = ParseDouble(cols[6]),
+                            StageY = ParseDouble(cols[7]),
+                            StageT = ParseDouble(cols[8]),
+                            // AlignSuccess는 저장 포맷에 없으므로 추정 불가 → false로 초기화
+                            AlignSuccess = false
+                        };
+
+                        // CalX/CalY/CalT는 빈 문자열일 수 있으므로 필요시 사용자가 후처리
+                        // cols[9], cols[10], cols[11]은 현재 무시
+
+                        records.Add(rec);
+                    }
+                }
+
+                // 4) 클래스 상태 반영
+                TCorrectionResults.Clear();
+                TCorrectionResults.AddRange(records);
+
+                Log.Write(UnitName, "LoadTCorrectionCsv",
+                    $"로드 완료: {path}, Marks={marks.Count}, Range={rangeDeg:F3}, Step={stepDeg:F3}, Rows={records.Count}");
+
+                return records;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "LoadTCorrectionCsv", $"예외: {ex.Message}");
+                return null;
+            }
+        }
+
+
+        private void CalcTCorrection()
+        {
+            //_recodes ->TCorrectionResults
+            linkTypeXYTStageCorrection = new LinkTypeXYTStageCorrection();
+            var v = TCorrectionResults.OrderBy(t => t.StageT).ThenBy(t => t.MarkIndex);
+
+            foreach (var rec in v)
+            {
+                var buffer = linkTypeXYTStageCorrection.CorrectionPoints.
+                    Where(p => p.CommandTheta == rec.StageT);
+                XyCoordinate xyCoordinate = new XyCoordinate() 
+                { X = rec.StageX + rec.FoundOffsetX, Y = rec.StageY + rec.FoundOffsetY };
+                
+                if (buffer.Count() == 0)
+                {
+                    var point = new List<XyCoordinate>();
+                    point.Add(xyCoordinate);
+                    for (int iter = 0; iter < 3; iter++)
+                    {
+                        point.Add(new XyCoordinate() { X = 0, Y = 0 });
+                    }
+                    linkTypeXYTStageCorrection.AddCorrectionPoint(point, rec.StageT);
+                }
+                else
+                {
+                    var point = buffer.First().PointDs;
+                    if (rec.MarkIndex <= point.Count)
+                    {
+                        point[rec.MarkIndex - 1] = xyCoordinate;
+                    }
+                    else
+                    {
+                        point.Add(xyCoordinate);
+
+                    }
+
+                }
+            }
+            linkTypeXYTStageCorrection.SetZeroCommandTheta(0.3);
+            this.linkTypeXYTStageCorrection = linkTypeXYTStageCorrection;
+        }
+
+        /// <summary>
+        /// 지정 경로를 강제로 사용하여 로드하고 보정 링크를 구성합니다.
+        /// UI나 시퀀스에서 특정 파일을 선택해 호출할 때 사용.
+        /// </summary>
+        public int LoadTCorrectionCsvAndApply(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                Log.Write(UnitName, "LoadTCorrectionCsvAndApply", "경로가 비어 있습니다.");
+                return -1;
+            }
+
+            List<(double X, double Y)> marks;
+            double rangeDeg;
+            double stepDeg;
+            var recs = LoadTCorrectionCsv(path, out marks, out rangeDeg, out stepDeg);
+            if (recs == null || recs.Count == 0)
+            {
+                Log.Write(UnitName, "LoadTCorrectionCsvAndApply", $"로드 실패 또는 데이터 없음: {path}");
+                return -2;
+            }
+
+            try
+            {
+                CalcTCorrection();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "LoadTCorrectionCsvAndApply", $"CalcTCorrection 실패: {ex.Message}");
+                return -3;
+            }
+
+            Log.Write(UnitName, "LoadTCorrectionCsvAndApply",
+                $"성공: {path}, Marks={marks?.Count ?? 0}, Range={rangeDeg:F3}, Step={stepDeg:F3}, Rows={recs.Count}");
+            return 0;
+        }
     }
 }

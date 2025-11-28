@@ -454,8 +454,8 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.VR:
                             {
-                                itemResult.RawData = value;
-                                itemResult.Value = value;
+                                itemResult.RawData = Math.Abs(value);
+                                itemResult.Value = Math.Abs(value);
                                 itemResult.Unit = "V";
                             }
                             break;
@@ -468,6 +468,7 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IR:
                             {
+
                                 itemResult.RawData = value;
                                 itemResult.Value = value;
                                 itemResult.Unit = "A";

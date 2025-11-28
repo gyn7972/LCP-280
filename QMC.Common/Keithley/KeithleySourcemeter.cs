@@ -406,6 +406,32 @@ namespace QMC.Common.Keithley
                                 channel.AddCommand(command);
                             }
                             break;
+                        case TestItemType.KELFS:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureKELFS;
+                                command.SourceValue = item.SourceValue  ;
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.KELDG:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureKELDG; command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = item.SourceValue;
+                                command.SourceTime = item.SourceTime;
+                                command.MeasureLimit = item.MeasureLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
                         default:
                             throw new InvalidOperationException($"Not supported test item type. (Type: {item.Type})");
                     }
@@ -454,8 +480,12 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.VR:
                             {
-                                itemResult.RawData = Math.Abs(value);
-                                itemResult.Value = Math.Abs(value);
+                                if(value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value);// * -1;
+                                itemResult.Value = Math.Abs(value);// * -1;
                                 itemResult.Unit = "V";
                             }
                             break;
@@ -468,10 +498,35 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IR:
                             {
-
-                                itemResult.RawData = value;
-                                itemResult.Value = value;
+                                if (value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value);// * -1;
+                                itemResult.Value = Math.Abs(value);// * -1;
                                 itemResult.Unit = "A";
+                            }
+                            break;
+                        case TestItemType.KELDG:
+                            {
+                                if (value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value);// * -1;
+                                itemResult.Value = Math.Abs(value);// * -1;
+                                itemResult.Unit = "";
+                            }
+                            break;
+                        case TestItemType.KELFS:
+                            {
+                                if (value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value);// * -1;
+                                itemResult.Value = Math.Abs(value);// * -1;
+                                itemResult.Unit = "";
                             }
                             break;
                     }

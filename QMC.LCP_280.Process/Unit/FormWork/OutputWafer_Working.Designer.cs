@@ -48,6 +48,8 @@
             this.manualSequenceControlOutputFeeder = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlOutputBinStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnTCorrection = new QMC.Common.IndividualMenuButton();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).BeginInit();
@@ -59,6 +61,7 @@
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
@@ -157,6 +160,7 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel4, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.ButtonMapChange, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 1, 1);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 29);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
@@ -296,11 +300,11 @@
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.manualSequenceControlOutputFeeder);
-            this.tabPage2.Location = new System.Drawing.Point(4, 28);
+            this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage2.Size = new System.Drawing.Size(558, 527);
+            this.tabPage2.Size = new System.Drawing.Size(558, 516);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Feeder";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -313,17 +317,17 @@
             this.manualSequenceControlOutputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlOutputFeeder.Name = "manualSequenceControlOutputFeeder";
             this.manualSequenceControlOutputFeeder.ParentUnit = null;
-            this.manualSequenceControlOutputFeeder.Size = new System.Drawing.Size(554, 523);
+            this.manualSequenceControlOutputFeeder.Size = new System.Drawing.Size(554, 512);
             this.manualSequenceControlOutputFeeder.TabIndex = 15;
             // 
             // tabPage3
             // 
             this.tabPage3.Controls.Add(this.manualSequenceControlOutputBinStage);
-            this.tabPage3.Location = new System.Drawing.Point(4, 28);
+            this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage3.Size = new System.Drawing.Size(558, 527);
+            this.tabPage3.Size = new System.Drawing.Size(558, 516);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Stage";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -336,8 +340,43 @@
             this.manualSequenceControlOutputBinStage.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlOutputBinStage.Name = "manualSequenceControlOutputBinStage";
             this.manualSequenceControlOutputBinStage.ParentUnit = null;
-            this.manualSequenceControlOutputBinStage.Size = new System.Drawing.Size(554, 523);
+            this.manualSequenceControlOutputBinStage.Size = new System.Drawing.Size(554, 512);
             this.manualSequenceControlOutputBinStage.TabIndex = 16;
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 79.56204F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20.43796F));
+            this.tableLayoutPanel3.Controls.Add(this.btnTCorrection, 0, 0);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(283, 425);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 2;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(274, 100);
+            this.tableLayoutPanel3.TabIndex = 19;
+            // 
+            // btnTCorrection
+            // 
+            this.btnTCorrection.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTCorrection.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnTCorrection.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTCorrection.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTCorrection.CustomForeColor = System.Drawing.Color.Black;
+            this.btnTCorrection.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTCorrection.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTCorrection.ForeColor = System.Drawing.Color.Black;
+            this.btnTCorrection.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnTCorrection.Location = new System.Drawing.Point(2, 4);
+            this.btnTCorrection.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.btnTCorrection.Name = "btnTCorrection";
+            this.btnTCorrection.Size = new System.Drawing.Size(214, 42);
+            this.btnTCorrection.TabIndex = 18;
+            this.btnTCorrection.TabStop = false;
+            this.btnTCorrection.Text = "T-Correction";
+            this.btnTCorrection.UseVisualStyleBackColor = false;
+            this.btnTCorrection.Click += new System.EventHandler(this.btnTCorrection_Click);
             // 
             // OutputWafer_Working
             // 
@@ -359,6 +398,7 @@
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -383,5 +423,7 @@
         private System.Windows.Forms.TabPage tabPage3;
         private Component.ManualSequenceControl manualSequenceControlOutputBinStage;
         private Common.IndividualMenuButton ButtonMapChange;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private Common.IndividualMenuButton btnTCorrection;
     }
 }

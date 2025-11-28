@@ -673,13 +673,18 @@ namespace QMC.LCP_280.Process.Unit
                 reason = $"Index 이동 시작 실패(rc={rc})";
                 return false;
             }
-
+            Thread.Sleep(100);
             _moveStartTime = DateTime.Now;
             // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
             Task.Run(() =>
             {
+                double pos = this.AxisIndexT.GetPosition() * 1000;
+                Log.Write("KKKKK", "Starting2 _ " + pos.ToString());
+                
                 // Done + InPosition 동시 확인(가능하면 목표각 기반, 실패 시 기존 방식 fallback)
                 int wrc = WaitIndexMoveDone();
+                pos = this.AxisIndexT.GetPosition() * 1000;
+                Log.Write("KKKKK", "End2 _ " + pos.ToString());
                 if (wrc == 0)
                 {
                     try
@@ -1159,7 +1164,6 @@ namespace QMC.LCP_280.Process.Unit
                         return true;
                     }
                 }
-
             }
             return bRet;
         }
@@ -1302,6 +1306,8 @@ namespace QMC.LCP_280.Process.Unit
                 //        }
                 //    }
                 //}
+                // 변경: InputStage에 공급 가능한 Die가 있는 경우에만 요청 신호 설정
+                bool hasNextDie = true;
                 if (true)
                 {
                     if (this.InputDieTransfer != null)
@@ -1313,12 +1319,9 @@ namespace QMC.LCP_280.Process.Unit
                             {
                                 if (useSocket)
                                 {
-                                    // 변경: InputStage에 공급 가능한 Die가 있는 경우에만 요청 신호 설정
-                                    bool hasNextDie = true;
                                     try
                                     {
                                         hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
-
                                         if(hasNextDie == false)
                                         {
                                             var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
@@ -1352,6 +1355,27 @@ namespace QMC.LCP_280.Process.Unit
                                         // Log.Write(UnitName, "[OnRunWork] InputStage에 남은 Die 없음 → Load 요청 스킵");
                                     }
                                 }
+                                else
+                                {
+                                    try
+                                    {
+                                        hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
+                                        if (hasNextDie == false)
+                                        {
+                                            var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
+                                            //if (hasDie != null)
+                                            if (hasDie != null && (hasDie.State == DieProcessState.Mapped
+                                                || hasDie.State == DieProcessState.Picked))
+                                            {
+                                                hasNextDie = true;
+                                            }
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        hasNextDie = true;
+                                    }
+                                }
                             }
                         }
                     }
@@ -1375,11 +1399,22 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-
-                if (IsHaveDie() == false && RequestInputDieTrDie == false)
+                if(useSocket)
                 {
-                    return 0;
+                    if (IsHaveDie() == false && RequestInputDieTrDie == false)
+                    {
+                        return 0;
+                    }
                 }
+                else
+                {
+                    if (IsHaveDie() == false && hasNextDie == false)
+                    {
+                        return 0;
+                    }
+                }
+
+
 
                 TaktStart("ExecuteUnitAction");
                 try
@@ -1461,43 +1496,6 @@ namespace QMC.LCP_280.Process.Unit
                             break;
                         }
                         Thread.Sleep(1);
-                        //if (InputDieTransfer.IsPositionPlaceZSafety() == false)
-                        //{
-                        //    AxisIndexT.EmgStop();
-                        //    PostAlarm((int)AlarmKeys.InputDieTransferPlaceZError);
-                        //    reason = "InputDieTransfer Not in Safety Zone";
-                        //    return false;
-                        //}
-
-                        //// OutputDieTransfer
-                        //if (OutputDieTransfer.IsPositionPickZSafety() == false)
-                        //{
-                        //    AxisIndexT.EmgStop();
-                        //    PostAlarm((int)AlarmKeys.OutputDieTransferPickZError);
-                        //    reason = "OutputDieTransfer Not in Safety Zone";
-                        //    return false;
-                        //}
-
-                        //// IndexLoadAligner
-                        //if (IndexLoadAligner.IsPositionAlignZSafety() == false)
-                        //{
-                        //    AxisIndexT.EmgStop();
-                        //    PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
-                        //    reason = "IndexLoadAligner Not in Safety Zone";
-                        //    return false;
-                        //}
-
-                        //// IndexChipProbeController
-                        //if (IndexChipProbeController.IsPositionProbeZSafety() == false
-                        //    || IndexChipProbeController.IsPositionProbeCardZSafety() == false)
-                        //{
-                        //    AxisIndexT.EmgStop();
-                        //    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
-                        //    reason = "IndexChipProbeController Not in Safety Zone";
-                        //    return false;
-                        //}
-
-                        //Thread.Sleep(1);
                     }
                 }
                 finally
@@ -2109,7 +2107,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "MovePositionRotate Interlock Fail");
                 return -1;
             }
-
+           
             Task<int> task = MovePositionAsyncRotate(isFine);
             while (IsEndTask(task) == false)
             {
@@ -2120,6 +2118,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(1);
             }
+
+            
             return task.Result;
         }
         public Task<int> MovePositionAsyncRotate(bool isFine = false)
@@ -2135,6 +2135,8 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             string reason;
+            double pos = this.AxisIndexT.GetPosition() * 1000;
+            Log.Write("KKKKK", "Start_" + pos.ToString());
             if (TryMoveIndexNext(out reason) == false)
             {
                 // 재시도 루프(로그만)
@@ -2143,7 +2145,10 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            Log.Write("KKKKK", "Starting");
             nRet = WaitIndexMoveDone();
+
+            Log.Write("KKKKK", "End");
             return nRet;
         }
 

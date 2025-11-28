@@ -463,7 +463,7 @@ namespace QMC.Common.PKGTester
                 } 
                 catch 
                 { }
-                smuTask = Task.Run(() => DoSourcemeterMeasure());
+                 smuTask = Task.Run(() => DoSourcemeterMeasure());
 
                 int[] codes = await Task.WhenAll(spcTask, smuTask);
                 if (codes.Any(r => r != 0))

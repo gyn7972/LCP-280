@@ -321,7 +321,7 @@ namespace QMC.LCP_280.Process.Unit
             if (rc == 0)
             {
                 // 측정 성공 시 StrainGage 기반 KELFS/KELDG 주입
-                TryAssignKelItemsFromStrainGage();
+                //TryAssignKelItemsFromStrainGage();
             }
             return rc;
             //return task.Result;

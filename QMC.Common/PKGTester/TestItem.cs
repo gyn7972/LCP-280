@@ -45,8 +45,8 @@ namespace QMC.Common.PKGTester
         [Category("Optical")] PickValue,
         [Category("Optical")] ADC,
 
-        //[Category("UserDefined")] KELFS,
-        //[Category("UserDefined")] KELDG,
+        [Category("Electrical")] KELFS,
+        [Category("Electrical")] KELDG,
         [Category("UserDefined")] UserDefine,
     };
 

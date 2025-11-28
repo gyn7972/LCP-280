@@ -2898,7 +2898,7 @@ namespace QMC.LCP_280.Process.Unit
             Bin.Dies = new List<MaterialDie>();
             try
             {
-                if(Equipment.Instance.bIndexCal == true)
+                if (Equipment.Instance.bIndexCal == true)
                 {
                     // 0) InputStage 맵을 우선 그대로 복제(개수/격자/좌표 일치 보장)
                     if (PreferCloneMapFromInputStage && TryCloneMapFromInputStage(Bin))

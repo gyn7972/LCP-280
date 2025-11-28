@@ -304,15 +304,15 @@ namespace QMC.LCP_280.Process.Unit
                     dY = 0;
                     dAngle = 0;
                 }
-                dLastFoundX = dX;
-                dLastFoundY = dY;
-                dLastFoundAngle = dAngle;
 
+                PointD pt = GetPixelToMmScale(dX, dY);
+                dLastFoundX = pt.X;
+                dLastFoundY = pt.Y;
+                dLastFoundAngle = dAngle;
                 Log.Write(UnitName, "AlignXY",
                     $"VisionX={dLastFoundX:F4}, " +
                     $"VisionY={dLastFoundY:F4}, " +
                     $"VisionAngle={dLastFoundAngle:F4}");
-
             }
             catch (Exception ex)
             {
@@ -394,11 +394,13 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = 0;
             }
 
+            //pixel Data
             die.UnloadAlignOffsetX = dLastFoundX;
             die.UnloadAlignOffsetY = dLastFoundY;
             die.UnloadAlignOffsetT = dLastFoundAngle;
             
             die.State = DieProcessState.Inspected;
+            SetMaterial(die);
             socket.SetState(Rotary.RotarySocketState.VAligned);
 
             return nRet;

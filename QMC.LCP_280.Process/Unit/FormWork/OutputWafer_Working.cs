@@ -30,6 +30,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private bool _preloadRequested;     // PreloadUI 호출 여부(1회)
         private bool _deferredInitDone;     // 무거운 바인딩 지연 수행 여부
 
+        private DateTime _lastMarkDrawUtc = DateTime.MinValue;
+        private TimeSpan _markDrawMinInterval = TimeSpan.FromMilliseconds(120); // 과도한 갱신 억제
+
+
+        // T-보정 다이얼로그 인스턴스 유지 (모달리스)
+        private TCorrectionDialog _tCorrectionDlg;
+        private PatternMatchingRunner _patternRunner; // 프로젝트에서 Runner를 주입할 경우 사용
+
+
         public OutputWafer_Working() : this(
             TryGetUnit<OutputStage>("OutputStage"),
             TryGetUnit<OutputFeeder>("OutputFeeder"),
@@ -108,6 +117,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 BindCamera();
 
                 InitSequences();
+                SubscribeInputStageMarkEvents();
             }
             catch { }
         }
@@ -301,8 +311,117 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void WaferBin_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try { } catch { }
+            try
+            {
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
         }
+
+        // 마크 이벤트 구독 / 해제 메서드 추가
+        private void SubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (OutputStage != null)
+                {
+                    // 중복 방지 위해 먼저 제거
+                    OutputStage.MarksFound -= OutputStage_MarksFound;
+                    OutputStage.MarksFound += OutputStage_MarksFound;
+                }
+            }
+            catch { }
+        }
+
+        private void UnsubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (OutputStage != null)
+                    OutputStage.MarksFound -= OutputStage_MarksFound;
+            }
+            catch { }
+        }
+
+        // 이벤트 핸들러 구현
+        private void OutputStage_MarksFound(object sender, PatternMarksFoundEventArgs e)
+        {
+            // 스로틀
+            var now = DateTime.UtcNow;
+            if (now - _lastMarkDrawUtc < _markDrawMinInterval)
+                return;
+            _lastMarkDrawUtc = now;
+
+            // UI 스레드 처리
+            if (_OutputWaferCameraviewer == null || _OutputWaferCameraviewer.IsDisposed)
+                return;
+
+            if (_OutputWaferCameraviewer.InvokeRequired)
+            {
+                _OutputWaferCameraviewer.Invoke(new Action(() => ApplyInputStageMarkOverlays(e)));
+            }
+            else
+            {
+                ApplyInputStageMarkOverlays(e);
+            }
+        }
+
+        // Overlay 적용 메서드
+        private void ApplyInputStageMarkOverlays(PatternMarksFoundEventArgs e)
+        {
+            try
+            {
+                if (_OutputWaferCameraviewer == null) return;
+
+                // 라이브 그랩 중이라면 이미지 교체는 선택 – 필요 시만 적용
+                // if (e.Image != null && !_InputWaferCameraviewer.Simulated)
+                //     _InputWaferCameraviewer.InputImage = e.Image;  // 프로젝트의 실제 이미지 교체 API에 맞게 조정
+
+                // ResultOverlays 컬렉션 반영 (VisionImageViewer 내부 구현이 해당 컬렉션을 그리는 구조라고 가정)
+                var overlaysProp = _OutputWaferCameraviewer.GetType().GetProperty("ResultOverlays");
+                var list = overlaysProp?.GetValue(_OutputWaferCameraviewer) as System.Collections.IList;
+
+                if (list != null)
+                {
+                    lock (list)
+                    {
+                        list?.Clear();
+
+                        if (e.Marks == null || e.Marks.Count == 0)
+                        {
+                            _OutputWaferCameraviewer.Refresh();
+                            return;
+                        }
+
+                        for (int i = 0; i < e.Marks.Count; i++)
+                        {
+                            var m = e.Marks[i];
+                            var ov = new QMC.Common.Vision.PatternMatchResultOverlay
+                            {
+                                Center = new System.Drawing.PointF((float)m.X, (float)m.Y),
+                                PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
+                                PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
+                                AngleDeg = (float)m.AngleDeg,
+                                CrossHalfLenPx = (i == e.RepresentativeIndex) ? 24 : 16,
+                                Highlight = (i == e.RepresentativeIndex),
+                                Index = i,
+                                Color = (i == e.RepresentativeIndex) ? System.Drawing.Color.Yellow : System.Drawing.Color.Lime,
+                                Thickness = (i == e.RepresentativeIndex) ? 2f : 1f,
+                                Visible = true
+                            };
+                            list?.Add(ov);
+                        }
+                    }
+                }
+                _OutputWaferCameraviewer.ResumeDisplay();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("InputWafer_Working", "ApplyInputStageMarkOverlays", ex.Message);
+            }
+        }
+
+
 
         private void btnMapping_Click(object sender, EventArgs e)
         {
@@ -419,6 +538,58 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch (Exception ex)
             {
                 MessageBox.Show("맵 복사 중 오류: " + ex.Message, "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnTCorrection_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 필수 의존성 확인
+                if (OutputStage == null)
+                {
+                    MessageBox.Show("OutputStage가 준비되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 이미 열려 있으면 활성화해서 앞으로 가져오기
+                if (_tCorrectionDlg != null && !_tCorrectionDlg.IsDisposed)
+                {
+                    if (_tCorrectionDlg.WindowState == FormWindowState.Minimized)
+                        _tCorrectionDlg.WindowState = FormWindowState.Normal;
+
+                    _tCorrectionDlg.Activate();
+                    _tCorrectionDlg.BringToFront();
+                    return;
+                }
+
+                // PatternMatchingRunner 준비 (프로젝트 사양에 맞게 획득/주입)
+                // 예: 장비의 Runner를 가져오거나 필요 시 null 전달
+                // _patternRunner = Equipment.Instance?.PmRunner ?? _patternRunner;
+                var runner = _patternRunner; // 없으면 null로 전달
+
+                // 새 인스턴스 생성 (모달리스)
+                _tCorrectionDlg = new QMC.LCP_280.Process.Component.TCorrectionDialog(OutputStage, runner)
+                {
+                    StartPosition = FormStartPosition.Manual
+                };
+
+                // 현재 폼 근처에 표시
+                var pt = this.Location;
+                _tCorrectionDlg.Location = new System.Drawing.Point(pt.X + 30, pt.Y + 30);
+
+                // 닫히면 참조 해제
+                _tCorrectionDlg.FormClosed += (s, ev) => { _tCorrectionDlg = null; };
+
+                // 모달리스 표시
+                _tCorrectionDlg.Show(this);
+                _tCorrectionDlg.BringToFront();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("T-보정 Dlg 열기 중 오류: " + ex.Message, "오류",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

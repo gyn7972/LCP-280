@@ -252,6 +252,11 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 if (selectSourcemeter.Communicator.Write(tbSendText.Text))
                 {
                     tbLog.AppendText($"[{selectSourcemeter.Name}] Sent: {tbSendText.Text}\n");
+                    string str = "";
+                    selectSourcemeter.Communicator.Read(ref str);
+                    tbLog.AppendText(str);
+                   
+
                 }
                 else
                 {

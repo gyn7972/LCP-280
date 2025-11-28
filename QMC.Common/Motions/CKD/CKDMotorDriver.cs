@@ -773,6 +773,7 @@ namespace QMC.Common.Motions.CKD
                 } 
                 catch 
                 { /* canceled */ }
+                
             }
             RequestMonitorExecution(false);
         }
@@ -844,12 +845,12 @@ namespace QMC.Common.Motions.CKD
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
                     return ret;
-                Thread.Sleep(PdoWriteDelay);
+                //Thread.Sleep(PdoWriteDelay);
                 // Set 1
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, true);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
                     return ret;
-                Thread.Sleep(PdoWriteDelay);
+                //Thread.Sleep(PdoWriteDelay);
                 // Bit Reset
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
@@ -1053,12 +1054,12 @@ namespace QMC.Common.Motions.CKD
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
                     return ret;
-                Thread.Sleep(PdoWriteDelay);
+                //Thread.Sleep(PdoWriteDelay);
                 // Set 1
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, true);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
                     return ret;
-                Thread.Sleep(PdoWriteDelay);
+                //Thread.Sleep(PdoWriteDelay);
                 // Bit Reset
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)

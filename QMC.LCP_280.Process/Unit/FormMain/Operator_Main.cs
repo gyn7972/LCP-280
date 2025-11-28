@@ -251,7 +251,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                             var ov = new QMC.Common.Vision.PatternMatchResultOverlay
                             {
-                                Center = new PointF((float)m.X, (float)m.Y),
+                                Center = new PointD((float)m.X, (float)m.Y),
                                 PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
                                 PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
                                 AngleDeg = (float)m.AngleDeg,

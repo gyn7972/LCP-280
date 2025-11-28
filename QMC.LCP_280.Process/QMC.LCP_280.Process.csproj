@@ -211,6 +211,12 @@
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
     <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
     <Compile Include="Component\Recipe\RecipeManager.cs" />
+    <Compile Include="Component\TCorrectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\TCorrectionDialog.Designer.cs">
+      <DependentUpon>TCorrectionDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\TeachingPositionControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -680,6 +686,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Component\ProcessData\WaferSelectMapView.resx">
       <DependentUpon>WaferSelectMapView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\TCorrectionDialog.resx">
+      <DependentUpon>TCorrectionDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\TeachingPositionControl.resx">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>

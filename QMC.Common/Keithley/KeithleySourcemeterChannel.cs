@@ -17,6 +17,9 @@ namespace QMC.Common.Keithley
             MeasureV,
             MeasureIAndTrig,
             MeasureVAndTrig,
+            MeasureKELFS,
+            MeasureKELDG
+
         }
         public class ChannelCommand
         {
@@ -231,6 +234,26 @@ namespace QMC.Common.Keithley
                                 cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");
                             }
                             break;
+
+                        case CommandAction.MeasureKELFS:
+                            {
+                                args.Clear();
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                cmdStrs.Add("KELFS(" + string.Join(",", args) + ")");
+                            }
+                            break;
+                        case CommandAction.MeasureKELDG:
+                            {
+                                args.Clear();
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                cmdStrs.Add("KELDG(" + string.Join(",", args) + ")");
+                            }
+                            break;
+
                     }
                 }
                 cmdStrs.Add($"endmeasure({Name})");
