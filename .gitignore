@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/QMC.LCP_280.Process/Unit/FormMain/Operator_Main.cs
+/QMC.LCP_280.Process/Unit/FormMain/Operator_Main.Designer.cs
+/QMC.LCP_280.Process/Unit/FormMain/Operator_Main.resx
