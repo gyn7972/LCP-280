@@ -142,6 +142,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (pd.Name == "Name")
                     continue;
+                if (pd.Name == "Unit")
+                    continue;
 
                 DataGridViewColumn col = new DataGridViewTextBoxColumn();
                 col.Name = pd.Name;

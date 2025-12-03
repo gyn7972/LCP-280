@@ -616,7 +616,7 @@ namespace QMC.Common.Motions
                 throw new InvalidOperationException("This axis does not support MovePrevIndex.");
             }
         }
-
+        
         public int WaitMoveDone(int timeoutMs)
         {
             if (IsSim)

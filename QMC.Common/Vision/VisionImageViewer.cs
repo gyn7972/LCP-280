@@ -61,9 +61,9 @@ namespace QMC.Common.Vision
         static extern IntPtr CreateCompatibleDC(IntPtr hdc);
         [DllImport("gdi32.dll", SetLastError = true)]
         private static extern bool StretchBlt(
-    IntPtr hdcDest, int nXOriginDest, int nYOriginDest, int nWidthDest, int nHeightDest,
-    IntPtr hdcSrc, int nXOriginSrc, int nYOriginSrc, int nWidthSrc, int nHeightSrc,
-    int dwRop);
+        IntPtr hdcDest, int nXOriginDest, int nYOriginDest, int nWidthDest, int nHeightDest,
+        IntPtr hdcSrc, int nXOriginSrc, int nYOriginSrc, int nWidthSrc, int nHeightSrc,
+        int dwRop);
         private const int SRCCOPY = 0x00CC0020; 
         #endregion
 
@@ -1673,6 +1673,203 @@ namespace QMC.Common.Vision
             }
         }
 
+        //Original
+        //private void DrawToBuffer(BufferedGraphics bufferedGrphics)
+        //{
+        //    Bitmap resizeImage = null;
+        //    SizeD size;
+        //    PointD point = this.Scale.GetCenterPoint();
+        //    VisionImage visionImage = this.InputImage;
+        //    try
+        //    {
+        //        if (visionImage == null)
+        //            return;
+
+        //        if (this.m_IsChanged == true)
+        //        {
+        //            try
+        //            {
+        //                //lock (this.ViewerSyncRoot)
+        //                {
+        //                    size = new SizeD(visionImage.Header.Width * this.Scale.Wheel, visionImage.Header.Height * this.Scale.Wheel);
+
+        //                    //확인 해봐야함.
+        //                    if (visionImage.CustomizedData != null && this.IsViewCustomizedImage == true)
+        //                    {
+        //                        Bitmap bmpCutImage = (Bitmap)visionImage.CustomizedData.GetVisionImage().CutImage(point, (Size)size);
+        //                        lock (bufferedGrphics)
+        //                        {
+        //                            if (bufferedGrphics.Graphics != null)
+        //                            {
+        //                                //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
+
+        //                                int imgW = bmpCutImage.Width;
+        //                                int imgH = bmpCutImage.Height;
+        //                                int ctrlW = this.ClientSize.Width;
+        //                                int ctrlH = this.ClientSize.Height;
+
+        //                                float imgRatio = (float)imgW / imgH;
+        //                                float ctrlRatio = (float)ctrlW / ctrlH;
+
+        //                                float drawX, drawY, drawW, drawH;
+        //                                if (imgRatio > ctrlRatio)
+        //                                {
+        //                                    // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
+        //                                    drawW = ctrlW;
+        //                                    drawH = (float)(ctrlW / imgRatio);
+        //                                    drawX = 0;
+        //                                    drawY = (ctrlH - drawH) / 2;
+        //                                }
+        //                                else
+        //                                {
+        //                                    // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
+        //                                    drawH = ctrlH;
+        //                                    drawW = (float)(ctrlH * imgRatio);
+        //                                    drawX = (ctrlW - drawW) / 2;
+        //                                    drawY = 0;
+        //                                }
+
+        //                                bufferedGrphics.Graphics.Clear(this.BackColor);
+        //                                bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
+        //                            }
+        //                        }
+        //                        if (bmpCutImage != null)
+        //                        {
+        //                            bmpCutImage.Dispose();
+        //                            bmpCutImage = null;
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        Bitmap bmpCutImage = null;
+        //                        try
+        //                        {
+        //                            bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
+
+        //                            if (bmpCutImage == null)
+        //                            {
+        //                                //Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
+        //                                return;
+        //                            }
+        //                            //bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
+
+
+        //                            //여기서 계속 Exeption 발생함.
+        //                            //bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
+        //                            //bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
+        //                        }
+        //                        catch (Exception ex)
+        //                        {
+        //                            Log.Write(ex);
+        //                        }
+
+        //                        lock (bufferedGrphics)
+        //                        {
+        //                            if (bufferedGrphics.Graphics != null)
+        //                            {
+        //                                if (bmpCutImage != null)
+        //                                {
+        //                                    //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
+        //                                    //bufferedGrphics.Graphics.DrawImageUnscaled(bmpCutImage, 0, 0);
+
+        //                                    int imgW = bmpCutImage.Width;
+        //                                    int imgH = bmpCutImage.Height;
+        //                                    int ctrlW = this.ClientSize.Width;
+        //                                    int ctrlH = this.ClientSize.Height;
+
+        //                                    float imgRatio = (float)imgW / imgH;
+        //                                    float ctrlRatio = (float)ctrlW / ctrlH;
+
+        //                                    float drawX, drawY, drawW, drawH;
+        //                                    if (imgRatio > ctrlRatio)
+        //                                    {
+        //                                        // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
+        //                                        drawW = ctrlW;
+        //                                        drawH = (float)(ctrlW / imgRatio);
+        //                                        drawX = 0;
+        //                                        drawY = (ctrlH - drawH) / 2;
+        //                                    }
+        //                                    else
+        //                                    {
+        //                                        // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
+        //                                        drawH = ctrlH;
+        //                                        drawW = (float)(ctrlH * imgRatio);
+        //                                        drawX = (ctrlW - drawW) / 2;
+        //                                        drawY = 0;
+        //                                    }
+
+        //                                    bufferedGrphics.Graphics.Clear(this.BackColor);
+        //                                    bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
+        //                                }
+        //                            }
+        //                        }
+
+        //                        if (bmpCutImage != null)
+        //                        {
+        //                            bmpCutImage.Dispose();
+        //                            bmpCutImage = null;
+        //                        }
+        //                    }
+
+        //                    lock (bufferedGrphics)
+        //                    {
+        //                        // Cross 그린다.
+        //                        // Normal overlays
+        //                        var resultNormal = this.NormalOverlays;
+        //                        if (resultNormal != null)
+        //                        {
+        //                            for (int i = 0; i < resultNormal.Count; i++)
+        //                            {
+        //                                var ov = resultNormal[i];
+        //                                if (ov == null) continue;           // ★ null 방어
+        //                                if (ov.Visible)
+        //                                    ov.Draw(this.Scale.GetOffset(), size,
+        //                                            new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+        //                            }
+        //                        }
+
+        //                        // Result overlays
+        //                        var resultOverlays = this.ResultOverlays;
+        //                        if (resultOverlays != null)
+        //                        {
+        //                            lock (resultOverlays)
+        //                            {
+        //                                for (int i = 0; i < resultOverlays.Count; i++)
+        //                                {
+        //                                    var ov = resultOverlays[i];
+        //                                    if (ov == null) continue;       // ★ null 방어
+        //                                    if (ov.Visible)
+        //                                        ov.Draw(this.Scale.GetOffset(), size,
+        //                                                new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                }
+
+        //                this.m_IsChanged = false;
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Log.Write(ex);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //    }
+        //    finally
+        //    {
+        //        if (resizeImage != null)
+        //        {
+        //            resizeImage.Dispose();
+        //            resizeImage = null;
+        //        }
+
+        //    }
+
+        //}
 
         // DrawToBuffer(...) 내부를 교체/보완 – 핵심은 CutImage 캐시 + 오버레이 Transform 보정
         // DrawToBuffer(...) – 라이브는 캐시 미사용(즉시 Dispose), 시뮬은 캐시 유지
@@ -1742,7 +1939,8 @@ namespace QMC.Common.Vision
                     else
                         bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
 
-                    if (bmpCutImage == null) return;
+                    if (bmpCutImage == null) 
+                        return;
                 }
 
                 // 2) 화면 배치(AspectFit)
@@ -1870,183 +2068,6 @@ namespace QMC.Common.Vision
                 }
             }
         }
-
-        //private void DrawToBuffer(BufferedGraphics bufferedGrphics)
-        //{
-        //    Bitmap resizeImage = null;
-        //    SizeD size;
-        //    PointD point = this.Scale.GetCenterPoint() ;
-        //    VisionImage visionImage = this.InputImage;
-        //    try
-        //    {
-        //        if (visionImage == null)
-        //            return;
-        //        if (this.m_IsChanged == true)
-        //        {
-        //            try
-        //            {
-        //                //lock (this.ViewerSyncRoot)
-        //                {
-        //                    size = new SizeD(visionImage.Header.Width * this.Scale.Wheel, visionImage.Header.Height * this.Scale.Wheel);
-        //                    //확인 해봐야함.
-        //                    if (visionImage.CustomizedData != null && this.IsViewCustomizedImage == true)
-        //                    {
-        //                        Bitmap bmpCutImage = (Bitmap)visionImage.CustomizedData.GetVisionImage().CutImage(point, (Size)size);
-        //                        lock (bufferedGrphics)
-        //                        {
-        //                            if (bufferedGrphics.Graphics != null)
-        //                            {
-        //                                //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
-        //                                int imgW = bmpCutImage.Width;
-        //                                int imgH = bmpCutImage.Height;
-        //                                int ctrlW = this.ClientSize.Width;
-        //                                int ctrlH = this.ClientSize.Height;
-        //                                float imgRatio = (float)imgW / imgH;
-        //                                float ctrlRatio = (float)ctrlW / ctrlH;
-        //                                float drawX, drawY, drawW, drawH;
-        //                                if (imgRatio > ctrlRatio)
-        //                                {
-        //                                    // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
-        //                                    drawW = ctrlW;
-        //                                    drawH = (float)(ctrlW / imgRatio);
-        //                                    drawX = 0;
-        //                                    drawY = (ctrlH - drawH) / 2;
-        //                                }
-        //                                else
-        //                                {
-        //                                    // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
-        //                                    drawH = ctrlH;
-        //                                    drawW = (float)(ctrlH * imgRatio);
-        //                                    drawX = (ctrlW - drawW) / 2;
-        //                                    drawY = 0;
-        //                                }
-        //                                bufferedGrphics.Graphics.Clear(this.BackColor);
-        //                                bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
-        //                            }
-        //                        }
-        //                        if (bmpCutImage != null)
-        //                        {
-        //                            bmpCutImage.Dispose();
-        //                            bmpCutImage = null;
-        //                        }
-        //                    }
-        //                    else
-        //                    {
-        //                        Bitmap bmpCutImage = null;
-        //                        try
-        //                        {
-        //                            bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
-        //                            if (bmpCutImage == null)
-        //                            {
-        //                                //Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
-        //                                return;
-        //                            }
-        //                            //bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
-        //                            //여기서 계속 Exeption 발생함.
-        //                            //bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
-        //                            //bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
-        //                        }
-        //                        catch (Exception ex)
-        //                        {
-        //                            Log.Write(ex);
-        //                        }
-        //                        lock (bufferedGrphics)
-        //                        {
-        //                            if (bufferedGrphics.Graphics != null)
-        //                            {
-        //                                if(bmpCutImage != null)
-        //                                {
-        //                                    //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
-        //                                    //bufferedGrphics.Graphics.DrawImageUnscaled(bmpCutImage, 0, 0);
-        //                                    int imgW = bmpCutImage.Width;
-        //                                    int imgH = bmpCutImage.Height;
-        //                                    int ctrlW = this.ClientSize.Width;
-        //                                    int ctrlH = this.ClientSize.Height;
-        //                                    float imgRatio = (float)imgW / imgH;
-        //                                    float ctrlRatio = (float)ctrlW / ctrlH;
-        //                                    float drawX, drawY, drawW, drawH;
-        //                                    if (imgRatio > ctrlRatio)
-        //                                    {
-        //                                        // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
-        //                                        drawW = ctrlW;
-        //                                        drawH = (float)(ctrlW / imgRatio);
-        //                                        drawX = 0;
-        //                                        drawY = (ctrlH - drawH) / 2;
-        //                                    }
-        //                                    else
-        //                                    {
-        //                                        // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
-        //                                        drawH = ctrlH;
-        //                                        drawW = (float)(ctrlH * imgRatio);
-        //                                        drawX = (ctrlW - drawW) / 2;
-        //                                        drawY = 0;
-        //                                    }
-        //                                    bufferedGrphics.Graphics.Clear(this.BackColor);
-        //                                    bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
-        //                                }
-        //                            }
-        //                        }
-        //                        if (bmpCutImage != null) 
-        //                        {
-        //                            bmpCutImage.Dispose();
-        //                            bmpCutImage = null;
-        //                        }
-        //                    }
-        //                    lock (bufferedGrphics)
-        //                    {
-        //                        // Cross 그린다.
-        //                        // Normal overlays
-        //                        var resultNormal = this.NormalOverlays;
-        //                        if (resultNormal != null)
-        //                        {
-        //                            for (int i = 0; i < resultNormal.Count; i++)
-        //                            {
-        //                                var ov = resultNormal[i];
-        //                                if (ov == null) continue;           // ★ null 방어
-        //                                if (ov.Visible)
-        //                                    ov.Draw(this.Scale.GetOffset(), size,
-        //                                            new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-        //                            }
-        //                        }
-        //                        // Result overlays
-        //                        var resultOverlays = this.ResultOverlays;
-        //                        if (resultOverlays != null)
-        //                        {
-        //                            lock (resultOverlays)
-        //                            {
-        //                                for (int i = 0; i < resultOverlays.Count; i++)
-        //                                {
-        //                                    var ov = resultOverlays[i];
-        //                                    if (ov == null) continue;       // ★ null 방어
-        //                                    if (ov.Visible)
-        //                                        ov.Draw(this.Scale.GetOffset(), size,
-        //                                                new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-        //                                }
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //                this.m_IsChanged = false;
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Log.Write(ex);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //    }
-        //    finally
-        //    {
-        //        if (resizeImage != null)
-        //        {
-        //            resizeImage.Dispose();
-        //            resizeImage = null;
-        //        }
-        //    }
-        //}
         #endregion
 
         #region Control Members

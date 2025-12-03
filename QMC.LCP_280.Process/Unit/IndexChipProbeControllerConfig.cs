@@ -71,41 +71,6 @@ namespace QMC.LCP_280.Process.Unit
             SphereZ_Ready,
             SphereZ_Down,
             SafetyZone,
-            //TopContact_Index1_Up,
-            //TopContact_Index1_Ready,
-            //TopContact_Index2_Up,
-            //TopContact_Index2_Ready,
-            //TopContact_Index3_Up,
-            //TopContact_Index3_Ready,
-            //TopContact_Index4_Up,
-            //TopContact_Index4_Ready,
-            //TopContact_Index5_Up,
-            //TopContact_Index5_Ready,
-            //TopContact_Index6_Up,
-            //TopContact_Index6_Ready,
-            //TopContact_Index7_Up,
-            //TopContact_Index7_Ready,
-            //TopContact_Index8_Up,
-            //TopContact_Index8_Ready,
-            //Bottom_Index1_Up,
-            //Bottom_Index1_Ready,
-            //Bottom_Index2_Up,
-            //Bottom_Index2_Ready,
-            //Bottom_Index3_Up,
-            //Bottom_Index3_Ready,
-            //Bottom_Index4_Up,
-            //Bottom_Index4_Ready,
-            //Bottom_Index5_Up,
-            //Bottom_Index5_Ready,
-            //Bottom_Index6_Up,
-            //Bottom_Index6_Ready,
-            //Bottom_Index7_Up,
-            //Bottom_Index7_Ready,
-            //Bottom_Index8_Up,
-            //Bottom_Index8_Ready,
-            //SphereZ_Ready,
-            //SphereZ_Down,
-            //SafetyZone,
         }
         
         public override bool GetTeachingPositionName(int selIndex, out string name)
@@ -199,6 +164,11 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int UpperWaitTime { get; set; } = 0;
 
+        //ViewMode
+        [Category("SetupConfig"), DisplayName("View Mode")]
+        [DefaultValue(false)]
+        [JsonProperty("ViewMode")]
+        public bool ViewMode { get; set; } = false;
 
         public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
 

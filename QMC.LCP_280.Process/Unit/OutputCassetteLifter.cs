@@ -492,7 +492,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -632,6 +632,15 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 }
 
+                if (RunMode == UnitRunMode.Auto)
+                {
+                    if (IsStop)
+                    {
+                        Log.Write(UnitName, "ScanBin", "ScanBin Stop");
+                        return 0;
+                    }
+                }
+
                 if (Config.IsSimulation || Config.IsDryRun)
                 {
                     //Log.Write(this, "Wafer Protrusion Detected - Simulation");
@@ -655,18 +664,30 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (MappingSensor())
                 {
-                    if (bDetected == true)
-                    {
-                        Thread.Sleep(1);
-                        continue;
-                    }
+                    //if (bDetected == true)
+                    //{
+                    //    Thread.Sleep(1);
+                    //    continue;
+                    //}
+
                     bDetected = true;
                     double dPos = BinLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.BinLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
-                    if (slot >= 0 && slot < material.Slots.Count)
+                    double dDelta = Math.Abs(dPos - dStartPos);
+                    int slot = (int)(Math.Abs(dDelta) / base.Config.SlotPitch);
+                    double dRange = dDelta - slot * base.Config.SlotPitch;
+                    double dSpec = 0.2;
+                    bool bIsIn = false;
+                    if (dRange > base.Config.SlotPitch * dSpec && dRange < base.Config.SlotPitch * (1 - dSpec))
+                    {
+                        bIsIn = true;
+                    }
+                    Log.Write(UnitName, "ScanWafer", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString()
+                        + " delta = " + dDelta.ToString()
+                        + " dRange = " + dRange.ToString()
+                        );
+                    if (slot >= 0 && slot < material.Slots.Count && bIsIn)
                     {
                         MaterialWafer Bin = material.Slots[slot];
                         if (Bin == null ||
@@ -862,6 +883,7 @@ namespace QMC.LCP_280.Process.Unit
             bool bCheck = IsCassetteAllCompleted();
             if (_cassetteAllCompletedAlarmRaised == false && bCheck)
             {
+                Equipment.Instance.bIndexCal = true;
                 if (Equipment.Instance.bIndexCal)
                 {
                     nRet = OutputFeeder.MovePositionStage();
@@ -944,6 +966,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 4) 안전 조건 확인 및 초기 위치 복귀(선택)
+            moveToScanStart = false;
             if (moveToScanStart)
             {
                 try
@@ -1027,16 +1050,20 @@ namespace QMC.LCP_280.Process.Unit
         private int PerformMappingIntersection(InputCassetteLifter input)
         {
             int nRet = 0;
-            lock (_mappingSyncLock)
+            bool mismatch = false;
+
+            // 인풋/아웃풋 모두 동일한 공용 락 사용 → 교착 방지
+            lock (InputCassetteLifter.MappingSyncRoot)
             {
                 var outMat = this.GetMaterialCassette();
                 var inMat = input.GetMaterialCassette();
-                if (outMat?.Slots == null || inMat?.Slots == null) 
+                if (outMat?.Slots == null || inMat?.Slots == null)
+                {
+                    Log.Write(UnitName, "PerformMappingIntersection", "outMat?.Slots == null || inMat?.Slots == null");
                     return -1;
+                }
 
                 int n = Math.Min(outMat.Slots.Count, inMat.Slots.Count);
-                bool mismatch = false;
-
                 for (int i = 0; i < n; i++)
                 {
                     bool outExist = outMat.Slots[i]?.Presence == Material.MaterialPresence.Exist;
@@ -1048,16 +1075,20 @@ namespace QMC.LCP_280.Process.Unit
                     if (outExist != inExist)
                     {
                         mismatch = true;
-                        if (outMat.Slots[i] != null)
+                        if (Config.IsSimulation || Config.IsDryRun)
                         {
-                            outMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
-                            outMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            if (outMat.Slots[i] != null)
+                            {
+                                outMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                outMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
+                            if (inMat.Slots[i] != null)
+                            {
+                                inMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                inMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
                         }
-                        if (inMat.Slots[i] != null)
-                        {
-                            inMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
-                            inMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
-                        }
+
                     }
                     else
                     {
@@ -1065,25 +1096,29 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                if (mismatch)
-                {
-                    Mismatch = mismatch;
-                    PostAlarm((int)AlarmKeys.eSlotMappingMismatch);
-                    input.PostAlarm((int)InputCassetteLifter.AlarmKeys.eSlotMappingMismatch);
-                    return -1;
-                }
-
-                EventUpdateUICassette?.BeginInvoke(outMat, null, null);
-                input.RequestUiCassetteUpdate(true);
-                Log.Write(UnitName, "[PerformMappingIntersection] Sync Done");
+                // 락 안에서는 플래그 업데이트까지만
                 Mismatch = mismatch;
-
-                if (input.Mismatch)
-                {
-                    return -1;
-                }
-                return nRet;
             }
+
+            EventUpdateUICassette?.BeginInvoke(this.GetMaterialCassette(), null, null);
+
+            if (Mismatch)
+            {
+                Mismatch = mismatch;
+                PostAlarm((int)AlarmKeys.eSlotMappingMismatch);
+                input.PostAlarm((int)InputCassetteLifter.AlarmKeys.eSlotMappingMismatch);
+                Log.Write(UnitName, "PerformMappingIntersection", "Sync Fail - Output Mismatch");
+                return -1;
+            }
+
+            input.RequestUiCassetteUpdate(true);
+            Log.Write(UnitName, "PerformMappingIntersection", "Sync Done");
+            if (input.Mismatch)
+            {
+                Log.Write(UnitName, "PerformMappingIntersection", "Sync Fail - Input Mismatch");
+                return -1;
+            }
+            return nRet;
         }
 
         private bool IsSlotActiveBothSides(int slotIndex)

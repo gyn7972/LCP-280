@@ -124,8 +124,8 @@ namespace QMC.Common
                 RowCount = 0,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
             // flicker 최소화
             EnableFlickerFree(this);

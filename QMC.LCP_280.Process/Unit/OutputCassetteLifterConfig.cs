@@ -89,7 +89,7 @@ namespace QMC.LCP_280.Process.Unit
         //[DisplayOrder(1)]
         public int SlotCount { get; set; } = 0;
 
-        [Category("Cassette"), DisplayName("Use_Barcode")]
+        [Category("Cassette"), DisplayName("Use Barcode")]
         [DefaultValue(false)]
         [JsonProperty("UseBarcode")] // ← JSON 키를 명시적으로 고정
         public bool UseBarcode { get; set; } = false;

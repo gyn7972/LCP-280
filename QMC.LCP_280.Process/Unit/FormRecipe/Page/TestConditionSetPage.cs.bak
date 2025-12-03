@@ -34,6 +34,26 @@ namespace QMC.LCP_280.Process.Unit
         private string filePath = "";
         private bool isModified = false;
 
+        private Dictionary<string, string> headerConv = new Dictionary<string, string>()
+        {
+            // { ItemProperty, ItemHeader }
+            { "Name", "Name" },
+            { "Type", "Type" },
+            { "SourceValue", "App Value" },
+            { "SourceTime", "Apply Time" },
+            { "WaitTime", "Wait Time" },
+            { "OffTime", "Off Time" },
+            { "MeasureTime", "Measure Time" },
+            { "MeasureLimit", "Measure Limit" },
+            { "MeasureLow", "Low" },
+            { "MeasureHigh", "High" },
+            { "Expression", "Expression" },
+            { "UseGain", "Use Gain" },
+            { "UseOffset", "Use Offset" },
+            { "Gain", "Gain" },
+            { "Offset", "Offset" },
+        };
+
         public TestConditionSetPage()
         {
             InitializeComponent();
@@ -111,7 +131,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 DataGridViewColumn col = new DataGridViewTextBoxColumn();
                 col.Name = pdName.Name;
-                col.HeaderText = pdName.DisplayName;
+                //col.HeaderText = pdName.DisplayName;
+                col.HeaderText = headerConv[pdName.Name];
                 col.ReadOnly = true;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGrid.Columns.Add(col);
@@ -124,7 +145,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 DataGridViewColumn col = new DataGridViewTextBoxColumn();
                 col.Name = pd.Name;
-                col.HeaderText = pd.DisplayName;
+                //col.HeaderText = pd.DisplayName;
+                col.HeaderText = headerConv[pd.Name];
                 col.ReadOnly = true;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGrid.Columns.Add(col);
@@ -206,7 +228,7 @@ namespace QMC.LCP_280.Process.Unit
                             break;
                         case TestItemCategory.Optical:
                             {
-                                if (pd.Name.Contains("Source") || pd.Name.Contains("Measure") || pd.Name.Contains("Expression"))
+                                if (pd.Name.Contains("Source") || (pd.Name.Contains("Measure") && !(pd.Name == "MeasureLow" || pd.Name == "MeasureHigh")) || pd.Name.Contains("Expression"))
                                 {
                                     row.Cells[pd.Name].Value = "-";
                                 }
@@ -222,7 +244,7 @@ namespace QMC.LCP_280.Process.Unit
                             break;
                         case TestItemCategory.UserDefined:
                             {
-                                if (pd.Name == "Type" || pd.Name == "Expression")
+                                if (pd.Name == "Type" || pd.Name == "Expression" || pd.Name == "MeasureLow" || pd.Name == "MeasureHigh")
                                     row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
                                 else
                                     row.Cells[pd.Name].Value = "-";
@@ -595,7 +617,8 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnSaveSet_Click(object sender, EventArgs e)
         {
-            if (IsDesignMode()) return;
+            if (IsDesignMode()) 
+                return;
 
             if (!tempSet.Validate())
             {

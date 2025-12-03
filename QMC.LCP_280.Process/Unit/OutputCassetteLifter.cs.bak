@@ -6,6 +6,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +34,7 @@ namespace QMC.LCP_280.Process.Unit
             eBinProtrusionDetected = 5001,
             eFeederYSafetyPosition = 5002,
             eCassetteChangeRequired = 5003,
+            eSlotMappingMismatch,
         }
 
         #region InitAlarm
@@ -63,10 +65,13 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
-            //AlarmRegister((int)AlarmKeys.eBinProtrusionDetected,
-            //                "Bin Protrusion Detected",
-            //                "Bin protrusion detected by sensor during operation. Please check and clear the obstruction before retrying.",
-            //                "Error");
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eSlotMappingMismatch;
+            alarm.Title = "입/출력 카세트 슬롯 맵 불일치";
+            alarm.Cause = "Input/Output Cassette의 Wafer 존재 슬롯 패턴이 다릅니다. 두 Cassette를 점검 후 재스캔 하십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms[alarm.Code] = alarm;
 
         }
         #endregion
@@ -487,7 +492,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -566,6 +571,8 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(this, "Start ScanBin");
 
+            BeginMapping(); // 추가
+
             if (Config.IsSimulation || Config.IsDryRun)
             {
                 ResetSimMapping();
@@ -605,11 +612,11 @@ namespace QMC.LCP_280.Process.Unit
             material.Presence = Material.MaterialPresence.Exist;
 
             nRtn = MoveToScanStartPosition(bFineSpeed);
-
             if (nRtn != 0)
             {
                 return nRtn;
             }
+
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(bFineSpeed);
             bool bDetected = false;
             while (true)
@@ -648,18 +655,30 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (MappingSensor())
                 {
-                    if (bDetected == true)
-                    {
-                        Thread.Sleep(1);
-                        continue;
-                    }
+                    //if (bDetected == true)
+                    //{
+                    //    Thread.Sleep(1);
+                    //    continue;
+                    //}
+
                     bDetected = true;
                     double dPos = BinLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.BinLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
-                    if (slot >= 0 && slot < material.Slots.Count)
+                    double dDelta = Math.Abs(dPos - dStartPos);
+                    int slot = (int)(Math.Abs(dDelta) / base.Config.SlotPitch);
+                    double dRange = dDelta - slot * base.Config.SlotPitch;
+                    double dSpec = 0.2;
+                    bool bIsIn = false;
+                    if (dRange > base.Config.SlotPitch * dSpec && dRange < base.Config.SlotPitch * (1 - dSpec))
+                    {
+                        bIsIn = true;
+                    }
+                    Log.Write(UnitName, "ScanWafer", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString()
+                        + " delta = " + dDelta.ToString()
+                        + " dRange = " + dRange.ToString()
+                        );
+                    if (slot >= 0 && slot < material.Slots.Count && bIsIn)
                     {
                         MaterialWafer Bin = material.Slots[slot];
                         if (Bin == null ||
@@ -687,8 +706,18 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             EventUpdateUICassette?.BeginInvoke(material, null, null);
-
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
+            this.SetMaterial(material);
+
+            nRtn = EndMapping(); // 교집합 평가
+            if(nRtn != 0)
+            {
+                //내부에서 알람 발생.
+                this.BinLifterZ.EmgStop();
+                Log.Write(this, "EndMapping Error");
+                return -1;
+            }
+
             Log.Write(this, "End ScanBin");
             return nRtn;
         }
@@ -711,24 +740,20 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     foreach (var v in GetMaterialCassette().Slots)
                     {
-                        if (v.Presence == Material.MaterialPresence.NotExist 
-                         || v.Presence == Material.MaterialPresence.Unknown)
-                        {
-                            continue;
-                        }
+                        if (v.Presence != Material.MaterialPresence.Exist) continue;
+                        if (v.ProcessSatate != MaterialWafer.MaterialProcessSatate.Ready) continue;
+                        if (!IsSlotActiveBothSides(v.SlotIndex)) 
+                            continue; // 양쪽 존재 슬롯만
 
                         if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
                         {
                             nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
+                            if (nRtn != 0)
                             {
-                                if (nRtn != 0)
-                                {
-                                    Log.Write(this, "MoveToSlot Failed");
-                                    return -1;
-                                }
-
-                                return nRtn;
+                                Log.Write(this, "MoveToSlot Failed");
+                                return -1;
                             }
+                            return nRtn;
                         }
                     }
                     nRtn = -1;
@@ -842,12 +867,14 @@ namespace QMC.LCP_280.Process.Unit
             // 카세트가 없으면 플래그 리셋
             if (IsCassettePresentAll() == false)
             {
+                Log.Write(UnitName, "CheckCassetteCompletedAndAlarmOnce", "IsCassettePresentAll");
                 _cassetteAllCompletedAlarmRaised = false;
                 return 0;
             }
             bool bCheck = IsCassetteAllCompleted();
             if (_cassetteAllCompletedAlarmRaised == false && bCheck)
             {
+                Equipment.Instance.bIndexCal = true;
                 if (Equipment.Instance.bIndexCal)
                 {
                     nRet = OutputFeeder.MovePositionStage();
@@ -930,6 +957,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 4) 안전 조건 확인 및 초기 위치 복귀(선택)
+            moveToScanStart = false;
             if (moveToScanStart)
             {
                 try
@@ -962,6 +990,174 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, $"[ResetForNewRun] Move to start failed: {ex.Message}");
                 }
             }
+        }
+
+        // === 맵핑 완료/교집합 동기화 지원 추가 ===
+        public bool IsMappingCompleted { get; private set; }
+        private readonly object _mappingSyncLock = new object();
+
+        private void BeginMapping()
+        {
+            IsMappingCompleted = false;
+        }
+
+        private int EndMapping()
+        {
+            int nRet = 0;
+            IsMappingCompleted = true;
+            nRet = TryFinalizeMappingSync();
+            return nRet;
+        }
+
+        private int TryFinalizeMappingSync()
+        {
+            int nRet = 0;
+            var input = Equipment.Instance.GetUnit("InputCassetteLifter") as InputCassetteLifter;
+            if (input == null) 
+                return -1;
+            if (!IsMappingCompleted || !input.IsMappingCompleted)
+            {
+                //타임아웃 걸어야함.
+                while(input.IsMappingCompleted == false)
+                {
+                    if(IsStop)
+                    {
+                        return 0;
+                    }
+                    
+                    if(input.IsMappingCompleted)
+                    {
+                        break;
+                    }
+                }
+                //return;
+            }
+
+            nRet = PerformMappingIntersection(input);
+            return nRet;
+        }
+
+        public bool Mismatch { get; set; }
+        private int PerformMappingIntersection(InputCassetteLifter input)
+        {
+            int nRet = 0;
+            bool mismatch = false;
+
+            // 인풋/아웃풋 모두 동일한 공용 락 사용 → 교착 방지
+            lock (InputCassetteLifter.MappingSyncRoot)
+            {
+                var outMat = this.GetMaterialCassette();
+                var inMat = input.GetMaterialCassette();
+                if (outMat?.Slots == null || inMat?.Slots == null)
+                {
+                    Log.Write(UnitName, "PerformMappingIntersection", "outMat?.Slots == null || inMat?.Slots == null");
+                    return -1;
+                }
+
+                int n = Math.Min(outMat.Slots.Count, inMat.Slots.Count);
+                for (int i = 0; i < n; i++)
+                {
+                    bool outExist = outMat.Slots[i]?.Presence == Material.MaterialPresence.Exist;
+                    bool inExist = inMat.Slots[i]?.Presence == Material.MaterialPresence.Exist;
+
+                    if (outExist && inExist)
+                        continue;
+
+                    if (outExist != inExist)
+                    {
+                        mismatch = true;
+                        if (Config.IsSimulation || Config.IsDryRun)
+                        {
+                            if (outMat.Slots[i] != null)
+                            {
+                                outMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                outMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
+                            if (inMat.Slots[i] != null)
+                            {
+                                inMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                inMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        bool b = outExist;
+                    }
+                }
+
+                // 락 안에서는 플래그 업데이트까지만
+                Mismatch = mismatch;
+            }
+
+            EventUpdateUICassette?.BeginInvoke(this.GetMaterialCassette(), null, null);
+
+            if (Mismatch)
+            {
+                Mismatch = mismatch;
+                PostAlarm((int)AlarmKeys.eSlotMappingMismatch);
+                input.PostAlarm((int)InputCassetteLifter.AlarmKeys.eSlotMappingMismatch);
+                Log.Write(UnitName, "PerformMappingIntersection", "Sync Fail - Output Mismatch");
+                return -1;
+            }
+
+            input.RequestUiCassetteUpdate(true);
+            Log.Write(UnitName, "PerformMappingIntersection", "Sync Done");
+            if (input.Mismatch)
+            {
+                Log.Write(UnitName, "PerformMappingIntersection", "Sync Fail - Input Mismatch");
+                return -1;
+            }
+            return nRet;
+        }
+
+        private bool IsSlotActiveBothSides(int slotIndex)
+        {
+            var input = Equipment.Instance.GetUnit("InputCassetteLifter") as InputCassetteLifter;
+            if (input == null) return false;
+            if (!IsMappingCompleted || !input.IsMappingCompleted) return false;
+
+            var outMat = GetMaterialCassette();
+            var inMat = input.GetMaterialCassette();
+            if (outMat?.Slots == null || inMat?.Slots == null) return false;
+            if (slotIndex < 0 || slotIndex >= outMat.Slots.Count || slotIndex >= inMat.Slots.Count) return false;
+
+            return outMat.Slots[slotIndex]?.Presence == Material.MaterialPresence.Exist
+                && inMat.Slots[slotIndex]?.Presence == Material.MaterialPresence.Exist;
+        }
+
+        // 이벤트 안전 호출(예외 캡처 + 개별 구독자 순회)
+        public virtual void OnUpdateUICassette(MaterialCassette cassette, bool async = false)
+        {
+            var handler = EventUpdateUICassette;
+            if (handler == null) return;
+
+            if (!async)
+            {
+                foreach (UpdateUICassette d in handler.GetInvocationList())
+                {
+                    try { d(cassette); }
+                    catch (Exception ex) { Log.Write(UnitName, $"[OnUpdateUICassette] {ex.Message}"); }
+                }
+            }
+            else
+            {
+                foreach (UpdateUICassette d in handler.GetInvocationList())
+                {
+                    Task.Run(() =>
+                    {
+                        try { d(cassette); }
+                        catch (Exception ex) { Log.Write(UnitName, $"[OnUpdateUICassette-Async] {ex.Message}"); }
+                    });
+                }
+            }
+        }
+
+        // 외부에서 강제 UI 갱신하고 싶을 때 호출
+        public void RequestUiCassetteUpdate(bool async = false)
+        {
+            OnUpdateUICassette(GetMaterialCassette(), async);
         }
     }
 }

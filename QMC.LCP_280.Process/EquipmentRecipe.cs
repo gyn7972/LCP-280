@@ -6,6 +6,7 @@ using QMC.Common;
 namespace QMC.LCP_280.Process
 {
     // 설비 Recipe 전담 로직 분리
+    // 설비 Recipe 전담 로직 분리
     public class EquipmentRecipe
     {
         // ===== Global MeasurementRecipe System =====
@@ -25,7 +26,7 @@ namespace QMC.LCP_280.Process
             {
                 // EquipmentConfig 먼저 확보
                 var eq = Equipment.Instance;
-                eq.EquipmentConfig = eq.EquipmentConfig.LoadOrCreate();
+                eq.EquipmentConfig = EquipmentConfig.LoadOrCreate(); // 정적 호출로 고정
                 var name = eq.EquipmentConfig?.CurrentRecipeName;
                 if (string.IsNullOrWhiteSpace(name))
                     name = _currentRecipeNameFallback;
@@ -35,8 +36,6 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 Log.Write(ex);
-                //OnErrorOccurred("InitGlobalRecipe 실패: " + ex.Message);
-                // 실패 시 기본 생성
                 lock (_recipeLock)
                 {
                     CurrentRecipe = new MeasurementRecipe(_currentRecipeNameFallback);
@@ -44,7 +43,6 @@ namespace QMC.LCP_280.Process
                     SafeSaveRecipeNoThrow(CurrentRecipe);
                 }
             }
-            // 최초 한 번 알림
             CurrentRecipeChanged?.Invoke(null, new MeasurementRecipeChangedEventArgs(CurrentRecipe));
         }
 
@@ -144,7 +142,7 @@ namespace QMC.LCP_280.Process
             {
                 var eq = Equipment.Instance;
                 if (eq.EquipmentConfig == null)
-                    eq.EquipmentConfig = eq.EquipmentConfig.LoadOrCreate();
+                    eq.EquipmentConfig = EquipmentConfig.LoadOrCreate();
                 eq.EquipmentConfig.CurrentRecipeName = name;
                 eq.EquipmentConfig.Save(); // 동기 저장 (파일 매우 작음)
             }

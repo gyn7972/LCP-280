@@ -369,6 +369,11 @@
     <Compile Include="Keithley\KeithleySourcemeter.cs" />
     <Compile Include="Keithley\KeithleySourcemeterChannel.cs" />
     <Compile Include="Keithley\KeithleySourcemeterConfig.cs" />
+    <Compile Include="LanguageManager.cs" />
+    <Compile Include="LanguageManagerExtensions.cs" />
+    <Compile Include="LanguageSetupForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="LightController\LeesOsLightController.cs" />
     <Compile Include="LightController\LeesOsLightControllerChannel.cs" />
     <Compile Include="LightController\LeesOsLightControllerChannelConfig.cs" />
@@ -548,6 +553,7 @@
     </Compile>
     <Compile Include="StrainGage\StrainGageLookupTable.cs" />
     <Compile Include="StrainGage\StrainGageMonitor.cs" />
+    <Compile Include="ThetaCorrection\LinkTypeXYTStageCorrection.cs" />
     <Compile Include="TopContentsIOStatusControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -655,6 +661,8 @@
     <Compile Include="Vision\IlluminationChannel.cs" />
     <Compile Include="Vision\IlluminationDataSet.cs" />
     <Compile Include="Vision\Illuminator.cs" />
+    <Compile Include="Vision\PatternMarksFoundEventArgs.cs" />
+    <Compile Include="Vision\PatternMatchResultOverlay.cs" />
     <Compile Include="Vision\qGeometry.cs" />
     <Compile Include="Vision\qMath.cs" />
     <Compile Include="Vision\QMCMatrix.cs" />

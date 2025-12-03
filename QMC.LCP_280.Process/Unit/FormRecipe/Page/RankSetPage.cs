@@ -481,7 +481,11 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             if (excelModel == null || dataGridRank.CurrentCell == null || pc == null)
                 return;
 
-            int rowIndex = dataGridRank.CurrentCell.RowIndex;
+            // 현재 선택 상태 저장
+            int prevRowIndex = dataGridRank.CurrentCell.RowIndex;
+            string prevColName = dataGridRank.Columns[dataGridRank.CurrentCell.ColumnIndex].Name;
+
+            int rowIndex = prevRowIndex;
             int colIndex = dataGridRank.CurrentCell.ColumnIndex;
 
             if (rowIndex < 0 || colIndex < 0 || rowIndex >= excelModel.Bins.Count)
@@ -510,8 +514,94 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             range.CopyFrom(tmp);
 
             isModified = true;
+
+            // 그리드 갱신
             UpdateRankSetGridExcel();
+
+            // 선택 복원 (같은 행, 같은 컬럼 이름)
+            RestoreGridSelection(prevRowIndex, prevColName);
         }
+
+        private void RestoreGridSelection(int rowIndex, string colName)
+        {
+            if (dataGridRank.Rows.Count == 0) return;
+            if (rowIndex < 0) rowIndex = 0;
+            if (rowIndex >= dataGridRank.Rows.Count) rowIndex = dataGridRank.Rows.Count - 1;
+
+            // 동일 이름의 컬럼 인덱스 조회
+            int targetColIndex = -1;
+            for (int i = 0; i < dataGridRank.Columns.Count; i++)
+            {
+                if (string.Equals(dataGridRank.Columns[i].Name, colName, StringComparison.Ordinal))
+                {
+                    targetColIndex = i;
+                    break;
+                }
+            }
+            if (targetColIndex == -1) targetColIndex = 0; // 없으면 첫 컬럼으로 폴백
+
+            var cell = dataGridRank.Rows[rowIndex].Cells[targetColIndex];
+            dataGridRank.CurrentCell = cell;
+            dataGridRank.ClearSelection();
+            cell.Selected = true;
+
+            // 스크롤 가시성 확보
+            try
+            {
+                dataGridRank.FirstDisplayedScrollingRowIndex = Math.Max(0, rowIndex);
+            }
+            catch { /* 일부 경우 예외가 날 수 있음 - 무시 */ }
+
+            // 컬럼 스크롤은 HorizontalScrolling이 켜져 있어야 함
+            try
+            {
+                // 가로 스크롤 가시성 확보 (가능한 경우)
+                int firstCol = dataGridRank.FirstDisplayedScrollingColumnIndex;
+                if (firstCol >= 0 && targetColIndex < firstCol)
+                    dataGridRank.FirstDisplayedScrollingColumnIndex = targetColIndex;
+            }
+            catch { /* 지원하지 않는 경우 무시 */ }
+
+            // 포커스 재설정
+            dataGridRank.Focus();
+        }
+
+        //private void btnModify_Click(object sender, EventArgs e)
+        //{
+        //    if (excelModel == null || dataGridRank.CurrentCell == null || pc == null)
+        //        return;
+
+        //    int rowIndex = dataGridRank.CurrentCell.RowIndex;
+        //    int colIndex = dataGridRank.CurrentCell.ColumnIndex;
+
+        //    if (rowIndex < 0 || colIndex < 0 || rowIndex >= excelModel.Bins.Count)
+        //        return;
+
+        //    string key = dataGridRank.Columns[colIndex].Name;
+        //    if (!excelModel.ItemKeys.Contains(key))
+        //        return;
+
+        //    pcvEdit.Apply();
+
+        //    var tmp = new BinningRange(key);
+        //    tmp.ApplyValueFromPropertyCollection(pc);
+        //    if (!tmp.Validate())
+        //    {
+        //        MessageBox.Show("Invalid value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
+
+        //    var bin = excelModel.Bins[rowIndex];
+        //    if (!bin.Items.TryGetValue(key, out var range))
+        //    {
+        //        range = new BinningRange(key);
+        //        bin.Items[key] = range;
+        //    }
+        //    range.CopyFrom(tmp);
+
+        //    isModified = true;
+        //    UpdateRankSetGridExcel();
+        //}
 
         #endregion
 

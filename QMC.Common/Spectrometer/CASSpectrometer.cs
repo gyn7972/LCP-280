@@ -280,8 +280,8 @@ namespace QMC.Common.Spectrometer
                     double value = 0;
                     switch (item.Type)
                     {
-                        case TestItemType.RadInt:
-                            value = result.RadInt * 1000;
+                        case TestItemType.RadInt: //A로 들어와서 *1000하면 mA
+                            value = result.RadInt * 1000;       // 단위에 맞춰서 뿌려야 하니깐.. // 여긴 우선 이렇게 해야되네...
                             itemResult.RawData = value;
                             itemResult.Value = value;
                             itemResult.Unit = result.RadIntUnit;
@@ -341,7 +341,7 @@ namespace QMC.Common.Spectrometer
                             itemResult.Value = value;
                             itemResult.Unit = ""; // 무차원
                             break;
-                        case TestItemType.LambdaDom:
+                        case TestItemType.LambdaDom:    // 단위에 맞춰서 뿌려야 하니깐.. // 여긴 걍하는디.
                             value = result.LambdaDom;
                             itemResult.RawData = value;
                             itemResult.Value = value;

@@ -1,0 +1,364 @@
+# LanguageManager 사용 가이드
+
+## 개요
+`LanguageManager`는 Equipment의 속성(Category/DisplayName), Alarm 정보(Title/Cause/Grade), Form의 컨트롤 텍스트를 다국어로 관리하는 시스템입니다.
+
+## 주요 기능
+
+### 1. Equipment 속성 다국어 관리
+- Equipment 객체의 모든 속성을 재귀적으로 스캔
+- Unit 또는 Component 타입은 하위 속성까지 재귀 탐색
+- Category 및 DisplayName Attribute 자동 수집
+
+### 2. Alarm 정보 다국어 관리
+- Equipment의 모든 Unit에서 `m_dicAlarms` 필드를 재귀적으로 스캔
+- AlarmInfo의 Title, Cause, Grade 속성 자동 수집
+- UnitName.AlarmCode 형식으로 키 생성
+
+### 3. Form 컨트롤 다국어 관리
+- Form의 모든 컨트롤을 재귀적으로 스캔
+- Button, GroupBox, Label의 Text 속성 수집
+- 하위 컨트롤도 재귀 탐색
+
+### 4. 언어 파일 형식
+```ini
+[DisplayName]
+Equipment.Loader.Speed = 속도
+Equipment.Tester.Voltage = 전압
+
+[Category]
+Equipment.Loader.Speed = 모션
+
+[AlarmTitle]
+InputStage.3001 = Die Transfer Z축이 안전 위치가 아닙니다
+
+[AlarmCause]
+InputStage.3001 = Die Transfer Z-Axis가 안전 위치가 아닙니다. 상태를 확인 후 다시 시도 하십시오.
+
+[AlarmGrade]
+InputStage.3001 = Error
+
+[Form]
+MainForm.btnStart = 시작
+MainForm.grpSettings = 설정
+```
+
+### 5. 경로 규칙
+- **Equipment**: `TypeName.PropertyName.SubProperty`
+- **Alarm**: `UnitName.AlarmCode`
+- **Form**: `FormName.ControlName.SubControlName`
+
+## 사용 방법
+
+### 1. 기본 설정 및 초기화
+
+```csharp
+// Program.cs 또는 Main Form 초기화
+public partial class MainForm : Form
+{
+  private LanguageManager _langManager;
+
+    public MainForm()
+    {
+        InitializeComponent();
+        
+        _langManager = LanguageManager.Instance;
+        
+        // 기본 언어 설정
+     _langManager.CurrentLanguage = "Korean";
+    }
+}
+```
+
+### 2. Equipment 및 Alarm 언어 파일 생성
+
+```csharp
+// Equipment 객체 준비
+var equipment = Equipment.Instance;
+
+// Equipment 속성 스캔
+_langManager.ScanEquipmentProperties(equipment);
+
+// Alarm 스캔
+_langManager.ScanEquipmentAlarms(equipment);
+
+// 한국어 파일 생성
+_langManager.SaveEquipmentLanguage("Korean");
+_langManager.SaveAlarmLanguage("Korean");
+
+// 영어 파일 생성 (복사본 - 수동 번역 필요)
+_langManager.SaveEquipmentLanguage("English");
+_langManager.SaveAlarmLanguage("English");
+```
+
+생성된 파일: 
+- `Languages/Equipment_Korean.ini`
+- `Languages/Equipment_English.ini`
+- `Languages/Alarm_Korean.ini`
+- `Languages/Alarm_English.ini`
+
+### 3. Form 언어 파일 생성
+
+```csharp
+// 모든 Form을 열어서 스캔
+var mainForm = new MainForm();
+var configForm = new ConfigForm();
+
+// Form 컨트롤 스캔
+_langManager.ScanFormControls(mainForm);
+_langManager.ScanFormControls(configForm);
+// ... 다른 Form들도 스캔
+
+// 한국어 파일 생성
+_langManager.SaveFormLanguage("Korean");
+
+// 영어 파일 생성
+_langManager.SaveFormLanguage("English");
+```
+
+생성된 파일:
+- `Languages/Form_Korean.ini`
+- `Languages/Form_English.ini`
+
+### 4. 언어 파일 로드 및 적용
+
+```csharp
+// Form 로드 시
+private void MainForm_Load(object sender, EventArgs e)
+{
+    // 언어 로드
+    _langManager.LoadLanguage("Korean");
+    
+  // Equipment에 적용
+    var equipment = Equipment.Instance;
+    _langManager.ApplyEquipmentLanguage(equipment);
+    
+    // Alarm에 적용
+    _langManager.ApplyAlarmLanguage(equipment);
+    
+    // Form에 적용
+    _langManager.ApplyFormLanguage(this);
+}
+```
+
+### 5. 언어 변경 ComboBox 구성
+
+```csharp
+// Form Designer에 ComboBox(cboLanguage) 추가
+private void SetupLanguageSelector()
+{
+    var languages = _langManager.GetAvailableLanguages();
+    cboLanguage.Items.Clear();
+    
+    foreach (var lang in languages)
+    {
+        cboLanguage.Items.Add(lang);
+  }
+    
+    cboLanguage.SelectedItem = _langManager.CurrentLanguage;
+    
+cboLanguage.SelectedIndexChanged += CboLanguage_SelectedIndexChanged;
+}
+
+private void CboLanguage_SelectedIndexChanged(object sender, EventArgs e)
+{
+    if (cboLanguage.SelectedItem != null)
+    {
+        string selectedLang = cboLanguage.SelectedItem.ToString();
+        
+        // 언어 변경
+        _langManager.CurrentLanguage = selectedLang;
+        
+  // 즉시 적용
+        var equipment = Equipment.Instance;
+        _langManager.ApplyEquipmentLanguage(equipment);
+        _langManager.ApplyAlarmLanguage(equipment);
+        _langManager.ApplyFormLanguage(this);
+        
+        // 다른 열린 Form들에도 적용
+        foreach (Form form in Application.OpenForms)
+        {
+ if (form != this)
+         {
+     _langManager.ApplyFormLanguage(form);
+            }
+        }
+    }
+}
+```
+
+## 고급 사용법
+
+### 1. Alarm 정의 예제
+
+```csharp
+public class InputStage : BaseUnit<InputStageConfig>
+{
+    public enum AlarmKeys
+    {
+        eDieTransferPlaceZNotSafety = 3001,
+        eOutputFeederCylinderZNotSafety = 3002,
+        eOutputFeederYNotSafe = 3003,
+  }
+
+    protected override void InitAlarm()
+{
+        base.InitAlarm();
+        
+        AlarmInfo alarm = new AlarmInfo();
+   alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafety;
+    alarm.Title = "Die Transfer Z축이 안전 위치가 아닙니다";
+        alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 상태를 확인 후 다시 시도 하십시오.";
+        alarm.Source = this.UnitName;  // 중요: Source 설정
+        alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+        m_dicAlarms.Add(alarm.Code, alarm);
+    }
+}
+```
+
+### 2. 언어 파일 수동 편집
+
+#### Alarm_Korean.ini
+```ini
+[AlarmTitle]
+InputStage.3001 = Die Transfer Z축이 안전 위치가 아닙니다
+InputStage.3002 = Feeder Z 실린더가 안전 위치가 아닙니다
+InputStage.3003 = Feeder Y축이 안전 위치가 아닙니다
+
+[AlarmCause]
+InputStage.3001 = Die Transfer Z-Axis가 안전 위치가 아닙니다. 상태를 확인 후 다시 시도 하십시오.
+InputStage.3002 = Feeder Z-Cylinder가 안전 위치가 아닙니다. 상태를 확인 후 다시 시도 하십시오.
+InputStage.3003 = Feeder Y축이 안전 위치가 아닙니다. Feeder Y축을 안전 위치로 이동 후 다시 시도 하십시오.
+
+[AlarmGrade]
+InputStage.3001 = Error
+InputStage.3002 = Error
+InputStage.3003 = Warning
+```
+
+#### Alarm_English.ini
+```ini
+[AlarmTitle]
+InputStage.3001 = Die Transfer Z-Axis Not at Safety Position
+InputStage.3002 = Feeder Z-Cylinder Not at Safety Position
+InputStage.3003 = Feeder Y-Axis Not at Safety Position
+
+[AlarmCause]
+InputStage.3001 = Die Transfer Z-Axis is not at safety position. Please check status and retry.
+InputStage.3002 = Feeder Z-Cylinder is not at safety position. Please check status and retry.
+InputStage.3003 = Feeder Y-Axis is not at safety position. Move to safety position and retry.
+
+[AlarmGrade]
+InputStage.3001 = Error
+InputStage.3002 = Error
+InputStage.3003 = Warning
+```
+
+### 3. AlarmManager와 연동
+
+AlarmManager에서 Alarm 발생 시 자동으로 현재 언어 적용:
+
+```csharp
+public class AlarmManager
+{
+    public void PostAlarm(AlarmInfo alarm)
+    {
+        // 언어 적용
+        var langManager = LanguageManager.Instance;
+ 
+        if (alarm != null && !string.IsNullOrWhiteSpace(alarm.Source))
+    {
+   string alarmKey = $"{alarm.Source}.{alarm.Code}";
+      
+        alarm.Title = langManager.GetAlarmTitle(alarmKey, alarm.Title);
+      alarm.Cause = langManager.GetAlarmCause(alarmKey, alarm.Cause);
+      alarm.Grade = langManager.GetAlarmGrade(alarmKey, alarm.Grade);
+     }
+   
+        // 기존 로직...
+        Alarms.Add(alarm);
+     OnPostAlarm?.Invoke(alarm);
+    }
+}
+```
+
+## 언어 파일 생성 유틸리티
+
+Equipment, Alarm, Form의 언어 파일을 한 번에 생성하는 유틸리티를 사용하세요.
+
+```csharp
+// LanguageSetupForm.cs
+var setupForm = new LanguageSetupForm();
+setupForm.ShowDialog();
+```
+
+LanguageSetupForm에서:
+1. "Scan Equipment" - Equipment 속성 스캔
+2. "Scan Alarms" - Alarm 정보 스캔
+3. "Scan All Forms" - Form 컨트롤 스캔
+4. "Save Korean" - 한국어 파일 저장
+5. "Save English" - 영어 파일 저장
+
+## 주의사항
+
+1. **Alarm Code 중복 방지**: 
+   - 각 Unit마다 고유한 AlarmCode 범위 사용 권장
+   - enum으로 AlarmKeys 정의하여 관리
+
+2. **Source 속성 설정**:
+   - AlarmInfo 생성 시 반드시 Source 속성 설정
+- Source가 없으면 객체 경로를 사용하지만 정확도 떨어짐
+
+3. **m_dicAlarms 접근**:
+   - m_dicAlarms 필드는 protected 이상으로 선언
+   - BaseComponent에서 상속받아 사용
+
+4. **언어 파일 경로**:
+   - 기본: `실행파일경로/Languages/`
+   - 변경이 필요하면 LanguageManager 생성자 수정
+
+5. **런타임 적용**:
+   - 언어 변경 후 즉시 적용하려면 ApplyAlarmLanguage() 호출
+   - 이미 발생한 Alarm은 재생성하거나 수동 업데이트 필요
+
+## 문제 해결
+
+### Q: Alarm이 스캔되지 않아요
+A: 
+1. m_dicAlarms가 protected 또는 public으로 선언되어 있는지 확인
+2. InitAlarm() 메서드가 호출되어 m_dicAlarms에 항목이 있는지 확인
+3. BaseComponent를 상속받았는지 확인
+
+### Q: Alarm 키가 중복됩니다
+A:
+1. 각 Unit마다 고유한 AlarmCode 범위 사용
+2. enum으로 AlarmKeys를 정의하여 시작 값 지정:
+```csharp
+public enum AlarmKeys
+{
+    eError1 = 1001,  // InputStage
+    eError2 = 2001,  // OutputStage
+    eError3 = 3001,  // DieTransfer
+}
+```
+
+### Q: 일부 Alarm만 번역됩니다
+A:
+1. AlarmInfo의 Source 속성이 올바르게 설정되어 있는지 확인
+2. 언어 파일의 키 형식이 `UnitName.AlarmCode`인지 확인
+3. Log 파일에서 스캔 중 오류 확인
+
+## 확장 아이디어
+
+1. **Alarm 실시간 번역**
+   - AlarmManager.PostAlarm()에서 자동 번역 적용
+   
+2. **Grade 다국어**
+   - Error, Warning, Inform도 다국어로 표시
+
+3. **언어 파일 검증**
+   - 누락된 Alarm 키 찾기
+   - 사용되지 않는 키 정리
+
+4. **실시간 편집기**
+   - Alarm 언어 파일을 GUI로 편집하는 도구

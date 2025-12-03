@@ -10,6 +10,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -113,10 +114,6 @@ namespace QMC.LCP_280.Process.Unit
         private OpticonBarcodeReader BarcoderReader;
         #endregion
 
-
-
-
-
         public bool IsRequestReturnWafer { get; set; }
         public bool IsWaferReadyForUnloding { get; set; } = false;
         public bool IsWaferReadyForloading { get; set; } = false;
@@ -201,7 +198,29 @@ namespace QMC.LCP_280.Process.Unit
             BarcoderReader = Equipment.Instance?.BarcoderReader2;
 
             if (BarcoderReader == null)
+            {
                 Log.Write("InputCassetteLifter", "[BindBarcodeReader] BarcoderReader null");
+                return;
+            }
+
+            // 이벤트 중복 구독 방지 후 재구독
+            try
+            {
+                BarcoderReader.BarcodeDataReceived -= BarcoderReader_BarcodeDataReceived;
+                BarcoderReader.ErrorOccurred -= BarcoderReader_ErrorOccurred;
+                BarcoderReader.StatusChanged -= BarcoderReader_StatusChanged;
+            }
+            catch { /* ignore */ }
+
+            BarcoderReader.BarcodeDataReceived += BarcoderReader_BarcodeDataReceived;
+            BarcoderReader.ErrorOccurred += BarcoderReader_ErrorOccurred;
+            BarcoderReader.StatusChanged += BarcoderReader_StatusChanged;
+
+            Log.Write(UnitName, "BindBarcodeReader", "Barcoder events subscribed");
+            // 필요 시 자동 트리거를 여기서 켤 수도 있습니다.
+            // if (Config.UseBarcode && BarcoderReader.Config.UseAutoTrigger)
+            //     BarcoderReader.StartAutoTrigger();
+
         }
 
         public string ReadBarcoder()
@@ -218,12 +237,24 @@ namespace QMC.LCP_280.Process.Unit
                 int result = 0;
                 if (Config.UseBarcode)
                 {
-                    result = BarcoderReader.Read(out barcode);
-                    if (result != 0)
+                    if(BarcoderReader.Config.UseAutoTrigger)
                     {
-                        Log.Write(UnitName, "ReadBarcoder", "Read Fail.");
-                        barcode = string.Empty;
+                        result = BarcoderReader.StartAutoTrigger();
+                        if (result != 0)
+                        {
+                            Log.Write(UnitName, "ReadBarcoder", "Read Fail.");
+                            barcode = string.Empty;
+                        }
                     }
+                    else
+                    {
+                        result = BarcoderReader.Read(out barcode);
+                        if (result != 0)
+                        {
+                            Log.Write(UnitName, "ReadBarcoder", "Read Fail.");
+                            barcode = string.Empty;
+                        }
+                    } 
                 }
                 else
                 {
@@ -242,6 +273,7 @@ namespace QMC.LCP_280.Process.Unit
                 return string.Empty;
             }
         }
+
         #endregion
 
         #region Axis Binding / Helpers
@@ -497,8 +529,13 @@ namespace QMC.LCP_280.Process.Unit
             Thread.Sleep(10);
             if (ret == 0)
             {
-                while (this.WaferLifterZ.IsMoveDone() == false)
+                while (true)
                 {
+                    if(this.WaferLifterZ.InPosition(axisPos)
+                        && this.WaferLifterZ.IsMoveDone())
+                    {
+                        break;
+                    }
                     Thread.Sleep(1);
                 }
             }
@@ -700,7 +737,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -751,7 +788,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (!InputFeederUnit.IsPositionFeederYSafety())
+            if (InputFeederUnit.IsPositionFeederYSafety() == false)
             {
                 WaferLifterZ.EmgStop();
                 PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
@@ -791,11 +828,14 @@ namespace QMC.LCP_280.Process.Unit
             bool bDetected = false;
             while (true)
             {
-                if(IsStop)
+                if (RunMode == UnitRunMode.Auto)
                 {
-                    Log.Write(UnitName, "ScanWafer", "ScanWafer Stop");
-                    return 0;
-                }
+                    if (IsStop)
+                    {
+                        Log.Write(UnitName, "ScanWafer", "ScanWafer Stop");
+                        return 0;
+                    }
+                }  
 
                 if (IsEndTask(taskMoveEndPos))
                 {
@@ -831,18 +871,29 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (MappingSensor())
                 {
-                    if (bDetected == true)
-                    {
-                        Thread.Sleep(1);
-                        continue;
-                    }
+                    //if (bDetected == true)
+                    //{
+                    //    Thread.Sleep(1);
+                    //    continue;
+                    //}
                     bDetected = true;
                     double dPos = WaferLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-                    Log.Write(UnitName, "ScanWafer", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
-                    if (slot >= 0 && slot < material.Slots.Count)
+                    double dDelta = Math.Abs(dPos - dStartPos);
+                    int slot = (int)(Math.Abs(dDelta) / base.Config.SlotPitch);
+                    double dRange = dDelta - slot * base.Config.SlotPitch;
+                    double dSpec = 0.2;
+                    bool bIsIn = false;
+                    if(dRange > base.Config.SlotPitch * dSpec && dRange < base.Config.SlotPitch * (1- dSpec))
+                    {
+                        bIsIn = true;
+                    }
+                    Log.Write(UnitName, "ScanWafer", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString()
+                        + " delta = " + dDelta.ToString()
+                        + " dRange = " + dRange.ToString()
+                        );
+                    if (slot >= 0 && slot < material.Slots.Count && bIsIn)
                     {
                         MaterialWafer wafer = material.Slots[slot];
                         if (wafer == null ||
@@ -1128,17 +1179,24 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+
+        // 두 유닛 모두에 추가할 공통 동기화 객체 (static으로 프로세스 내 공용)
+        public static readonly object MappingSyncRoot = new object();
         // 양쪽 Cassette 슬롯 존재 패턴 교집합 적용
         public bool Mismatch { get; set; }
         private int PerformMappingIntersection(OutputCassetteLifter output)
         {
             int nRet = 0;
-            lock (_mappingSyncLock)
+
+            lock(MappingSyncRoot)
             {
                 var inMat = GetMaterialCassette();
                 var outMat = output.GetMaterialCassette();
-                if (inMat?.Slots == null || outMat?.Slots == null) 
+                if (inMat?.Slots == null || outMat?.Slots == null)
+                {
+                    Log.Write(UnitName, "[PerformMappingIntersection] Sync Fail 1");
                     return -1;
+                }
 
                 int n = Math.Min(inMat.Slots.Count, outMat.Slots.Count);
                 bool mismatch = false;
@@ -1148,45 +1206,49 @@ namespace QMC.LCP_280.Process.Unit
                     bool inExist = inMat.Slots[i]?.Presence == Material.MaterialPresence.Exist;
                     bool outExist = outMat.Slots[i]?.Presence == Material.MaterialPresence.Exist;
 
-                    if (inExist && outExist) continue; // 교집합 OK
+                    if (inExist && outExist)
+                        continue; // 교집합 OK
 
                     if (inExist != outExist)
                     {
                         mismatch = true;
-                        if (inMat.Slots[i] != null)
+                        if (Config.IsSimulation || Config.IsDryRun)
                         {
-                            inMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
-                            inMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
-                        }
-                        if (outMat.Slots[i] != null)
-                        {
-                            outMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
-                            outMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            if (inMat.Slots[i] != null)
+                            {
+                                inMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                inMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
+                            if (outMat.Slots[i] != null)
+                            {
+                                outMat.Slots[i].Presence = Material.MaterialPresence.NotExist;
+                                outMat.Slots[i].ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                            }
                         }
                     }
                 }
 
-                if (mismatch)
-                {
-                    Mismatch = mismatch;
-                    PostAlarm((int)AlarmKeys.eSlotMappingMismatch);
-                    output.PostAlarm((int)OutputCassetteLifter.AlarmKeys.eSlotMappingMismatch);
-                    return -1;
-                }
-
-                // 필요 시 교집합 결과 UI 갱신
-                EventUpdateUICassette?.BeginInvoke(inMat, null, null);
-                output.RequestUiCassetteUpdate(true);
-
-                Log.Write(UnitName, "[PerformMappingIntersection] Sync Done");
                 Mismatch = mismatch;
-
-                if(output.Mismatch)
-                {
-                    return -1;
-                }
-                return nRet;
             }
+
+            // 필요 시 교집합 결과 UI 갱신
+            EventUpdateUICassette?.BeginInvoke(this.GetMaterialCassette(), null, null);
+
+            if (Mismatch)
+            {
+                PostAlarm((int)AlarmKeys.eSlotMappingMismatch);
+                output.PostAlarm((int)OutputCassetteLifter.AlarmKeys.eSlotMappingMismatch);
+                Log.Write(UnitName, "[PerformMappingIntersection] Sync Fail - input mismatch");
+                return -1;
+            }
+            output.RequestUiCassetteUpdate(true);
+            Log.Write(UnitName, "[PerformMappingIntersection] Sync Done");
+            if (output.Mismatch)
+            {
+                Log.Write(UnitName, "[PerformMappingIntersection] Sync Fail - Output Mismatch");
+                return -1;
+            }
+            return nRet;
         }
 
         // 출력쪽도 맵핑 완료되어야 작업 가능
@@ -1235,6 +1297,136 @@ namespace QMC.LCP_280.Process.Unit
         {
             OnUpdateUICassette(GetMaterialCassette(), async);
         }
+
+
+        #region Barcode Events
+        public event EventHandler<BarcodeDataEventArgs> BarcodeReceived;
+
+        private readonly object _barcodeLock = new object();
+        private string _latestBarcode;
+        private DateTime _latestBarcodeTime;
+        private readonly ConcurrentQueue<string> _barcodeQueue = new ConcurrentQueue<string>();
+
+        protected virtual void OnBarcodeReceived(BarcodeDataEventArgs e)
+        {
+            var handler = BarcodeReceived;
+            if (handler == null) return;
+            try { handler(this, e); }
+            catch (Exception ex) { Log.Write(UnitName, $"[OnBarcodeReceived] {ex.Message}"); }
+        }
+
+        // 최신 바코드(유효시간) 조회
+        public bool TryGetLatestBarcode(out string barcode, int maxAgeMs = 5000)
+        {
+            lock (_barcodeLock)
+            {
+                if (!string.IsNullOrEmpty(_latestBarcode))
+                {
+                    if (maxAgeMs <= 0 || (DateTime.Now - _latestBarcodeTime).TotalMilliseconds <= maxAgeMs)
+                    {
+                        barcode = _latestBarcode;
+                        return true;
+                    }
+                }
+            }
+            barcode = string.Empty;
+            return false;
+        }
+
+        // 트리거 모드 지원 유틸
+        public bool IsTriggerModeConfigured()
+        {
+            try
+            {
+                return (Config.UseBarcode) && (BarcoderReader?.Config?.UseAutoTrigger ?? false);
+            }
+            catch { return false; }
+        }
+        public int EnsureTriggerOn()
+        {
+            try
+            {
+                if (IsTriggerModeConfigured() == false) 
+                    return 0;
+
+                if (BarcoderReader.IsAutoTriggerEnabled) 
+                    return 0;
+
+                return BarcoderReader.StartAutoTrigger();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "EnsureTriggerOn", ex.Message);
+                return -1;
+            }
+        }
+
+        public int EnsureTriggerOff()
+        {
+            try
+            {
+                if (IsTriggerModeConfigured() == false)
+                    return 0;
+
+                if (BarcoderReader.IsAutoTriggerEnabled == false)
+                    return 0;
+
+                return BarcoderReader.StopAutoTrigger();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "EnsureTriggerOn", ex.Message);
+                return -1;
+            }
+        }
+        #endregion
+
+        #region Barcode events/buffer for trigger mode
+        private void BarcoderReader_BarcodeDataReceived(object sender, BarcodeDataEventArgs e)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    _barcodeQueue.Enqueue(e.Data);
+                    Log.Write(UnitName, "Barcoder", $"Received: {e.Data}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"[BarcodeDataReceived] {ex.Message}");
+            }
+        }
+
+        private void BarcoderReader_ErrorOccurred(object sender, string error)
+        {
+            Log.Write(UnitName, "Barcoder", $"Error: {error}");
+        }
+
+        private void BarcoderReader_StatusChanged(object sender, string status)
+        {
+            Log.Write(UnitName, "Barcoder", status);
+        }
+
+        public void ClearBarcodeBuffer()
+        {
+            while (_barcodeQueue.TryDequeue(out _)) { }
+        }
+
+        public int WaitBarcode(out string barcode, int timeoutMs = 400, int pollMs = 10)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                if (_barcodeQueue.TryDequeue(out barcode))
+                    return 0;
+                Thread.Sleep(pollMs);
+            }
+            barcode = string.Empty;
+            return -1;
+        }
+        #endregion
+
 
     }
 }

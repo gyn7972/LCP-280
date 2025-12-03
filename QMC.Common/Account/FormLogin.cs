@@ -22,6 +22,19 @@ namespace QMC.Common.Account
             cbEditGrade.Items.Clear();
             cbEditGrade.Items.Add(UserGrade.Operator.ToString());
             cbEditGrade.Items.Add(UserGrade.Maintenance.ToString());
+            tbPassword.KeyPress += TbPassword_KeyPress;
+        }
+
+        private void TbPassword_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if(sender == tbPassword || sender == this)
+            {
+                if(e.KeyChar == '\r')
+                {
+                    btnLogin_Click(sender, null);
+
+                }
+            }
         }
 
         private void FormLogin_Load(object sender, EventArgs e)
@@ -32,12 +45,12 @@ namespace QMC.Common.Account
                 AccountManager.Load();
                 initComplete = true;
             }
-
+            // Account
+            UpdateAccountPage();
             // Login
             UpdateLoginPage();
 
-            // Account
-            UpdateAccountPage();
+           
         }
 
         private void ClearAccountList()
@@ -72,6 +85,9 @@ namespace QMC.Common.Account
                 tbUserID.Enabled = true;
                 tbPassword.Enabled = true;
                 btnLogin.Text = "Login";
+                this.Focus();
+                tbUserID.Focus();
+                tbUserID.Select();
             }
         }
 

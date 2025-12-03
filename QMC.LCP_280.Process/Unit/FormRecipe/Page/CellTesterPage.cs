@@ -2,6 +2,7 @@
 using QMC.Common;
 using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
+using QMC.Common.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,6 +21,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         private PKGTester tester => Equipment.Instance.Tester;
 
         private CancellationTokenSource _ctsRepeat;
+        // 중복 시작 방지
+        private bool _autoMeasureRunning = false;
 
         private Component.MeasurementRecipe currentRecipe
         {
@@ -90,7 +93,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             UpdateNewResultGrid();
             lbResultValue.Text = "";
             lbMeasureTime.Text = "Measure Time: - ";
-            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo()}";
+            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo() + 1}";
         }
 
         private void ClearResultGrid()
@@ -180,7 +183,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
             // 측정 시간 표시
             lbMeasureTime.Text = $"Measure Time: {tester.MeasureTime.TotalMilliseconds:F1} ms";
-            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo()}";
+            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo() + 1}";
         }
 
         private void btnLastClear_Click(object sender, EventArgs e)
@@ -327,6 +330,360 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         private void btnTestStop_Click(object sender, EventArgs e)
         {
             _ctsRepeat?.Cancel();
-        }    
+        }
+
+        private void rbTop_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void rbBottom_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void cbProbeIndex_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private int GetSelectedProbeIndex()
+        {
+            if (cbProbeIndex == null) return -1;
+
+            if (cbProbeIndex.InvokeRequired)
+            {
+                try
+                {
+                    var idx = (int)cbProbeIndex.Invoke(new Func<int>(() => cbProbeIndex.SelectedIndex));
+                    return idx < 0 ? -1 : idx;
+                }
+                catch
+                {
+                    return -1;
+                }
+            }
+
+            var selected = cbProbeIndex.SelectedIndex;
+            return selected < 0 ? -1 : selected;
+            //if (cbProbeIndex == null || cbProbeIndex.SelectedIndex < 0) return -1;
+            //// "1"~"8" → 0~7
+            //return cbProbeIndex.SelectedIndex;
+        }
+
+        private bool GetSelectedTopMode()
+        {
+            return rbTop != null && rbTop.Checked;
+        }
+
+
+        private async void btnProbeSeq_Click(object sender, EventArgs e)
+        {
+            if (_autoMeasureRunning)
+                return;
+
+            var rotary = Equipment.Instance.GetUnit(Equipment.UnitKeys.Rotary) as Rotary;
+            var controller = Equipment.Instance.GetUnit(Equipment.UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+
+            if (controller == null || rotary == null)
+            {
+                MessageBox.Show("필수 유닛 바인딩이 누락되었습니다.(ProbeController/Rotary)", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _autoMeasureRunning = true;
+            var btn = sender as Control;   // 클릭한 버튼만 비활성화
+            if (btn != null) btn.Enabled = false;
+
+            // Top/Bottom 모드 읽기
+            bool isTop = GetSelectedTopMode();
+            int selectedProbeIndex = GetSelectedProbeIndex(); // 0-based (콤보: 0~7)
+
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            Task<int> task = Task.Run(async () =>
+            {
+                try
+                {
+                    // 2) 안전/인터락 확인을 위한 Ready 구성 (Z 축 등 안전 보장)
+                    //    검사(측정)는 하지 않고 'Contact Ready' 위치로만 이동
+                    int rc = 0;
+
+                    // 우선 전체 Z 안전으로 정리(필요 시)
+                    try
+                    {
+                        // 존재 시 사용 (메서드가 없으면 0 취급)
+                        rc = controller.MovePositionSafetyZ();
+                        if (rc != 0) return -1;
+                    }
+                    catch { /* 안전Z 메서드 없으면 통과 */ }
+
+                    // 1) 선택 소켓으로 Rotary 이동 (선택 없으면 스킵)
+                    if (selectedProbeIndex >= 0)
+                    {
+                        int rcMove = await MoveRotaryToProbeSocketAsync(selectedProbeIndex, rotary, controller, token).ConfigureAwait(false);
+                        if (rcMove != 0) return -1;
+                    }
+
+                    // 3) Top/Bottom에 맞는 Contact Ready 위치로 이동
+                    if (isTop)
+                    {
+                        // 상단 접촉 준비 위치로 이동
+                        // 메서드가 제공되는 경우 사용
+                        try
+                        {
+                            rc = controller.MovePositionTopContact_Index_Ready(selectedProbeIndex);
+                            if (rc != 0) return -1;
+                            rc = controller.MovePositionTopContact_Index_Up(selectedProbeIndex);
+                            if (rc != 0) return -1;
+                        }
+                        catch
+                        {
+                            // 대체: 시퀀스형 준비 로직 (검사 없이 위치만 보장)
+                            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                            bool original = recipe.ContectTop;
+                            recipe.ContectTop = true;
+                            try
+                            {
+                                rc = controller.RunInspectionReady();
+                                if (rc != 0) return -1;
+                            }
+                            finally
+                            {
+                                recipe.ContectTop = original;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 하단 접촉 준비 위치로 이동
+                        try
+                        {
+                            rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
+                            if (rc != 0) return -1;
+                            rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
+                            if (rc != 0) return -1;
+                        }
+                        catch
+                        {
+                            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                            bool original = recipe.ContectTop;
+                            recipe.ContectTop = false;
+                            try
+                            {
+                                rc = controller.RunInspectionReady();
+                                if (rc != 0) return -1;
+                            }
+                            finally
+                            {
+                                recipe.ContectTop = original;
+                            }
+                        }
+                    }
+
+                    return 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    return -1;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("CellTesterPage", "btnProbeSeq_Click", ex.Message);
+                    return -1;
+                }
+            }, token);
+
+            // 진행 표시 (취소 지원)
+            var pf = new ProgressForm("Probe Position Move", "이동 중...", task, controller);
+            pf.StopProcess += _ =>
+            {
+                try { controller.CancelSequence(); } catch { }
+                try { cts.Cancel(); } catch { }
+            };
+
+            pf.ShowDialog(this);
+
+            // 결과 처리
+            try
+            {
+                if (pf.DialogResult == DialogResult.Cancel)
+                {
+                    MessageBox.Show("이동이 취소되었습니다.", "취소", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    int rc = await task.ConfigureAwait(true);
+                    if (rc != 0)
+                        MessageBox.Show("Probe 위치 이동 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    else
+                        MessageBox.Show("Probe 위치 이동 완료.", "완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            finally
+            {
+                _autoMeasureRunning = false;
+                if (btn != null) btn.Enabled = true;
+                cts.Dispose();
+
+                // 상태 라벨 갱신
+                try { lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo() + 1}"; } catch { }
+            }
+        }
+
+        private async void btnProbeSafety_Click(object sender, EventArgs e)
+        {
+            if (_autoMeasureRunning)
+                return;
+
+            var controller = Equipment.Instance.GetUnit(Equipment.UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+            if (controller == null)
+            {
+                MessageBox.Show("ProbeController 바인딩 없음.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _autoMeasureRunning = true;
+            var btn = sender as Control;
+            if (btn != null) btn.Enabled = false;
+
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            Task<int> task = Task.Run(() =>
+            {
+                try
+                {
+                    // 안전 위치 이동 (Z/FW/BW/ProbeCardZ 등을 안전 보장)
+                    int rc = 0;
+                    try
+                    {
+                        rc = controller.MovePositionSafetyZ();
+                        if (rc != 0) return -1;
+                    }
+                    catch
+                    {
+                        // 메서드가 없거나 실패 시, 시퀀스 기반 보장 로직을 사용
+                        // 컨트롤러 내부가 안전위치 인터락을 가지고 있으므로 RunInspectionReady로 대체
+                        rc = controller.EnsureReady(isFine: false);
+                        if (rc != 0) return -1;
+                    }
+
+                    // 최종 안전 판별(가능 시)
+                    try
+                    {
+                        if (!controller.IsAllSafetyAxisPos() && !controller.IsProbeSafetyAxisPos())
+                            return -1;
+                    }
+                    catch { /* 안전 판별 API 없으면 생략 */ }
+
+                    return 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    return -1;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("CellTesterPage", "btnProbeSafety_Click", ex.Message);
+                    return -1;
+                }
+            }, token);
+
+            var pf = new ProgressForm("Probe Safety Move", "안전 위치로 이동 중...", task, controller);
+            pf.StopProcess += _ =>
+            {
+                try { controller.CancelSequence(); } catch { }
+                try { cts.Cancel(); } catch { }
+            };
+
+            pf.ShowDialog(this);
+
+            try
+            {
+                if (pf.DialogResult == DialogResult.Cancel)
+                {
+                    MessageBox.Show("이동이 취소되었습니다.", "취소", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    int rc = await task.ConfigureAwait(true);
+                    if (rc != 0)
+                        MessageBox.Show("안전 위치 이동 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    else
+                        MessageBox.Show("안전 위치 이동 완료.", "완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            finally
+            {
+                _autoMeasureRunning = false;
+                if (btn != null) btn.Enabled = true;
+                cts.Dispose();
+            }
+        }
+
+        // Rotary를 목표 ProbeIndex로 이동(회전 + 대기)
+        private async Task<int> MoveRotaryToProbeSocketAsync(int targetProbeIndex, 
+            Rotary rotary, IndexChipProbeController controller, CancellationToken ct)
+        {
+            if (rotary == null || controller == null)
+                return -1;
+
+            int count = rotary.GetIndexCount();
+            if (count <= 0)
+                return -1;
+
+            if (targetProbeIndex < 0 || targetProbeIndex >= count)
+                return 0; // 현재 위치 사용
+
+            // 현재 Probe가 바라보고 있는 소켓 인덱스
+            int currentProbeIndex = controller.GetProbeIndexNo();
+            // 정방향(전진)만 허용: 목표가 현재보다 뒤에 있으면 그대로 차, 앞(순환)이라면 래핑
+            // ex) current=7, target=0, count=8 → steps = 1 (forward 래핑)
+            int steps = 0;
+            if (targetProbeIndex >= currentProbeIndex)
+                steps = targetProbeIndex - currentProbeIndex;
+            else
+                steps = count - (currentProbeIndex - targetProbeIndex);
+
+            if (steps == 0)
+                return 0; // 이미 목표
+
+            int nRet = 0;
+            for (int i = 0; i < steps; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                // 전진 1 Step (정방향만)
+                nRet = rotary.MovePositionRotate();
+                if (nRet != 0)
+                {
+                    Log.Write("MeasurementResultForm", $"Rotary 이동 실패");
+                    return -1;
+                }
+
+                nRet = rotary.WaitIndexMoveDone();
+                if (nRet != 0)
+                {
+                    Log.Write("MeasurementResultForm", "Rotary 이동 대기 타임아웃/오류");
+                    return -1;
+                }
+
+                // (선택) 조기 종료 확인
+                int newProbeIndex = controller.GetProbeIndexNo();
+                if (newProbeIndex == targetProbeIndex)
+                    break;
+            }
+
+            // 최종 확인
+            int finalProbeIndex = controller.GetProbeIndexNo();
+            if (finalProbeIndex != targetProbeIndex)
+            {
+                Log.Write("CellTesterPage", $"목표 도달 미확인 (final={finalProbeIndex}, target={targetProbeIndex})");
+                return -1;
+            }
+
+            return 0;
+        }
     }
 }

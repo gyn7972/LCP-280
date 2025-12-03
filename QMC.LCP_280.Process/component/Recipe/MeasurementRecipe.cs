@@ -49,21 +49,23 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(100.0)]
         public double WaferDiameter { get; set; } = 100.0;
 
-        [Category("Wafer Map"), DisplayName("Chip Width (mm)")]
+        [Category("Wafer Map"), DisplayName("Wafer Chip PitchX (mm)")]
         [DefaultValue(5.0)]
-        public double ChipWidth { get; set; } = 5.0;
+        public double WChipPitchX { get; set; } = 5.0;
 
-        [Category("Wafer Map"), DisplayName("Chip Height (mm)")]
+        [Category("Wafer Map"), DisplayName("Wafer Chip PitchY (mm)")]
         [DefaultValue(5.0)]
-        public double ChipHeight { get; set; } = 5.0;
+        public double WChipPitchY { get; set; } = 5.0;
 
-        [Category("Wafer Map"), DisplayName("Row Count")]
-        [DefaultValue(60)]
-        public int Rows { get; set; } = 60;
+        //[JsonIgnore]
+        //[Category("Wafer Map"), DisplayName("Row Count")]
+        //[DefaultValue(60)]
+        //public int Rows { get; set; } = 5;
 
-        [Category("Wafer Map"), DisplayName("Col Count")]
-        [DefaultValue(60)]
-        public int Cols { get; set; } = 60;
+        //[JsonIgnore]
+        //[Category("Wafer Map"), DisplayName("Col Count")]
+        //[DefaultValue(60)]
+        //public int Cols { get; set; } = 5;
 
         [Category("Wafer Map"), DisplayName("Map File Path")]
         [DefaultValue("")]
@@ -97,22 +99,22 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(1)]
         public double BinPitchYmm { get; set; } = 1;
 
-        [Category("Bin Array"), DisplayName("Bin Count X")]
-        [DefaultValue(10)]
-        public int BinCountX { get; set; } = 10;
+        //[Category("Bin Array"), DisplayName("Bin Count X")]
+        //[DefaultValue(10)]
+        //public int BinCountX { get; set; } = 5;
 
-        [Category("Bin Array"), DisplayName("Bin Count Y")]
-        [DefaultValue(10)]
-        public int BinCountY { get; set; } = 10;
+        //[Category("Bin Array"), DisplayName("Bin Count Y")]
+        //[DefaultValue(10)]
+        //public int BinCountY { get; set; } = 5;
 
-        // Material
-        [Category("Material"), DisplayName("Tape Thickness (um)")]
-        [DefaultValue(80.0)]
-        public double TapeThicknessUm { get; set; } = 80.0;
+        //// Material
+        //[Category("Material"), DisplayName("Tape Thickness (um)")]
+        //[DefaultValue(80.0)]
+        //public double TapeThicknessUm { get; set; } = 80.0;
 
-        [Category("Material"), DisplayName("Chip Thickness (um)")]
-        [DefaultValue(120.0)]
-        public double ChipThicknessUm { get; set; } = 120.0;
+        //[Category("Material"), DisplayName("Chip Thickness (um)")]
+        //[DefaultValue(120.0)]
+        //public double ChipThicknessUm { get; set; } = 120.0;
 
         //[JsonProperty("UseBarcode")] // ← JSON 키를 명시적으로 고정
         [Category("Contect"), DisplayName("Top")]
@@ -136,9 +138,9 @@ namespace QMC.LCP_280.Process.Component
 
         public override bool Validate()
         {
-            if (Rows <= 0 || Cols <= 0) throw new ArgumentOutOfRangeException("Map size invalid.");
+            //if (Rows <= 0 || Cols <= 0) throw new ArgumentOutOfRangeException("Map size invalid.");
             if (WaferDiameter <= 0) throw new ArgumentOutOfRangeException(nameof(WaferDiameter));
-            if (ChipWidth <= 0 || ChipHeight <= 0) throw new ArgumentOutOfRangeException("Chip size invalid.");
+            if (WChipPitchX <= 0 || WChipPitchY <= 0) throw new ArgumentOutOfRangeException("Chip size invalid.");
             if (MapMatchLimitPercent < 0 || MapMatchLimitPercent > 100) throw new ArgumentOutOfRangeException(nameof(MapMatchLimitPercent));
             return true;
         }

@@ -16,7 +16,12 @@ namespace QMC.LCP_280.Process.Component
         Inspected,  // 검사 완료
         Rejected,   // 불량
         Placed,     // 언로더 배치 완료
-        Error       // 오류
+        Error,       // 오류
+        Error_load,
+        Error_MAlign,
+        Error_Probe,
+        Error_UnloadAlign,
+        Error_Unloader,
     }
 
     [Serializable]

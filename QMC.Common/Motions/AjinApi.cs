@@ -166,7 +166,7 @@ namespace QMC.Common.Motions
             //vel = 5;// GetCommandVelocityPps(axisNo);
             //acc = 10;//Math.Max(vel * 2.0, 1.0);
             //dec = 10;//acc;
-           
+            AXM.SetMaxVelocity(axisNo, vel);
             AXM.SetAbsRelMode(axisNo, true);
             return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
         }

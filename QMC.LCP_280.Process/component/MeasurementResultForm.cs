@@ -276,7 +276,7 @@ namespace QMC.LCP_280.Process.Component
                     break;
             }
             lbMeasureTime.Text = $"Measure Time: {tester.MeasureTime.TotalMilliseconds:F1} ms";
-            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo()}";
+            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo() + 1}";
         }
 
 

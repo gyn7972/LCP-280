@@ -1695,7 +1695,7 @@ namespace QMC.LCP_280.Process.Unit
             _pickUpdoneEvent.Reset();
 
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -1741,8 +1741,8 @@ namespace QMC.LCP_280.Process.Unit
                         return 0;
                     }
 
-                    MaterialDie die = Rotary.GetUnloadSocketMaterial();
-                    if (die == null || die.Presence != Material.MaterialPresence.Exist)
+                    MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
+                    if (DieIndex == null || DieIndex.Presence != Material.MaterialPresence.Exist)
                     {
                         return 0;
                     }
@@ -1752,39 +1752,14 @@ namespace QMC.LCP_280.Process.Unit
                     int nArmindex = GetPlaceArmIndex();
 
                     Log.Write(UnitName, "OnRunWork", "OnRunWork Start");
-                    var MaterialDie = GetMaterial() as MaterialDie;
-                    if (MaterialDie == null
-                        || MaterialDie.State != DieProcessState.Picked
-                        || MaterialDie.Presence != Material.MaterialPresence.Exist)
+                    var DeiOutTr = this.GetMaterial() as MaterialDie;
+                    if (DeiOutTr == null
+                        || DeiOutTr.State != DieProcessState.Picked
+                        || DeiOutTr.Presence != Material.MaterialPresence.Exist)
                     {
                         var sw = System.Diagnostics.Stopwatch.StartNew();
                         int timeoutMs = 60000 * 10;
-
                         Material waferBin = OutputStage.GetMaterialWafer();
-                        if (waferBin != null
-                            && waferBin.Presence == Material.MaterialPresence.Exist
-                            && die != null
-                            && die.Presence == Material.MaterialPresence.Exist)
-                        {
-                            //TaktStart("MoveOutStage");
-                            //try
-                            //{
-                            //    nRet = MoveOutStage();
-                            //}
-                            //finally
-                            //{
-                            //    TaktEnd("MoveOutStage");
-                            //}
-                            //if (nRet != 0)
-                            //{
-                            //    AxisOutputPlaceZ?.EmgStop();
-                            //    AxisOutputToolT?.EmgStop();
-                            //    PostAlarm((int)AlarmKeys.eOutputDieTransferMoveOutStage);
-                            //    Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
-                            //    return -1;
-                            //}
-                        }
-
                         while (true)
                         {
                             if (IsStop)
@@ -1811,22 +1786,29 @@ namespace QMC.LCP_280.Process.Unit
 
 
                         Task<int> taskOutStageMoveToNextDIe = null;
-                        TaktStart("MoveOutStage");
-                        try
+                        if (waferBin != null
+                            && waferBin.Presence == Material.MaterialPresence.Exist
+                            && DieIndex != null
+                            && DieIndex.Presence == Material.MaterialPresence.Exist)
                         {
-                            taskOutStageMoveToNextDIe = MoveOutStageASync();
-                        }
-                        finally
-                        {
-                            
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisOutputPlaceZ?.EmgStop();
-                            AxisOutputToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferMoveOutStage);
-                            Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
-                            return -1;
+                            TaktStart("MoveOutStage");
+                            try
+                            {
+                                taskOutStageMoveToNextDIe = MoveOutStageASync();
+                            }
+                            finally
+                            {
+
+                            }
+
+                            if (nRet != 0)
+                            {
+                                AxisOutputPlaceZ?.EmgStop();
+                                AxisOutputToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferMoveOutStage);
+                                Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
+                                return -1;
+                            }
                         }
 
                         nRet = MovePositionPickUpToolT_Index(nIndex);
@@ -1882,27 +1864,26 @@ namespace QMC.LCP_280.Process.Unit
                         vac = this.IsVacuumOK(nArmindex);
                         if (vac == true)
                         {
-                            die.State = DieProcessState.Picked;
-                            die.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                            die.Presence = Material.MaterialPresence.Exist;
+                            DieIndex.State = DieProcessState.Picked;
+                            DieIndex.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                            DieIndex.Presence = Material.MaterialPresence.Exist;
                             
                             Rotary.MoveMaterialToOutputDieTransfer();
                             if(taskOutStageMoveToNextDIe != null)
                             {
-
                                 taskOutStageMoveToNextDIe.Wait();
                             }
-
                             SetPickupDoneEvent();
+
                             _lastPickSucceeded = true;
                             State = ProcessState.Complete;
-                            Log.Write(UnitName, "PickSuccess", $"Die Index={die.Index} marked Presence=Exist");
+                            Log.Write(UnitName, "PickSuccess", $"Die Index={DieIndex.Index} marked Presence=Exist");
                         }
                         else
                         {
                             // 픽 실패 시 현재 예약 슬롯을 Rejected 처리해 다음 슬롯으로 진행할 수 있게 함
                             OutputStage?.MarkCurrentReservedMissing();
-                            die.State = DieProcessState.Rejected;
+                            DieIndex.State = DieProcessState.Rejected;
                             if (taskOutStageMoveToNextDIe != null)
                             {
                                 taskOutStageMoveToNextDIe.Wait();
@@ -1910,7 +1891,7 @@ namespace QMC.LCP_280.Process.Unit
                             SetPickupDoneEvent();
 
                             _lastPickSucceeded = true;
-                            Log.Write(UnitName, "PickFail", $"Die Index={die.Index} marked Presence=Exist");
+                            Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} marked Presence=Exist");
                             return 0;
                         }
                     }
@@ -1919,7 +1900,7 @@ namespace QMC.LCP_280.Process.Unit
                     //    && MaterialDie.State == DieProcessState.Picked
                     //    && MaterialDie.Presence == Material.MaterialPresence.Exist)
                     vac = this.IsVacuumOK(nArmindex);
-                    if (MaterialDie != null && vac)
+                    if (DeiOutTr != null && vac)
                     {
                         Log.Write(UnitName, "OnRunWork", "Complete ->");
                         State = ProcessState.Complete;
@@ -2084,10 +2065,9 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
             }
-            var Die = GetMaterial() as MaterialDie;
-
-            var dieRotary = this.Rotary?.GetUnloadSocketMaterial();
-            if (OutputStage.TryReserveNextEmptyBin(dieRotary, out double binX, out double binY, out double dT, out var slot) == false)
+            var DieOutTr = this.GetMaterial() as MaterialDie;
+            var DieIndex = this.Rotary?.GetUnloadSocketMaterial();
+            if (OutputStage.TryReserveNextEmptyBin(DieIndex, out double binX, out double binY, out double dT, out var slot) == false)
             {
                 //Log.Write(UnitName, "[MoveOutStage] No empty bin slot.");
                 return 0; // 더 놓을 자리가 없으면 정상 종료로 간주

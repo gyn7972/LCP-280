@@ -123,19 +123,22 @@ namespace QMC.LCP_280.Process.Component
                     SetStatus("No wafer. Load lot first.");
                     return;
                 }
-                // Center-based coordinates: (0,0) is wafer center.
-                // Create 5 chips around center: (0,0), (-1,0), (1,0), (0,-1), (0,1)
-                var coords = new (int x, int y)[] { (0,0), (-1,0), (1,0), (0,-1), (0,1) };
-                int startIdx = wafer.Dies.Count > 0 ? wafer.Dies.Max(c => c.Index) + 1 : 0;
-                int added = 0;
-                foreach (var (x, y) in coords)
+                lock (wafer.Dies)
                 {
-                    var idx = startIdx + added;
-                    wafer.AddChip(idx, x, y);
-                    added++;
+                    // Center-based coordinates: (0,0) is wafer center.
+                    // Create 5 chips around center: (0,0), (-1,0), (1,0), (0,-1), (0,1)
+                    var coords = new (int x, int y)[] { (0, 0), (-1, 0), (1, 0), (0, -1), (0, 1) };
+                    int startIdx = wafer.Dies.Count > 0 ? wafer.Dies.Max(c => c.Index) + 1 : 0;
+                    int added = 0;
+                    foreach (var (x, y) in coords)
+                    {
+                        var idx = startIdx + added;
+                        wafer.AddChip(idx, x, y);
+                        added++;
+                    }
+                    SetStatus($"Added {added} center-based chips. Total={wafer.Dies.Count}");
+                    RefreshChipList();
                 }
-                SetStatus($"Added {added} center-based chips. Total={wafer.Dies.Count}");
-                RefreshChipList();
             }
             catch (Exception ex)
             {
@@ -154,60 +157,63 @@ namespace QMC.LCP_280.Process.Component
                     SetStatus("No wafer. Load lot first.");
                     return;
                 }
-                if (lvChips.SelectedItems.Count == 0 && wafer.Dies.Count == 0)
+                lock (wafer.Dies)
                 {
-                    SetStatus("No chips to inspect.");
-                    return;
+                    if (lvChips.SelectedItems.Count == 0 && wafer.Dies.Count == 0)
+                    {
+                        SetStatus("No chips to inspect.");
+                        return;
+                    }
+                    int index = 0;
+                    if (lvChips.SelectedItems.Count > 0)
+                    {
+                        int.TryParse(lvChips.SelectedItems[0].SubItems[0].Text, out index);
+                    }
+                    var chip = wafer.GetChipByIndex(index) ?? wafer.Dies.FirstOrDefault();
+                    if (chip == null)
+                    {
+                        SetStatus("Chip not found.");
+                        return;
+                    }
+
+                    // Simulate inspect
+                    chip.State = DieProcessState.Inspecting;
+
+                    var keys = wafer.RecipeKeys ?? new List<string>();
+                    if (keys.Count == 0)
+                    {
+                        keys = new List<string> { "Brightness", "Resistance", "Defect" };
+                    }
+
+                    var rnd = new Random(index + Environment.TickCount);
+                    foreach (var k in keys)
+                    {
+                        double v;
+                        if (string.Equals(k, "Brightness", StringComparison.OrdinalIgnoreCase))
+                            v = 100 + rnd.NextDouble() * 50; // 100~150
+                        else if (string.Equals(k, "Resistance", StringComparison.OrdinalIgnoreCase))
+                            v = (index % 2 == 0) ? 0.04 + rnd.NextDouble() * 0.01 : 0.06 + rnd.NextDouble() * 0.02; // pass/fail mix
+                        else if (string.Equals(k, "Defect", StringComparison.OrdinalIgnoreCase))
+                            v = (index % 3 == 0) ? 1.0 : 0.0;
+                        else
+                            v = rnd.NextDouble() * 100;
+                        chip.AddMeasure(k, v);
+                    }
+
+                    // Simple rule: pass if Resistance <= 0.05
+                    var r = chip.GetMeasure("Resistance");
+                    bool pass = !r.HasValue || r.Value <= 0.05;
+                    chip.IsPass = pass;
+                    chip.State = pass ? DieProcessState.Inspected : DieProcessState.Rejected;
+
+                    // Assume placed to unloader (simulation)
+                    chip.TargetWaferId = "UNLOAD01";
+                    chip.TargetSlot = 0;
+                    chip.TargetChipIndex = chip.Index;
+
+                    SetStatus($"Chip {chip.Index} => {(chip.IsPass ? "PASS" : "FAIL")} ({chip.State})");
+                    RefreshChipList();
                 }
-                int index = 0;
-                if (lvChips.SelectedItems.Count > 0)
-                {
-                    int.TryParse(lvChips.SelectedItems[0].SubItems[0].Text, out index);
-                }
-                var chip = wafer.GetChipByIndex(index) ?? wafer.Dies.FirstOrDefault();
-                if (chip == null)
-                {
-                    SetStatus("Chip not found.");
-                    return;
-                }
-
-                // Simulate inspect
-                chip.State = DieProcessState.Inspecting;
-
-                var keys = wafer.RecipeKeys ?? new List<string>();
-                if (keys.Count == 0)
-                {
-                    keys = new List<string> { "Brightness", "Resistance", "Defect" };
-                }
-
-                var rnd = new Random(index + Environment.TickCount);
-                foreach (var k in keys)
-                {
-                    double v;
-                    if (string.Equals(k, "Brightness", StringComparison.OrdinalIgnoreCase))
-                        v = 100 + rnd.NextDouble() * 50; // 100~150
-                    else if (string.Equals(k, "Resistance", StringComparison.OrdinalIgnoreCase))
-                        v = (index % 2 == 0) ? 0.04 + rnd.NextDouble() * 0.01 : 0.06 + rnd.NextDouble() * 0.02; // pass/fail mix
-                    else if (string.Equals(k, "Defect", StringComparison.OrdinalIgnoreCase))
-                        v = (index % 3 == 0) ? 1.0 : 0.0;
-                    else
-                        v = rnd.NextDouble() * 100;
-                    chip.AddMeasure(k, v);
-                }
-
-                // Simple rule: pass if Resistance <= 0.05
-                var r = chip.GetMeasure("Resistance");
-                bool pass = !r.HasValue || r.Value <= 0.05;
-                chip.IsPass = pass;
-                chip.State = pass ? DieProcessState.Inspected : DieProcessState.Rejected;
-
-                // Assume placed to unloader (simulation)
-                chip.TargetWaferId = "UNLOAD01";
-                chip.TargetSlot = 0;
-                chip.TargetChipIndex = chip.Index;
-
-                SetStatus($"Chip {chip.Index} => {(chip.IsPass ? "PASS" : "FAIL")} ({chip.State})");
-                RefreshChipList();
             }
             catch (Exception ex)
             {
@@ -267,11 +273,13 @@ namespace QMC.LCP_280.Process.Component
                     lvChips.EndUpdate();
                     return;
                 }
-                foreach (var chip in wafer.Dies.OrderBy(c => c.Index))
+                lock (wafer.Dies)
                 {
-                    var measures = FormatMeasures(chip);
-                    var item = new ListViewItem(new[]
+                    foreach (var chip in wafer.Dies.OrderBy(c => c.Index))
                     {
+                        var measures = FormatMeasures(chip);
+                        var item = new ListViewItem(new[]
+                        {
                         chip.Index.ToString(),
                         chip.MapX.ToString(),
                         chip.MapY.ToString(),
@@ -279,9 +287,10 @@ namespace QMC.LCP_280.Process.Component
                         chip.IsPass ? "True" : "False",
                         measures
                     });
-                    lvChips.Items.Add(item);
+                        lvChips.Items.Add(item);
+                    }
+                    lvChips.EndUpdate();
                 }
-                lvChips.EndUpdate();
             }
             catch
             {

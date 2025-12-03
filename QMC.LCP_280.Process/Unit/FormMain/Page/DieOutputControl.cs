@@ -2,6 +2,7 @@
 using QMC.Common.Controls;                 // DisplayView_DieOutputControl
 using QMC.LCP_280.Process.Component;       // MaterialDie, DieProcessState
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -188,52 +189,58 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     return;
 
                 var wafer = outputStage.GetMaterialWafer();
-
-                bool needCreate = wafer == null || wafer.Dies == null || wafer.Dies.Count == 0;
-                if (needCreate)
+                lock (wafer.Dies)
                 {
-                    var newWafer = new MaterialWafer
-                    {
-                        WaferId = waferId,
-                        WaferDate = DateTime.Now.ToString("yyyyMMdd"),
-                        CarrierId = wafer?.CarrierId ?? string.Empty,
-                        Presence = Material.MaterialPresence.Exist,
-                        ProcessSatate = Material.MaterialProcessSatate.Ready,
-                    };
 
-                    // OutputFeeder의 MakePath() 재사용
-                    var feeder = TryGetUnit<OutputFeeder>(Equipment.UnitKeys.OutputFeeder);
-                    if (feeder != null)
+                    bool needCreate = wafer == null || wafer.Dies == null || wafer.Dies.Count == 0;
+                    if (needCreate)
                     {
-                        bool feederBusy = feeder.RunUnitStatus == UnitStatus.AutoRunning;
-                        if (!feederBusy)
+                        var newWafer = new MaterialWafer
                         {
-                            var backup = feeder.GetMaterial() as MaterialWafer;
-                            feeder.SetMaterial(newWafer);          // Feeder에 임시 장착
-                            feeder.MakePath();                     // 내부 레시피 / 패턴 / 경로 로직 그대로 적용
-                            // Dies 생성 후 복원
-                            feeder.SetMaterial(backup);
-                        }
-                        else
+                            WaferId = waferId,
+                            WaferDate = DateTime.Now.ToString("yyyyMMdd"),
+                            CarrierId = wafer?.CarrierId ?? string.Empty,
+                            Presence = Material.MaterialPresence.Exist,
+                            ProcessSatate = Material.MaterialProcessSatate.Ready,
+                        };
+                        lock (newWafer.Dies)
                         {
-                            // 실행 중이면 간섭 피하고 동일 로직을 로컬로 재현(Fallback)
-                            newWafer.Dies = BuildDiesWithFeederLogicFallback(feeder);
+                            // OutputFeeder의 MakePath() 재사용
+                            var feeder = TryGetUnit<OutputFeeder>(Equipment.UnitKeys.OutputFeeder);
+                            if (feeder != null)
+                            {
+                                bool feederBusy = feeder.RunUnitStatus == UnitStatus.AutoRunning;
+                                if (!feederBusy)
+                                {
+                                    var backup = feeder.GetMaterial() as MaterialWafer;
+                                    feeder.SetMaterial(newWafer);          // Feeder에 임시 장착
+                                    feeder.MakePath();                     // 내부 레시피 / 패턴 / 경로 로직 그대로 적용
+                                                                           // Dies 생성 후 복원
+                                    feeder.SetMaterial(backup);
+                                }
+                                else
+                                {
+                                    // 실행 중이면 간섭 피하고 동일 로직을 로컬로 재현(Fallback)
+                                    newWafer.Dies = BuildDiesWithFeederLogicFallback(feeder);
+                                }
+                            }
+                            else
+                            {
+                                // Feeder 없음 → 최소 기본 맵(Fallback)
+                                newWafer.Dies = BuildDefaultRectGridFallback();
+                            }
+
+                            outputStage.SetMaterial(newWafer);
+                            outputStage.UpdateUI();
+                            //SetDieList(newWafer.Dies);
                         }
                     }
                     else
                     {
-                        // Feeder 없음 → 최소 기본 맵(Fallback)
-                        newWafer.Dies = BuildDefaultRectGridFallback();
+                        wafer.WaferId = waferId;
+                        SetDieList(wafer.Dies);
                     }
 
-                    outputStage.SetMaterial(newWafer);
-                    outputStage.UpdateUI();
-                    //SetDieList(newWafer.Dies);
-                }
-                else
-                {
-                    wafer.WaferId = waferId;
-                    SetDieList(wafer.Dies);
                 }
             }
             catch (Exception ex)
@@ -248,11 +255,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private List<MaterialDie> BuildDiesWithFeederLogicFallback(OutputFeeder feeder)
         {
             var dies = new List<MaterialDie>();
+            
             try
             {
                 var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
-                int cntX = (recipe?.BinCountX > 0) ? recipe.BinCountX : 1;
-                int cntY = (recipe?.BinCountY > 0) ? recipe.BinCountY : 1;
+                int cntX = 5;// (recipe?.BinCountX > 0) ? recipe.BinCountX : 1;
+                int cntY = 5;// (recipe?.BinCountY > 0) ? recipe.BinCountY : 1;
 
                 // OutputFeeder 내부 enum 접근
                 var startCorner = feeder.StartCorner;
@@ -352,19 +360,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private List<MaterialDie> BuildDefaultRectGridFallback()
         {
             var dies = new List<MaterialDie>();
-            int cntX = 10, cntY = 10;
+            int cntX = 5, cntY = 5;
             try
             {
                 var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
                 if (recipe != null)
                 {
-                    if (recipe.BinCountX > 0) cntX = recipe.BinCountX;
-                    if (recipe.BinCountY > 0) cntY = recipe.BinCountY;
+                    //if (recipe.BinCountX > 0) cntX = recipe.BinCountX;
+                    //if (recipe.BinCountY > 0) cntY = recipe.BinCountY;
                 }
             }
             catch { }
 
-            int cx =(int) ((cntX - 1) / 2.0);
+            int cx = (int)((cntX - 1) / 2.0);
             int cy = (int)((cntY - 1) / 2.0);
             int index = 0;
             for (int y = 0; y < cntY; y++)
@@ -588,7 +596,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // 기존 DisplayView1_MouseDown → HitTest 사용으로 단순화
         private void DisplayView1_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Right) 
+            if (e.Button != MouseButtons.Right)
                 return;
 
             // HitTest 사용 (DisplayView_DieOutputControl에 public HitTest 추가됨)
@@ -620,7 +628,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // 더블클릭(좌측) → 모터 이동: DisplayView_DieOutputControl ItemDoubleClicked 이벤트 활용 권장
         private void DisplayView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Left) 
+            if (e.Button != MouseButtons.Left)
                 return;
             var hit = displayView1.HitTest(e.Location);
             if (hit == null) return;

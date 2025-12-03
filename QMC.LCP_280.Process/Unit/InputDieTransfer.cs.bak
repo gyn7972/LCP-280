@@ -54,6 +54,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public event EventHandler<DiePickedEventArgs> DiePicked;
 
+        Task<int> taskPrepareNextDie = null;
         public enum AlarmKeys
         {
             eInputStageNotSafety = 4001,
@@ -1134,7 +1135,7 @@ namespace QMC.LCP_280.Process.Unit
                 // 완료
                 if (pickMoving && pinMoving)
                 {
-                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] pickMoving && pinMoving : Comp.");
+                    //Log.Write(UnitName, "[MovePickZAndPinZByOffset] pickMoving && pinMoving : Comp.");
                     break;
                 }
                     
@@ -1718,10 +1719,21 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRet = 0;
-
                 int nArmIndex = GetInputTrArmIndex();
-                MaterialDie DieFeeder = this.GetMaterial() as MaterialDie;
-                if (DieFeeder != null && IsVacuumOK(nArmIndex))
+                MaterialDie DieTr = this.GetMaterial() as MaterialDie;
+
+                if(InputStage.IsRingPresent() == false 
+                    && InputStage.IsPlateUp() == false)
+                {
+
+                    AxisPickZ?.EmgStop();
+                    AxisToolT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] Wafer None failed");
+                    return -1;
+                }
+
+                if (DieTr != null && IsVacuumOK(nArmIndex))
                 {
                     if (IsVacuumOK(nArmIndex))
                     {
@@ -1774,10 +1786,20 @@ namespace QMC.LCP_280.Process.Unit
 
                 SetVacuum(nArmIndex, true);
 
+                Log.Write("kkkkkkRotary", "PrepareNextDie");
                 TaktStart("PrepareNextDie");
                 try
                 {
-                    nRet = PrepareNextDie();
+                    if(taskPrepareNextDie == null)
+                    {
+
+                        nRet = PrepareNextDie();
+                    }
+                    else
+                    {
+                        taskPrepareNextDie.Wait();
+                        taskPrepareNextDie = null;
+                    }
                 }
                 finally
                 {
@@ -1802,6 +1824,8 @@ namespace QMC.LCP_280.Process.Unit
                                     || waferDie.State == DieProcessState.Picked);
                 if (haveDieOnArm)
                 {
+
+                    Log.Write("kkkkkkRotary", "RaiseEjectorForPick");
                     TaktStart("RaiseEjectorForPick");
                     try
                     {
@@ -1822,6 +1846,8 @@ namespace QMC.LCP_280.Process.Unit
 
                     if (IsStop) { return 0; }
                     TaktStart("ChipPickDown");
+
+                    Log.Write("kkkkkkRotary", "ChipPickDown");
                     try
                     {
                         nRet = ChipPickDown();
@@ -1839,6 +1865,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1; 
                     }
 
+                    Log.Write("kkkkkkRotary", "SyncPickPinUp");
                     TaktStart("SyncPickPinUp");
                     try
                     {
@@ -1857,6 +1884,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1; 
                     }
 
+                    Log.Write("kkkkkkRotary", "SyncPickPinRetreat");
                     TaktStart("SyncPickPinRetreat");
                     try
                     {
@@ -1866,6 +1894,9 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         TaktEnd("SyncPickPinRetreat");
                     }
+
+
+                    Log.Write("kkkkkkRotary", "SyncPickPinRetreat");
                     if (nRet != 0) 
                     {
                         AxisPickZ?.EmgStop();
@@ -1889,23 +1920,76 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             TaktEnd("CommitPickedDie");
                         }
-                        if (nRet != 0) 
+                        if (nRet != 0)
                         {
                             AxisPickZ?.EmgStop();
                             AxisToolT?.EmgStop();
                             PostAlarm((int)AlarmKeys.eInputDieTransferCommitPickedDie);
-                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed"); 
-                            return -1; 
+                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                            return -1;
                         }
                     }
                     else
                     {
+                        nRet = MovePositionReady();
+                        if (nRet != 0)
+                        {
+                            AxisPickZ?.EmgStop();
+                            AxisToolT?.EmgStop();
+                            PostAlarm((int)AlarmKeys.eInputDieTransferNotSafety);
+                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                            return -1;
+                        }
+
+                        this.SetVacuum(nArmIndex, false);
+                        this.SetBlow(nArmIndex, true);
+
+                        Thread.Sleep(100);
+
+                        this.SetBlow(nArmIndex, false);
+                        this.SetVacuum(nArmIndex, true);
+
                         nRet = CommitNotPickedDie();
                         this.SetMaterial(null);
                         this.State = ProcessState.Ready;
                         return 0;
                     }
+
+                    //if (IsVacuumOK(nArmIndex))
+                    //{
+                    //    var res = InputStageVaccumOff();
+                    //    if (!res.flowControl) return res.value;
+
+                    //    TaktStart("CommitPickedDie");
+                    //    try
+                    //    {
+                    //        nRet = CommitPickedDie();
+                    //    }
+                    //    finally
+                    //    {
+                    //        TaktEnd("CommitPickedDie");
+                    //    }
+                    //    if (nRet != 0) 
+                    //    {
+                    //        AxisPickZ?.EmgStop();
+                    //        AxisToolT?.EmgStop();
+                    //        PostAlarm((int)AlarmKeys.eInputDieTransferCommitPickedDie);
+                    //        Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed"); 
+                    //        return -1; 
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    nRet = CommitNotPickedDie();
+                    //    this.SetMaterial(null);
+                    //    this.State = ProcessState.Ready;
+                    //    return 0;
+                    //}
                 }
+
+
+                Log.Write("kkkkkkRotary", "RotateToolTForPlace_AsyncWait start");
+
                 TaktStart("RotateToolTForPlace_AsyncWait");
                 try
                 {
@@ -1924,6 +2008,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1; 
                 }
 
+                Log.Write("kkkkkkRotary", "RotateToolTForPlace_AsyncWait");
                 State = ProcessState.Complete;
                 return nRet;
             }
@@ -1940,6 +2025,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 int nRet = 0;
 
+                Log.Write("kkkkkkRotary", "PlaceChipDown Start11");
                 if (Rotary.RequestInputDieTrDie == false) 
                     return 0;
 
@@ -1954,6 +2040,15 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return 0;
                 }
+
+                Log.Write("kkkkkkRotary", "PlaceChipDown Start12");
+
+                this.taskPrepareNextDie = Task.Factory.StartNew(() => 
+                { 
+                    return MoveStageToNextDie(out var die); 
+                });
+
+               
 
                 TaktStart("PlaceChipDown");
                 try
@@ -1972,7 +2067,9 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunComplete] PlaceChipDown failed");
                     return -1;
                 }
+                Log.Write("kkkkkkInputTr", "PlaceChipDown End");
 
+                Log.Write("kkkkkkRotary", "PlaceChipDown Start123");
                 TaktStart("ReleaseVacuumAndPlaceUp");
                 try
                 {
@@ -2000,6 +2097,7 @@ namespace QMC.LCP_280.Process.Unit
                 SetVacuum(armIndex, true, false);
                 this.SetMaterial(null);
 
+                Log.Write("kkkkkkRotary", "PlaceChipDown Start124");
                 State = ProcessState.None;
                 return 0;
             }
@@ -2082,35 +2180,38 @@ namespace QMC.LCP_280.Process.Unit
                 //var mb = new MessageBoxOk();
                 //mb.Focus();
                 //mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] UnitRunMode.Manual");
                 return 0;
             }
             if (InputStage == null)
             {
-                Log.Write(UnitName, "[RecheckDieAndAlign] InputStage is null");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] InputStage is null");
                 return -1;
             }
             MaterialWafer wafer = this.InputStage.GetMaterialWafer();
             if (wafer == null)
             {
-                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is null");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] wafer is null");
                 return -1;
             }
             if (wafer.Presence != Material.MaterialPresence.Exist)
             {
-                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is not exist");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] wafer is not exist");
                 return -1;
             }
             if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
             {
-                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is not processing state");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] wafer is not processing state");
                 return -1;
             }
             nRet = InputStage.RecheckDieAndAlign(bFineSpeed);
             if (nRet != 0)
             {
-                Log.Write(UnitName, "[RecheckDieAndAlign] InputStage.RecheckDieAndAlign failed");
+                Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] InputStage.RecheckDieAndAlign failed");
                 return -1;
             }
+
+            Log.Write(UnitName, "RecheckDieAndAlign", "[RecheckDieAndAlign] ???");
             return nRet;
         }
 
@@ -2473,43 +2574,28 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return RotateToolTForPlace(bFineSpeed);
             });
-
+            Thread.Sleep(30);
+            //Log.Write(UnitName, "RotateToolTForPlace_AsyncWait", "RecheckDieAndAlign Start");
+            Task<int> t2 = Task.Factory.StartNew(() =>
+            {
+                return  RecheckDieAndAlign();
+            });
+            // 2차 보상 하지말고 돌려보자.
             while (t.IsCompleted == false)
             {
                 // 진행 중 모니터링(필요 시 비전/로그 등)
-                double dPos = AxisToolT.GetPosition();
-                // TODO: 옵션에 따라 사진 촬영/좌표 업데이트 등 처리
+                // 여기 아에 하지말고 돌려보자.
+                // 너무 빨라서 Grab이 안됬었음...
+                // 타이밍 맞춰야함....
                 
-                // 여기서 Die 유/무 재확인 및 Image Grab 후 2차 얼라인 수행.
-                // InputStage class의 RecheckDieAndAlign 함수 불러와서 수행.
-                nRet = RecheckDieAndAlign();
 
-                //마지막에 스테이지 교체 하니깐 여기서는 없으면 우선 걍 패뜨
-                //아니면 마지막 칩 확인해야할듯.
+                //////마지막에 스테이지 교체 하니깐 여기서는 없으면 우선 걍 패뜨
+                //////아니면 마지막 칩 확인해야할듯.
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[OnRunWork] RecheckDieAndAlign failed");
-                    //return -1;
+                    //    //return -1;
                 }
-
-                //TaktStart("PrepareNextDie");
-                //try
-                //{
-                //    nRet = PrepareNextDie();
-                //}
-                //finally
-                //{
-                //    TaktEnd("PrepareNextDie");
-                //}
-                //if (nRet != 0)
-                //{
-                //    AxisPickZ?.EmgStop();
-                //    AxisToolT?.EmgStop();
-                //    PostAlarm((int)AlarmKeys.eInputDieTransferPrepareNextDie);
-                //    Log.Write(UnitName, "[OnRunWork] PrepareNextDie failed");
-                //    return -1;
-                //}
-
                 Thread.Sleep(1);
             }
 
@@ -2671,7 +2757,6 @@ namespace QMC.LCP_280.Process.Unit
             nRet = this.InputStage.MoveStageToNextDie(out die);
             return nRet;
         }
-
         public int RotateToolTForPlace(bool bFineSpeed = false)
         {
             if (AxisToolT == null)
@@ -2807,6 +2892,7 @@ namespace QMC.LCP_280.Process.Unit
         public void ResetForNewRun(bool moveToSafeReady = true, bool clearHeldDie = true)
         {
             // 1) 런타임 플래그/버퍼 초기화
+            taskPrepareNextDie = null;
             _isSafetyMoving = false;
             this.CurrentFunc = null;
 

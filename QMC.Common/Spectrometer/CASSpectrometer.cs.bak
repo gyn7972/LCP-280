@@ -281,10 +281,11 @@ namespace QMC.Common.Spectrometer
                     switch (item.Type)
                     {
                         case TestItemType.RadInt:
-                            value = result.RadInt;
+                            value = result.RadInt * 1000;
                             itemResult.RawData = value;
                             itemResult.Value = value;
                             itemResult.Unit = result.RadIntUnit;
+                            //itemResult.Unit = "mW"; // Manual 참조
                             break;
                         case TestItemType.PhotInt:
                             value = result.PhotInt;

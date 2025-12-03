@@ -78,17 +78,21 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
 
         private void btnZeroSet_Click(object sender, EventArgs e)
         { 
-            if (selectGage == null)
-                return;
+            //if (selectGage == null)
+            //    return;
 
-            var result = MessageBox.Show($"[{selectGage.Name}] Do you want to set the zero voltage to the current voltage?"
-                , ""
-                , MessageBoxButtons.YesNo
-                , MessageBoxIcon.Question);
+            //var result = MessageBox.Show($"[{selectGage.Name}] Do you want to set the zero voltage to the current voltage?"
+            //    , ""
+            //    , MessageBoxButtons.YesNo
+            //    , MessageBoxIcon.Question);
 
-            if (result == DialogResult.Yes)
+            //if (result == DialogResult.Yes)
+            //{
+            //    selectGage.SetZeroVoltage();
+            //}
+            foreach(var v in equipment.StrainGages)
             {
-                selectGage.SetZeroVoltage();
+                v.Value.SetZeroVoltage();
             }
         }
 

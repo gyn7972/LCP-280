@@ -162,8 +162,10 @@ namespace QMC.LCP_280.Process
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, HIKGigECamera> Cameras { get; } = new Dictionary<string, HIKGigECamera>(StringComparer.OrdinalIgnoreCase);
         // === 편의 프로퍼티 추가 ===
-        public HIKGigECamera IndexLoaderCam => GetCamera("Index_Loader");
+        
         public HIKGigECamera InStageCam => GetCamera("In_Stage");
+        public HIKGigECamera IndexLoaderCam => GetCamera("Index_Loader");
+        public HIKGigECamera Index_AlignerCam => GetCamera("Index_Aligner");
         public HIKGigECamera IndexProberCam => GetCamera("Index_Prober");
         public HIKGigECamera IndexUnloaderCam => GetCamera("Index_Unloader");
         public HIKGigECamera OutStageCam => GetCamera("Out_Stage");

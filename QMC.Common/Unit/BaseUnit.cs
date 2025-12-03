@@ -150,8 +150,17 @@ namespace QMC.Common.Unit
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
         public List<TeachingPosition> TeachingPositions
         {
-            get => Config.TeachingPositions;
-            private set => Config.TeachingPositions = value;
+            get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
+            private set
+            {
+                if (Config == null)
+                {
+                    // Initialize Config if possible or ignore safely
+                    // If Config cannot be created here, just noop to avoid NRE
+                    return;
+                }
+                Config.TeachingPositions = value ?? new List<TeachingPosition>();
+            }
         }
 
         protected BaseUnit(string unitName)
@@ -343,7 +352,7 @@ namespace QMC.Common.Unit
 
             SetRunMode(UnitRunMode.Manual);
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;         // <-이걸 여기서 하면 안되는거지. RunUnitStatus만 보고 멈춰야지.
             
             return 0;
         }
@@ -394,7 +403,11 @@ namespace QMC.Common.Unit
         public string GetUnitName() => UnitName;
 
 
-        public Material GetMaterial() => m_currentMaterial;
+        public Material GetMaterial()
+        {
+            return m_currentMaterial;
+        }
+
         //public virtual void SetMaterial(Material m) => m_currentMaterial = m;
         public virtual void SetMaterial(Material m)
         {

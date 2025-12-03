@@ -56,9 +56,11 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCylinderControl.BackColor = System.Drawing.Color.White;
             this.gbCylinderControl.Controls.Add(this.tableLayoutPanel4);
             this.gbCylinderControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbCylinderControl.Location = new System.Drawing.Point(3, 673);
+            this.gbCylinderControl.Location = new System.Drawing.Point(4, 1009);
+            this.gbCylinderControl.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.gbCylinderControl.Name = "gbCylinderControl";
-            this.gbCylinderControl.Size = new System.Drawing.Size(873, 69);
+            this.gbCylinderControl.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.gbCylinderControl.Size = new System.Drawing.Size(1312, 105);
             this.gbCylinderControl.TabIndex = 15;
             this.gbCylinderControl.TabStop = false;
             this.gbCylinderControl.Text = "Control";
@@ -71,12 +73,13 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.Controls.Add(this.btn_Forward_Move, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.btn_Backward_Move, 1, 0);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(4, 25);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 1;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(867, 49);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(1304, 76);
             this.tableLayoutPanel4.TabIndex = 2;
             // 
             // btn_Forward_Move
@@ -90,9 +93,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Forward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Forward_Move.ForeColor = System.Drawing.Color.Black;
             this.btn_Forward_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Forward_Move.Location = new System.Drawing.Point(3, 3);
+            this.btn_Forward_Move.Location = new System.Drawing.Point(4, 4);
+            this.btn_Forward_Move.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_Forward_Move.Name = "btn_Forward_Move";
-            this.btn_Forward_Move.Size = new System.Drawing.Size(427, 43);
+            this.btn_Forward_Move.Size = new System.Drawing.Size(644, 68);
             this.btn_Forward_Move.TabIndex = 0;
             this.btn_Forward_Move.TabStop = false;
             this.btn_Forward_Move.Text = "Forward Move";
@@ -110,9 +114,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Backward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Backward_Move.ForeColor = System.Drawing.Color.Black;
             this.btn_Backward_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Backward_Move.Location = new System.Drawing.Point(436, 3);
+            this.btn_Backward_Move.Location = new System.Drawing.Point(656, 4);
+            this.btn_Backward_Move.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_Backward_Move.Name = "btn_Backward_Move";
-            this.btn_Backward_Move.Size = new System.Drawing.Size(428, 43);
+            this.btn_Backward_Move.Size = new System.Drawing.Size(644, 68);
             this.btn_Backward_Move.TabIndex = 1;
             this.btn_Backward_Move.TabStop = false;
             this.btn_Backward_Move.Text = "Backward Move";
@@ -124,9 +129,11 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCylinderState.BackColor = System.Drawing.Color.White;
             this.gbCylinderState.Controls.Add(this.tableLayoutPanel5);
             this.gbCylinderState.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbCylinderState.Location = new System.Drawing.Point(3, 3);
+            this.gbCylinderState.Location = new System.Drawing.Point(4, 4);
+            this.gbCylinderState.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.gbCylinderState.Name = "gbCylinderState";
-            this.gbCylinderState.Size = new System.Drawing.Size(873, 292);
+            this.gbCylinderState.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.gbCylinderState.Size = new System.Drawing.Size(1312, 439);
             this.gbCylinderState.TabIndex = 16;
             this.gbCylinderState.TabStop = false;
             this.gbCylinderState.Text = "State";
@@ -138,12 +145,13 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel6, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.inputStatepropertyCollectionView, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(4, 25);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(867, 272);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(1304, 410);
             this.tableLayoutPanel5.TabIndex = 17;
             this.tableLayoutPanel5.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel5_Paint);
             // 
@@ -155,11 +163,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel6.Controls.Add(this.lbStatusValue, 1, 0);
             this.tableLayoutPanel6.Controls.Add(this.lbStatusCaption, 0, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(4, 4);
+            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 1;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(861, 48);
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(1296, 74);
             this.tableLayoutPanel6.TabIndex = 0;
             // 
             // lbStatusValue
@@ -170,9 +179,10 @@ namespace QMC.LCP_280.Process.Unit
             this.lbStatusValue.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lbStatusValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
             this.lbStatusValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbStatusValue.Location = new System.Drawing.Point(261, 0);
+            this.lbStatusValue.Location = new System.Drawing.Point(392, 0);
+            this.lbStatusValue.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lbStatusValue.Name = "lbStatusValue";
-            this.lbStatusValue.Size = new System.Drawing.Size(597, 48);
+            this.lbStatusValue.Size = new System.Drawing.Size(900, 74);
             this.lbStatusValue.TabIndex = 16;
             this.lbStatusValue.Text = "Forward";
             this.lbStatusValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -183,9 +193,10 @@ namespace QMC.LCP_280.Process.Unit
             this.lbStatusCaption.BorderWidth = 1;
             this.lbStatusCaption.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lbStatusCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbStatusCaption.Location = new System.Drawing.Point(3, 0);
+            this.lbStatusCaption.Location = new System.Drawing.Point(4, 0);
+            this.lbStatusCaption.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lbStatusCaption.Name = "lbStatusCaption";
-            this.lbStatusCaption.Size = new System.Drawing.Size(252, 48);
+            this.lbStatusCaption.Size = new System.Drawing.Size(380, 74);
             this.lbStatusCaption.TabIndex = 15;
             this.lbStatusCaption.Text = "Status";
             this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -195,11 +206,14 @@ namespace QMC.LCP_280.Process.Unit
             this.inputStatepropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.inputStatepropertyCollectionView.FastBuild = true;
             this.inputStatepropertyCollectionView.GroupName = "Input State";
-            this.inputStatepropertyCollectionView.Location = new System.Drawing.Point(3, 57);
+            this.inputStatepropertyCollectionView.Location = new System.Drawing.Point(6, 88);
+            this.inputStatepropertyCollectionView.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.inputStatepropertyCollectionView.Name = "inputStatepropertyCollectionView";
-            this.inputStatepropertyCollectionView.Size = new System.Drawing.Size(861, 212);
+            this.inputStatepropertyCollectionView.Size = new System.Drawing.Size(1292, 316);
             this.inputStatepropertyCollectionView.SuppressResizeInvalidation = true;
             this.inputStatepropertyCollectionView.TabIndex = 14;
+            this.inputStatepropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 10F);
+            this.inputStatepropertyCollectionView.TextBoxFontSize = 10F;
             // 
             // selectItemListBoxItemsView
             // 
@@ -213,13 +227,13 @@ namespace QMC.LCP_280.Process.Unit
             this.selectItemListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.selectItemListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.selectItemListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.selectItemListBoxItemsView.Location = new System.Drawing.Point(3, 6);
-            this.selectItemListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.selectItemListBoxItemsView.Location = new System.Drawing.Point(4, 9);
+            this.selectItemListBoxItemsView.Margin = new System.Windows.Forms.Padding(4, 9, 4, 9);
             this.selectItemListBoxItemsView.Name = "selectItemListBoxItemsView";
             this.selectItemListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.selectItemListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.selectItemListBoxItemsView.SelectedIndex = -1;
-            this.selectItemListBoxItemsView.Size = new System.Drawing.Size(373, 739);
+            this.selectItemListBoxItemsView.Size = new System.Drawing.Size(560, 1108);
             this.selectItemListBoxItemsView.TabIndex = 2;
             // 
             // btn_Save_Setup_Cylinder
@@ -233,9 +247,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Setup_Cylinder.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Setup_Cylinder.ForeColor = System.Drawing.Color.Black;
             this.btn_Save_Setup_Cylinder.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Setup_Cylinder.Location = new System.Drawing.Point(439, 3);
+            this.btn_Save_Setup_Cylinder.Location = new System.Drawing.Point(659, 4);
+            this.btn_Save_Setup_Cylinder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btn_Save_Setup_Cylinder.Name = "btn_Save_Setup_Cylinder";
-            this.btn_Save_Setup_Cylinder.Size = new System.Drawing.Size(431, 40);
+            this.btn_Save_Setup_Cylinder.Size = new System.Drawing.Size(649, 62);
             this.btn_Save_Setup_Cylinder.TabIndex = 5;
             this.btn_Save_Setup_Cylinder.TabStop = false;
             this.btn_Save_Setup_Cylinder.Text = "Save";
@@ -247,11 +262,14 @@ namespace QMC.LCP_280.Process.Unit
             this.cylinderPropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cylinderPropertyCollectionView.FastBuild = true;
             this.cylinderPropertyCollectionView.GroupName = "Property";
-            this.cylinderPropertyCollectionView.Location = new System.Drawing.Point(3, 301);
+            this.cylinderPropertyCollectionView.Location = new System.Drawing.Point(6, 453);
+            this.cylinderPropertyCollectionView.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.cylinderPropertyCollectionView.Name = "cylinderPropertyCollectionView";
-            this.cylinderPropertyCollectionView.Size = new System.Drawing.Size(873, 314);
+            this.cylinderPropertyCollectionView.Size = new System.Drawing.Size(1308, 468);
             this.cylinderPropertyCollectionView.SuppressResizeInvalidation = true;
             this.cylinderPropertyCollectionView.TabIndex = 13;
+            this.cylinderPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 10F);
+            this.cylinderPropertyCollectionView.TextBoxFontSize = 10F;
             // 
             // tableLayoutPanel1
             // 
@@ -262,10 +280,11 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1.Controls.Add(this.selectItemListBoxItemsView, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1896, 1126);
             this.tableLayoutPanel1.TabIndex = 17;
             this.tableLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel1_Paint);
             // 
@@ -278,14 +297,15 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Controls.Add(this.cylinderPropertyCollectionView, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 2);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(382, 3);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(572, 4);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 4;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 43F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(879, 745);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(1320, 1118);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // tableLayoutPanel3
@@ -293,22 +313,24 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel3.ColumnCount = 2;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.00001F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tableLayoutPanel3.Controls.Add(this.btn_Save_Setup_Cylinder, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 621);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(4, 931);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(873, 46);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(1312, 70);
             this.tableLayoutPanel3.TabIndex = 17;
             // 
             // Cylinder_Setup
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.ClientSize = new System.Drawing.Size(1896, 1126);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Cylinder_Setup";
             this.gbCylinderControl.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);

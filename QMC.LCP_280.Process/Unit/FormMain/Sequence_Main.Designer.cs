@@ -102,6 +102,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllRecipes.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnLoadAllRecipes.CustomForeColor = System.Drawing.Color.Black;
             this.btnLoadAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnLoadAllRecipes.Enabled = false;
             this.btnLoadAllRecipes.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnLoadAllRecipes.ForeColor = System.Drawing.Color.Black;
             this.btnLoadAllRecipes.ImageSize = new System.Drawing.Size(45, 45);
@@ -121,6 +122,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllRecipes.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSaveAllRecipes.CustomForeColor = System.Drawing.Color.Black;
             this.btnSaveAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnSaveAllRecipes.Enabled = false;
             this.btnSaveAllRecipes.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSaveAllRecipes.ForeColor = System.Drawing.Color.Black;
             this.btnSaveAllRecipes.ImageSize = new System.Drawing.Size(45, 45);
@@ -140,6 +142,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllConfigs.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnLoadAllConfigs.CustomForeColor = System.Drawing.Color.Black;
             this.btnLoadAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnLoadAllConfigs.Enabled = false;
             this.btnLoadAllConfigs.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnLoadAllConfigs.ForeColor = System.Drawing.Color.Black;
             this.btnLoadAllConfigs.ImageSize = new System.Drawing.Size(45, 45);
@@ -159,6 +162,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllConfigs.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSaveAllConfigs.CustomForeColor = System.Drawing.Color.Black;
             this.btnSaveAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnSaveAllConfigs.Enabled = false;
             this.btnSaveAllConfigs.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSaveAllConfigs.ForeColor = System.Drawing.Color.Black;
             this.btnSaveAllConfigs.ImageSize = new System.Drawing.Size(45, 45);
@@ -178,6 +182,7 @@ namespace QMC.LCP_280.Process
             this.btnStopAll.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStopAll.CustomForeColor = System.Drawing.Color.Black;
             this.btnStopAll.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStopAll.Enabled = false;
             this.btnStopAll.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStopAll.ForeColor = System.Drawing.Color.Black;
             this.btnStopAll.ImageSize = new System.Drawing.Size(45, 45);
@@ -197,6 +202,7 @@ namespace QMC.LCP_280.Process
             this.btnStartAll.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.CustomForeColor = System.Drawing.Color.Black;
             this.btnStartAll.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStartAll.Enabled = false;
             this.btnStartAll.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.ForeColor = System.Drawing.Color.Black;
             this.btnStartAll.ImageSize = new System.Drawing.Size(45, 45);
@@ -245,6 +251,7 @@ namespace QMC.LCP_280.Process
             this.btnStopUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStopUnit.CustomForeColor = System.Drawing.Color.Black;
             this.btnStopUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStopUnit.Enabled = false;
             this.btnStopUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStopUnit.ForeColor = System.Drawing.Color.Black;
             this.btnStopUnit.ImageSize = new System.Drawing.Size(45, 45);
@@ -262,6 +269,7 @@ namespace QMC.LCP_280.Process
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbUnits.Enabled = false;
             this.cmbUnits.Location = new System.Drawing.Point(126, 3);
             this.cmbUnits.Name = "cmbUnits";
             this.cmbUnits.Size = new System.Drawing.Size(117, 26);
@@ -275,6 +283,7 @@ namespace QMC.LCP_280.Process
             this.btnStartUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStartUnit.CustomForeColor = System.Drawing.Color.Black;
             this.btnStartUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStartUnit.Enabled = false;
             this.btnStartUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStartUnit.ForeColor = System.Drawing.Color.Black;
             this.btnStartUnit.ImageSize = new System.Drawing.Size(45, 45);

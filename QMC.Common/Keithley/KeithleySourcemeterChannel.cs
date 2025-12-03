@@ -1,6 +1,8 @@
-﻿using QMC.Common.Component;
+﻿using NPOI.OpenXmlFormats.Wordprocessing;
+using QMC.Common.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,9 +19,8 @@ namespace QMC.Common.Keithley
             MeasureV,
             MeasureIAndTrig,
             MeasureVAndTrig,
-            MeasureKELFS,
-            MeasureKELDG
-
+            MeasureContactRHigh,
+            MeasureContactRLow,
         }
         public class ChannelCommand
         {
@@ -41,6 +42,8 @@ namespace QMC.Common.Keithley
         #region Field
         private List<ChannelCommand> commands = new List<ChannelCommand>();
         private List<string> bufferDatas = new List<string>();
+        private string contactRHighData = "";
+        private string contactRLowData = "";
         #endregion
 
         #region Property
@@ -155,6 +158,12 @@ namespace QMC.Common.Keithley
                 return false;
             }
         }
+        public void ClearMeasureData()
+        {
+            contactRHighData = "";
+            contactRLowData = "";
+            bufferDatas.Clear();
+        }
         #endregion
 
         #region Command Method
@@ -168,6 +177,62 @@ namespace QMC.Common.Keithley
                 throw new ArgumentNullException(nameof(command));
 
             commands.Add(command);
+        }
+        public bool HasContactRCommand()
+        {
+            foreach (var cmd in commands)
+            {
+                if (cmd.Action == CommandAction.MeasureContactRHigh ||
+                    cmd.Action == CommandAction.MeasureContactRLow)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public bool RunContactRCommand()
+        {
+            try
+            {
+                
+                string data = "";
+
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                double dHiCurrent = 0.00005;
+                double dLowCurrent = 0.00005;
+
+                foreach ( var v in this.commands)
+                {
+                    if(v.Action ==CommandAction.MeasureContactRHigh)
+                    {
+                        dHiCurrent = v.SourceValue;
+                    }
+                    if(v.Action == CommandAction.MeasureContactRLow)
+                    {
+                        dLowCurrent = v.SourceValue;
+                    }
+                }
+
+                string cmdStr = $"measureContactR({Name},{dHiCurrent},{dLowCurrent})";
+                if (!comm.Query(cmdStr, ref data))
+                    throw new Exception($"[{Name}] Failed to send Command: {cmdStr}");
+                
+                data = data.Trim();
+                string[] datas = data.Split(new char[] { '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if(datas.Length != 2)
+                    throw new Exception($"[{Name}] Invalid contact resistance data received.");
+
+                contactRHighData = datas[0].Trim();
+                contactRLowData = datas[1].Trim();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Error handling
+                Log.Write(ex);
+                return false;
+            }
         }
         public bool RunCommands()
         {
@@ -234,26 +299,6 @@ namespace QMC.Common.Keithley
                                 cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");
                             }
                             break;
-
-                        case CommandAction.MeasureKELFS:
-                            {
-                                args.Clear();
-                                args.Add(Name);
-                                args.Add(cmd.SourceValue.ToString());
-                                args.Add(cmd.MeasureTime.ToString());
-                                cmdStrs.Add("KELFS(" + string.Join(",", args) + ")");
-                            }
-                            break;
-                        case CommandAction.MeasureKELDG:
-                            {
-                                args.Clear();
-                                args.Add(Name);
-                                args.Add(cmd.SourceValue.ToString());
-                                args.Add(cmd.MeasureTime.ToString());
-                                cmdStrs.Add("KELDG(" + string.Join(",", args) + ")");
-                            }
-                            break;
-
                     }
                 }
                 cmdStrs.Add($"endmeasure({Name})");
@@ -296,7 +341,7 @@ namespace QMC.Common.Keithley
         public bool ReadBufferData()
         {
             try
-            {
+            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
                 string bufferName = $"{Name}.nvbuffer1";
                 string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
                 
@@ -310,8 +355,36 @@ namespace QMC.Common.Keithley
                 string[] datas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
                 bufferDatas.Clear();
-                foreach (var d in datas)
-                    bufferDatas.Add(d.Trim());
+                //foreach (var d in datas)
+                //    bufferDatas.Add(d.Trim());
+                int dataIndex = 0;
+                foreach(var cmd in commands)
+                {
+                    switch (cmd.Action)
+                    {
+                        case CommandAction.MeasureI:
+                        case CommandAction.MeasureV:
+                        case CommandAction.MeasureIAndTrig:
+                        case CommandAction.MeasureVAndTrig:
+                            {
+                                if (dataIndex >= datas.Length)
+                                    throw new Exception($"[{Name}] Insufficient buffer data received.");
+                                bufferDatas.Add(datas[dataIndex]);
+                                dataIndex++;
+                            }
+                            break;
+                        case CommandAction.MeasureContactRHigh:
+                            {
+                                bufferDatas.Add(contactRHighData);
+                            }
+                            break;
+                        case CommandAction.MeasureContactRLow:
+                            {
+                                bufferDatas.Add(contactRLowData);
+                            }
+                            break;
+                    }
+                }
             }
             catch (Exception ex)
             {

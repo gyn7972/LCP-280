@@ -23,6 +23,8 @@ namespace QMC.Common.PKGTester
         [Category("Electrical")] VR,
         [Category("Electrical")] IF,
         [Category("Electrical")] IR,
+        [Category("Electrical")] KELFS, // Hi, Hi-Sense Contact Resistance
+        [Category("Electrical")] KELDG, // Lo, Lo-Sense Contact Resistance
 
         [Category("Optical")] RadInt,
         [Category("Optical")] PhotInt,
@@ -45,8 +47,6 @@ namespace QMC.Common.PKGTester
         [Category("Optical")] PickValue,
         [Category("Optical")] ADC,
 
-        [Category("Electrical")] KELFS,
-        [Category("Electrical")] KELDG,
         [Category("UserDefined")] UserDefine,
     };
 

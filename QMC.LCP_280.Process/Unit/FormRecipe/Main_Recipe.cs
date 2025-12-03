@@ -136,9 +136,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 var eq = Equipment.Instance;
                 _current = eq.EquipmentRecipe.LoadRecipe(name);
                 BuildPropertyFromRecipe(_current);
-                //_current = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), name);
-                //BuildPropertyFromRecipe(_current);
-
+                
                 // 레시피 Open 이후 반영 처리 ------
                 var currentRecipe = eq.EquipmentRecipe.CurrentRecipe;
 
@@ -321,8 +319,11 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         private void btnOpen_Click(object sender, EventArgs e)
         {
             var name = recipeListView.SelectedItemName;
-            if (string.IsNullOrWhiteSpace(name)) return;
+            if (string.IsNullOrWhiteSpace(name)) 
+                return;
             LoadRecipe(name);
+
+
         }
 
         private void btnCopy_Click(object sender, EventArgs e)

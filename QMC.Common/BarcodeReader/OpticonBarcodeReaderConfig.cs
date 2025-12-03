@@ -122,6 +122,9 @@ namespace QMC.Common.BarcodeReader
                 Handshake = pc.GetValue<Handshake>("Handshake");
                 ConversationTimeout = pc.GetValue<int>("Conversation Timeout");
                 RetryCount = pc.GetValue<int>("Retry Count");
+                UseAutoTrigger = pc.GetValue<bool>(nameof(UseAutoTrigger));
+                EnableBuzzer = pc.GetValue<bool>(nameof(EnableBuzzer));
+                ScanTimeout = pc.GetValue<int>(nameof(ScanTimeout));
             }
             catch (Exception ex)
             {

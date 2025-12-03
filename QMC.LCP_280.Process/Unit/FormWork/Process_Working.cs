@@ -6,6 +6,7 @@ using QMC.LCP_280.Process.Component; // DIO / teaching controls
 using QMC.LCP_280.Process.Unit.FormSetup;
 using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -804,6 +805,176 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 Equipment.Instance.bIndexCal = false;
             }
+        }
+
+        private async void btnManualVision_Click(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            btn.Enabled = false;
+            try
+            {
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("확인", "비전 위치를 변경하시겠습니까?") != DialogResult.Yes)
+                    return;
+
+                if (IndexChipProbeController == null)
+                {
+                    MessageBox.Show("IndexChipProbeController 없음.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 진행 폼 생성
+                using (var cts = new CancellationTokenSource())
+                {
+                    var task = RunManualVisionAsync(cts.Token);
+
+                    var pf = new ProgressForm("Manual Vision Move", "비전 위치 변경 중...", task, IndexChipProbeController);
+                    pf.StopProcess += _ =>
+                    {
+                        try
+                        {
+                            // 장비 취소 전파 (있으면 사용)
+                            IndexChipProbeController.CancelSequence();
+                        }
+                        catch { /* ignore */ }
+                        try
+                        {
+                            cts.Cancel();
+                        }
+                        catch { /* ignore */ }
+                    };
+
+                    pf.ShowDialog(this);
+
+                    // 결과 처리
+                    if (pf.DialogResult == DialogResult.Cancel)
+                    {
+                        MessageBox.Show("작업이 취소되었습니다.", "취소", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    // 예외 확인
+                    if (task.IsFaulted)
+                    {
+                        var ex = task.Exception?.GetBaseException();
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Manual Vision Error!", ex?.Message ?? "Unknown error");
+                        return;
+                    }
+
+                    // 정상 완료 코드 확인
+                    var rc = await task.ConfigureAwait(true);
+                    if (rc != 0)
+                    {
+                        MessageBox.Show($"비전 위치 변경 실패(rc={rc})", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 완료 안내 (필요 시)
+                    // MessageBox.Show("비전 위치가 변경되었습니다.", "완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            finally
+            {
+                btn.Enabled = true;
+            }
+        }
+
+        // 비젼 위치 변경 작업을 비동기로 래핑
+        private Task<int> RunManualVisionAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                int nRet = 0;
+
+                // 취소 요청이 들어오면 즉시 종료
+                void ThrowIfCanceled()
+                {
+                    if (ct.IsCancellationRequested)
+                        throw new OperationCanceledException(ct);
+                }
+
+                ThrowIfCanceled();
+
+                if (IndexChipProbeController.Config.ViewMode == false)
+                {
+                    if (IndexChipProbeController.IsSphereForward() == false)
+                    {
+                        if (IndexChipProbeController.SetSphereFB(true))
+                        {
+                            Thread.Sleep(200);
+                            var sw = Stopwatch.StartNew();
+                            while (IndexChipProbeController.IsSphereForward() == false)
+                            {
+                                ThrowIfCanceled();
+                                if (sw.ElapsedMilliseconds > 5000)
+                                {
+                                    IndexChipProbeController.PostAlarm((int)IndexChipProbeController.AlarmKeys.eSphereFBTimeout);
+                                    Log.Write(IndexChipProbeController.UnitName, "btnManualVision_Click", "[btnManualVision_Click] SphereFB-F Timeout");
+                                    return -1;
+                                }
+                                Thread.Sleep(1);
+                            }
+                        }
+                    }
+                    // 적분구 공정 위치.
+                    if (IndexChipProbeController.IsSphereZAtDown() == false)
+                    {
+                        nRet = IndexChipProbeController.MovePositionSphereZDown();
+                        if (nRet != 0)
+                        {
+                            Log.Write(IndexChipProbeController.UnitName, "btnManualVision_Click", "[btnManualVision_Click] MovePositionSphereZDown failed");
+                            return -1;
+                        }
+                        var sw = Stopwatch.StartNew();
+                        while (IndexChipProbeController.IsSphereZAtDown() == false)
+                        {
+                            ThrowIfCanceled();
+                            if (sw.ElapsedMilliseconds > 5000)
+                            {
+                                IndexChipProbeController.PostAlarm((int)IndexChipProbeController.AlarmKeys.eSphereFBTimeout);
+                                Log.Write(IndexChipProbeController.UnitName, "btnManualVision_Click", "[btnManualVision_Click] SphereZ Down Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
+                        }
+                    }
+                }
+                else
+                {
+                    // 적분구 공정 위치.
+                    if (IndexChipProbeController.IsSphereZAtReady() == false)
+                    {
+                        nRet = IndexChipProbeController.MovePositionSphereZReady();
+                        if (nRet != 0)
+                        {
+                            Log.Write(IndexChipProbeController.UnitName, "btnManualVision_Click", "[btnManualVision_Click] MovePositionSphereZReady failed");
+                            return -1;
+                        }
+                    }
+                    if (IndexChipProbeController.IsSphereBackward() == false)
+                    {
+                        if (IndexChipProbeController.SetSphereFB(false))
+                        {
+                            Thread.Sleep(200);
+                            var sw = Stopwatch.StartNew();
+                            while (IndexChipProbeController.IsSphereBackward() == false)
+                            {
+                                ThrowIfCanceled();
+                                if (sw.ElapsedMilliseconds > 5000)
+                                {
+                                    IndexChipProbeController.PostAlarm((int)IndexChipProbeController.AlarmKeys.eSphereFBTimeout);
+                                    Log.Write(IndexChipProbeController.UnitName, "btnManualVision_Click", "[btnManualVision_Click] SphereFB-F Timeout");
+                                    return -1;
+                                }
+                                Thread.Sleep(1);
+                            }
+                        }
+                    }
+                }
+
+                return 0;
+            }, ct);
         }
     }
 }

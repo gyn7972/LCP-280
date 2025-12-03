@@ -9,6 +9,13 @@ namespace QMC.Common
 {
     public partial class FormMain : Form
     {
+        public interface ITabActivationAware
+        {
+            void OnActivatedInTab();
+            void OnDeactivatedInTab();
+        }
+        // FormMain 클래스 내부 필드 추가
+        private TabPage _lastActiveTab;
 
         // ==X 버튼 비활성화 코드 시작==
         private const int CS_NOCLOSE = 0x200;
@@ -144,27 +151,6 @@ namespace QMC.Common
             Console.WriteLine($"최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
         }
 
-        private void EnsureFirstTabLoaded()
-        {
-            try
-            {
-                if (mainTabControl == null || mainTabControl.TabPages.Count == 0) return;
-                if (mainTabControl.SelectedIndex < 0) mainTabControl.SelectedIndex = 0;
-
-                var first = mainTabControl.TabPages[0];
-                var info = first.Tag as FormInfo;
-                if (info != null && !_tabFormInstances.ContainsKey(first))
-                {
-                    Console.WriteLine("초기 첫 탭 폼 로드 수행(Main)");
-                    LoadFormIntoTab(first, info);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
-        }
-
         private void LoadFormsFromManager()
         {
             try
@@ -214,17 +200,7 @@ namespace QMC.Common
             Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {mainTabControl.TabPages.Count}");
         }
 
-        private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            TabPage selectedTab = mainTabControl.SelectedTab;
-            if (selectedTab?.Tag is FormInfo formInfo)
-            {
-                LoadFormIntoTab(selectedTab, formInfo);
-                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
-                if (_hostSized)
-                    UpdateActiveChildSize();
-            }
-        }
+        
 
         private void LoadFormIntoTab(TabPage tabPage, FormInfo formInfo)
         {
@@ -442,5 +418,98 @@ namespace QMC.Common
             SetBorderStyle(Color.Red, 4);
         }
         #endregion
+
+
+        
+
+        // SelectedIndexChanged 수정
+        private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var newTab = mainTabControl.SelectedTab;
+            if (newTab == null) return;
+
+            // 이전 탭 비활성
+            if (_lastActiveTab != null && _tabFormInstances.TryGetValue(_lastActiveTab, out var prevForm))
+            {
+                var awarePrev = prevForm as ITabActivationAware;
+                awarePrev?.OnDeactivatedInTab();
+            }
+
+            // 신규 탭 폼 로드
+            if (newTab.Tag is FormInfo formInfo)
+                LoadFormIntoTab(newTab, formInfo);
+
+            // 신규 탭 활성
+            if (_tabFormInstances.TryGetValue(newTab, out var newForm))
+            {
+                var awareNew = newForm as ITabActivationAware;
+                awareNew?.OnActivatedInTab();
+            }
+
+            _lastActiveTab = newTab;
+
+            if (_hostSized)
+                UpdateActiveChildSize();
+        }
+
+        //private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        //{
+        //    TabPage selectedTab = mainTabControl.SelectedTab;
+        //    if (selectedTab?.Tag is FormInfo formInfo)
+        //    {
+        //        LoadFormIntoTab(selectedTab, formInfo);
+        //        // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+        //        if (_hostSized)
+        //            UpdateActiveChildSize();
+        //    }
+        //}
+
+        // 첫 탭 로드 직후 활성화 처리
+        private void EnsureFirstTabLoaded()
+        {
+            try
+            {
+                if (mainTabControl == null || mainTabControl.TabPages.Count == 0) return;
+                if (mainTabControl.SelectedIndex < 0) mainTabControl.SelectedIndex = 0;
+
+                var first = mainTabControl.TabPages[0];
+                var info = first.Tag as FormInfo;
+                if (info != null && !_tabFormInstances.ContainsKey(first))
+                {
+                    LoadFormIntoTab(first, info);
+                }
+
+                if (_tabFormInstances.TryGetValue(first, out var form))
+                {
+                    (form as ITabActivationAware)?.OnActivatedInTab();
+                    _lastActiveTab = first;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        //private void EnsureFirstTabLoaded()
+        //{
+        //    try
+        //    {
+        //        if (mainTabControl == null || mainTabControl.TabPages.Count == 0) return;
+        //        if (mainTabControl.SelectedIndex < 0) mainTabControl.SelectedIndex = 0;
+
+        //        var first = mainTabControl.TabPages[0];
+        //        var info = first.Tag as FormInfo;
+        //        if (info != null && !_tabFormInstances.ContainsKey(first))
+        //        {
+        //            Console.WriteLine("초기 첫 탭 폼 로드 수행(Main)");
+        //            LoadFormIntoTab(first, info);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //    }
+        //}
     }
 }

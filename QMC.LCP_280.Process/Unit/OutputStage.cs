@@ -1070,61 +1070,6 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     }
                 }
-
-                //기존코드
-                {
-                    //if (wafer == null)
-                    //{
-                    //    if(Config.IsSimulation)
-                    //    {
-                    //        return false;
-                    //    }
-                    //    else
-                    //    {
-                    //        if (IsRingPresent() == false)
-                    //        {
-                    //            return false;
-                    //        }
-                    //        else
-                    //        {
-                    //            // 새 Wafer를 만들되, SlotIndex를 유추해 -1 발생을 줄임
-                    //            int slotId = OutputCassetteLifter?.GetCurrectSlotID() ?? -1;
-                    //            var placeholder = new MaterialWafer()
-                    //            {
-                    //                Presence = Material.MaterialPresence.Exist,
-                    //                ProcessSatate = Material.MaterialProcessSatate.Processing,
-                    //                SlotIndex = slotId
-                    //            };
-                    //            this.SetMaterial(placeholder);
-                    //            this.UpdateUI();
-                    //            //기존 코드
-                    //            {
-                    //                //OutputFeeder.MakePath();
-                    //                //OutputFeeder.MoveMaterial(new MaterialWafer(), this);
-                    //                //var waferOutputStage = this.GetMaterialWafer();
-                    //                //if(waferOutputStage == null)
-                    //                //{
-                    //                //    return false;
-                    //                //}
-                    //                ////waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                    //                //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                    //                //this.SetMaterial(waferOutputStage);
-                    //                //this.UpdateUI();
-                    //            }
-                    //        }
-                    //    }
-                    //}
-
-                    //wafer = GetMaterialWafer();
-                    //if (wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
-                    //{
-                    //    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
-                    //    {
-                    //        bRet = true;
-                    //    }
-                    //}
-                }
-
             }
             catch (Exception ex)
             {
@@ -1163,7 +1108,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -1183,7 +1128,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Seq 단위 동작 함수
         public int LoadingBinPrepare(bool isFine = false)
         {
-            int nRtn = 0;
+            int nRet = 0;
             if(RunMode == UnitRunMode.Manual)
             {
                 CurrentFunc = LoadingBinPrepare;
@@ -1197,33 +1142,47 @@ namespace QMC.LCP_280.Process.Unit
                 if (IsRingPresent())
                 {
                     Log.Write(UnitName, "LoadingPrep", "Bin already present -> Skip prepare");
-                    return nRtn;
+                    return nRet;
                 }
             }
 
             // 로딩 Teaching 이동
-            nRtn = MoveToStageLoadPosition(isFine);
-            if (nRtn != 0)
+            nRet = MoveToStageLoadPosition(isFine);
+            if (nRet != 0)
             {
                 Log.Write(UnitName, "LoadingBinPrepare", "MoveToStageLoadPosition Fail");
                 return -1;
             }
-            if (IsStop) { return 0; }
-
+            
             bool bSimulation = Config.IsSimulation;
             // Clamp Back → Lift Down
-            ClampBackward();
-            ClampLiftDown();
+            nRet = ClampBackward();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "LoadingBinPrepare", "ClampBackward Fail");
+                return -1;
+            }
+            nRet = ClampLiftDown();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "LoadingBinPrepare", "ClampLiftDown Fail");
+                return -1;
+            }
             //Plate UP → 
-            PlateUp();
-
+            nRet = PlateUp();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "LoadingBinPrepare", "PlateUp Fail");
+                return -1;
+            }
+            if (IsStop) { return 0; }
             Log.Write(UnitName, "LoadingBinPrepare", "LoadingBinPrepare End");
             return 0;
         }
 
         public int LoadingBinComplete(bool isFine = false)
         {
-            int ret = 0;
+            int nRet = 0;
 
             if (RunMode == UnitRunMode.Manual)
             {
@@ -1244,20 +1203,32 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 {
-                    ClampLiftUp();
-                    ClampForward();
-                    PlateDown();
+                    nRet = ClampLiftUp();
+                    if(nRet != 0)
+                    {
+                        return -1;
+                    }
+                    nRet = ClampForward();
+                    if (nRet != 0)
+                    {
+                        return -1;
+                    }
+                    nRet = PlateDown();
+                    if (nRet != 0)
+                    {
+                        return -1;
+                    }
                     SetVacuum(true);
                 }
                 // 센터 Teaching 이동
-                ret = MoveToStageCenterPosition(isFine);
-                if (ret != 0)
+                nRet = MoveToStageCenterPosition(isFine);
+                if (nRet != 0)
                 {
                     Log.Write(this, "Fail: Move Load");
-                    return ret;
+                    return nRet;
                 }
                 Log.Write(UnitName, "LoadingComp", "Done");
-                return ret;
+                return nRet;
             }
             else
             {
@@ -1271,7 +1242,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public int PrepareOutputStageUnloadingBin()
         {
-            int nRtn = 0;
+            int nRet = 0;
             Log.Write(UnitName, "PrepareOutputStageUnloadingBin", "Start");
             if (!IsRingPresent())
             {
@@ -1279,16 +1250,31 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRtn = MoveToStageUnloadPosition();
-            if (nRtn != 0)
+            nRet = MoveToStageUnloadPosition();
+            if (nRet != 0)
             {
                 Log.Write(this, "Fail: Move Unload");
                 return -1;
             }
 
-            ClampBackward();
-            ClampLiftDown();
-            PlateUp();
+            nRet = ClampBackward();
+            if (nRet != 0)
+            {
+                Log.Write(this, "Fail: ClampBackward");
+                return -1;
+            }
+            nRet = ClampLiftDown();
+            if (nRet != 0)
+            {
+                Log.Write(this, "Fail: ClampLiftDown");
+                return -1;
+            }
+            nRet = PlateUp();
+            if (nRet != 0)
+            {
+                Log.Write(this, "Fail: PlateUp");
+                return -1;
+            }
             SetVacuum(false);
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
@@ -1323,7 +1309,6 @@ namespace QMC.LCP_280.Process.Unit
                 if(v != null)
                 {
                     return v.Presence == Material.MaterialPresence.Exist;
-
                 }
                     //Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
                 return false;
@@ -1416,17 +1401,19 @@ namespace QMC.LCP_280.Process.Unit
                         return;
 
                     int idx = _currentDie.Index;
-                    var die = wafer.Dies.FirstOrDefault(d => d != null && d.Index == idx);
-                    if (die == null) 
-                        return;
+                    lock (wafer.Dies)
+                    {
+                        var die = wafer.Dies.FirstOrDefault(d => d != null && d.Index == idx);
+                        if (die == null)
+                            return;
 
-                    // 이미 Placed면 변경하지 않음
-                    if (die.State == DieProcessState.Placed) 
-                        return;
+                        // 이미 Placed면 변경하지 않음
+                        if (die.State == DieProcessState.Placed)
+                            return;
 
-                    die.State = DieProcessState.Rejected;
-                    die.Presence = Material.MaterialPresence.Exist; // 변경: NotExist → Exist
-                    
+                        die.State = DieProcessState.Rejected;
+                        die.Presence = Material.MaterialPresence.Exist; // 변경: NotExist → Exist
+                    }
                     //Test 해보자.
                     //PlaceDie(die);
                 }
@@ -1448,7 +1435,7 @@ namespace QMC.LCP_280.Process.Unit
             bool allPlacedOrRejected = false;
             string waferIdSnapshot = null;
 
-            lock (wafer)
+            lock (wafer.Dies)
             {
                 if (_currentDie != null)
                 {
@@ -1549,7 +1536,7 @@ namespace QMC.LCP_280.Process.Unit
             if (wafer == null) 
                 return false;
 
-            lock (wafer)
+            lock (wafer.Dies)
             {
                 // 맵이 없으면 없음
                 var dies = wafer.Dies;
@@ -1622,80 +1609,81 @@ namespace QMC.LCP_280.Process.Unit
             binX = binY = dT = -1;
             slot = null;
 
-            var wafer = GetMaterialWafer();
+            var wafer = this.GetMaterialWafer();
             if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
                 return false;
-
-            Func<MaterialDie, bool> isUnplaced = d =>
+            lock (wafer.Dies)
+            {
+                Func<MaterialDie, bool> isUnplaced = d =>
                 d != null &&
                 d.State != DieProcessState.Placed &&
                 d.State != DieProcessState.Rejected;
 
-            var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
-            var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
+                var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
+                var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
 
-            MaterialDie next = null;
+                MaterialDie next = null;
 
-            // 1) OutputDieTransfer가 들고 있는 다이 우선
-            if (dieOutTr != null)
-                next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
+                // 1) OutputDieTransfer가 들고 있는 다이 우선
+                if (dieOutTr != null)
+                    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
 
-            // 2) Rotary 소켓 다이
-            if (next == null && dieRotary != null)
-                next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
+                // 2) Rotary 소켓 다이
+                if (next == null && dieRotary != null)
+                    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
 
-            // 3) 그 외 첫 미배치
-            if (next == null)
-                next = wafer.Dies.FirstOrDefault(isUnplaced);
+                // 3) 그 외 첫 미배치
+                if (next == null)
+                    next = wafer.Dies.FirstOrDefault(isUnplaced);
 
-            if (next == null)
-                return false;
+                if (next == null)
+                    return false;
 
-            _currentDie = next;
+                _currentDie = next;
 
-            double dx = 0; 
-            double dy = 0; 
-            double dt = 0;
-            if(die != null)
-            {
-                dx = die.UnloadAlignOffsetX;
-                dy = die.UnloadAlignOffsetY;
-                dt = die.UnloadAlignOffsetT;
+                double dx = 0;
+                double dy = 0;
+                double dt = 0;
+                if (die != null)
+                {
+                    dx = die.UnloadAlignOffsetX;
+                    dy = die.UnloadAlignOffsetY;
+                    dt = die.UnloadAlignOffsetT;
+                }
+
+                double dStagePosT = AxisT?.GetPosition() ?? 0.0;
+
+                // 지정 Bin 위치로 XY 이동
+                binX = next.BinX;
+                binY = next.BinY;
+                var (tx, ty) = GetBinWorldPosition(binX, binY);
+
+                if (Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
+                {
+                    XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
+                    XyCoordinate xyCoordinateVision = new XyCoordinate(dx, dy);
+
+                    this.linkTypeXYTStageCorrection.GetCorrectionPoint(dt, xyCoordinateTarget, xyCoordinateVision, out var pointD, out double t);
+                    binX = pointD.X;
+                    binY = pointD.Y;
+                    dT = t;
+                }
+                else
+                {
+                    double baseT = GetTeahcingPosCenterT();
+                    binX = tx + dx;
+                    binY = ty + dy;
+                    dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
+                }
+
+                slot = next;
+
+                bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
+                bool matchedRotary = (dieRotary != null && next.Index == dieRotary.Index);
+
+                Log.Write(UnitName, "TryReserveNextEmptyBin",
+                    $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByOutTr={matchedOutTr}, MatchedByRotary={matchedRotary}");
             }
-            
-            double dStagePosT = AxisT?.GetPosition() ?? 0.0;
-
-            // 지정 Bin 위치로 XY 이동
-            binX = next.BinX;
-            binY = next.BinY;
-            var (tx, ty) = GetBinWorldPosition(binX, binY);
-
-            if(Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
-            {
-                XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
-                XyCoordinate xyCoordinateVision = new XyCoordinate(dx, dy);
-
-                this.linkTypeXYTStageCorrection.GetCorrectionPoint(dt, xyCoordinateTarget, xyCoordinateVision, out var pointD, out double t);
-                binX = pointD.X;
-                binY = pointD.Y;
-                dT = t;
-            }
-            else
-            {
-                double baseT = GetTeahcingPosCenterT();
-                binX = tx + dx;
-                binY = ty + dy;
-                dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
-            }
-
-            slot = next;
-
-            bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
-            bool matchedRotary = (dieRotary != null && next.Index == dieRotary.Index);
-
-            Log.Write(UnitName, "TryReserveNextEmptyBin",
-                $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByOutTr={matchedOutTr}, MatchedByRotary={matchedRotary}");
-
             return true;
         }
 
@@ -1706,9 +1694,9 @@ namespace QMC.LCP_280.Process.Unit
             var recipe = eq.EquipmentRecipe.CurrentRecipe;
 
             // 1) 피치 결정: ChipWidth/Height 우선, 없으면 BinPitch로 폴백
-            double pitchX = (recipe.ChipWidth > 0) ? recipe.ChipWidth :
+            double pitchX = (recipe.WChipPitchX > 0) ? recipe.WChipPitchX :
                             (recipe.BinPitchXmm > 0) ? recipe.BinPitchXmm : 1.0;
-            double pitchY = (recipe.ChipHeight > 0) ? recipe.ChipHeight :
+            double pitchY = (recipe.WChipPitchY > 0) ? recipe.WChipPitchY :
                             (recipe.BinPitchYmm > 0) ? recipe.BinPitchYmm : 1.0;
 
             // 2) CenterPoint Teaching (월드 좌표 원점 역할)
@@ -1720,14 +1708,17 @@ namespace QMC.LCP_280.Process.Unit
             var wafer = GetMaterialWafer();
             if (wafer?.Dies != null && wafer.Dies.Count > 0)
             {
-                // 현재 맵 데이터로부터 격자 범위를 구해 중심 인덱스 산출
-                int minIdxX = (int)Math.Round(wafer.Dies.Min(d => d.BinX));
-                int maxIdxX = (int)Math.Round(wafer.Dies.Max(d => d.BinX));
-                int minIdxY = (int)Math.Round(wafer.Dies.Min(d => d.BinY));
-                int maxIdxY = (int)Math.Round(wafer.Dies.Max(d => d.BinY));
+                lock (wafer.Dies)
+                {
+                    // 현재 맵 데이터로부터 격자 범위를 구해 중심 인덱스 산출
+                    int minIdxX = (int)Math.Round(wafer.Dies.Min(d => d.BinX));
+                    int maxIdxX = (int)Math.Round(wafer.Dies.Max(d => d.BinX));
+                    int minIdxY = (int)Math.Round(wafer.Dies.Min(d => d.BinY));
+                    int maxIdxY = (int)Math.Round(wafer.Dies.Max(d => d.BinY));
 
-                indexCenterX = (minIdxX + maxIdxX) / 2.0;
-                indexCenterY = (minIdxY + maxIdxY) / 2.0;
+                    indexCenterX = (minIdxX + maxIdxX) / 2.0;
+                    indexCenterY = (minIdxY + maxIdxY) / 2.0;
+                }
             }
             else
             {
@@ -1755,30 +1746,6 @@ namespace QMC.LCP_280.Process.Unit
             double targetY = centerY + offsetY;
             return (targetX, targetY);
         }
-        //public (double x, double y) GetBinWorldPosition(double binX, double binY)
-        //{
-        //    var eq = Equipment.Instance;
-        //    var recipe = eq.EquipmentRecipe.CurrentRecipe;
-
-        //    // Pitch 및 카운트
-        //    double pitchX = recipe.BinPitchXmm > 0 ? recipe.BinPitchXmm : 1.0;
-        //    double pitchY = recipe.BinPitchYmm > 0 ? recipe.BinPitchYmm : 1.0;
-        //    //pitchX /= 1000;
-        //    //pitchY /= 1000;
-        //    int cntX = recipe.BinCountX > 0 ? recipe.BinCountX : 1;
-        //    int cntY = recipe.BinCountY > 0 ? recipe.BinCountY : 1;
-
-        //    // 기준 Teaching (CenterPoint) 기반
-        //    var (centerX, centerY, _) = Config.GetPositionWithOffset(OutputStageConfig.TeachingPositionName.CenterPoint.ToString());
-
-        //    // 센터 기준 좌표계: 중앙이 (0,0)
-        //    double offsetX = (binX - (cntX - 1) / 2.0) * pitchX;
-        //    double offsetY = (binY - (cntY - 1) / 2.0) * pitchY;
-
-        //    double targetX = centerX + offsetX;
-        //    double targetY = centerY + offsetY;
-        //    return (targetX, targetY);
-        //}
 
         public int MoveToBinPosition(double binX, double binY, double dT, bool isFine = false)
         {
@@ -1895,7 +1862,10 @@ namespace QMC.LCP_280.Process.Unit
             int r = WaitClampLiftStateOrAlarm(expectUp: true);
             if (r != 0)
             {
-                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eClampLift);
                 Log.Write(this, "ClampLiftUp Failed");
             }
             return r;
@@ -1907,6 +1877,9 @@ namespace QMC.LCP_280.Process.Unit
             bool issued = SetClampLift(false);
             if (!issued && !(Config.IsSimulation || Config.IsDryRun))
             {
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eClampLift);
                 Log.Write(this, "ClampLiftDown Command Rejected (Interlock)");
                 return -1;
@@ -1915,7 +1888,10 @@ namespace QMC.LCP_280.Process.Unit
             int r = WaitClampLiftStateOrAlarm(expectUp: false);
             if (r != 0)
             {
-                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eClampLift);
                 Log.Write(this, "ClampLiftDown Failed");
             }
             return r;
@@ -1927,6 +1903,9 @@ namespace QMC.LCP_280.Process.Unit
             bool issued = SetClampFB(true);
             if (!issued && !(Config.IsSimulation || Config.IsDryRun))
             {
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eClampFB);
                 Log.Write(this, "ClampForward Command Rejected (Interlock)");
                 return -1;
@@ -1935,7 +1914,10 @@ namespace QMC.LCP_280.Process.Unit
             int r = WaitClampFBStateOrAlarm(expectFwd: true);
             if (r != 0)
             {
-                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eClampFB);
                 Log.Write(this, "ClampForward Failed");
             }
             return r;
@@ -1947,6 +1929,9 @@ namespace QMC.LCP_280.Process.Unit
             bool issued = SetClampFB(false);
             if (!issued && !(Config.IsSimulation || Config.IsDryRun))
             {
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
+                AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eClampFB);
                 Log.Write(this, "ClampBackward Command Rejected (Interlock)");
                 return -1;
@@ -1955,9 +1940,10 @@ namespace QMC.LCP_280.Process.Unit
             int r = WaitClampFBStateOrAlarm(expectFwd: false);
             if (r != 0)
             {
-                AxisX?.EmgStop(); 
-                AxisY?.EmgStop(); 
+                AxisX?.EmgStop();
+                AxisY?.EmgStop();
                 AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eClampFB);
                 Log.Write(this, "ClampBackward Failed");
             }
             return r;
@@ -1967,9 +1953,9 @@ namespace QMC.LCP_280.Process.Unit
 
         public void ResetForNewRun(bool moveToSafeReady = true, bool clearWafer = true, bool clearOffsets = true)
         {
+            int nRet = 0;
             // 1) 런타임/시퀀스 플래그 초기화
             _currentDie = null;
-
             // 2) 비전 리소스 정리(선택)
             try
             {
@@ -2023,10 +2009,37 @@ namespace QMC.LCP_280.Process.Unit
                 if (!(Config.IsSimulation || Config.IsDryRun))
                 {
                     // 순서: 클램프 후퇴 → 리프트 다운 → 플레이트 다운 → 진공 OFF
-                    ClampBackward();
-                    ClampLiftDown();
-                    //PlateDown();
-                    PlateUp();
+                    nRet = ClampBackward();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ResetForNewRun", "Fail: ClampBackward");
+                        return;
+                    }
+                    nRet = ClampLiftDown();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ResetForNewRun", "Fail: ClampLiftDown");
+                        return;
+                    }
+
+                    if(this.IsRingPresent() || this.IsVacuumOn())
+                    {
+                        nRet = PlateUp();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "ResetForNewRun", "Fail: PlateUp");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        nRet = PlateDown();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "ResetForNewRun", "Fail: PlateDown");
+                            return;
+                        }
+                    }
                     SetVacuum(false);
                 }
             }
@@ -2054,62 +2067,67 @@ namespace QMC.LCP_280.Process.Unit
                     dst = new MaterialWafer();
                     SetMaterial(dst);
                 }
-
-                // 기본 메타 복사
-                dst.WaferId = string.IsNullOrWhiteSpace(dst.WaferId) ? $"QMC_BIN_{src.WaferId}" : dst.WaferId;
-                dst.CarrierId = src.CarrierId;
-                dst.WaferDate = src.WaferDate;
-                dst.Presence = Material.MaterialPresence.Exist;
-                dst.ProcessSatate = Material.MaterialProcessSatate.Processing;
-
-                var list = new List<MaterialDie>(src.Dies.Count);
-
-                foreach (var s in src.Dies)
+                lock (src.Dies)
                 {
-                    if (s == null) continue;
-
-                    // 좌표 변환(필요 시)
-                    double mx = s.MapX, my = s.MapY;
-                    if (rotate180)
+                    lock (dst.Dies)
                     {
-                        mx = -mx; my = -my;
+                        // 기본 메타 복사
+                        dst.WaferId = string.IsNullOrWhiteSpace(dst.WaferId) ? $"QMC_BIN_{src.WaferId}" : dst.WaferId;
+                        dst.CarrierId = src.CarrierId;
+                        dst.WaferDate = src.WaferDate;
+                        dst.Presence = Material.MaterialPresence.Exist;
+                        dst.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
+                        var list = new List<MaterialDie>(src.Dies.Count);
+                        foreach (var s in src.Dies)
+                        {
+                            if (s == null) 
+                                continue;
+
+                            // 좌표 변환(필요 시)
+                            double mx = s.MapX, my = s.MapY;
+                            if (rotate180)
+                            {
+                                mx = -mx; my = -my;
+                            }
+                            if (mirrorX) mx = -mx;
+                            if (mirrorY) my = -my;
+
+                            if (swapXY)
+                            {
+                                var tmp = mx; mx = my; my = tmp;
+                            }
+
+                            // 복제: Index/Name 보존, 상태는 Output 목적에 맞게 초기화
+                            var d = new MaterialDie
+                            {
+                                Index = s.Index,                   // 보존
+                                Name = s.Name,                     // 보존
+                                MapX = (int)mx,
+                                MapY = (int)my,
+                                // Output Bin 좌표는 내부에서 변환 사용 시 따로 설정 가능(없으면 MapX/Y 기반 사용)
+                                BinX = mx,
+                                BinY = my,
+
+                                // Output 시작 상태: 아직 놓지 않음
+                                Presence = Material.MaterialPresence.NotExist,
+                                State = DieProcessState.None,
+
+                                SourceWaferId = dst.WaferId
+                            };
+
+                            list.Add(d);
+                        }
+
+                        // Index는 보존하되, 정렬(순회)은 별도 루틴에서 수행
+                        // 리스트는 Index 오름차순으로 정렬하여 보관(선택)
+                        dst.Dies = list.OrderBy(d => d.Index).ToList();
+
+                        UpdateUI();
+                        Log.Write(UnitName, "CloneDieMapFromInputStage",
+                            $"Cloned {dst.Dies.Count} dies from '{inputStage.UnitName}' (preserved Index/Name)");
                     }
-                    if (mirrorX) mx = -mx;
-                    if (mirrorY) my = -my;
-
-                    if (swapXY)
-                    {
-                        var tmp = mx; mx = my; my = tmp;
-                    }
-
-                    // 복제: Index/Name 보존, 상태는 Output 목적에 맞게 초기화
-                    var d = new MaterialDie
-                    {
-                        Index = s.Index,                   // 보존
-                        Name = s.Name,                     // 보존
-                        MapX = (int)mx,
-                        MapY = (int)my,
-                        // Output Bin 좌표는 내부에서 변환 사용 시 따로 설정 가능(없으면 MapX/Y 기반 사용)
-                        BinX = mx,
-                        BinY = my,
-
-                        // Output 시작 상태: 아직 놓지 않음
-                        Presence = Material.MaterialPresence.NotExist,
-                        State = DieProcessState.None,
-
-                        SourceWaferId = dst.WaferId
-                    };
-
-                    list.Add(d);
                 }
-
-                // Index는 보존하되, 정렬(순회)은 별도 루틴에서 수행
-                // 리스트는 Index 오름차순으로 정렬하여 보관(선택)
-                dst.Dies = list.OrderBy(d => d.Index).ToList();
-
-                UpdateUI();
-                Log.Write(UnitName, "CloneDieMapFromInputStage",
-                    $"Cloned {dst.Dies.Count} dies from '{inputStage.UnitName}' (preserved Index/Name)");
                 return 0;
             }
             catch (Exception ex)

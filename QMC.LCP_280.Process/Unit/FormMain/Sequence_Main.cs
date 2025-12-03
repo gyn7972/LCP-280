@@ -1,5 +1,6 @@
 using QMC.Common;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel; // DesignMode 판단
 using System.Drawing;
 using System.Threading;
@@ -16,6 +17,10 @@ namespace QMC.LCP_280.Process
         private bool _unitColumnsAutosized = false;
         private bool _listViewInitChecked = false;
         private int _listViewLastItemCount = 0;
+
+        // 추가: 동시 재진입 방지 및 UI 잠금
+        private readonly object _unitStatusUiLock = new object();
+        private int _unitStatusRebuildInProgress;
 
         public Sequence_Main()
         {
@@ -119,22 +124,71 @@ namespace QMC.LCP_280.Process
                 bool rebuild = lstUnitStatus.Items.Count != statuses.Count;
                 if (rebuild)
                 {
-                    lstUnitStatus.BeginUpdate();
-                    lstUnitStatus.Items.Clear();
-                    foreach (var kv in statuses)
+                    // 재진입(타이머/이벤트 동시) 방지
+                    if (Interlocked.Exchange(ref _unitStatusRebuildInProgress, 1) == 1)
+                        return;
+
+                    try
                     {
-                        var s = kv.Value; if (s == null) continue;
-                        lstUnitStatus.Items.Add(CreateListViewItemFromStatus(s));
+                        if (lstUnitStatus.IsDisposed) return;
+                        if (!lstUnitStatus.IsHandleCreated) return;
+
+                        // 스냅샷 → 버퍼 생성
+                        var buffer = new List<ListViewItem>(statuses.Count);
+                        foreach (var kv in statuses)
+                        {
+                            var s = kv.Value;
+                            if (s == null) continue;
+                            try
+                            {
+                                buffer.Add(CreateListViewItemFromStatus(s));
+                            }
+                            catch (Exception exItem)
+                            {
+                                LogMessage($"UnitItem 생성 오류({s?.UnitName}): {exItem.Message}");
+                            }
+                        }
+
+                        // UI 크리티컬 섹션
+                        lock (_unitStatusUiLock)
+                        {
+                            if (lstUnitStatus.IsDisposed) return;
+                            lstUnitStatus.BeginUpdate();
+                            try
+                            {
+                                lstUnitStatus.Items.Clear();
+                                if (buffer.Count > 0)
+                                    lstUnitStatus.Items.AddRange(buffer.ToArray());
+                            }
+                            finally
+                            {
+                                lstUnitStatus.EndUpdate();
+                            }
+                        }
                     }
-                    lstUnitStatus.EndUpdate();
+                    finally
+                    {
+                        Interlocked.Exchange(ref _unitStatusRebuildInProgress, 0);
+                    }
                 }
                 else
                 {
-                    foreach (ListViewItem item in lstUnitStatus.Items)
+                    // 기존 행 업데이트(재구성 아님)
+                    lock (_unitStatusUiLock)
                     {
-                        var unitName = item.SubItems[0].Text;
-                        if (!statuses.TryGetValue(unitName, out var st) || st == null) continue;
-                        UpdateListViewItem(item, st);
+                        foreach (ListViewItem item in lstUnitStatus.Items)
+                        {
+                            var unitName = item.SubItems[0].Text;
+                            if (!statuses.TryGetValue(unitName, out var st) || st == null) continue;
+                            try
+                            {
+                                UpdateListViewItem(item, st);
+                            }
+                            catch (Exception exUpd)
+                            {
+                                LogMessage($"UnitItem 업데이트 오류({unitName}): {exUpd.Message}");
+                            }
+                        }
                     }
                 }
                 _listViewLastItemCount = lstUnitStatus.Items.Count;
@@ -461,7 +515,7 @@ namespace QMC.LCP_280.Process
             rtbLog.ScrollToCaret();
             if (rtbLog.Lines.Length > 1000)
             { var lines = rtbLog.Lines; var newLines = new string[800]; Array.Copy(lines, 200, newLines, 0, 800); rtbLog.Lines = newLines; }
-        }
+        } 
         #endregion
 
         #region Form Closing

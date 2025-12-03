@@ -54,6 +54,13 @@
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
+            this.grpContactMode = new System.Windows.Forms.GroupBox();
+            this.rbTop = new System.Windows.Forms.RadioButton();
+            this.rbBottom = new System.Windows.Forms.RadioButton();
+            this.lblProbeIndex = new System.Windows.Forms.Label();
+            this.cbProbeIndex = new System.Windows.Forms.ComboBox();
+            this.btnProbeSeq = new QMC.Common.IndividualMenuButton();
+            this.btnProbeSafety = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).BeginInit();
@@ -68,6 +75,7 @@
             this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel10.SuspendLayout();
             this.tableLayoutPanel7.SuspendLayout();
+            this.grpContactMode.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -77,12 +85,13 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 208F));
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel2, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel7, 1, 0);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1875, 1050);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
@@ -449,17 +458,26 @@
             // tableLayoutPanel7
             // 
             this.tableLayoutPanel7.ColumnCount = 1;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel7.Controls.Add(this.btnProbeSafety, 0, 6);
+            this.tableLayoutPanel7.Controls.Add(this.cbProbeIndex, 0, 4);
             this.tableLayoutPanel7.Controls.Add(this.btnTestStop, 0, 1);
             this.tableLayoutPanel7.Controls.Add(this.btnTestStart, 0, 0);
-            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel7.Controls.Add(this.grpContactMode, 0, 2);
+            this.tableLayoutPanel7.Controls.Add(this.lblProbeIndex, 0, 3);
+            this.tableLayoutPanel7.Controls.Add(this.btnProbeSeq, 0, 5);
             this.tableLayoutPanel7.Location = new System.Drawing.Point(1671, 4);
             this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 2;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(200, 152);
+            this.tableLayoutPanel7.RowCount = 7;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 6.886228F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5.389222F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13.47305F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 32.33533F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(200, 668);
             this.tableLayoutPanel7.TabIndex = 1;
             // 
             // btnTestStop
@@ -473,10 +491,10 @@
             this.btnTestStop.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnTestStop.ForeColor = System.Drawing.Color.Black;
             this.btnTestStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnTestStop.Location = new System.Drawing.Point(8, 84);
+            this.btnTestStop.Location = new System.Drawing.Point(8, 102);
             this.btnTestStop.Margin = new System.Windows.Forms.Padding(8);
             this.btnTestStop.Name = "btnTestStop";
-            this.btnTestStop.Size = new System.Drawing.Size(184, 60);
+            this.btnTestStop.Size = new System.Drawing.Size(184, 78);
             this.btnTestStop.TabIndex = 2;
             this.btnTestStop.TabStop = false;
             this.btnTestStop.Text = "Test Stop";
@@ -497,12 +515,118 @@
             this.btnTestStart.Location = new System.Drawing.Point(8, 8);
             this.btnTestStart.Margin = new System.Windows.Forms.Padding(8);
             this.btnTestStart.Name = "btnTestStart";
-            this.btnTestStart.Size = new System.Drawing.Size(184, 60);
+            this.btnTestStart.Size = new System.Drawing.Size(184, 78);
             this.btnTestStart.TabIndex = 1;
             this.btnTestStart.TabStop = false;
             this.btnTestStart.Text = "Test Start";
             this.btnTestStart.UseVisualStyleBackColor = false;
             this.btnTestStart.Click += new System.EventHandler(this.btnTestStart_Click);
+            // 
+            // grpContactMode
+            // 
+            this.grpContactMode.Controls.Add(this.rbTop);
+            this.grpContactMode.Controls.Add(this.rbBottom);
+            this.grpContactMode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.grpContactMode.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.grpContactMode.Location = new System.Drawing.Point(3, 191);
+            this.grpContactMode.Name = "grpContactMode";
+            this.grpContactMode.Size = new System.Drawing.Size(194, 88);
+            this.grpContactMode.TabIndex = 15;
+            this.grpContactMode.TabStop = false;
+            this.grpContactMode.Text = "Contact Mode";
+            // 
+            // rbTop
+            // 
+            this.rbTop.AutoSize = true;
+            this.rbTop.Checked = true;
+            this.rbTop.Location = new System.Drawing.Point(6, 30);
+            this.rbTop.Name = "rbTop";
+            this.rbTop.Size = new System.Drawing.Size(69, 29);
+            this.rbTop.TabIndex = 0;
+            this.rbTop.TabStop = true;
+            this.rbTop.Text = "Top";
+            this.rbTop.CheckedChanged += new System.EventHandler(this.rbTop_CheckedChanged);
+            // 
+            // rbBottom
+            // 
+            this.rbBottom.AutoSize = true;
+            this.rbBottom.Location = new System.Drawing.Point(87, 30);
+            this.rbBottom.Name = "rbBottom";
+            this.rbBottom.Size = new System.Drawing.Size(101, 29);
+            this.rbBottom.TabIndex = 1;
+            this.rbBottom.Text = "Bottom";
+            this.rbBottom.CheckedChanged += new System.EventHandler(this.rbBottom_CheckedChanged);
+            // 
+            // lblProbeIndex
+            // 
+            this.lblProbeIndex.AutoSize = true;
+            this.lblProbeIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblProbeIndex.Font = new System.Drawing.Font("맑은 고딕", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lblProbeIndex.Location = new System.Drawing.Point(3, 282);
+            this.lblProbeIndex.Name = "lblProbeIndex";
+            this.lblProbeIndex.Size = new System.Drawing.Size(194, 45);
+            this.lblProbeIndex.TabIndex = 16;
+            this.lblProbeIndex.Text = "Socket";
+            this.lblProbeIndex.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cbProbeIndex
+            // 
+            this.cbProbeIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbProbeIndex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbProbeIndex.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"});
+            this.cbProbeIndex.Location = new System.Drawing.Point(3, 330);
+            this.cbProbeIndex.Name = "cbProbeIndex";
+            this.cbProbeIndex.Size = new System.Drawing.Size(194, 26);
+            this.cbProbeIndex.TabIndex = 17;
+            this.cbProbeIndex.SelectedIndexChanged += new System.EventHandler(this.cbProbeIndex_SelectedIndexChanged);
+            // 
+            // btnProbeSeq
+            // 
+            this.btnProbeSeq.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSeq.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnProbeSeq.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSeq.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSeq.CustomForeColor = System.Drawing.Color.Black;
+            this.btnProbeSeq.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSeq.ForeColor = System.Drawing.Color.Black;
+            this.btnProbeSeq.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnProbeSeq.Location = new System.Drawing.Point(8, 370);
+            this.btnProbeSeq.Margin = new System.Windows.Forms.Padding(8);
+            this.btnProbeSeq.Name = "btnProbeSeq";
+            this.btnProbeSeq.Size = new System.Drawing.Size(184, 60);
+            this.btnProbeSeq.TabIndex = 18;
+            this.btnProbeSeq.TabStop = false;
+            this.btnProbeSeq.Text = "Probe Pos";
+            this.btnProbeSeq.UseVisualStyleBackColor = false;
+            this.btnProbeSeq.Click += new System.EventHandler(this.btnProbeSeq_Click);
+            // 
+            // btnProbeSafety
+            // 
+            this.btnProbeSafety.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSafety.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnProbeSafety.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSafety.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSafety.CustomForeColor = System.Drawing.Color.Black;
+            this.btnProbeSafety.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSafety.ForeColor = System.Drawing.Color.Black;
+            this.btnProbeSafety.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnProbeSafety.Location = new System.Drawing.Point(8, 459);
+            this.btnProbeSafety.Margin = new System.Windows.Forms.Padding(8);
+            this.btnProbeSafety.Name = "btnProbeSafety";
+            this.btnProbeSafety.Size = new System.Drawing.Size(184, 60);
+            this.btnProbeSafety.TabIndex = 19;
+            this.btnProbeSafety.TabStop = false;
+            this.btnProbeSafety.Text = "Safety Pos";
+            this.btnProbeSafety.UseVisualStyleBackColor = false;
+            this.btnProbeSafety.Click += new System.EventHandler(this.btnProbeSafety_Click);
             // 
             // CellTesterPage
             // 
@@ -529,6 +653,9 @@
             this.tableLayoutPanel10.ResumeLayout(false);
             this.tableLayoutPanel10.PerformLayout();
             this.tableLayoutPanel7.ResumeLayout(false);
+            this.tableLayoutPanel7.PerformLayout();
+            this.grpContactMode.ResumeLayout(false);
+            this.grpContactMode.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -561,5 +688,12 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel10;
         private System.Windows.Forms.Label lbCurrentIndexNo;
         private System.Windows.Forms.Label lbMeasureTime;
+        private System.Windows.Forms.GroupBox grpContactMode;
+        private System.Windows.Forms.RadioButton rbTop;
+        private System.Windows.Forms.RadioButton rbBottom;
+        private System.Windows.Forms.Label lblProbeIndex;
+        private System.Windows.Forms.ComboBox cbProbeIndex;
+        private Common.IndividualMenuButton btnProbeSafety;
+        private Common.IndividualMenuButton btnProbeSeq;
     }
 }

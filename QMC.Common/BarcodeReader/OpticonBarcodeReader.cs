@@ -147,36 +147,39 @@ namespace QMC.Common.BarcodeReader
 
         public int CaptureImage(out byte[] imageData)
         {
+            // 현재 NLV-5201은 이미지 캡처 기능을 지원하지 않음
             imageData = null;
-            if (!IsConnected) return -1;
+            return 0;
+            //imageData = null;
+            //if (!IsConnected) return -1;
 
-            try
-            {
-                // 이미지 캡처 명령 (매뉴얼 확인 필요)
-                string command = "\x1B[이미지명령어]\r";
+            //try
+            //{
+            //    // 이미지 캡처 명령 (매뉴얼 확인 필요)
+            //    string command = "\x1B[이미지명령어]\r";
 
-                // 장시간 타임아웃 설정 (40초+)
-                int originalTimeout = communicator.ConversationTimeout;
-                communicator.ConversationTimeout = 45000; // 45초
+            //    // 장시간 타임아웃 설정 (40초+)
+            //    int originalTimeout = communicator.ConversationTimeout;
+            //    communicator.ConversationTimeout = 45000; // 45초
 
-                string response;
-                bool result = communicator.Query(command, out response);
+            //    string response;
+            //    bool result = communicator.Query(command, out response);
 
-                communicator.ConversationTimeout = originalTimeout;
+            //    communicator.ConversationTimeout = originalTimeout;
 
-                if (result && !string.IsNullOrEmpty(response))
-                {
-                    // 바이너리 데이터 처리
-                    imageData = Convert.FromBase64String(response); // 또는 적절한 변환
-                    return 0;
-                }
-                return -2;
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"이미지 캡처 오류: {ex.Message}");
-                return -3;
-            }
+            //    if (result && !string.IsNullOrEmpty(response))
+            //    {
+            //        // 바이너리 데이터 처리
+            //        imageData = Convert.FromBase64String(response); // 또는 적절한 변환
+            //        return 0;
+            //    }
+            //    return -2;
+            //}
+            //catch (Exception ex)
+            //{
+            //    OnErrorOccurred($"이미지 캡처 오류: {ex.Message}");
+            //    return -3;
+            //}
         }
 
         /// <summary>
@@ -349,7 +352,6 @@ namespace QMC.Common.BarcodeReader
                     if (!string.IsNullOrWhiteSpace(data))
                     {
                         data = data.Trim();
-
                         // 이벤트 발생 추가
                         OnBarcodeDataReceived(new BarcodeDataEventArgs
                         {

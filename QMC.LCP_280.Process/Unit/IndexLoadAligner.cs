@@ -1,9 +1,11 @@
 using QMC.Common;
 using QMC.Common.Alarm;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
@@ -26,6 +28,8 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class IndexLoadAligner : BaseUnit<IndexLoadAlignerConfig>
     {
+        public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
+
         public enum AlarmKeys
         {
             eAlignTAxesNotReady = 4701,
@@ -76,6 +80,36 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis AxisAlignT => _alignT;
         public MotionAxis AxisIndexZ => _indexZ;
         #endregion
+
+        #region Camera Binding
+        public HIKGigECamera IndexAlignerCam { get; private set; }
+        public string IndexAlignerCamKey => "Index_Aligner";
+        private void BindCamera()
+        {
+            var eq = Equipment.Instance;
+            if (eq == null)
+                return;
+
+            if (eq.Cameras != null && eq.Cameras.TryGetValue(IndexAlignerCamKey, out var cam))
+                IndexAlignerCam = cam as HIKGigECamera;
+            else
+                IndexAlignerCam = eq.Index_AlignerCam;
+        }
+        public PatternMatchingRunner _pmRunner;
+        // Pattern Matching Runner (간소화: Recipe 자동 관리)
+        public PatternMatchingRunner PmRunner
+        {
+            get
+            {
+                if (_pmRunner == null)
+                {
+                    _pmRunner = VisionRunnerHub.GetOrCreate(IndexAlignerCamKey);
+                }
+                return _pmRunner;
+            }
+        }
+        #endregion
+
         // Safety 동작 중 여부
         private bool _isSafetyMoving = false;
 
@@ -92,6 +126,7 @@ namespace QMC.LCP_280.Process.Unit
             Config.InitializeDefaultTeachingPositions();
             
             BindAxes();
+            BindCamera();
         }
         #endregion
 
@@ -198,13 +233,13 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if(IsAxisMoving(AxisNames.AlignT))
-            {
-                AxisIndexZ.EmgStop();
-                AxisAlignT.EmgStop();
-                PostAlarm((int)AlarmKeys.eAlignTAxesMoving);
-                return -1;
-            }
+            //if(IsAxisMoving(AxisNames.AlignT))
+            //{
+            //    AxisIndexZ.EmgStop();
+            //    AxisAlignT.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eAlignTAxesMoving);
+            //    return -1;
+            //}
 
             return nRet;
         }
@@ -879,7 +914,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -1003,6 +1038,7 @@ namespace QMC.LCP_280.Process.Unit
             int nIndex = GetAlignIndexNo();
             try
             {
+                Log.Write("kkkkkkIndexLoadAligner", "Start");
                 bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
                 if(bUseSocket == false)
                 {
@@ -1014,16 +1050,14 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return 0;
                 }
+                
+                //if(die.Presence != Material.MaterialPresence.Exist
+                //    && die.State != DieProcessState.Error_load )
                 if(die.Presence != Material.MaterialPresence.Exist)
                 {
                     return 0;
                 }
 
-				//bRtn = WaitForRotaryIdle();
-                //if (bRtn != 0)
-                //    return bRtn;
-                    
-                //bRtn = IsRotaryIdle();
                 while(IsRotaryIdle() != 0)
                 {
                     if(IsStop)
@@ -1032,19 +1066,24 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     Thread.Sleep(1);
                 }
-               
+                Log.Write("die_State", "RunAlignSocketOnce", die.State.ToString());
+
                 var socket = this.Rotary.GetSocket(nIndex);
                 socket.SetState(Rotary.RotarySocketState.MAligning);
 
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
+                Log.Write("kkkkkkIndexLoadAligner", "Start1");
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
-                bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
+                Log.Write("kkkkkkIndexLoadAligner", "Start2");
+                //bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
+                Log.Write("kkkkkkIndexLoadAligner", "Start3");
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
                     return -1;
                 }
-                
+
+                Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignZUp");
                 // 3) Z Up
                 bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
                 if (bRtn != 0)
@@ -1052,7 +1091,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
-                
+                Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTForward");
                 // 4) T Forward
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
@@ -1062,8 +1101,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 WaitByTime(Config.WaitTime1Step);
-
-
+                Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTBackward");
                 // 5) T Backward
                 bRtn = MovePositionAlignTBackward(bFineSpeed);
                 if (bRtn != 0)
@@ -1073,44 +1111,58 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 WaitByTime(Config.WaitTime2Step);
-
-
                 //bRtn = MovePositionAlignTForward(bFineSpeed);
                 //if (bRtn != 0)
                 //{
                 //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
                 //    return -1;
                 //}
-
                 //WaitByTime(Config.WaitTime3Step);
 
-                bRtn = MovePositionSafetyZ(bFineSpeed);
+
+                // Vision Align 검사 추가.
+                bRtn = AlignXY(bFineSpeed);
+                if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: AlignXY");
+
+                    //die.Presence = Material.MaterialPresence.Exist;
+                    //die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
+                    //die.State = DieProcessState.Error_MAlign;
+                }
+                else
+                {
+                	//Test시
+                    //die.Presence = Material.MaterialPresence.Exist;
+                    //die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    //die.State = DieProcessState.Inspecting;
+                }
+                die.State = DieProcessState.Inspecting;
+
+                List<Task<int>> tasks = new List<Task<int>>();
+                Task<int> t = null;
+                Log.Write("kkkkkkIndexLoadAligner", "MovePositionSafetyZ");
+                t = MovePositionAsyncSafeSafetyZ(bFineSpeed);
+                Task<int> tz = t;
+                tasks.Add(t);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
                     return -1;
                 }
-
-                bRtn = MovePositionAlignTReady(bFineSpeed);
+                Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTReady");
+                t = MovePositionAsyncAlignTReady(bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
                     return -1;
                 }
-
-                //while (IsPositionAlignZSafety() == false)
-                //{
-                //    if (IsStop)
-                //    {
-                //        return 0;
-                //    }
-                //    Thread.Sleep(1);
-                //}
-
-                die.State = DieProcessState.Inspecting;
-                socket.SetState(Rotary.RotarySocketState.MAligned);
-
+                tasks.Add(t);
+                
+                tz.Wait();
+                Log.Write("kkkkkkIndexLoadAligner", "End");
                 CompleteLoadAligner = true;
+                socket.SetState(Rotary.RotarySocketState.MAligned);
                 LogSequence("End");
             }
             catch (Exception ex)
@@ -1235,6 +1287,127 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, $"[ResetForNewRun] EnsureReady failed: {ex.Message}");
                 }
             }
+        }
+
+
+        public bool IsStatus_AlignDoneXY { get; set; }
+        public bool IsAlignResult { get; set; }
+        public double dLastFoundX { get; set; }
+        public double dLastFoundY { get; set; }
+        public double dLastFoundAngle { get; private set; }
+
+        public int AlignXY(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            IsStatus_AlignDoneXY = false;
+            IsAlignResult = false;
+            dLastFoundX = 0.0;
+            dLastFoundY = 0.0;
+            dLastFoundAngle = 0.0;
+
+            MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
+            if (die == null || die.Presence != Material.MaterialPresence.Exist)
+            {
+                Log.Write(UnitName, "AlignXY", "Skip: No die on unload socket");
+                return 0;
+            }
+
+            if (Config.IsSimulation || this.Config.IsDryRun)
+            {
+                IsAlignResult = true;
+                IsStatus_AlignDoneXY = true;
+                return 0;
+            }
+            try
+            {
+                VisionImage img = null;
+                double dX = 0;
+                double dY = 0;
+                double dAngle = 0;
+                IndexAlignerCam.SuspendedImageDisplay = true;
+                IndexAlignerCam.GrabSync(out img);
+                var result = PmRunner.Search(img);
+                if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
+                {
+                    int repIdx = 2; // (result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count) ? result.ReferenceIndex : 0;
+                    RaiseMarks(img, result.Matches.ToArray(), repIdx);
+                    IndexAlignerCam.SuspendedImageDisplay = false;
+                }
+
+                if (result.Success)
+                {
+                    IsAlignResult = true;
+                    dX = result.X;
+                    dY = result.Y;
+                    dAngle = result.R;
+                }
+                else
+                {
+                    IsAlignResult = false;
+                    dX = 0;
+                    dY = 0;
+                    dAngle = 0;
+                }
+
+                PointD pt = GetPixelToMmScale(dX, dY);
+                dLastFoundX = pt.X;
+                dLastFoundY = pt.Y;
+                dLastFoundAngle = dAngle;
+                Log.Write(UnitName, "AlignXY",
+                    $"VisionX={dLastFoundX:F4}, " +
+                    $"VisionY={dLastFoundY:F4}, " +
+                    $"VisionAngle={dLastFoundAngle:F4}");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                IsStatus_AlignDoneXY = true;
+            }
+            return nRet;
+        }
+
+        PointD GetPixelToMmScale(double dX, double dY)
+        {
+            double mmPerPixelX = (dX - IndexAlignerCam.CameraConfig.Resolution.Width / 2) * IndexAlignerCam.CameraConfig.Scale.X;
+            double mmPerPixelY = (dY - IndexAlignerCam.CameraConfig.Resolution.Height / 2) * IndexAlignerCam.CameraConfig.Scale.Y;
+            return new PointD(mmPerPixelX, mmPerPixelY);
+        }
+
+        private void RaiseMarks(VisionImage img,
+                            QMC.Common.Vision.Tools.PatternMatchingResult.PatternMatchingResultValue[] matches,
+                            int representativeIndex)
+        {
+            int trainW = 0, trainH = 0;
+            try
+            {
+                var ti = PmRunner?.Parameters?.TrainImages?
+                         .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
+            }
+            catch { }
+
+            var e = new PatternMarksFoundEventArgs
+            {
+                Image = img,
+                RepresentativeIndex = representativeIndex
+            };
+            foreach (var m in matches)
+            {
+                e.Marks.Add(new PatternMatchInfo
+                {
+                    X = m.X,
+                    Y = m.Y,
+                    AngleDeg = m.R,
+                    Score = m.Score,
+                    TrainW = trainW,
+                    TrainH = trainH
+                });
+            }
+            try { MarksFound?.Invoke(this, e); } catch { }
         }
     }
 }

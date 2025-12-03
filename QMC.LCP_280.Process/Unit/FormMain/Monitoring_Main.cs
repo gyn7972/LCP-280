@@ -308,16 +308,18 @@ namespace QMC.LCP_280.Process
                     dieOutputControl1.SetDieList(new List<MaterialDie>());
                     return;
                 }
+                lock (wafer.Dies)
+                {
+                    if (string.IsNullOrWhiteSpace(wafer.WaferId))
+                        wafer.WaferId = $"QMC_BIN_{wafer.Dies.Count}";
 
-                if (string.IsNullOrWhiteSpace(wafer.WaferId))
-                    wafer.WaferId = $"QMC_BIN_{wafer.Dies.Count}";
+                    // 새 웨이퍼가 올라온 경우에만 픽업 히스토리 리셋 (조건 예시)
+                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                        dieInputControl1.ResetPickedMarks();
 
-                // 새 웨이퍼가 올라온 경우에만 픽업 히스토리 리셋 (조건 예시)
-                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
-                    dieInputControl1.ResetPickedMarks();
-
-                dieOutputControl1.SetWaferId(wafer.WaferId);
-                dieOutputControl1.SetDieList(wafer.Dies ?? new List<MaterialDie>());
+                    dieOutputControl1.SetWaferId(wafer.WaferId);
+                    dieOutputControl1.SetDieList(wafer.Dies ?? new List<MaterialDie>());
+                }
             };
 
             if (InvokeRequired) BeginInvoke(ui);
@@ -338,16 +340,18 @@ namespace QMC.LCP_280.Process
                     dieInputControl1.SetDieList(new List<MaterialDie>());
                     return;
                 }
+                lock (wafer.Dies)
+                {
+                    if (string.IsNullOrWhiteSpace(wafer.WaferId))
+                        wafer.WaferId = $"QMC_WAFER_{wafer.Dies.Count}";
 
-                if (string.IsNullOrWhiteSpace(wafer.WaferId))
-                    wafer.WaferId = $"QMC_WAFER_{wafer.Dies.Count}";
+                    // 새 웨이퍼가 올라온 경우에만 픽업 히스토리 리셋 (조건 예시)
+                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                        dieInputControl1.ResetPickedMarks();
 
-                // 새 웨이퍼가 올라온 경우에만 픽업 히스토리 리셋 (조건 예시)
-                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
-                    dieInputControl1.ResetPickedMarks();
-
-                dieInputControl1.SetWaferId(wafer.WaferId);
-                dieInputControl1.SetDieList(wafer.Dies ?? new List<MaterialDie>());
+                    dieInputControl1.SetWaferId(wafer.WaferId);
+                    dieInputControl1.SetDieList(wafer.Dies ?? new List<MaterialDie>());
+                }
             };
 
             if (InvokeRequired) BeginInvoke(ui);
@@ -985,7 +989,11 @@ namespace QMC.LCP_280.Process
                 _autoStarting = false;
                 _readySequences.Clear();
                 _startSequences.Clear();
-                try { sequenceAutoControl.ResetAllButtons(); } catch { }
+                try 
+                { 
+                    sequenceAutoControl.ResetAllButtons(); 
+                } 
+                catch { }
 
                 // 1) 논리 시퀀스 Stop
                 await StopAllSequencesAsync().ConfigureAwait(true);
@@ -995,7 +1003,9 @@ namespace QMC.LCP_280.Process
                 {
                     foreach (var u in eq.Units.Values.OfType<BaseUnit>())
                     {
-                        if (IsStopExemptUnit(u)) continue;
+                        if (IsStopExemptUnit(u)) 
+                            continue;
+
                         try
                         {
                             if (!string.IsNullOrEmpty(u.UnitName))
@@ -1008,7 +1018,7 @@ namespace QMC.LCP_280.Process
                 // 3) 물리적 정지 대기 (ProgressForm)
                 var axisMgr = eq.AxisManager;
                 var waitCts = new CancellationTokenSource();
-                int timeoutMs = 20000;
+                int timeoutMs = 50000;
 
                 int lastPercent = 0;
                 string lastDetail = string.Empty;
@@ -1303,14 +1313,22 @@ namespace QMC.LCP_280.Process
                     var busyUnits = new List<string>();
                     foreach (var u in units)
                     {
-                        bool isStopped = (u.RunUnitStatus == BaseUnit.UnitStatus.Stopped) &&
-                                         (u.State == BaseUnit.ProcessState.Stop || u.State == BaseUnit.ProcessState.Complete || u.IsStop);
+                        //bool isStopped = (u.RunUnitStatus == BaseUnit.UnitStatus.Stopped) 
+                        //                 && (u.State == BaseUnit.ProcessState.Stop 
+                        //                 || u.State == BaseUnit.ProcessState.Complete 
+                        //                 || u.IsStop);
+
+                        bool isStopped = (u.RunUnitStatus == BaseUnit.UnitStatus.Stopped)
+                                        && (u.State == BaseUnit.ProcessState.Stop
+                                        || u.IsStop);
 
                         if (isStopped)
                             stoppedUnits++;
                         else
                             busyUnits.Add(u.UnitName);
                     }
+                    //Unit 별로.. 시컨스 완료되었을때 변수를 넣을까.
+                    //시컨스가 완전히 멈춰야 아래 축도 움직이지 않으니깐.
 
                     // 2) 축 Idle 판정
                     int idleAxes = 0;
@@ -1364,7 +1382,12 @@ namespace QMC.LCP_280.Process
                     reportProgress(percent, detail);
 
                     if (allUnitsStopped && allAxesIdle)
+                    {
+                        // 여기에서.. 축이 정말로 전부 정지되었는지 몇번재확인이 필요한디. 
+                        // 확인할때는 멈췄다고 확인되었다가 다음 스텝 움직일수있어..
+
                         return 0;
+                    }
 
                     if (sw.ElapsedMilliseconds > totalTimeoutMs)
                         return -3; // 타임아웃

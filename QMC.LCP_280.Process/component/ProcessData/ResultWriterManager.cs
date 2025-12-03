@@ -57,6 +57,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         }
         #endregion
 
+        private Equipment Equipment = Equipment.Instance;
+        //private EquipmentConfig 
+
         public PRDContext PrdContext { get; private set; } = new PRDContext();
         public SUMContext SumContext { get; private set; } = new SUMContext();
         public WAFContext WafContext { get; private set; } = new WAFContext();

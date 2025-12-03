@@ -56,23 +56,13 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         private bool _dragging = false;
         private Point _lastMouse;
 
+        // 칩 크기 비율 (값을 키우면 사각형 크기가 커지고, 칩 간 간격이 줄어듭니다)
+        private float _chipSizeRatio = 0.8f; // DisplayView와 동일 정책
+
         // 툴팁 관련
         private ToolTip _toolTip;
         private DisplayItem _hoveredItem = null;
         private Timer _hoverTimer;
-
-        /// <summary>
-        /// 표시 중인 아이템 읽기 전용 접근자 (우클릭 등 외부 HitTest/표시용)
-        /// </summary>
-        //public IReadOnlyList<DisplayItem> Items => _items;
-
-        ///// <summary>
-        ///// 컨트롤 좌표계 기준 HitTest (가장 가까운 아이템 반환, 없으면 null)
-        ///// </summary>
-        //public DisplayItem HitTest(Point clientPoint)
-        //{
-        //    return GetItemAtPosition(clientPoint);
-        //}
 
         public IReadOnlyList<DisplayItem> Items => _items;
         public DisplayItem HitTest(Point clientPoint) => GetItemAtPosition(clientPoint);
@@ -129,7 +119,8 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                 ((this.Height / 2.0) - 20.0) / maxY
             );
 
-            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
+            //int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * _chipSizeRatio));
             int hitRadius = Math.Max(itemSize / 2, 3); // 최소 3픽셀 클릭 영역
 
             foreach (var item in _items)
@@ -313,7 +304,8 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             );
 
             // 칩 크기
-            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
+            //int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * _chipSizeRatio));
 
             foreach (var item in _items)
             {
@@ -344,13 +336,16 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                 int x = (int)(cx + item.Position.X * baseScale * _scale + (double)_offset.X);
                 int y = (int)(cy - item.Position.Y * baseScale * _scale + (double)_offset.Y);
 
-                // 아이템 그리기
-                g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                // 아이템 사각형 영역
+                var rect = new Rectangle(x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+
+                // 아이템 그리기 (사각형)
+                g.FillRectangle(brush, rect);
 
                 // 테두리 그리기 (확대 시에만)
                 if (itemSize > 4)
                 {
-                    g.DrawEllipse(pen, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                    g.DrawRectangle(pen, rect);
                 }
 
                 // 호버된 아이템 하이라이트
@@ -358,10 +353,42 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                 {
                     using (Pen highlightPen = new Pen(Color.Red, 2))
                     {
-                        g.DrawEllipse(highlightPen, x - itemSize / 2 - 2, y - itemSize / 2 - 2, itemSize + 4, itemSize + 4);
+                        var inflateRect = rect;
+                        inflateRect.Inflate(2, 2);
+                        g.DrawRectangle(highlightPen, inflateRect);
+                    }
+                }
+                // 원그리기
+                if (false)
+                {
+                    // 아이템 그리기
+                    g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+
+                    // 테두리 그리기 (확대 시에만)
+                    if (itemSize > 4)
+                    {
+                        g.DrawEllipse(pen, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                    }
+
+                    // 호버된 아이템 하이라이트
+                    if (item == _hoveredItem && itemSize > 2)
+                    {
+                        using (Pen highlightPen = new Pen(Color.Red, 2))
+                        {
+                            g.DrawEllipse(highlightPen, x - itemSize / 2 - 2, y - itemSize / 2 - 2, itemSize + 4, itemSize + 4);
+                        }
                     }
                 }
             }
         }
+
+        // 외부에서 칩 크기 비율 조절 (칩 간격 제어)
+        public void SetChipSizeRatio(float ratio)
+        {
+            // 0.1 ~ 2.0 범위로 제한 (너무 작거나 크게 그려지는 것 방지)
+            _chipSizeRatio = Math.Max(0.1f, Math.Min(2.0f, ratio));
+            this.Invalidate();
+        }
+
     }
 }

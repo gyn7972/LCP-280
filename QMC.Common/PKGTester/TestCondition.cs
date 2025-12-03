@@ -39,6 +39,9 @@ namespace QMC.Common.PKGTester
         public bool[] UseOffset { get; set; } = new bool[8];
         public double[] Gain { get; set; } = new double[8];
         public double[] Offset { get; set; } = new double[8];
+
+        public string Unit { get; set; }
+
         #endregion
 
         #region Constructor
@@ -337,12 +340,25 @@ namespace QMC.Common.PKGTester
             switch (Type)
             {
                 case TestItemType.VF:
+                    Unit = "mA";
+                    return "mA";
                 case TestItemType.VR:
-                    return "A";
+                    Unit = "uA";
+                    return "uA";
                 case TestItemType.IF:
+                    Unit = "mV";
+                    return "mV";
                 case TestItemType.IR:
+                    Unit = "V";
                     return "V";
+                case TestItemType.KELFS:
+                    Unit = "uA";
+                    return "uA";
+                case TestItemType.KELDG:
+                    Unit = "uA";
+                    return "uA";
                 default:
+                    Unit = "";
                     return "";
             }
         }
@@ -351,12 +367,25 @@ namespace QMC.Common.PKGTester
             switch (Type)
             {
                 case TestItemType.VF:
+                    Unit = "mA";
+                    return "mA";
                 case TestItemType.VR:
-                    return "V";
+                    Unit = "uA";
+                    return "uA";
                 case TestItemType.IF:
+                    Unit = "mV";
+                    return "mV";
                 case TestItemType.IR:
-                    return "A";
+                    Unit = "V";
+                    return "V";
+                case TestItemType.KELFS:
+                    Unit = "uA";
+                    return "uA";
+                case TestItemType.KELDG:
+                    Unit = "uA";
+                    return "uA";
                 default:
+                    Unit = "";
                     return "";
             }
         }

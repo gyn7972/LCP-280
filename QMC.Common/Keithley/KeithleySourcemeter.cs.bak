@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace QMC.Common.Keithley
 {
@@ -279,15 +280,27 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"];
+                channel.ClearMeasureData();
+
                 if (Config.IsSimulation)
                 {
                     channel.SimulateBufferData();
                     return 0;
                 }
 
+                // measure contact resistance first.
+                if (channel.HasContactRCommand())
+                {
+                    if(!channel.RunContactRCommand())
+                        throw new Exception("Failed to run contact resistance commands.");
+                }
+
+                Log.Write("kkkkkkProb", "m3-1");
+                // measure
                 if (!channel.RunCommands())
                     throw new Exception("Failed to run measure commands.");
 
+                Log.Write("kkkkkkProb", "m3-2");
                 stopwatch.Restart();
 
                 while (!channel.WaitComplete())
@@ -298,8 +311,11 @@ namespace QMC.Common.Keithley
                     Thread.Sleep(10);
                 }
 
+                Log.Write("kkkkkkProb", "m3-3");
                 if (!channel.ReadBufferData())
                     throw new Exception("Failed to read buffer data.");
+
+                Log.Write("kkkkkkProb", "m3-4");
             }
             catch (Exception ex)
             {
@@ -348,13 +364,14 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
+
                 channel.ClearCommands();
                 foreach (var item in testItems)
                 {
                     var command = new KeithleySourcemeterChannel.ChannelCommand();
                     switch (item.Type)
                     {
-                        case TestItemType.VF:   //mA
+                        case TestItemType.VF:
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
@@ -367,11 +384,11 @@ namespace QMC.Common.Keithley
                                 channel.AddCommand(command);
                             }
                             break;
-                        case TestItemType.VR:   //uA
+                        case TestItemType.VR:
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = (item.SourceValue / 1000) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue /1000)* -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
@@ -397,12 +414,28 @@ namespace QMC.Common.Keithley
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
-                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue)* -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
                                 command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.KELFS:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureContactRHigh;
+                                command.SourceValue = item.SourceValue;
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.KELDG:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureContactRLow;
+                                command.SourceValue = item.SourceValue; 
                                 channel.AddCommand(command);
                             }
                             break;
@@ -454,7 +487,7 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.VR:
                             {
-                                itemResult.RawData = Math.Abs(value);
+                                itemResult.RawData = Math.Abs( value);
                                 itemResult.Value = Math.Abs(value);
                                 itemResult.Unit = "V";
                             }
@@ -468,10 +501,23 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IR:
                             {
-
+                                itemResult.RawData = Math.Abs(value);
+                                itemResult.Value = Math.Abs(value);
+                                itemResult.Unit = "A";
+                            }
+                            break;
+                        case TestItemType.KELFS:
+                            {
                                 itemResult.RawData = value;
                                 itemResult.Value = value;
-                                itemResult.Unit = "A";
+                                itemResult.Unit = "V";
+                            }
+                            break;
+                        case TestItemType.KELDG:
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
                             }
                             break;
                     }

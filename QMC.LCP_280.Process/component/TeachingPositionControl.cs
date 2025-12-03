@@ -36,6 +36,10 @@ namespace QMC.LCP_280.Process.Component
         private readonly Dictionary<string, BaseUnit> _unitRefs
             = new Dictionary<string, BaseUnit>(StringComparer.OrdinalIgnoreCase);
 
+        // UnitKey 약어 매핑 (표시용). 존재하면 표시 시 약어 사용, 없으면 원래 키 사용.
+        private readonly Dictionary<string, string> _unitKeyAbbreviations
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         private class TPEntry
         {
             public string Display;
@@ -60,7 +64,7 @@ namespace QMC.LCP_280.Process.Component
         private int _buttonSpacing = 12;
         private Size _buttonSize = new Size(90, 32);
 
-        [Browsable(true), Category("Teaching Buttons"), Description("자동 중앙/정렬 등 내부 레이아웃 사용 여부. False면 디자이너에서 위치 수동 조정 가능")] 
+        [Browsable(true), Category("Teaching Buttons"), Description("자동 중앙/정렬 등 내부 레이아웃 사용 여부. False면 디자이너에서 위치 수동 조정 가능")]
         [DefaultValue(true)]
         public bool AutoLayoutButtons
         {
@@ -68,7 +72,7 @@ namespace QMC.LCP_280.Process.Component
             set { if (_autoLayoutButtons == value) return; _autoLayoutButtons = value; UpdateButtonPanelLayout(); }
         }
 
-        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 수평 정렬 방식")] 
+        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 수평 정렬 방식")]
         [DefaultValue(ButtonAlignMode.Center)]
         public ButtonAlignMode ButtonAlignment
         {
@@ -76,7 +80,7 @@ namespace QMC.LCP_280.Process.Component
             set { if (_buttonAlignment == value) return; _buttonAlignment = value; UpdateButtonPanelLayout(); }
         }
 
-        [Browsable(true), Category("Teaching Buttons"), Description("Save 와 Cancel 사이 간격(px)")] 
+        [Browsable(true), Category("Teaching Buttons"), Description("Save 와 Cancel 사이 간격(px)")]
         [DefaultValue(12)]
         public int ButtonSpacing
         {
@@ -84,7 +88,7 @@ namespace QMC.LCP_280.Process.Component
             set { _buttonSpacing = Math.Max(0, value); ApplyButtonSizeAndSpacing(); UpdateButtonPanelLayout(); }
         }
 
-        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 버튼 크기")] 
+        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 버튼 크기")]
         public Size ButtonSize
         {
             get => _buttonSize;
@@ -167,12 +171,39 @@ namespace QMC.LCP_280.Process.Component
             {
                 if (_alwaysShowSaveCancel == value) return;
                 _alwaysShowSaveCancel = value;
-                Console.WriteLine($"[TPC:{Name}] AlwaysShowSaveCancel set -> {_alwaysShowSaveCancel} (Created={IsHandleCreated}, btnSaveNull={btnSave==null})");
+                Console.WriteLine($"[TPC:{Name}] AlwaysShowSaveCancel set -> {_alwaysShowSaveCancel} (Created={IsHandleCreated}, btnSaveNull={btnSave == null})");
                 if (IsHandleCreated)
                     ForceApplyAlwaysFlag();
                 else
                     _postCreateReapplyPending = true;
             }
+        }
+
+        /// <summary>
+        /// UnitKey -> 표시 약어 설정 (null/빈 문자열이면 제거). 변경 후 즉시 재로딩 옵션.
+        /// </summary>
+        public void SetUnitAbbreviation(string unitKey, string abbreviation, bool reload = true)
+        {
+            if (string.IsNullOrWhiteSpace(unitKey)) return;
+            unitKey = unitKey.Trim();
+            if (string.IsNullOrWhiteSpace(abbreviation))
+            {
+                _unitKeyAbbreviations.Remove(unitKey);
+            }
+            else
+            {
+                _unitKeyAbbreviations[unitKey] = abbreviation.Trim();
+            }
+            if (reload && _initialized) ReloadTeachingPositions();
+        }
+
+        /// <summary>
+        /// 모든 약어 제거
+        /// </summary>
+        public void ClearUnitAbbreviations(bool reload = true)
+        {
+            _unitKeyAbbreviations.Clear();
+            if (reload && _initialized) ReloadTeachingPositions();
         }
         #endregion
 
@@ -320,6 +351,8 @@ namespace QMC.LCP_280.Process.Component
                     (name, vel) => stage.MoveToTeachingPosition(name, vel: vel),
                     tp => stage.Config?.SetTeachingPosition(tp),
                     false);
+                // 기본 약어 예시
+                SetUnitAbbreviation("InputStage", "IST", false);
             }
             if (ejector != null)
             {
@@ -329,6 +362,7 @@ namespace QMC.LCP_280.Process.Component
                     (name, vel) => ejector.MoveToTeachingPosition(name, vel: vel),
                     tp => ejector.InputStageEjectorConfig?.SetTeachingPosition(tp),
                     false);
+                SetUnitAbbreviation("InputStageEjector", "EJT", false);
             }
             if (dieTransfer != null)
             {
@@ -338,6 +372,7 @@ namespace QMC.LCP_280.Process.Component
                     (name, vel) => dieTransfer.MoveToTeachingPosition(name, vel: vel),
                     tp => dieTransfer.InputDieTransferConfig?.SetTeachingPosition(tp),
                     false);
+                SetUnitAbbreviation("InputDieTransfer", "DTF", false);
             }
 
             if (_initialized && reload)
@@ -397,10 +432,10 @@ namespace QMC.LCP_280.Process.Component
             {
                 Console.WriteLine($"[TPC:{Name}] ==== DumpDeep ({reason}) ====");
                 Console.WriteLine($"  AlwaysShow={_alwaysShowSaveCancel}, Initialized={_initialized}, HandleCreated={IsHandleCreated}");
-                Console.WriteLine($"  btnSave null={btnSave==null}, Visible={btnSave?.Visible}, Parent={btnSave?.Parent?.Name}");
-                Console.WriteLine($"  btnCancel null={btnCancel==null}, Visible={btnCancel?.Visible}, Parent={btnCancel?.Parent?.Name}");
-                Console.WriteLine($"  flowButtonsPanel null={flowButtonsPanel==null}, Visible={flowButtonsPanel?.Visible}, Parent={flowButtonsPanel?.Parent?.Name}");
-                Console.WriteLine($"  rightPanel null={rightPanel==null}, RowStylesCount={rightPanel?.RowStyles?.Count}");
+                Console.WriteLine($"  btnSave null={btnSave == null}, Visible={btnSave?.Visible}, Parent={btnSave?.Parent?.Name}");
+                Console.WriteLine($"  btnCancel null={btnCancel == null}, Visible={btnCancel?.Visible}, Parent={btnCancel?.Parent?.Name}");
+                Console.WriteLine($"  flowButtonsPanel null={flowButtonsPanel == null}, Visible={flowButtonsPanel?.Visible}, Parent={flowButtonsPanel?.Parent?.Name}");
+                Console.WriteLine($"  rightPanel null={rightPanel == null}, RowStylesCount={rightPanel?.RowStyles?.Count}");
                 if (rightPanel?.RowStyles != null)
                 {
                     for (int i = 0; i < rightPanel.RowStyles.Count; i++)
@@ -444,7 +479,7 @@ namespace QMC.LCP_280.Process.Component
                 if (totalWidth < 10) totalWidth = 10;
                 int cellWidth = rightPanel.Width - 8;
                 if (totalWidth > cellWidth) totalWidth = cellWidth - 4;
-                flowButtonsPanel.Width = ( _buttonAlignment == ButtonAlignMode.Stretch ? cellWidth - 8 : totalWidth );
+                flowButtonsPanel.Width = (_buttonAlignment == ButtonAlignMode.Stretch ? cellWidth - 8 : totalWidth);
 
                 int targetRowHeight = (rightPanel.RowStyles.Count > 1) ? (int)rightPanel.RowStyles[1].Height : flowButtonsPanel.Height;
                 int desiredHeight = _buttonSize.Height + 2;
@@ -528,28 +563,33 @@ namespace QMC.LCP_280.Process.Component
                 {
                     if (!_tpProviders.TryGetValue(key, out var provider))
                         continue;
-                    
+
                     IEnumerable<TeachingPosition> list = null;
-                    
-                    try 
-                    { 
-                        list = provider?.Invoke(); 
-                    } 
+
+                    try
+                    {
+                        list = provider?.Invoke();
+                    }
                     catch { }
-                    
-                    if (list == null) 
+
+                    if (list == null)
                         continue;
+
+                    // 표시용 UnitKey -> 약어 적용
+                    string keyDisplay = _unitKeyAbbreviations.TryGetValue(key, out var ab) && !string.IsNullOrWhiteSpace(ab)
+                        ? ab
+                        : key;
 
                     foreach (var tp in list)
                     {
-                        if (tp == null || string.IsNullOrWhiteSpace(tp.Name)) 
+                        if (tp == null || string.IsNullOrWhiteSpace(tp.Name))
                             continue;
 
-                        var disp = key + "." + tp.Name;
+                        var disp = keyDisplay + "." + tp.Name;
                         var entry = new TPEntry
                         {
                             Display = disp,
-                            UnitKey = key,
+                            UnitKey = key,          // 원래 Key 유지 (실제 실행 용)
                             PositionName = tp.Name,
                             TP = tp
                         };
@@ -573,7 +613,7 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex)
             {
-                try { Log.Write("TeachingPositionControl", "Reload", ex.Message); } 
+                try { Log.Write("TeachingPositionControl", "Reload", ex.Message); }
                 catch { }
             }
         }
@@ -783,7 +823,7 @@ namespace QMC.LCP_280.Process.Component
             try
             {
                 string r = string.IsNullOrEmpty(reason) ? "" : ("(" + reason + ") ");
-                Console.WriteLine($"[TPC:{Name}] {r}AlwaysShow={_alwaysShowSaveCancel}, btnSaveVis={btnSave?.Visible}, btnCancelVis={btnCancel?.Visible}, Row1Height={(rightPanel?.RowStyles?.Count>1? rightPanel.RowStyles[1].Height: -1)}");
+                Console.WriteLine($"[TPC:{Name}] {r}AlwaysShow={_alwaysShowSaveCancel}, btnSaveVis={btnSave?.Visible}, btnCancelVis={btnCancel?.Visible}, Row1Height={(rightPanel?.RowStyles?.Count > 1 ? rightPanel.RowStyles[1].Height : -1)}");
             }
             catch { }
         }

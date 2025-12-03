@@ -930,7 +930,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
             _exchangeStandbyForNextLoad = false;
 
             base.OnStop();
@@ -979,6 +979,16 @@ namespace QMC.LCP_280.Process.Unit
                         }
                         else
                         {
+                            //여기에서 BinStage Data가 없는 경우에 InputStage에서 
+                            //맵데이터를 기다리고 있는 중인 경우.
+                            // 여기 오기전에 최소한 BinStage에 제품이 있으니깐..
+                            // 제품 가지고 Ready 신호는 가지고 있어야 하지 않나.
+                            // Feeder에서 Wafer로 Data를 넘겨야 하는데... 
+                            // Feeder가 아직 Data를 가지고 있다.. 음..
+                            // BinWafer Data만 1차로 넘기고
+                            // 2차로 InputStage Data를 받고 진행하는 걸로 하자.
+
+
                             NeedUnloadFirst = false;
                         }
                     }
@@ -999,22 +1009,6 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return nRet;
-            //try
-            //{
-            //    if (ShouldEnterWorkForWaferExchange(out bool unload))
-            //    {
-            //        NeedUnloadFirst = unload;
-            //        Log.Write(UnitName, "OnRunReady", "OnRunWork Start");
-            //        this.State = ProcessState.Work;
-            //    }
-            //    return 0;
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //    NeedUnloadFirst = false;
-            //    return -1;
-            //}
         }
         protected override int OnRunWork()
         {
@@ -1176,6 +1170,21 @@ namespace QMC.LCP_280.Process.Unit
             }
             Log.Write(UnitName, "OnRunWork", "LoadingBinComplete completed.");
 
+            // 여기서 1차 Data 넘기자. 
+            // Ready? Processing? 상태로 BinWafer 정보를 넘기자. Stage위에 제품은 있으니깐. 
+            // 하지만 아직 작업은 하지 않는다.
+            var waferOnFeeder2 = this.GetMaterial() as MaterialWafer;
+            if (waferOnFeeder2 == null)
+            {
+                AxisOutputFeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                Log.Write(this, "No wafer on Feeder to move to OutputStage");
+                return -1;
+            }
+            waferOnFeeder2.Presence = Material.MaterialPresence.Exist;
+            waferOnFeeder2.ProcessSatate = Material.MaterialProcessSatate.Ready;
+            OutputStage.SetMaterial(waferOnFeeder2);
+
             nRet = SetMappingData();
             if (nRet != 0)
             {
@@ -1209,13 +1218,19 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 srcWafer = inputStage.GetMaterialWafer();
-                if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
+                if (srcWafer != null)
                 {
-                    //Log?
-                }
-                else
-                {
-                    break;
+                    lock (srcWafer.Dies)
+                    {
+                        if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
+                        {
+                            //Log?
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
                 }
             }
             var Bin = GetMaterial() as MaterialWafer;
@@ -1224,9 +1239,13 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Bin.Presence = Material.MaterialPresence.Exist;
                 Bin.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                if (Bin.Dies == null || Bin.Dies.Count == 0)
+                lock (Bin.Dies)
                 {
-                    MakePath();
+                    if (Bin.Dies == null || Bin.Dies.Count == 0)
+                    {
+                        // 이 안이 핵심. InputStage Wafer Data도 여기서 가져옴.
+                        MakePath();
+                    }
                 }
             }
             OutputStage?.UpdateUI();
@@ -1306,21 +1325,24 @@ namespace QMC.LCP_280.Process.Unit
                 bool binFull = false;
                 try
                 {
-                    if (waferBin?.Dies != null && waferBin.Dies.Count > 0)
+                    lock (waferBin.Dies)
                     {
-                        noNextDieByStateOnly = !waferBin.Dies.Any
-                            (d => d != null &&
-                            d.State != DieProcessState.Placed &&
-                            d.State != DieProcessState.Rejected);
+                        if (waferBin?.Dies != null && waferBin.Dies.Count > 0)
+                        {
+                            noNextDieByStateOnly = !waferBin.Dies.Any
+                                (d => d != null &&
+                                d.State != DieProcessState.Placed &&
+                                d.State != DieProcessState.Rejected);
+                        }
+                        // 임시 우회: State-only가 남아있으면 '없다'로 보지 않음
+                        noNextDie = noNextDie && noNextDieByStateOnly;
+                        binFull = waferBin != null &&
+                                       waferBin.Dies != null &&
+                                       waferBin.Dies.Count > 0 &&
+                                       waferBin.Dies.All(d =>
+                                       d != null &&
+                                       (d.State == DieProcessState.Placed || d.State == DieProcessState.Rejected));
                     }
-                    // 임시 우회: State-only가 남아있으면 '없다'로 보지 않음
-                    noNextDie = noNextDie && noNextDieByStateOnly;
-                    binFull = waferBin != null &&
-                                   waferBin.Dies != null &&
-                                   waferBin.Dies.Count > 0 &&
-                                   waferBin.Dies.All(d =>
-                                   d != null &&
-                                   (d.State == DieProcessState.Placed || d.State == DieProcessState.Rejected));
 
                 }
                 catch (Exception ex)
@@ -2294,7 +2316,8 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Stage interlock must be OK (if Stage is present)
-            if (OutputStage != null && !OutputStage.IsStageInterLockOK())
+            if(OutputStage.IsPositionBinLoading() == false
+               && OutputStage.IsPositionBinUnloading() == false)
             {
                 AxisOutputFeederY?.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
@@ -2460,7 +2483,8 @@ namespace QMC.LCP_280.Process.Unit
 
         // [추가] 클래스 내부(필드/속성 영역)에 배치
         public enum BinMapOrigin { BottomLeft, BottomRight, TopLeft, TopRight }
-        public BinMapOrigin OutputBinOrigin { get; set; } = BinMapOrigin.BottomLeft; // InputStage와 보통 동일
+        //public BinMapOrigin OutputBinOrigin { get; set; } = BinMapOrigin.BottomLeft; // InputStage와 보통 동일
+        public BinMapOrigin OutputBinOrigin { get; set; } = BinMapOrigin.BottomRight; // InputStage와 보통 동일
         public bool OutputBinMirrorX { get; set; } = false;
         public bool OutputBinMirrorY { get; set; } = false;
         public void ToBinCoord(int gx, int gy, int cntX, int cntY, out int bx, out int by)
@@ -2492,53 +2516,55 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (!needPath) 
                 return nRet;
-
-            if (wafer.Dies != null)
-                wafer.Dies.Clear();
-
-            wafer.Dies = new List<MaterialDie>();
-            try
+            lock (wafer.Dies)
             {
-                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                if (wafer.Dies != null)
+                    wafer.Dies.Clear();
 
-                int cntX = recipe.BinCountX > 0 ? recipe.BinCountX : 1;
-                int cntY = recipe.BinCountY > 0 ? recipe.BinCountY : 1;
-
-                double centerX = (cntX - 1) / 2.0;
-                double centerY = (cntY - 1) / 2.0;
-
-                int index = 0;
-
-                // 기준 그리드(gx, gy)를 원점/반전 설정에 따라 (bx, by)로 투영
-                for (int gy = 0; gy < cntY; gy++)
+                wafer.Dies = new List<MaterialDie>();
+                try
                 {
-                    for (int gx = 0; gx < cntX; gx++)
+                    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+
+                    int cntX = 5;// recipe.BinCountX > 0 ? recipe.BinCountX : 1;
+                    int cntY = 5;// recipe.BinCountY > 0 ? recipe.BinCountY : 1;
+
+                    double centerX = (cntX - 1) / 2.0;
+                    double centerY = (cntY - 1) / 2.0;
+
+                    int index = 0;
+
+                    // 기준 그리드(gx, gy)를 원점/반전 설정에 따라 (bx, by)로 투영
+                    for (int gy = 0; gy < cntY; gy++)
                     {
-                        int bx, by;
-                        ToBinCoord(gx, gy, cntX, cntY, out bx, out by);
-
-                        double mapX = bx - centerX;
-                        double mapY = by - centerY;
-
-                        var die = new MaterialDie
+                        for (int gx = 0; gx < cntX; gx++)
                         {
-                            Index = index++,
-                            Presence = Material.MaterialPresence.NotExist,
-                            ProcessSatate = Material.MaterialProcessSatate.Unknown,
+                            int bx, by;
+                            ToBinCoord(gx, gy, cntX, cntY, out bx, out by);
 
-                            BinX = bx,
-                            BinY = by,
+                            double mapX = bx - centerX;
+                            double mapY = by - centerY;
 
-                            MapX = (int)mapX,
-                            MapY = (int)mapY
-                        };
-                        wafer.Dies.Add(die);
+                            var die = new MaterialDie
+                            {
+                                Index = index++,
+                                Presence = Material.MaterialPresence.NotExist,
+                                ProcessSatate = Material.MaterialProcessSatate.Unknown,
+
+                                BinX = bx,
+                                BinY = by,
+
+                                MapX = (int)mapX,
+                                MapY = (int)mapY
+                            };
+                            wafer.Dies.Add(die);
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, "MakePath", "Exception: " + ex.Message);
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "MakePath", "Exception: " + ex.Message);
+                }
             }
 
             return nRet;
@@ -2551,107 +2577,121 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+
+               
                 if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
                     return -1;
                 if (dstWafer == null)
                     return -2;
-
-                const double tol = 1e-6;
-
-                // 원본 좌표 집합(유일 값)
-                List<double> xs = srcWafer.Dies
-                    .Where(d => d != null)
-                    .Select(d => d.MapX)
-                    .OrderBy(v => v)
-                    .Aggregate(new List<double>(), (acc, v) =>
-                    {
-                        if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol)
-                            acc.Add(v);
-                        return acc;
-                    });
-
-                List<double> ys = srcWafer.Dies
-                    .Where(d => d != null)
-                    .Select(d => d.MapY)
-                    .OrderBy(v => v)
-                    .Aggregate(new List<double>(), (acc, v) =>
-                    {
-                        if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol)
-                            acc.Add(v);
-                        return acc;
-                    });
-
-                if (xs.Count == 0 || ys.Count == 0)
-                    return -3;
-
-                int nx = xs.Count;
-                int ny = ys.Count;
-
-                double centerX = (xs[0] + xs[nx - 1]) / 2.0;
-                double centerY = (ys[0] + ys[ny - 1]) / 2.0;
-
-                int FindIndex(List<double> list, double value)
+                lock (srcWafer.Dies)
                 {
-                    // tolerance 검색
-                    int lo = 0, hi = list.Count - 1;
-                    while (lo <= hi)
+                    lock (dstWafer.Dies)
                     {
-                        int mid = (lo + hi) / 2;
-                        double diff = list[mid] - value;
-                        if (Math.Abs(diff) <= tol) return mid;
-                        if (diff < 0) lo = mid + 1; else hi = mid - 1;
+                        List<MaterialDie> MyDies = srcWafer.Dies.ToList();
+
+
+                        const double tol = 1e-6;
+                        // 원본 좌표 집합(유일 값)
+                        List<double> xs = MyDies
+                            .Where(d => d != null)
+                            .Select(d => d.MapX)
+                            .OrderBy(v => v)
+                            .Aggregate(new List<double>(), (acc, v) =>
+                            {
+                                if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol)
+                                    acc.Add(v);
+                                return acc;
+                            });
+
+                        List<double> ys = MyDies
+                            .Where(d => d != null)
+                            .Select(d => d.MapY)
+                            .OrderBy(v => v)
+                            .Aggregate(new List<double>(), (acc, v) =>
+                            {
+                                if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol)
+                                    acc.Add(v);
+                                return acc;
+                            });
+
+                        if (xs.Count == 0 || ys.Count == 0)
+                            return -3;
+
+                        int nx = xs.Count;
+                        int ny = ys.Count;
+
+                        double centerX = (xs[0] + xs[nx - 1]) / 2.0;
+                        double centerY = (ys[0] + ys[ny - 1]) / 2.0;
+
+                        int FindIndex(List<double> list, double value)
+                        {
+                            // tolerance 검색
+                            int lo = 0, hi = list.Count - 1;
+                            while (lo <= hi)
+                            {
+                                int mid = (lo + hi) / 2;
+                                double diff = list[mid] - value;
+                                if (Math.Abs(diff) <= tol) return mid;
+                                if (diff < 0) lo = mid + 1; else hi = mid - 1;
+                            }
+                            for (int i = 0; i < list.Count; i++)
+                                if (Math.Abs(list[i] - value) <= tol)
+                                    return i;
+                            return -1;
+                        }
+
+                        if (dstWafer.Dies != null)
+                            dstWafer.Dies.Clear();
+
+                        dstWafer.Dies = new List<MaterialDie>(MyDies.Count);
+
+                        int newIndex = 0;
+                        foreach (var s in MyDies)
+                        {
+                            if (s == null)
+                                continue;
+
+                            int ix = FindIndex(xs, s.MapX);
+                            int iy = FindIndex(ys, s.MapY);
+                            if (ix < 0 || iy < 0)
+                                continue;
+
+                            // Bin 인덱스 회전(행/열 반전)
+                            int rx = rotate180 ? (nx - 1 - ix) : ix;
+                            int ry = rotate180 ? (ny - 1 - iy) : iy;
+
+                            // 중심 기준 180° 회전된 실제 좌표
+                            double newMapX, newMapY;
+                            //if (rotate180)
+                            //{
+                            //    double relX = s.MapX - centerX;
+                            //    double relY = s.MapY - centerY;
+                            //    newMapX = centerX - relX; // = 2*centerX - s.MapX
+                            //    newMapY = centerY - relY; // = 2*centerY - s.MapY
+                            //}
+                            //else
+                            //{
+                            //    newMapX = s.MapX;
+                            //    newMapY = s.MapY;
+                            //}
+
+                            //기존 반전에서 X만 반전으로 수정
+                            rx = ix;                 // X 인덱스 유지
+                            ry = ny - 1 - iy;        // Y 반전
+                            newMapX = s.MapX;        // X 좌표 유지
+                            newMapY = 2 * centerY - s.MapY; // Y 좌표 반전
+                            dstWafer.Dies.Add(new MaterialDie
+                            {
+                                Index = newIndex++,
+                                Presence = Material.MaterialPresence.NotExist,
+                                ProcessSatate = Material.MaterialProcessSatate.Unknown,
+                                BinX = rx,
+                                BinY = ry,
+                                MapX = (int)newMapX,
+                                MapY = (int)newMapY
+                            });
+                        }
                     }
-                    for (int i = 0; i < list.Count; i++)
-                        if (Math.Abs(list[i] - value) <= tol)
-                            return i;
-                    return -1;
-                }
-
-                if (dstWafer.Dies != null) 
-                    dstWafer.Dies.Clear();
-
-                dstWafer.Dies = new List<MaterialDie>(srcWafer.Dies.Count);
-
-                int newIndex = 0;
-                foreach (var s in srcWafer.Dies)
-                {
-                    if (s == null) 
-                        continue;
-
-                    int ix = FindIndex(xs, s.MapX);
-                    int iy = FindIndex(ys, s.MapY);
-                    if (ix < 0 || iy < 0) 
-                        continue;
-
-                    // Bin 인덱스 회전(행/열 반전)
-                    int rx = rotate180 ? (nx - 1 - ix) : ix;
-                    int ry = rotate180 ? (ny - 1 - iy) : iy;
-
-                    // 중심 기준 180° 회전된 실제 좌표
-                    double newMapX, newMapY;
-                    if (rotate180)
-                    {
-                        double relX = s.MapX - centerX;
-                        double relY = s.MapY - centerY;
-                        newMapX = centerX - relX; // = 2*centerX - s.MapX
-                        newMapY = centerY - relY; // = 2*centerY - s.MapY
-                    }
-                    else
-                    {
-                        newMapX = s.MapX;
-                        newMapY = s.MapY;
-                    }
-
-                    dstWafer.Dies.Add(new MaterialDie
-                    {
-                        Index = newIndex++,
-                        Presence = Material.MaterialPresence.NotExist,
-                        ProcessSatate = Material.MaterialProcessSatate.Unknown,
-                        BinX = rx,
-                        BinY = ry,
-                        MapX = (int)newMapX,
-                        MapY = (int)newMapY
-                    });
                 }
 
                 return 0;
@@ -2681,7 +2721,8 @@ namespace QMC.LCP_280.Process.Unit
             Serpentine   // 지그재그(행/열마다 진행 방향 반전)
         }
         // 기본값 예시: 좌하단 시작, X 먼저, 지그재그
-        public PathStartCorner StartCorner { get; set; } = PathStartCorner.BottomLeft;
+        //public PathStartCorner StartCorner { get; set; } = PathStartCorner.BottomLeft;
+        public PathStartCorner StartCorner { get; set; } = PathStartCorner.BottomRight;
         public PathPrimaryAxis PrimaryAxis { get; set; } = PathPrimaryAxis.XFirst;
         public PathTraversalMode Traversal { get; set; } = PathTraversalMode.Serpentine;
 
@@ -2698,7 +2739,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 var eq = Equipment.Instance;
                 var r = eq.EquipmentRecipe.CurrentRecipe;
-                return (r.ChipWidth > 0) ? r.ChipWidth : 0.5; // fallback
+                return (r.WChipPitchX > 0) ? r.WChipPitchX : 0.5; // fallback
             }
         }
         public double ChipPitchYmm
@@ -2707,7 +2748,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 var eq = Equipment.Instance;
                 var r = eq.EquipmentRecipe.CurrentRecipe;
-                return (r.ChipHeight > 0) ? r.ChipHeight : 0.5; // fallback
+                return (r.WChipPitchY > 0) ? r.WChipPitchY : 0.5; // fallback
             }
         }
         // Output Bin의 유효 지름(mm). 별도 항목이 없으면 웨이퍼 지름을 사용
@@ -2738,93 +2779,96 @@ namespace QMC.LCP_280.Process.Unit
             if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
 
             // 격자 키를 한 번만 계산(정수 셀). 같은 셀 내 중복 다이도 보존.
-            var items = wafer.Dies
+            lock (wafer.Dies)
+            {
+                var items = wafer.Dies
                 .Select(d => new { Die = d, BX = (int)Math.Round(d.BinX), BY = (int)Math.Round(d.BinY) })
                 .ToList();
 
-            var xs = items.Select(i => i.BX).Distinct().OrderBy(v => v).ToList();
-            var ys = items.Select(i => i.BY).Distinct().OrderBy(v => v).ToList();
-            if (xs.Count == 0 || ys.Count == 0) return;
+                var xs = items.Select(i => i.BX).Distinct().OrderBy(v => v).ToList();
+                var ys = items.Select(i => i.BY).Distinct().OrderBy(v => v).ToList();
+                if (xs.Count == 0 || ys.Count == 0) return;
 
-            // (bx,by) → 동일 셀의 다이 목록(원래 순서/Index 유지)
-            var buckets = new Dictionary<(int bx, int by), List<MaterialDie>>();
-            foreach (var it in items)
-            {
-                var key = (it.BX, it.BY);
-                if (!buckets.TryGetValue(key, out var list))
+                // (bx,by) → 동일 셀의 다이 목록(원래 순서/Index 유지)
+                var buckets = new Dictionary<(int bx, int by), List<MaterialDie>>();
+                foreach (var it in items)
                 {
-                    list = new List<MaterialDie>();
-                    buckets[key] = list;
-                }
-                list.Add(it.Die);
-            }
-
-            // StartCorner에 따른 기본 진행 방향 (외부 설정 사용: 강제 덮어쓰기 제거)
-            List<int> xBase, yBase;
-            switch (StartCorner)
-            {
-                default:
-                case PathStartCorner.BottomLeft:
-                    xBase = xs;                             // L → R
-                    yBase = ys;                             // Bottom → Top
-                    break;
-                case PathStartCorner.BottomRight:
-                    xBase = xs.AsEnumerable().Reverse().ToList();  // R → L
-                    yBase = ys;                                    // Bottom → Top
-                    break;
-                case PathStartCorner.TopLeft:
-                    xBase = xs;                                    // L → R
-                    yBase = ys.AsEnumerable().Reverse().ToList();  // Top → Bottom
-                    break;
-                case PathStartCorner.TopRight:
-                    xBase = xs.AsEnumerable().Reverse().ToList();  // R → L
-                    yBase = ys.AsEnumerable().Reverse().ToList();  // Top → Bottom
-                    break;
-            }
-
-            var newList = new List<MaterialDie>(wafer.Dies.Count);
-
-            if (PrimaryAxis == PathPrimaryAxis.XFirst)
-            {
-                // 행 우선: Y 바깥 루프, X 안쪽 루프
-                for (int row = 0; row < yBase.Count; row++)
-                {
-                    int by = yBase[row];
-                    IEnumerable<int> xSeq = xBase;
-                    if (Traversal == PathTraversalMode.Serpentine && (row % 2 == 1))
-                        xSeq = xBase.AsEnumerable().Reverse();
-
-                    foreach (int bx in xSeq)
+                    var key = (it.BX, it.BY);
+                    if (!buckets.TryGetValue(key, out var list))
                     {
-                        if (buckets.TryGetValue((bx, by), out var list))
+                        list = new List<MaterialDie>();
+                        buckets[key] = list;
+                    }
+                    list.Add(it.Die);
+                }
+
+                // StartCorner에 따른 기본 진행 방향 (외부 설정 사용: 강제 덮어쓰기 제거)
+                List<int> xBase, yBase;
+                switch (StartCorner)
+                {
+                    default:
+                    case PathStartCorner.BottomLeft:
+                        xBase = xs;                             // L → R
+                        yBase = ys;                             // Bottom → Top
+                        break;
+                    case PathStartCorner.BottomRight:
+                        xBase = xs.AsEnumerable().Reverse().ToList();  // R → L
+                        yBase = ys;                                    // Bottom → Top
+                        break;
+                    case PathStartCorner.TopLeft:
+                        xBase = xs;                                    // L → R
+                        yBase = ys.AsEnumerable().Reverse().ToList();  // Top → Bottom
+                        break;
+                    case PathStartCorner.TopRight:
+                        xBase = xs.AsEnumerable().Reverse().ToList();  // R → L
+                        yBase = ys.AsEnumerable().Reverse().ToList();  // Top → Bottom
+                        break;
+                }
+
+                var newList = new List<MaterialDie>(wafer.Dies.Count);
+
+                if (PrimaryAxis == PathPrimaryAxis.XFirst)
+                {
+                    // 행 우선: Y 바깥 루프, X 안쪽 루프
+                    for (int row = 0; row < yBase.Count; row++)
+                    {
+                        int by = yBase[row];
+                        IEnumerable<int> xSeq = xBase;
+                        if (Traversal == PathTraversalMode.Serpentine && (row % 2 == 1))
+                            xSeq = xBase.AsEnumerable().Reverse();
+
+                        foreach (int bx in xSeq)
                         {
-                            // 같은 셀 내에서는 기존 Index 오름차순(원래 순서) 유지
-                            newList.AddRange(list.OrderBy(d => d.Index));
+                            if (buckets.TryGetValue((bx, by), out var list))
+                            {
+                                // 같은 셀 내에서는 기존 Index 오름차순(원래 순서) 유지
+                                newList.AddRange(list.OrderBy(d => d.Index));
+                            }
                         }
                     }
                 }
-            }
-            else // YFirst (열 우선)
-            {
-                for (int col = 0; col < xBase.Count; col++)
+                else // YFirst (열 우선)
                 {
-                    int bx = xBase[col];
-                    IEnumerable<int> ySeq = yBase;
-                    if (Traversal == PathTraversalMode.Serpentine && (col % 2 == 1))
-                        ySeq = yBase.AsEnumerable().Reverse();
-
-                    foreach (int by in ySeq)
+                    for (int col = 0; col < xBase.Count; col++)
                     {
-                        if (buckets.TryGetValue((bx, by), out var list))
+                        int bx = xBase[col];
+                        IEnumerable<int> ySeq = yBase;
+                        if (Traversal == PathTraversalMode.Serpentine && (col % 2 == 1))
+                            ySeq = yBase.AsEnumerable().Reverse();
+
+                        foreach (int by in ySeq)
                         {
-                            newList.AddRange(list.OrderBy(d => d.Index));
+                            if (buckets.TryGetValue((bx, by), out var list))
+                            {
+                                newList.AddRange(list.OrderBy(d => d.Index));
+                            }
                         }
                     }
                 }
-            }
 
-            // 다이 정보는 변경하지 않고, 리스트 순서만 교체
-            wafer.Dies = newList;
+                // 다이 정보는 변경하지 않고, 리스트 순서만 교체
+                wafer.Dies = newList;
+            }
         }
 
         private bool TryCloneMapFromInputStage(MaterialWafer dstWafer)
@@ -2837,34 +2881,37 @@ namespace QMC.LCP_280.Process.Unit
                 if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
                     return false;
 
-                // 기존에 구현된 복제 유틸 사용
-                // - CopyInputMapRotate180: MapX/Y 그리드 보존 + 필요 시 180도 회전
-                //   BinX/BinY는 회전 반영한 격자 인덱스로 재계산됨
-                if (dstWafer.Dies != null) 
-                    dstWafer.Dies.Clear();
-
-                dstWafer.Dies = new List<MaterialDie>(srcWafer.Dies.Count);
-
-                CloneRotate180ForBin = true;
-                int rc = CopyInputMapRotate180(srcWafer, dstWafer, rotate180: CloneRotate180ForBin);
-                if (rc != 0)
+                lock (srcWafer.Dies)
                 {
-                    Log.Write(UnitName, "MakePath", $"Clone from InputStage failed rc={rc}");
-                    return false;
+                    lock (dstWafer.Dies)
+                    {
+                        // 기존에 구현된 복제 유틸 사용
+                        // - CopyInputMapRotate180: MapX/Y 그리드 보존 + 필요 시 180도 회전
+                        //   BinX/BinY는 회전 반영한 격자 인덱스로 재계산됨
+                        if (dstWafer.Dies != null)
+                            dstWafer.Dies.Clear();
+
+                        dstWafer.Dies = new List<MaterialDie>(srcWafer.Dies.Count);
+
+                        CloneRotate180ForBin = true;
+                        int rc = CopyInputMapRotate180(srcWafer, dstWafer, rotate180: CloneRotate180ForBin);
+                        if (rc != 0)
+                        {
+                            Log.Write(UnitName, "MakePath", $"Clone from InputStage failed rc={rc}");
+                            return false;
+                        }
+                        // 경로 모드 적용: StartCorner/PrimaryAxis/Traversal 설정에 따라 정렬
+                        OrderDiesByMode(dstWafer);
+
+                        // Index 재연속화(안전)
+                        for (int i = 0; i < dstWafer.Dies.Count; i++)
+                            dstWafer.Dies[i].Index = i;
+
+                        Log.Write(UnitName, "MakePath",
+                            $"Cloned map from InputStage. Count={dstWafer.Dies.Count} Rotate180={CloneRotate180ForBin}");
+
+                    }
                 }
-
-
-                // 경로 모드 적용: StartCorner/PrimaryAxis/Traversal 설정에 따라 정렬
-                OrderDiesByMode(dstWafer);
-
-
-                // Index 재연속화(안전)
-                for (int i = 0; i < dstWafer.Dies.Count; i++)
-                    dstWafer.Dies[i].Index = i;
-
-                Log.Write(UnitName, "MakePath",
-                    $"Cloned map from InputStage. Count={dstWafer.Dies.Count} Rotate180={CloneRotate180ForBin}");
-
                 return true;
             }
             catch (Exception ex)
@@ -2889,145 +2936,156 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return nRet;
             }
-            if (!needPath)
-                return nRet;
-
-            if (Bin.Dies != null)
-                Bin.Dies.Clear();
-
-            Bin.Dies = new List<MaterialDie>();
-            try
+            lock (Bin.Dies)
             {
-                if (Equipment.Instance.bIndexCal == true)
+                if (!needPath)
+                    return nRet;
+
+                if (Bin.Dies != null)
+                    Bin.Dies.Clear();
+
+                Bin.Dies = new List<MaterialDie>();
+                try
                 {
-                    // 0) InputStage 맵을 우선 그대로 복제(개수/격자/좌표 일치 보장)
-                    if (PreferCloneMapFromInputStage && TryCloneMapFromInputStage(Bin))
+                    Equipment.Instance.bIndexCal = true;
+                    if (Equipment.Instance.bIndexCal == true)
                     {
-                        // 복제 성공 시 여기서 종료 → InputStage에서 도출된 칩 개수와 완전 동일
-                        return 0;
+                        // 0) InputStage 맵을 우선 그대로 복제(개수/격자/좌표 일치 보장)
+                        if (PreferCloneMapFromInputStage && TryCloneMapFromInputStage(Bin))
+                        {
+                            // 복제 성공 시 여기서 종료 → InputStage에서 도출된 칩 개수와 완전 동일
+                            return 0;
+                        }
                     }
-                }
 
-                // 1) (Fallback) ChipPitch + 웨이퍼 지름 기반 원형 맵 생성
-                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                    // 1) (Fallback) ChipPitch + 웨이퍼 지름 기반 원형 맵 생성
+                    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                    double pitchX = ChipPitchXmm;
+                    double pitchY = ChipPitchYmm;
+                    if (pitchX <= 0) pitchX = 0.5;
+                    if (pitchY <= 0) pitchY = 0.5;
 
-                double pitchX = ChipPitchXmm;
-                double pitchY = ChipPitchYmm;
-                if (pitchX <= 0) pitchX = 0.5;
-                if (pitchY <= 0) pitchY = 0.5;
-
-                double diameterMm = BinDiameterMm;
-                if (diameterMm <= 0 && (recipe.BinCountX > 0 || recipe.BinCountY > 0))
-                {
-                    double spanX = Math.Max(1, recipe.BinCountX) * pitchX;
-                    double spanY = Math.Max(1, recipe.BinCountY) * pitchY;
-                    diameterMm = Math.Min(spanX, spanY);
-                }
-                if (diameterMm <= 0)
-                {
-                    diameterMm = Math.Min(20 * pitchX, 20 * pitchY);
-                }
-
-                double radiusMm = Math.Max(0.0, diameterMm / 2.0 - Math.Max(0.0, BinCircleMarginMm));
-
-                int halfCellsX = (int)Math.Floor(radiusMm / pitchX);
-                int halfCellsY = (int)Math.Floor(radiusMm / pitchY);
-                int cntX = Math.Max(1, halfCellsX * 2 + 1);
-                int cntY = Math.Max(1, halfCellsY * 2 + 1);
-
-                double centerX = (cntX - 1) / 2.0;
-                double centerY = (cntY - 1) / 2.0;
-
-                int xStart, yStart, xDir, yDir;
-                switch (StartCorner)
-                {
-                    default:
-                    case PathStartCorner.BottomLeft: xStart = 0; yStart = 0; xDir = +1; yDir = +1; break;
-                    case PathStartCorner.BottomRight: xStart = cntX - 1; yStart = 0; xDir = -1; yDir = +1; break;
-                    case PathStartCorner.TopLeft: xStart = 0; yStart = cntY - 1; xDir = +1; yDir = -1; break;
-                    case PathStartCorner.TopRight: xStart = cntX - 1; yStart = cntY - 1; xDir = -1; yDir = -1; break;
-                }
-
-                IEnumerable<int> RangeDir(int start, int count, int dir)
-                {
-                    if (dir > 0) { for (int i = 0; i < count; i++) yield return start + i; }
-                    else { for (int i = 0; i < count; i++) yield return start - i; }
-                }
-
-                var xLineForward = RangeDir(xStart, cntX, xDir).ToList();
-                var xLineReverse = xLineForward.AsEnumerable().Reverse().ToList();
-                var yLineForward = RangeDir(yStart, cntY, yDir).ToList();
-                var yLineReverse = yLineForward.AsEnumerable().Reverse().ToList();
-
-                var list = new List<MaterialDie>();
-
-                Action<int, int> tryAdd = (rawX, rawY) =>
-                {
-                    int bx, by;
-                    ToBinCoord(rawX, rawY, cntX, cntY, out bx, out by);
-
-                    double relCellX = bx - centerX;
-                    double relCellY = by - centerY;
-
-                    double dxMm = relCellX * pitchX;
-                    double dyMm = relCellY * pitchY;
-                    double dist2 = dxMm * dxMm + dyMm * dyMm;
-                    bool inside = !UseCircularBinMap ? true : (dist2 <= radiusMm * radiusMm);
-
-                    if (!inside) return;
-
-                    list.Add(new MaterialDie
+                    double diameterMm = BinDiameterMm;
+                    int nCoutX = 5;
+                    int nCoutY = 5;
+                    //if (diameterMm <= 0 && (recipe.BinCountX > 0 || recipe.BinCountY > 0))
+                    //{
+                    //    double spanX = Math.Max(1, recipe.BinCountX) * pitchX;
+                    //    double spanY = Math.Max(1, recipe.BinCountY) * pitchY;
+                    //    diameterMm = Math.Min(spanX, spanY);
+                    //}
+                    if (diameterMm <= 0 && (nCoutX > 0 || nCoutY > 0))
                     {
-                        Index = -1,
-                        Presence = Material.MaterialPresence.NotExist,
-                        ProcessSatate = Material.MaterialProcessSatate.Unknown,
-                        BinX = bx,
-                        BinY = by,
-                        MapX = (int)relCellX,
-                        MapY = (int)relCellY
-                    });
-                };
-
-                if (PrimaryAxis == PathPrimaryAxis.XFirst)
-                {
-                    for (int row = 0; row < cntY; row++)
-                    {
-                        int rawY = yLineForward[row];
-                        var xSeq = (Traversal == PathTraversalMode.Serpentine && (row % 2 == 1))
-                            ? xLineReverse
-                            : xLineForward;
-
-                        foreach (int rawX in xSeq)
-                            tryAdd(rawX, rawY);
+                        double spanX = Math.Max(1, nCoutX) * pitchX;
+                        double spanY = Math.Max(1, nCoutY) * pitchY;
+                        diameterMm = Math.Min(spanX, spanY);
                     }
-                }
-                else
-                {
-                    for (int col = 0; col < cntX; col++)
+                    if (diameterMm <= 0)
                     {
-                        int rawX = xLineForward[col];
-                        var ySeq = (Traversal == PathTraversalMode.Serpentine && (col % 2 == 1))
-                            ? yLineReverse
-                            : yLineForward;
-
-                        foreach (int rawY in ySeq)
-                            tryAdd(rawX, rawY);
+                        diameterMm = Math.Min(20 * pitchX, 20 * pitchY);
                     }
+
+                    double radiusMm = Math.Max(0.0, diameterMm / 2.0 - Math.Max(0.0, BinCircleMarginMm));
+
+                    int halfCellsX = (int)Math.Floor(radiusMm / pitchX);
+                    int halfCellsY = (int)Math.Floor(radiusMm / pitchY);
+                    int cntX = Math.Max(1, halfCellsX * 2 + 1);
+                    int cntY = Math.Max(1, halfCellsY * 2 + 1);
+
+                    double centerX = (cntX - 1) / 2.0;
+                    double centerY = (cntY - 1) / 2.0;
+
+                    int xStart, yStart, xDir, yDir;
+                    switch (StartCorner)
+                    {
+                        default:
+                        case PathStartCorner.BottomLeft: xStart = 0; yStart = 0; xDir = +1; yDir = +1; break;
+                        case PathStartCorner.BottomRight: xStart = cntX - 1; yStart = 0; xDir = -1; yDir = +1; break;
+                        case PathStartCorner.TopLeft: xStart = 0; yStart = cntY - 1; xDir = +1; yDir = -1; break;
+                        case PathStartCorner.TopRight: xStart = cntX - 1; yStart = cntY - 1; xDir = -1; yDir = -1; break;
+                    }
+
+                    IEnumerable<int> RangeDir(int start, int count, int dir)
+                    {
+                        if (dir > 0) { for (int i = 0; i < count; i++) yield return start + i; }
+                        else { for (int i = 0; i < count; i++) yield return start - i; }
+                    }
+
+                    var xLineForward = RangeDir(xStart, cntX, xDir).ToList();
+                    var xLineReverse = xLineForward.AsEnumerable().Reverse().ToList();
+                    var yLineForward = RangeDir(yStart, cntY, yDir).ToList();
+                    var yLineReverse = yLineForward.AsEnumerable().Reverse().ToList();
+
+                    var list = new List<MaterialDie>();
+
+                    Action<int, int> tryAdd = (rawX, rawY) =>
+                    {
+                        int bx, by;
+                        ToBinCoord(rawX, rawY, cntX, cntY, out bx, out by);
+
+                        double relCellX = bx - centerX;
+                        double relCellY = by - centerY;
+
+                        double dxMm = relCellX * pitchX;
+                        double dyMm = relCellY * pitchY;
+                        double dist2 = dxMm * dxMm + dyMm * dyMm;
+                        bool inside = !UseCircularBinMap ? true : (dist2 <= radiusMm * radiusMm);
+
+                        if (!inside) return;
+
+                        list.Add(new MaterialDie
+                        {
+                            Index = -1,
+                            Presence = Material.MaterialPresence.NotExist,
+                            ProcessSatate = Material.MaterialProcessSatate.Unknown,
+                            BinX = bx,
+                            BinY = by,
+                            MapX = (int)relCellX,
+                            MapY = (int)relCellY
+                        });
+                    };
+
+                    if (PrimaryAxis == PathPrimaryAxis.XFirst)
+                    {
+                        for (int row = 0; row < cntY; row++)
+                        {
+                            int rawY = yLineForward[row];
+                            var xSeq = (Traversal == PathTraversalMode.Serpentine && (row % 2 == 1))
+                                ? xLineReverse
+                                : xLineForward;
+
+                            foreach (int rawX in xSeq)
+                                tryAdd(rawX, rawY);
+                        }
+                    }
+                    else
+                    {
+                        for (int col = 0; col < cntX; col++)
+                        {
+                            int rawX = xLineForward[col];
+                            var ySeq = (Traversal == PathTraversalMode.Serpentine && (col % 2 == 1))
+                                ? yLineReverse
+                                : yLineForward;
+
+                            foreach (int rawY in ySeq)
+                                tryAdd(rawX, rawY);
+                        }
+                    }
+
+                    for (int i = 0; i < list.Count; i++)
+                        list[i].Index = i;
+
+                    Bin.Dies.AddRange(list);
+
+                    Log.Write(UnitName, "MakePath",
+                        $"Circular(Fallback)={UseCircularBinMap} Dies={Bin.Dies.Count} Grid=({cntX}x{cntY}) Pitch=({pitchX:F3},{pitchY:F3})mm Radius={radiusMm:F3}mm");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "MakePath", "Exception: " + ex.Message);
                 }
 
-                for (int i = 0; i < list.Count; i++)
-                    list[i].Index = i;
-
-                Bin.Dies.AddRange(list);
-
-                Log.Write(UnitName, "MakePath",
-                    $"Circular(Fallback)={UseCircularBinMap} Dies={Bin.Dies.Count} Grid=({cntX}x{cntY}) Pitch=({pitchX:F3},{pitchY:F3})mm Radius={radiusMm:F3}mm");
             }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, "MakePath", "Exception: " + ex.Message);
-            }
-
             return nRet;
         }
     }

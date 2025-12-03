@@ -138,7 +138,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             if (Config.IsSimulation == false
                && Config.IsDryRun == false)
@@ -241,7 +241,8 @@ namespace QMC.LCP_280.Process.Unit
                 // 1) Check Can Measure
                 InspectDone = false;
 
-                if(Config.IsSimulation == false
+                Log.Write("kkkkkkProb", "m1");
+                if (Config.IsSimulation == false
                 && Config.IsDryRun == false )
                 {
                     if (!tester.CanMeasure())
@@ -264,6 +265,7 @@ namespace QMC.LCP_280.Process.Unit
                     bRet &= Measure();
                 }
 
+                Log.Write("kkkkkkProb", "m3");
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {
@@ -274,13 +276,17 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 3) Data Assign
-                bRet &= AssignDataToMaterialObject();
-                if (bRet != 0)
-                {
-                    PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
-                    Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
-                    ; return -1;
-                }
+                //Task.Factory.StartNew(() =>
+                //{
+                //    bRet &= AssignDataToMaterialObject();
+                //    if (bRet != 0)
+                //    {
+                //        PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
+                //        Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
+                        
+                //    }
+                //});
+                
 
                 // OutputStage로 옮김.
 
@@ -294,6 +300,8 @@ namespace QMC.LCP_280.Process.Unit
                 //                }
 
                 InspectDone = true;
+
+                Log.Write("kkkkkkProb", "m4");
             }
             catch (Exception ex)
             {
@@ -400,7 +408,24 @@ namespace QMC.LCP_280.Process.Unit
                 // 현재 시점의 In/Out 스테이지 Wafer 참조
                 var inWafer = InputStage?.GetMaterialWafer();
                 var outWafer = OutputStage?.GetMaterialWafer();
+                if (outWafer == null)
+                {
+                    while (true)
+                    {
+                        if (IsStop)
+                        {
+                            Log.Write(UnitName, "PopulateDieWithTesterResult", "IsStop - outWafer == null");
+                            return;
+                        }
 
+                        outWafer = OutputStage?.GetMaterialWafer();
+                        if(outWafer != null)
+                        {
+                            break;
+                        }
+                        Thread.Sleep(1);
+                    }
+                }
                 int probeIndex = this.GetProbeIndexNo();
                 int loadIndex = Rotary?.GetLoadIndexNo() ?? -1;
                 int socketCount = Rotary?.GetIndexCount() ?? 0;
@@ -451,99 +476,91 @@ namespace QMC.LCP_280.Process.Unit
                 // 2) OutStage Bin 내려놓을 예정 위치 -> BinX/BinY
                 //    - 예약 호출 없이, OutStage Wafer에서 첫번째 비어있는 슬롯을 조회하여 계획 좌표를 기록
                 //    - 이미 값이 있다면 유지, 없으면 채움
-                if ((die.BinX == 0 && die.BinY == 0) && outWafer?.Dies != null && outWafer.Dies.Count > 0)
+                lock (outWafer.Dies)
                 {
-                    var next = outWafer.Dies.FirstOrDefault(d => d != null && d.Presence != Material.MaterialPresence.Exist);
-                    if (next != null)
+                    if ((die.BinX == 0 && die.BinY == 0) && outWafer?.Dies != null && outWafer.Dies.Count > 0)
                     {
-                        die.BinX = next.BinX;
-                        die.BinY = next.BinY;
+                        var next = outWafer.Dies.FirstOrDefault(d => d != null && d.Presence != Material.MaterialPresence.Exist);
+                        if (next != null)
+                        {
+                            die.BinX = next.BinX;
+                            die.BinY = next.BinY;
+                        }
                     }
-                }
-                die.MeasureValues["_PlanBinX"] = die.BinX;
-                die.MeasureValues["_PlanBinY"] = die.BinY;
+                    die.MeasureValues["_PlanBinX"] = die.BinX;
+                    die.MeasureValues["_PlanBinY"] = die.BinY;
 
-                // 기타 메타
-                die.MeasureValues["_ProbeIndex"] = probeIndex;
-                die.MeasureValues["_LoadIndex"] = loadIndex;
-                die.MeasureValues["_SocketCount"] = socketCount;
-                die.MeasureValues["_DieIndex"] = die.Index;
-                die.MeasureValues["_MapX"] = die.MapX;
-                die.MeasureValues["_MapY"] = die.MapY;
-                die.MeasureValues["_AngleDeg"] = die.Angle;
-                die.MeasureValues["_MeasureTimeMs"] = tester.MeasureTime.TotalMilliseconds;
+                    // 기타 메타
+                    die.MeasureValues["_ProbeIndex"] = probeIndex;
+                    die.MeasureValues["_LoadIndex"] = loadIndex;
+                    die.MeasureValues["_SocketCount"] = socketCount;
+                    die.MeasureValues["_DieIndex"] = die.Index;
+                    die.MeasureValues["_MapX"] = die.MapX;
+                    die.MeasureValues["_MapY"] = die.MapY;
+                    die.MeasureValues["_AngleDeg"] = die.Angle;
+                    die.MeasureValues["_MeasureTimeMs"] = tester.MeasureTime.TotalMilliseconds;
 
-                // 3) 트래킹 정보(소스/타겟 웨이퍼)
-                if (inWafer != null)
-                {
-                    die.SourceWaferId = inWafer.WaferId;
-                }
-                if (outWafer != null)
-                {
-                    die.TargetWaferId = outWafer.WaferId;
-                    die.TargetSlot = outWafer.SlotIndex;
-                    die.TargetChipIndex = die.Index;
-                }
-                else
-                {
-                    if (string.IsNullOrWhiteSpace(die.TargetWaferId))
-                        die.TargetWaferId = die.SourceWaferId;
-                    if (die.TargetSlot < 0) die.TargetSlot = -1;
-                    if (die.TargetChipIndex < 0) die.TargetChipIndex = die.Index;
-                }
-
-                // Bin / Rank 정보
-                var bin = cloned.BinningResult;
-                if (bin != null)
-                {
-                    die.Rank = bin.BinNo;
-                    die.RankName = string.IsNullOrWhiteSpace(bin.BinLabel) ? "-" : bin.BinLabel;
-                    bool isGood = (bin.BinType == BinningType.GoodBin);
-                    die.IsPass = isGood;
-
-                    if (!isGood)
+                    // 3) 트래킹 정보(소스/타겟 웨이퍼)
+                    if (inWafer != null)
                     {
-                        if (string.IsNullOrWhiteSpace(die.RejectReason))
-                            die.RejectReason = (bin.BinLabel == "NG") ? "NG" : "BinFail";
-                        die.State = DieProcessState.Rejected;
+                        die.SourceWaferId = inWafer.WaferId;
+                    }
+                    if (outWafer != null)
+                    {
+                        die.TargetWaferId = outWafer.WaferId;
+                        die.TargetSlot = outWafer.SlotIndex;
+                        die.TargetChipIndex = die.Index;
                     }
                     else
                     {
+                        if (string.IsNullOrWhiteSpace(die.TargetWaferId))
+                            die.TargetWaferId = die.SourceWaferId;
+                        if (die.TargetSlot < 0) die.TargetSlot = -1;
+                        if (die.TargetChipIndex < 0) die.TargetChipIndex = die.Index;
+                    }
+
+                    // Bin / Rank 정보
+                    var bin = cloned.BinningResult;
+                    if (bin != null)
+                    {
+                        die.Rank = bin.BinNo;
+                        die.RankName = string.IsNullOrWhiteSpace(bin.BinLabel) ? "-" : bin.BinLabel;
+                        bool isGood = (bin.BinType == BinningType.GoodBin);
+                        die.IsPass = isGood;
+
+                        if (!isGood)
+                        {
+                            if (string.IsNullOrWhiteSpace(die.RejectReason))
+                                die.RejectReason = (bin.BinLabel == "NG") ? "NG" : "BinFail";
+                            die.State = DieProcessState.Rejected;
+                        }
+                        else
+                        {
+                            if (die.State != DieProcessState.Rejected)
+                                die.State = DieProcessState.Inspected;
+                        }
+                    }
+                    else
+                    {
+                        die.Rank = -1;
+                        die.RankName = "Error";
+                        die.IsPass = false;
+                        if (string.IsNullOrWhiteSpace(die.RejectReason))
+                            die.RejectReason = "NoBinning";
                         if (die.State != DieProcessState.Rejected)
                             die.State = DieProcessState.Inspected;
                     }
-                }
-                else
-                {
-                    die.Rank = -1;
-                    die.RankName = "Error";
-                    die.IsPass = false;
-                    if (string.IsNullOrWhiteSpace(die.RejectReason))
-                        die.RejectReason = "NoBinning";
-                    if (die.State != DieProcessState.Rejected)
-                        die.State = DieProcessState.Inspected;
-                }
 
-                // ========= StrainGage 스냅샷 병합(평균값) =========
-                var sgSnapshot = GetStrainGageSnapshotAveraged(5, 10); // 약 40~50ms 평균
-                if (sgSnapshot != null && sgSnapshot.Count > 0)
-                {
-                    foreach (var kv in sgSnapshot)
-                        die.MeasureValues[kv.Key] = kv.Value;
-                }
 
-                // 공정 상태 유지
-                die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    // 공정 상태 유지
+                    die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                }
             }
             catch (Exception ex)
             {
                 Log.Write(UnitName, $"[PopulateDieWithTesterResult] Exception: {ex.Message}");
             }
         }
-
-
-
-
 
         // View 변환 옵션 (UI 토글과 동일하게 외부에서 주입/설정)
         public bool InputViewRotate180 { get; set; } = false;
@@ -662,7 +679,6 @@ namespace QMC.LCP_280.Process.Unit
             // ---------------------
             return 0;
         }
-
         private int SaveResultData()
         {
             // Do Something...
@@ -758,8 +774,6 @@ namespace QMC.LCP_280.Process.Unit
             // ---------------------
             return 0;
         }
-
-
         // BinningClassifier를 통해 Range( Min ~ Max )와 측정값(Value)을 페어 컬럼(범위,측정값)으로 CSV 저장
         // - 범위: 분류된 BinLabel 기준 BinningClassifier.GetRangesForBin()
         // - 측정값: tester.Result.Items[itemName].Value

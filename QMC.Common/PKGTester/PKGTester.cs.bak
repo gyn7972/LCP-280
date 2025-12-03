@@ -436,7 +436,12 @@ namespace QMC.Common.PKGTester
                 handler = (s) => { tcs.TrySetResult(true); };
                 spectrometer.OnMeasureCommandSended += handler;
 
-                try { if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) Thread.CurrentThread.Name = "DoSpectrometerMeasure"; } catch { }
+                try 
+                { 
+                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
+                        Thread.CurrentThread.Name = "DoSpectrometerMeasure"; 
+                } catch 
+                { }
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
 
                 var timeoutTask = Task.Delay(2000);
@@ -451,8 +456,14 @@ namespace QMC.Common.PKGTester
                     Thread.Sleep(10);
                 }
 
-                try { if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) Thread.CurrentThread.Name = "DoSourcemeterMeasure"; } catch { }
-                smuTask = Task.Run(() => DoSourcemeterMeasure());
+                try 
+                { 
+                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
+                        Thread.CurrentThread.Name = "DoSourcemeterMeasure"; 
+                } 
+                catch 
+                { }
+                 smuTask = Task.Run(() => DoSourcemeterMeasure());
 
                 int[] codes = await Task.WhenAll(spcTask, smuTask);
                 if (codes.Any(r => r != 0))

@@ -9,11 +9,13 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process
 {
-    internal static class Program
+    public static class Program
     {
+        public static MainForm MainFormInstance { get; private set; }
         /// <summary>
         /// 해당 애플리케이션의 주 진입점입니다.
         /// </summary>
+        /// 
         [STAThread]
         static void Main()
         {
@@ -46,8 +48,8 @@ namespace QMC.LCP_280.Process
                     var eq = Equipment.Instance;
                     EquipmentLocator.Initialize(eq); // 주입
                     Equipment.Instance.InitializeEquipment();
-
-                    Application.Run(new QMC.Common.MainForm()); // 정확한 네임스페이스 지정
+                    MainFormInstance = new QMC.Common.MainForm();
+                    Application.Run(MainFormInstance); // 정확한 네임스페이스 지정
                 }
                 finally
                 {

@@ -127,7 +127,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -167,12 +167,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool UseImageCenterAsOrigin { get; set; } = true;
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
 
-        public bool IsStatus_AlignDone { get; set; }
-        public bool IsAlignResult {  get; set; }
-        public double dLastFoundX { get; set; }
-        public double dLastFoundY { get;set; }
-        public double dLastFoundAngle { get; private set; }
-
+        
         private (bool ok, double x, double y, double angle) CenterSearchViaRunner()
         {
             if (Config.IsSimulation == true 
@@ -199,8 +194,11 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq
 
-        public double IsStatus_LastAppliedXY { get; set; }
         public bool IsStatus_AlignDoneXY { get; set; }
+        public bool IsAlignResult { get; set; }
+        public double dLastFoundX { get; set; }
+        public double dLastFoundY { get; set; }
+        public double dLastFoundAngle { get; private set; }
 
 
         private int PrepareForAlign(out VisionImage img)
@@ -270,7 +268,6 @@ namespace QMC.LCP_280.Process.Unit
             if (Config.IsSimulation || this.Config.IsDryRun)
             {
                 IsAlignResult = true;
-                IsStatus_LastAppliedXY = 0;
                 IsStatus_AlignDoneXY = true;
                 return 0;
             }
@@ -424,7 +421,6 @@ namespace QMC.LCP_280.Process.Unit
         public void ResetForNewRun(bool waitRotaryIdle = true, bool clearVisionResult = true)
         {
             // 1) 상태/플래그 초기화
-            IsStatus_AlignDone = false;
             IsAlignResult = false;
             IsStatus_AlignDoneXY = false;
             dLastFoundX = 0; 

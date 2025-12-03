@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace QMC.Common.Keithley
 {
@@ -279,15 +280,27 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"];
+                channel.ClearMeasureData();
+
                 if (Config.IsSimulation)
                 {
                     channel.SimulateBufferData();
                     return 0;
                 }
 
+                // measure contact resistance first.
+                if (channel.HasContactRCommand())
+                {
+                    if(!channel.RunContactRCommand())
+                        throw new Exception("Failed to run contact resistance commands.");
+                }
+
+                Log.Write("kkkkkkProb", "m3-1");
+                // measure
                 if (!channel.RunCommands())
                     throw new Exception("Failed to run measure commands.");
 
+                Log.Write("kkkkkkProb", "m3-2");
                 stopwatch.Restart();
 
                 while (!channel.WaitComplete())
@@ -298,8 +311,11 @@ namespace QMC.Common.Keithley
                     Thread.Sleep(10);
                 }
 
+                Log.Write("kkkkkkProb", "m3-3");
                 if (!channel.ReadBufferData())
                     throw new Exception("Failed to read buffer data.");
+
+                Log.Write("kkkkkkProb", "m3-4");
             }
             catch (Exception ex)
             {
@@ -345,6 +361,7 @@ namespace QMC.Common.Keithley
         }
         public bool BuildTestCommands()
         {
+            double dUnit = 1.0;
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
@@ -354,24 +371,65 @@ namespace QMC.Common.Keithley
                     var command = new KeithleySourcemeterChannel.ChannelCommand();
                     switch (item.Type)
                     {
-                        case TestItemType.VF:   //mA
+                        case TestItemType.VF:
                             {
+                                //VF1은 단뒤가 다른디.. 
+                                if(item.Name == "VF1") //VF1은 uA 인데.
+                                {
+
+                                }
+
+                                if (item.Unit == "A")
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit / 1000;
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit / 1000 / 1000;
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue * dUnit) * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
                                 command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
+
                             }
                             break;
-                        case TestItemType.VR:   //uA
+                        case TestItemType.VR: //uA
                             {
+                                if (item.Unit == "A")
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit / 1000;
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit / 1000 / 1000;
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = (item.SourceValue / 1000) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue * dUnit) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
@@ -382,9 +440,26 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IF:
                             {
+                                if (item.Unit == "V")
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+                                else if (item.Unit == "mV")
+                                {
+                                    dUnit = dUnit / 1000;
+                                }
+                                else if (item.Unit == "uV")
+                                {
+                                    dUnit = dUnit / 1000 / 1000;
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
-                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue * dUnit) * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
@@ -395,9 +470,26 @@ namespace QMC.Common.Keithley
                             break;
                         case TestItemType.IR:
                             {
+                                if (item.Unit == "V")
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+                                else if (item.Unit == "mV")
+                                {
+                                    dUnit = dUnit / 1000;
+                                }
+                                else if (item.Unit == "uV")
+                                {
+                                    dUnit = dUnit / 1000 / 1000;
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                }
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
-                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
+                                command.SourceValue = (item.SourceValue * dUnit) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.MeasureLimit = item.MeasureLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
@@ -409,26 +501,16 @@ namespace QMC.Common.Keithley
                         case TestItemType.KELFS:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureKELFS;
-                                command.SourceValue = item.SourceValue  ;
-                                command.SourceTime = item.SourceTime;
-                                command.MeasureLimit = item.MeasureLimit;
-                                command.SourceRange = GetVSourceRange(command.SourceValue);
-                                command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureContactRHigh;
+                                command.SourceValue = item.SourceValue;
                                 channel.AddCommand(command);
                             }
                             break;
                         case TestItemType.KELDG:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureKELDG; command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
-                                command.SourceValue = item.SourceValue;
-                                command.SourceTime = item.SourceTime;
-                                command.MeasureLimit = item.MeasureLimit;
-                                command.SourceRange = GetVSourceRange(command.SourceValue);
-                                command.MeasureTime = item.MeasureTime;
-                                command.MeasureRange = GetIMeasureRange(command.MeasureLimit);
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureContactRLow;
+                                command.SourceValue = item.SourceValue; 
                                 channel.AddCommand(command);
                             }
                             break;
@@ -446,6 +528,7 @@ namespace QMC.Common.Keithley
         }
         public bool GetResultProcess()
         {
+            double dUnit = 0.0;
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
@@ -473,60 +556,160 @@ namespace QMC.Common.Keithley
                     {
                         case TestItemType.VF:
                             {
-                                itemResult.RawData = value;
-                                itemResult.Value = value;
-                                itemResult.Unit = "V";
+                                if (item.Unit == "A")
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mA";
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uA";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+
+                                itemResult.RawData = value * dUnit;
+                                itemResult.Value = value * dUnit;
                             }
                             break;
                         case TestItemType.VR:
                             {
-                                if(value < 0)
+                                if (item.Unit == "A")
                                 {
-                                    value *= -1;
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
                                 }
-                                itemResult.RawData = Math.Abs(value);// * -1;
-                                itemResult.Value = Math.Abs(value);// * -1;
-                                itemResult.Unit = "V";
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mA";
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uA";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+
+                                itemResult.RawData = Math.Abs(value * dUnit);
+                                itemResult.Value = Math.Abs(value * dUnit);
                             }
                             break;
                         case TestItemType.IF:
                             {
-                                itemResult.RawData = value;
-                                itemResult.Value = value;
-                                itemResult.Unit = "A";
+                                if (item.Unit == "V")
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "V";
+                                }
+                                else if (item.Unit == "mV")
+                                {
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mV";
+                                }
+                                else if (item.Unit == "uV")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uV";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "V";
+                                }
+                                itemResult.RawData = value * dUnit;
+                                itemResult.Value = value * dUnit;
                             }
                             break;
                         case TestItemType.IR:
                             {
-                                if (value < 0)
+                                if (item.Unit == "V")
                                 {
-                                    value *= -1;
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "V";
                                 }
-                                itemResult.RawData = Math.Abs(value);// * -1;
-                                itemResult.Value = Math.Abs(value);// * -1;
-                                itemResult.Unit = "A";
-                            }
-                            break;
-                        case TestItemType.KELDG:
-                            {
-                                if (value < 0)
+                                else if (item.Unit == "mV")
                                 {
-                                    value *= -1;
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mV";
                                 }
-                                itemResult.RawData = Math.Abs(value);// * -1;
-                                itemResult.Value = Math.Abs(value);// * -1;
-                                itemResult.Unit = "";
+                                else if (item.Unit == "uV")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uV";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "V";
+                                }
+                                itemResult.RawData = Math.Abs(value * dUnit);
+                                itemResult.Value = Math.Abs(value * dUnit);
                             }
                             break;
                         case TestItemType.KELFS:
                             {
-                                if (value < 0)
+                                if (item.Unit == "A")
                                 {
-                                    value *= -1;
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
                                 }
-                                itemResult.RawData = Math.Abs(value);// * -1;
-                                itemResult.Value = Math.Abs(value);// * -1;
-                                itemResult.Unit = "";
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mA";
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uA";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+                                itemResult.RawData = value * dUnit;
+                                itemResult.Value = value * dUnit;
+                            }
+                            break;
+                        case TestItemType.KELDG:
+                            {
+                                if (item.Unit == "A")
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+                                else if (item.Unit == "mA")
+                                {
+                                    dUnit = dUnit * 1000;
+                                    itemResult.Unit = "mA";
+                                }
+                                else if (item.Unit == "uA")
+                                {
+                                    dUnit = dUnit * 1000 * 1000;
+                                    itemResult.Unit = "uA";
+                                }
+                                else
+                                {
+                                    dUnit = dUnit * 1;
+                                    itemResult.Unit = "A";
+                                }
+                                itemResult.RawData = value * dUnit;
+                                itemResult.Value = value * dUnit;
                             }
                             break;
                     }

@@ -34,33 +34,34 @@
             this.label4 = new System.Windows.Forms.Label();
             this.labelIndexSocketNo = new System.Windows.Forms.Label();
             this.comboBoxIndexSocketNo = new System.Windows.Forms.ComboBox();
-            this.btnInputMAlign = new QMC.Common.IndividualMenuButton();
             this.buttonTest = new System.Windows.Forms.Button();
             this.labelsocketNumberInput = new System.Windows.Forms.Label();
-            this.btnRotary = new QMC.Common.IndividualMenuButton();
             this.labelsocketNumberLAlign = new System.Windows.Forms.Label();
             this.labelsocketNumberProbe = new System.Windows.Forms.Label();
             this.labelsocketNumberUnload = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
-            this.ButtonManualTest = new QMC.Common.IndividualMenuButton();
-            this.ButtonClear = new QMC.Common.IndividualMenuButton();
             this.checkBoxIndexCal = new System.Windows.Forms.CheckBox();
             this.groupBoxProcessSeq = new System.Windows.Forms.GroupBox();
-            this.manualSequenceControlProcessSeq = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlProbe = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this._ProcessCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this._ProcessCameraviewer = new QMC.Common.Vision.VisionImageViewer();
+            this.btnRotary = new QMC.Common.IndividualMenuButton();
+            this.ButtonManualTest = new QMC.Common.IndividualMenuButton();
+            this.ButtonClear = new QMC.Common.IndividualMenuButton();
+            this.btnInputMAlign = new QMC.Common.IndividualMenuButton();
+            this.btnManualVision = new QMC.Common.IndividualMenuButton();
+            this.manualSequenceControlProcessSeq = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualSequenceControlProbe = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.groupBoxProcessSeq.SuspendLayout();
@@ -70,8 +71,8 @@
             this.tabPage3.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBoxManual
@@ -94,9 +95,6 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.Controls.Add(this.label4, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this.labelIndexSocketNo, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.comboBoxIndexSocketNo, 0, 8);
-            this.tableLayoutPanel2.Controls.Add(this.btnInputMAlign, 1, 8);
-            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 8);
             this.tableLayoutPanel2.Controls.Add(this.labelsocketNumberInput, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnRotary, 2, 0);
             this.tableLayoutPanel2.Controls.Add(this.labelsocketNumberLAlign, 1, 1);
@@ -107,6 +105,10 @@
             this.tableLayoutPanel2.Controls.Add(this.ButtonManualTest, 0, 5);
             this.tableLayoutPanel2.Controls.Add(this.ButtonClear, 1, 5);
             this.tableLayoutPanel2.Controls.Add(this.checkBoxIndexCal, 2, 5);
+            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 9);
+            this.tableLayoutPanel2.Controls.Add(this.btnInputMAlign, 1, 9);
+            this.tableLayoutPanel2.Controls.Add(this.comboBoxIndexSocketNo, 0, 9);
+            this.tableLayoutPanel2.Controls.Add(this.btnManualVision, 0, 7);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 30);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
@@ -156,7 +158,7 @@
             this.comboBoxIndexSocketNo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxIndexSocketNo.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.comboBoxIndexSocketNo.FormattingEnabled = true;
-            this.comboBoxIndexSocketNo.Location = new System.Drawing.Point(4, 420);
+            this.comboBoxIndexSocketNo.Location = new System.Drawing.Point(4, 472);
             this.comboBoxIndexSocketNo.Margin = new System.Windows.Forms.Padding(4);
             this.comboBoxIndexSocketNo.Name = "comboBoxIndexSocketNo";
             this.comboBoxIndexSocketNo.Size = new System.Drawing.Size(174, 36);
@@ -164,30 +166,9 @@
             this.comboBoxIndexSocketNo.Visible = false;
             this.comboBoxIndexSocketNo.SelectedIndexChanged += new System.EventHandler(this.comboBoxIndexSocketNo_SelectedIndexChanged);
             // 
-            // btnInputMAlign
-            // 
-            this.btnInputMAlign.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnInputMAlign.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnInputMAlign.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnInputMAlign.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnInputMAlign.CustomForeColor = System.Drawing.Color.Black;
-            this.btnInputMAlign.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.btnInputMAlign.ForeColor = System.Drawing.Color.Black;
-            this.btnInputMAlign.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnInputMAlign.Location = new System.Drawing.Point(189, 420);
-            this.btnInputMAlign.Margin = new System.Windows.Forms.Padding(4);
-            this.btnInputMAlign.Name = "btnInputMAlign";
-            this.btnInputMAlign.Size = new System.Drawing.Size(176, 42);
-            this.btnInputMAlign.TabIndex = 20;
-            this.btnInputMAlign.TabStop = false;
-            this.btnInputMAlign.Text = "InputMAlign";
-            this.btnInputMAlign.UseVisualStyleBackColor = false;
-            this.btnInputMAlign.Visible = false;
-            this.btnInputMAlign.Click += new System.EventHandler(this.btnInputMAlign_ClickAsync);
-            // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(374, 420);
+            this.buttonTest.Location = new System.Drawing.Point(374, 472);
             this.buttonTest.Margin = new System.Windows.Forms.Padding(4);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(177, 42);
@@ -208,27 +189,6 @@
             this.labelsocketNumberInput.TabIndex = 24;
             this.labelsocketNumberInput.Text = "---";
             this.labelsocketNumberInput.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // btnRotary
-            // 
-            this.btnRotary.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnRotary.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnRotary.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnRotary.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRotary.CustomForeColor = System.Drawing.Color.Black;
-            this.btnRotary.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnRotary.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.btnRotary.ForeColor = System.Drawing.Color.Black;
-            this.btnRotary.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnRotary.Location = new System.Drawing.Point(374, 4);
-            this.btnRotary.Margin = new System.Windows.Forms.Padding(4);
-            this.btnRotary.Name = "btnRotary";
-            this.btnRotary.Size = new System.Drawing.Size(178, 44);
-            this.btnRotary.TabIndex = 23;
-            this.btnRotary.TabStop = false;
-            this.btnRotary.Text = "Next Index";
-            this.btnRotary.UseVisualStyleBackColor = false;
-            this.btnRotary.Click += new System.EventHandler(this.btnRotary_Click);
             // 
             // labelsocketNumberLAlign
             // 
@@ -295,56 +255,18 @@
             this.label6.Text = "Unload No";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // ButtonManualTest
-            // 
-            this.ButtonManualTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonManualTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.ButtonManualTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonManualTest.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ButtonManualTest.CustomForeColor = System.Drawing.Color.Black;
-            this.ButtonManualTest.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.ButtonManualTest.ForeColor = System.Drawing.Color.Black;
-            this.ButtonManualTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.ButtonManualTest.Location = new System.Drawing.Point(4, 264);
-            this.ButtonManualTest.Margin = new System.Windows.Forms.Padding(4);
-            this.ButtonManualTest.Name = "ButtonManualTest";
-            this.ButtonManualTest.Size = new System.Drawing.Size(177, 44);
-            this.ButtonManualTest.TabIndex = 31;
-            this.ButtonManualTest.TabStop = false;
-            this.ButtonManualTest.Text = "ReportTest";
-            this.ButtonManualTest.UseVisualStyleBackColor = false;
-            this.ButtonManualTest.Click += new System.EventHandler(this.ButtonManualTest_Click);
-            // 
-            // ButtonClear
-            // 
-            this.ButtonClear.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonClear.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.ButtonClear.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonClear.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ButtonClear.CustomForeColor = System.Drawing.Color.Black;
-            this.ButtonClear.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.ButtonClear.ForeColor = System.Drawing.Color.Black;
-            this.ButtonClear.ImageSize = new System.Drawing.Size(45, 45);
-            this.ButtonClear.Location = new System.Drawing.Point(189, 264);
-            this.ButtonClear.Margin = new System.Windows.Forms.Padding(4);
-            this.ButtonClear.Name = "ButtonClear";
-            this.ButtonClear.Size = new System.Drawing.Size(177, 44);
-            this.ButtonClear.TabIndex = 32;
-            this.ButtonClear.TabStop = false;
-            this.ButtonClear.Text = "Clear Index";
-            this.ButtonClear.UseVisualStyleBackColor = false;
-            this.ButtonClear.Click += new System.EventHandler(this.ButtonClear_Click);
-            // 
             // checkBoxIndexCal
             // 
             this.checkBoxIndexCal.AutoSize = true;
             this.checkBoxIndexCal.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.checkBoxIndexCal.Enabled = false;
             this.checkBoxIndexCal.Location = new System.Drawing.Point(373, 263);
             this.checkBoxIndexCal.Name = "checkBoxIndexCal";
             this.checkBoxIndexCal.Size = new System.Drawing.Size(180, 46);
             this.checkBoxIndexCal.TabIndex = 33;
             this.checkBoxIndexCal.Text = "Index Cal";
             this.checkBoxIndexCal.UseVisualStyleBackColor = true;
+            this.checkBoxIndexCal.Visible = false;
             this.checkBoxIndexCal.CheckedChanged += new System.EventHandler(this.checkBoxIndexCal_CheckedChanged);
             // 
             // groupBoxProcessSeq
@@ -358,17 +280,6 @@
             this.groupBoxProcessSeq.TabIndex = 27;
             this.groupBoxProcessSeq.TabStop = false;
             this.groupBoxProcessSeq.Text = "Process Seq";
-            // 
-            // manualSequenceControlProcessSeq
-            // 
-            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(3, 30);
-            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
-            this.manualSequenceControlProcessSeq.ParentUnit = null;
-            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(558, 524);
-            this.manualSequenceControlProcessSeq.TabIndex = 14;
             // 
             // tabControl1
             // 
@@ -394,59 +305,26 @@
             this.tabPage1.Text = "MAlign";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // manualSequenceControl
-            // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControl.Location = new System.Drawing.Point(3, 3);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(550, 508);
-            this.manualSequenceControl.TabIndex = 14;
-            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.manualSequenceControlProbe);
-            this.tabPage2.Location = new System.Drawing.Point(4, 37);
+            this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(556, 516);
+            this.tabPage2.Size = new System.Drawing.Size(556, 514);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Probe";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // manualSequenceControlProbe
-            // 
-            this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 3);
-            this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
-            this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(550, 372);
-            this.manualSequenceControlProbe.TabIndex = 15;
-            // 
             // tabPage3
             // 
             this.tabPage3.Controls.Add(this.manualSequenceControlOutAlign);
-            this.tabPage3.Location = new System.Drawing.Point(4, 37);
+            this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(556, 516);
+            this.tabPage3.Size = new System.Drawing.Size(556, 514);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "OutAlign";
             this.tabPage3.UseVisualStyleBackColor = true;
-            // 
-            // manualSequenceControlOutAlign
-            // 
-            this.manualSequenceControlOutAlign.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlOutAlign.Location = new System.Drawing.Point(0, 0);
-            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
-            this.manualSequenceControlOutAlign.ParentUnit = null;
-            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(556, 372);
-            this.manualSequenceControlOutAlign.TabIndex = 29;
             // 
             // groupBox1
             // 
@@ -475,27 +353,6 @@
             this.tableLayoutPanel5.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
-            // _ProcessCameraviewer
-            // 
-            this._ProcessCameraviewer.BackColor = System.Drawing.Color.Black;
-            this._ProcessCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this._ProcessCameraviewer.Camera = null;
-            this._ProcessCameraviewer.CameraSwitch = null;
-            this._ProcessCameraviewer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._ProcessCameraviewer.FrameRate = 1D;
-            this._ProcessCameraviewer.InputImage = null;
-            this._ProcessCameraviewer.IsViewCustomizedImage = false;
-            this._ProcessCameraviewer.Location = new System.Drawing.Point(3, 3);
-            this._ProcessCameraviewer.Name = "_ProcessCameraviewer";
-            this._ProcessCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
-            this._ProcessCameraviewer.Simulated = false;
-            this._ProcessCameraviewer.Size = new System.Drawing.Size(550, 413);
-            this._ProcessCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this._ProcessCameraviewer.TabIndex = 13;
-            this._ProcessCameraviewer.TabStop = false;
-            this._ProcessCameraviewer.UpdateDelayTime = 80;
-            this._ProcessCameraviewer.VisibleCrossLine = true;
-            // 
             // tableLayoutPanel1
             // 
             this.tableLayoutPanel1.ColumnCount = 3;
@@ -517,6 +374,140 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1896, 1126);
             this.tableLayoutPanel1.TabIndex = 30;
+            // 
+            // _ProcessCameraviewer
+            // 
+            this._ProcessCameraviewer.BackColor = System.Drawing.Color.Black;
+            this._ProcessCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._ProcessCameraviewer.Camera = null;
+            this._ProcessCameraviewer.CameraSwitch = null;
+            this._ProcessCameraviewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._ProcessCameraviewer.FrameRate = 1D;
+            this._ProcessCameraviewer.InputImage = null;
+            this._ProcessCameraviewer.IsViewCustomizedImage = false;
+            this._ProcessCameraviewer.Location = new System.Drawing.Point(3, 3);
+            this._ProcessCameraviewer.Name = "_ProcessCameraviewer";
+            this._ProcessCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._ProcessCameraviewer.Simulated = false;
+            this._ProcessCameraviewer.Size = new System.Drawing.Size(550, 413);
+            this._ProcessCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._ProcessCameraviewer.TabIndex = 13;
+            this._ProcessCameraviewer.TabStop = false;
+            this._ProcessCameraviewer.UpdateDelayTime = 80;
+            this._ProcessCameraviewer.VisibleCrossLine = true;
+            // 
+            // btnRotary
+            // 
+            this.btnRotary.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnRotary.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnRotary.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnRotary.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRotary.CustomForeColor = System.Drawing.Color.Black;
+            this.btnRotary.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnRotary.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnRotary.ForeColor = System.Drawing.Color.Black;
+            this.btnRotary.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnRotary.Location = new System.Drawing.Point(374, 4);
+            this.btnRotary.Margin = new System.Windows.Forms.Padding(4);
+            this.btnRotary.Name = "btnRotary";
+            this.btnRotary.Size = new System.Drawing.Size(178, 44);
+            this.btnRotary.TabIndex = 23;
+            this.btnRotary.TabStop = false;
+            this.btnRotary.Text = "Next Index";
+            this.btnRotary.UseVisualStyleBackColor = false;
+            this.btnRotary.Click += new System.EventHandler(this.btnRotary_Click);
+            // 
+            // ButtonManualTest
+            // 
+            this.ButtonManualTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonManualTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.ButtonManualTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonManualTest.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ButtonManualTest.CustomForeColor = System.Drawing.Color.Black;
+            this.ButtonManualTest.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ButtonManualTest.ForeColor = System.Drawing.Color.Black;
+            this.ButtonManualTest.ImageSize = new System.Drawing.Size(45, 45);
+            this.ButtonManualTest.Location = new System.Drawing.Point(4, 264);
+            this.ButtonManualTest.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonManualTest.Name = "ButtonManualTest";
+            this.ButtonManualTest.Size = new System.Drawing.Size(177, 44);
+            this.ButtonManualTest.TabIndex = 31;
+            this.ButtonManualTest.TabStop = false;
+            this.ButtonManualTest.Text = "Index Cal";
+            this.ButtonManualTest.UseVisualStyleBackColor = false;
+            this.ButtonManualTest.Click += new System.EventHandler(this.ButtonManualTest_Click);
+            // 
+            // ButtonClear
+            // 
+            this.ButtonClear.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonClear.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.ButtonClear.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonClear.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ButtonClear.CustomForeColor = System.Drawing.Color.Black;
+            this.ButtonClear.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ButtonClear.ForeColor = System.Drawing.Color.Black;
+            this.ButtonClear.ImageSize = new System.Drawing.Size(45, 45);
+            this.ButtonClear.Location = new System.Drawing.Point(189, 264);
+            this.ButtonClear.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonClear.Name = "ButtonClear";
+            this.ButtonClear.Size = new System.Drawing.Size(177, 44);
+            this.ButtonClear.TabIndex = 32;
+            this.ButtonClear.TabStop = false;
+            this.ButtonClear.Text = "Clear Index";
+            this.ButtonClear.UseVisualStyleBackColor = false;
+            this.ButtonClear.Click += new System.EventHandler(this.ButtonClear_Click);
+            // 
+            // btnInputMAlign
+            // 
+            this.btnInputMAlign.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnInputMAlign.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnInputMAlign.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnInputMAlign.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnInputMAlign.CustomForeColor = System.Drawing.Color.Black;
+            this.btnInputMAlign.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.btnInputMAlign.ForeColor = System.Drawing.Color.Black;
+            this.btnInputMAlign.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnInputMAlign.Location = new System.Drawing.Point(189, 472);
+            this.btnInputMAlign.Margin = new System.Windows.Forms.Padding(4);
+            this.btnInputMAlign.Name = "btnInputMAlign";
+            this.btnInputMAlign.Size = new System.Drawing.Size(176, 42);
+            this.btnInputMAlign.TabIndex = 20;
+            this.btnInputMAlign.TabStop = false;
+            this.btnInputMAlign.Text = "InputMAlign";
+            this.btnInputMAlign.UseVisualStyleBackColor = false;
+            this.btnInputMAlign.Visible = false;
+            this.btnInputMAlign.Click += new System.EventHandler(this.btnInputMAlign_ClickAsync);
+            // 
+            // btnManualVision
+            // 
+            this.btnManualVision.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnManualVision.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnManualVision.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnManualVision.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnManualVision.CustomForeColor = System.Drawing.Color.Black;
+            this.btnManualVision.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnManualVision.ForeColor = System.Drawing.Color.Black;
+            this.btnManualVision.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnManualVision.Location = new System.Drawing.Point(4, 368);
+            this.btnManualVision.Margin = new System.Windows.Forms.Padding(4);
+            this.btnManualVision.Name = "btnManualVision";
+            this.btnManualVision.Size = new System.Drawing.Size(177, 44);
+            this.btnManualVision.TabIndex = 34;
+            this.btnManualVision.TabStop = false;
+            this.btnManualVision.Text = "ProbeVision";
+            this.btnManualVision.UseVisualStyleBackColor = false;
+            this.btnManualVision.Click += new System.EventHandler(this.btnManualVision_Click);
+            // 
+            // manualSequenceControlProcessSeq
+            // 
+            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(3, 30);
+            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
+            this.manualSequenceControlProcessSeq.ParentUnit = null;
+            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(558, 524);
+            this.manualSequenceControlProcessSeq.TabIndex = 14;
             // 
             // dioControl
             // 
@@ -542,6 +533,39 @@
             this.teachingPositionControl.TabIndex = 31;
             this.teachingPositionControl.UnitName = null;
             // 
+            // manualSequenceControl
+            // 
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualSequenceControl.Location = new System.Drawing.Point(3, 3);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.ParentUnit = null;
+            this.manualSequenceControl.Size = new System.Drawing.Size(550, 508);
+            this.manualSequenceControl.TabIndex = 14;
+            // 
+            // manualSequenceControlProbe
+            // 
+            this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 3);
+            this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
+            this.manualSequenceControlProbe.ParentUnit = null;
+            this.manualSequenceControlProbe.Size = new System.Drawing.Size(550, 372);
+            this.manualSequenceControlProbe.TabIndex = 15;
+            // 
+            // manualSequenceControlOutAlign
+            // 
+            this.manualSequenceControlOutAlign.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlOutAlign.Location = new System.Drawing.Point(0, 0);
+            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
+            this.manualSequenceControlOutAlign.ParentUnit = null;
+            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(556, 372);
+            this.manualSequenceControlOutAlign.TabIndex = 29;
+            // 
             // Process_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
@@ -561,8 +585,8 @@
             this.tabPage3.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -600,5 +624,6 @@
         private Common.IndividualMenuButton ButtonManualTest;
         private Common.IndividualMenuButton ButtonClear;
         private System.Windows.Forms.CheckBox checkBoxIndexCal;
+        private Common.IndividualMenuButton btnManualVision;
     }
 }

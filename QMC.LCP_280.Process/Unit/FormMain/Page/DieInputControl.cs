@@ -84,11 +84,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 : model;
 
             // 2) 180도 회전 (원점 기준 점대칭)
-            Rotate180View = true;
-            if (Rotate180View)
-            {
-                rel = new PointD(-rel.X, -rel.Y);
-            }
+            //Rotate180View = true;
+            //if (Rotate180View)
+            //{
+            //    rel = new PointD(-rel.X, -rel.Y);
+            //}
+
+            // 2) X 방향 반전만 적용 (Y는 그대로)
+            rel = new PointD(rel.X, -rel.Y);
+
             return rel;
         }
 
@@ -98,12 +102,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (!_hasPivot) return display;
             PointD rel = display;
 
-            Rotate180View = true;
-            // 1) 역회전
-            if (Rotate180View)
-            {
-                rel = new PointD(-rel.X, -rel.Y);
-            }
+            //Rotate180View = true;
+            //// 1) 역회전
+            //if (Rotate180View)
+            //{
+            //    rel = new PointD(-rel.X, -rel.Y);
+            //}
+
+            // 1) X 방향 반전의 역변환 (Y는 그대로)
+            rel = new PointD(display.X, -display.Y);
 
             // 2) 절대 좌표 복원
             PointD model = _centerOnPivot
@@ -112,6 +119,46 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             return model;
         }
+
+        //// 모델(MapX/MapY) -> 디스플레이 좌표
+        //private PointD ToDisplay(PointD model)
+        //{
+        //    if (!_hasPivot) return model;
+
+        //    // 1) 센터 상대좌표 변환
+        //    PointD rel = _centerOnPivot
+        //        ? new PointD(model.X - _pivotX, model.Y - _pivotY)
+        //        : model;
+
+        //    // 2) 180도 회전 (원점 기준 점대칭)
+        //    Rotate180View = true;
+        //    if (Rotate180View)
+        //    {
+        //        rel = new PointD(-rel.X, -rel.Y);
+        //    }
+        //    return rel;
+        //}
+
+        //// 디스플레이 -> 모델(MapX/MapY)
+        //private PointD FromDisplay(PointD display)
+        //{
+        //    if (!_hasPivot) return display;
+        //    PointD rel = display;
+
+        //    Rotate180View = true;
+        //    // 1) 역회전
+        //    if (Rotate180View)
+        //    {
+        //        rel = new PointD(-rel.X, -rel.Y);
+        //    }
+
+        //    // 2) 절대 좌표 복원
+        //    PointD model = _centerOnPivot
+        //        ? new PointD(rel.X + _pivotX, rel.Y + _pivotY)
+        //        : rel;
+
+        //    return model;
+        //}
 
         // 히스토리 표시 여부
         private bool _showPickedHistory = true;
@@ -739,6 +786,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             _pickedCoords.Clear();
             _lastPickedCoord = null;
             SetDieList(_dies);
+        }
+
+        private void buttonOpen_Click(object sender, EventArgs e)
+        {
+
         }
 
         // (선택) 화면 중앙 정렬 유틸 (DisplayView 구현에 따라 필요 시 사용)

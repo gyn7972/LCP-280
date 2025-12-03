@@ -232,8 +232,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        
-
         public int MovePositionSafetyZ(bool isFine = false)
         {
             Task<int> task = MovePositionAsyncSafetyZ(isFine);
@@ -509,6 +507,11 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MovePositionTopContact_Index_Up(int nIndex = 0, bool isFine = false)
         {
+            if (IsTopContactIndexZUp(nIndex) == true)
+            {
+                return 0;
+            }
+
             Task<int> task = MovePositionAsyncTopContact_Index_Up(nIndex, isFine);
             while (IsEndTask(task) == false)
             {
@@ -540,12 +543,15 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, isFine);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnMovePositionTopContact_Index_ReadyZ] ToolT move failed");
-                return -1;
-            }
+            //if (IsTopContactIndexZUp(nIndex) == true)
+            //{
+            //    nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, isFine);
+            //    if (nRet != 0)
+            //    {
+            //        Log.Write(UnitName, "[OnMovePositionTopContact_Index_ReadyZ] ToolT move failed");
+            //        return -1;
+            //    }
+            //}
 
             string tpName = $"Top_Index{teachingIdx}_Up";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
@@ -578,7 +584,6 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return nRet;
-            //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
         }
         private int IsMoveInterLockTopContact_Index_Up()
         {
@@ -789,7 +794,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             return nRet;
-
         }
 
 
@@ -827,15 +831,34 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRet = MovePositionBottomContact_Index_Ready(nIndex, isFine);
-            if (nRet != 0)
+            //nRet = MovePositionBottomContact_Index_Ready(nIndex, isFine);
+            //if (nRet != 0)
+            //{
+            //    Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] MovePositionBottomContact_Index_ReadyZ failed index={nIndex}");
+            //    return -1;
+            //}
+            string tpName = $"SafetyZone";
+            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            if (tpObj == null)
             {
-                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] MovePositionBottomContact_Index_ReadyZ failed index={nIndex}");
+                Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
                 return -1;
             }
 
-            string tpName = $"Bottom_Index{teachingIdx}_Up";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            double dZPos = 0.0;
+            if (IsBottomIndexZUp(nIndex))
+            {
+                dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
+                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
+                    return -1;
+                }
+            }
+
+            tpName = $"Bottom_Index{teachingIdx}_Up";
+            tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] Teaching not found: {tpName}");
@@ -853,7 +876,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            double dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
+            dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
             nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
             if (nRet != 0)
             {
@@ -927,11 +950,11 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"Bottom_Index{teachingIdx}_Ready";
+            string tpName = $"SafetyZone";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
-                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] Teaching not found: {tpName}");
+                Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
                 return -1;
             }
 
@@ -947,6 +970,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
+            tpName = $"Bottom_Index{teachingIdx}_Ready";
+            tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] Teaching not found: {tpName}");
+                return -1;
+            }
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
             nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
@@ -1408,7 +1438,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -1481,32 +1511,72 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(2);
             }
 
-            if (IsSphereForward() == false)
+            if (Config.ViewMode == false)
             {
-                if (SetSphereFB(true))
+                if (IsSphereForward() == false)
                 {
-                    var sw = Stopwatch.StartNew();
-                    while (!IsSphereForward())
+                    if (SetSphereFB(true))
                     {
-                        if (sw.ElapsedMilliseconds > 2000)
+                    	Thread.Sleep(200);
+                        var sw = Stopwatch.StartNew();
+                        while (IsSphereForward() == false)
                         {
-                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                            Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] SphereFB-F Timeout");
-                            return -1;
+                            if (sw.ElapsedMilliseconds > 5000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] SphereFB-F Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
+                    }
+                }
+                // 적분구 공정 위치.
+                if (IsSphereZAtDown() == false)
+                {
+                    nRet = MovePositionSphereZDown();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSphereZDown failed");
+                        return -1;
+                    }
+                    while (IsSphereZAtDown() == false)
+                    {
+                        if (IsStop)
+                            return 0;
                         Thread.Sleep(1);
                     }
                 }
             }
-
-            // 적분구 공정 위치.
-            if (IsSphereZAtDown() == false)
+            else
             {
-                nRet = MovePositionSphereZDown(); //실제로는 다운임.
-                if (nRet != 0)
+                // 적분구 공정 위치.
+                if (IsSphereZAtReady() == false)
                 {
-                    Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSphereZDown failed");
-                    return -1;
+                    nRet = MovePositionSphereZReady();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSphereZReady failed");
+                        return -1;
+                    }
+                }
+                if (IsSphereBackward() == false)
+                {
+                    if (SetSphereFB(false))
+                    {
+                    	Thread.Sleep(200);
+                        var sw = Stopwatch.StartNew();
+                        while (IsSphereBackward() == false)
+                        {
+                            if (sw.ElapsedMilliseconds > 5000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] SphereFB-F Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
+                        }
+                    }
                 }
             }
 
@@ -1536,6 +1606,7 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = RunInspection;
             LogSequence("Start");
 
+            Log.Write("kkkkkkProb", "Start");
             while (IsRotaryIdle() != 0)
             {
                 if (IsStop)
@@ -1544,91 +1615,196 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(1);
             }
-           
-            MaterialDie die = this.Rotary.GetProbeSocketMaterial();
-            int nIndex = this.GetProbeIndexNo();
-            bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
-            if (bUseSocket == false)
-            {
-                Log.Write(UnitName, "[RunInspection] Socket not used. Skip inspection.");
-                return 0;
-            }
-            if (die == null)
-            {
-                return 0;
-            }
-            if (die.Presence != Material.MaterialPresence.Exist)
-            {
-                return 0;
-            }
 
-            var socket = this.Rotary.GetSocket(nIndex);
-            socket.SetState(Rotary.RotarySocketState.Probing);
-            if (IsTopRequired())
+            try
             {
-                if(IsContactTop() == false)
+                Log.Write("kkkkkkProb", "Start2");
+                MaterialDie die = this.Rotary.GetProbeSocketMaterial();
+                int nIndex = this.GetProbeIndexNo();
+                bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
+                if (bUseSocket == false)
                 {
-                    if (SetContectTop(true) == false)
+                    Log.Write(UnitName, "[RunInspection] Socket not used. Skip inspection.");
+                    return 0;
+                }
+                if (die == null)
+                {
+                    return 0;
+                }
+                if (die.Presence != Material.MaterialPresence.Exist)
+                {
+                    return 0;
+                }
+                if (die.State == DieProcessState.Error_load
+                    && die.State == DieProcessState.Error_MAlign)
+                {
+                    return 0;
+                }
+
+                //카메라로 컨택 확인 하고 싶을때 모드
+                if (Config.ViewMode == false)
+                {
+                    if (IsSphereForward() == false)
                     {
-                        Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
+                        Thread.Sleep(200);
+                        if (SetSphereFB(true))
+                        {
+                            var sw = Stopwatch.StartNew();
+                            while (IsSphereForward() == false)
+                            {
+                                if (sw.ElapsedMilliseconds > 5000)
+                                {
+                                    PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
+                                    return -1;
+                                }
+                                Thread.Sleep(1);
+                            }
+                        }
+                    }
+
+                    if (IsSphereZAtDown() == false)
+                    {
+                        nRet = MovePositionSphereZDown();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                            return -1;
+                        }
+                        while (IsSphereZAtDown() == false)
+                        {
+                            if (IsStop)
+                                return 0;
+                            Thread.Sleep(1);
+                        }
+                    }
+                }
+                else
+                {
+                    if (IsSphereZAtReady() == false)
+                    {
+                        nRet = MovePositionSphereZReady();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                            return -1;
+                        }
+                    }
+
+                    if (IsSphereBackward() == false)
+                    {
+                        if (SetSphereFB(false))
+                        {
+                            Thread.Sleep(200);
+                            var sw = Stopwatch.StartNew();
+                            while (IsSphereBackward() == false)
+                            {
+                                if (sw.ElapsedMilliseconds > 5000)
+                                {
+                                    PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
+                                    return -1;
+                                }
+                                Thread.Sleep(1);
+                            }
+                        }
+                    }
+                }
+
+                var socket = this.Rotary.GetSocket(nIndex);
+                socket.SetState(Rotary.RotarySocketState.Probing);
+                if (IsTopRequired())
+                {
+                    if (IsContactTop() == false)
+                    {
+                        if (SetContectTop(true) == false)
+                        {
+                            Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
+                            return -1;
+                        }
+                    }
+
+                    Log.Write("kkkkkkProb", "Start3");
+                    nRet = TopContactAndMeasureOnce(bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
+                        return -1;
+                    }
+                }
+                else
+                {
+                    if (IsContactProbe() == false)
+                    {
+                        if (SetContectTop(false) == false)
+                        {
+                            Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
+                            return -1;
+                        }
+                    }
+                    nRet = BottomContactAndMeasureOnce(bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
                         return -1;
                     }
                 }
 
-                nRet = TopContactAndMeasureOnce(bFineSpeed);
+                if(nRet == 0)
+                {
+                    die.State = DieProcessState.Inspected;
+                    die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    die.Presence = Material.MaterialPresence.Exist;
+                }
+                else
+                {
+                    die.State = DieProcessState.Error_Probe;
+                    die.ProcessSatate = Material.MaterialProcessSatate.Processing; //Skip? Unloader는 해야지?
+                    die.Presence = Material.MaterialPresence.Exist;
+                }
+
+                nRet = MovePositionSafetyZ();
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
-                    return -1;
+                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
+                    nRet = -1;
                 }
-            }
-            else
-            {
-                if(IsContactProbe() == false)
+                while (this.IsProbeSafetyAxisPos() == false)
                 {
-                    if (SetContectTop(false) == false)
+                    if (IsStop)
                     {
-                        Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
-                        return -1;
+                        return 0;
                     }
-
+                    Thread.Sleep(1);
                 }
 
-                nRet = BottomContactAndMeasureOnce(bFineSpeed);
-                if (nRet != 0)
+                socket.SetState(Rotary.RotarySocketState.Probed);
+                LogSequence("End");
+                return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally
+            {
+                if(this.IsProbeSafetyAxisPos() == false)
                 {
-                    Log.Write(UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
-                    return -1;
+                    nRet = MovePositionSafetyZ();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "RunInspection", "MovePositionSafetyZ failed");
+                        nRet = -1;
+                    }
+                    Log.Write(UnitName, "RunInspection", "finally->여기가 들어오면...");
                 }
             }
-
-            nRet = MovePositionSafetyZ();
-            if (nRet != 0)
-            {
-                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
-                Log.Write(UnitName, "[RunInspection] MovePositionSafetyZ failed");
-                return -1;
-            }
-
-            if (IsProbeSafetyAxisPos() == false)
-            {
-                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
-                Log.Write(UnitName, "[RunInspection] ProbeCardZ, ProbeZ not in SafetyPos");
-                return -1;
-            }
-
-            die.State = DieProcessState.Inspected;
-            socket.SetState(Rotary.RotarySocketState.Probed);
-
-            LogSequence("End");
             return nRet;
         }
 
         public int TopContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-
-            
             try
             {
                 this.CurrentFunc = TopContactAndMeasureOnce;
@@ -1643,47 +1819,18 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-
+                Log.Write("kkkkkkProb", "Start4");
                 int nIndex = GetProbeIndexNo();
-                if (IsSphereForward() == false)
-                {
-                    if (SetSphereFB(true))
-                    {
-                        var sw = Stopwatch.StartNew();
-                        while (!IsSphereForward())
-                        {
-                            if (IsStop)
-                            {
-                                return 0;
-                            }
-                            if (sw.ElapsedMilliseconds > 2000)
-                            {
-                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                                Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
-                                return -1;
-                            }
-                            Thread.Sleep(1);
-                        }
-                    }
-                }
+                
+                Log.Write("kkkkkkProb", "Start5");
+                //nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
+                //if (nRet != 0)
+                //{
+                //    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionBottomContact_Index_Ready failed");
+                //    return -1;
+                //}
 
-                if(IsSphereZAtDown() == false)
-                {
-                    nRet = MovePositionSphereZDown(); //실제로는 다운임.
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
-                        return -1;
-                    }
-                }
-
-                nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionBottomContact_Index_Ready failed");
-                    return -1;
-                }
-
+                Log.Write("kkkkkkProb", "Start6");
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
@@ -1691,31 +1838,21 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
+                Log.Write("kkkkkkProb", "Start7");
                 WaitByTime(Config.UpperWaitTime);
 
-                // 6) 검사 요구 동기 처리
-                nRet = IndexChipProber.MeasureChip();
-                if (nRet != 0)
+                //카메라로 컨택 확인 하고 싶을때 모드
+                //if (Config.ViewMode == false)
                 {
-                    Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
-                    return -1;
-                }
-
-                nRet = MovePositionSafetyZ();
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
-                    nRet = -1;
-                }
-                while (this.IsProbeSafetyAxisPos() == false)
-                {
-                    if(IsStop)
+                    // 6) 검사 요구 동기 처리
+                    nRet = IndexChipProber.MeasureChip();
+                    if (nRet != 0)
                     {
-                        return 0;
+                        Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
+                        nRet = - 1;
                     }
-                    Thread.Sleep(1);
                 }
-                LogSequence("End");
+                Log.Write("kkkkkkProb", "Start9");
             }
             catch (Exception ex)
             {
@@ -1724,19 +1861,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                // 9) Ready Z축 하강
-                //nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
-                if(IsProbeSafetyAxisPos() == false)
-                {
-                    nRet = MovePositionSafetyZ();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
-                        nRet = -1;
-                    }
-                }
+                LogSequence("End");
             }
-
             return nRet;
         }
 
@@ -1772,37 +1898,6 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-                if (IsSphereForward() == false)
-                {
-                    if (SetSphereFB(true))
-                    {
-                        var sw = Stopwatch.StartNew();
-                        while (!IsSphereForward())
-                        {
-                            if (IsStop)
-                            {
-                                return 0;
-                            }
-                            if (sw.ElapsedMilliseconds > 2000)
-                            {
-                                PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                                Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
-                                return -1;
-                            }
-                            Thread.Sleep(1);
-                        }
-                    }
-                }
-
-                if (IsSphereZAtDown() == false)
-                {
-                    nRet = MovePositionSphereZDown(); //실제로는 다운임.
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
-                        return -1;
-                    }
-                }
 
                 nRet = MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1821,26 +1916,15 @@ namespace QMC.LCP_280.Process.Unit
                 WaitByTime(Config.UpperWaitTime);
 
                 // 6) 검사 요구 동기 처리
-                nRet = IndexChipProber.MeasureChip();
-                if (nRet != 0)
+                //카메라로 컨택 확인 하고 싶을때 모드
+                //if (Config.ViewMode == false)
                 {
-                    Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
-                    return -1;
-                }
-
-                nRet = MovePositionSafetyZ();
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
-                    nRet = -1;
-                }
-                while (this.IsProbeSafetyAxisPos() == false)
-                {
-                    if (IsStop)
+                    nRet = IndexChipProber.MeasureChip();
+                    if (nRet != 0)
                     {
-                        return 0;
+                        Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
+                        return -1;
                     }
-                    Thread.Sleep(1);
                 }
                 LogSequence("End");
             }
@@ -1851,19 +1935,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                // 9) Ready Z축 하강
-                //nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
-                if (IsProbeSafetyAxisPos() == false)
-                {
-                    nRet = MovePositionSafetyZ();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
-                        nRet = -1;
-                    }
-                }
+                LogSequence("End");
             }
-
             return nRet;
         }
 
