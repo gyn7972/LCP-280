@@ -79,7 +79,7 @@ namespace QMC.Common
         private int _tabHeight = 32;
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
-        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Regular);
+        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Bold);
 
         // 호스트에서 유효 크기를 한 번이라도 전달받았는지
         private bool _hostSized;

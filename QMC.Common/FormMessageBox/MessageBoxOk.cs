@@ -72,9 +72,23 @@ namespace QMC.Common
             this.FormBorderStyle = FormBorderStyle.None;
             //this.TopMost = true;
 
+            // Label이 포커스를 받지 않도록 탭 정지 비활성화
+            this.lblTitle.TabStop = false;
+
             lblTitle.MouseDown += (o, e) => { if (e.Button == MouseButtons.Left) { isMouseDown = true; mouseDownLocation = e.Location; } };
             lblTitle.MouseMove += (o, e) => { if (isMouseDown) Location = new Point(Location.X + (e.X - mouseDownLocation.X), Location.Y + (e.Y - mouseDownLocation.Y)); };
             lblTitle.MouseUp += (o, e) => { if (e.Button == MouseButtons.Left) { isMouseDown = false; mouseDownLocation = e.Location; } };
+        }
+
+        /// <summary>
+        /// 폼이 표시될 때 Ok 버튼에 포커스 설정
+        /// </summary>
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            // ActiveControl 및 Focus를 명시적으로 설정
+            this.ActiveControl = this.btnOk;
+            this.btnOk.Focus();
         }
 
         /// <summary>

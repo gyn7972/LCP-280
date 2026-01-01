@@ -38,17 +38,21 @@ namespace QMC.Common.Alarm
             m_Alarms = new AlarmCollection();
         }
 
-        public bool IsAlarm { 
-            get 
-            {
-                return m_Alarms.Where(t=>t.Grade.Equals("Error")).Count()> 0;
-            }
-        }
-
         // 알람 동시 발생으로 프로그램 다운 발생.
         // _lock을 사용하여 알람 리스트에 안전하게 추가하고,
         // PostAlarm 이벤트를 UI 스레드에서 실행하도록 수정.
         private readonly object _lock = new object();
+
+        public bool IsAlarm
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return m_Alarms.Where(t => t.Grade.Equals("Error")).Count() > 0;
+                }
+            }
+        }
 
         public void ShowAlarm(AlarmInfo alarm)
         {

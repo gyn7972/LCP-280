@@ -1,6 +1,7 @@
 ﻿using QMC.Common;
 using QMC.LCP_280.Process.Component;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -24,11 +25,14 @@ namespace QMC.LCP_280.Process.Unit
             "IsSimulation",
             "LogPath",
             "ResultPath",
-            "BinResultPath",
+            "NetworkMode",
+            "InspectionMapPath",
+            "TXTResultPath",
             "PRDResultPath",
             "SUMResultPath",
-            "TXTResultPath",
+            "BinResultPath",
             "WAFResultPath",
+            "DBDataServerPath",
             "ProductionInfoPath",
             "MapMatchMode",
         };
@@ -63,13 +67,24 @@ namespace QMC.LCP_280.Process.Unit
                 var pi = type.GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
                 if (pi == null || !pi.CanRead) continue;
 
+                var title = GetDisplayName(pi) ?? name; // 표시용 타이틀
+                var key = name;                         // 내부 키는 CLR 이름 유지
+
                 object value = pi.GetValue(_config, null);
                 PropertyBase prop = null;
 
                 if (pi.PropertyType == typeof(string))
-                    prop = CreateStringProperty(name, value as string ?? string.Empty);
+                {
+                    prop = CreateStringProperty(title, key, value as string ?? string.Empty);
+                }
                 else if (pi.PropertyType == typeof(bool))
-                    prop = CreateBoolProperty(name, value is bool b && b);
+                {
+                    prop = CreateBoolProperty(title, key, value is bool b && b);
+                }
+                else if (pi.PropertyType == typeof(int))
+                {
+                    prop = CreateIntProperty(title, key, value is int iv ? iv : 0);
+                }
 
                 if (prop != null) _equipPc.Add(prop);
             }
@@ -78,7 +93,15 @@ namespace QMC.LCP_280.Process.Unit
             EquipmentPropertyCollectionView.SetProperties(_equipPc);
         }
 
-        private PropertyBase CreateStringProperty(string key, string value)
+        private static string GetDisplayName(PropertyInfo pi)
+        {
+            var dn = pi.GetCustomAttributes(typeof(DisplayNameAttribute), inherit: true)
+                       .OfType<DisplayNameAttribute>()
+                       .FirstOrDefault();
+            return dn?.DisplayName;
+        }
+
+        private PropertyBase CreateStringProperty(string title, string key, string value)
         {
             try
             {
@@ -88,17 +111,18 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         var pars = c.GetParameters();
                         return pars.Length == 3 &&
-                               pars[0].ParameterType == typeof(string) &&
-                               pars[1].ParameterType == typeof(string) &&
-                               pars[2].ParameterType == typeof(string);
+                               pars[0].ParameterType == typeof(string) && // title
+                               pars[1].ParameterType == typeof(string) && // key
+                               pars[2].ParameterType == typeof(string);   // value
                     });
-                if (ctor != null) return (PropertyBase)ctor.Invoke(new object[] { key, key, value });
-                return new StringProperty(key, value);
+                if (ctor != null) return (PropertyBase)ctor.Invoke(new object[] { title, key, value });
+                // 폴백: 기존 2인자 생성자(title, value)만 있는 경우 title을 표시로 쓰고 키는 내부에서 title로 매핑될 수 있음
+                return new StringProperty(title, value);
             }
-            catch { return new StringProperty(key, value); }
+            catch { return new StringProperty(title, value); }
         }
 
-        private PropertyBase CreateBoolProperty(string key, bool value)
+        private PropertyBase CreateBoolProperty(string title, string key, bool value)
         {
             try
             {
@@ -108,14 +132,50 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         var pars = c.GetParameters();
                         return pars.Length == 3 &&
-                               pars[0].ParameterType == typeof(string) &&
-                               pars[1].ParameterType == typeof(string) &&
-                               pars[2].ParameterType == typeof(bool);
+                               pars[0].ParameterType == typeof(string) && // title
+                               pars[1].ParameterType == typeof(string) && // key
+                               pars[2].ParameterType == typeof(bool);     // value
                     });
-                if (ctor != null) return (PropertyBase)ctor.Invoke(new object[] { key, key, value });
-                return new BoolProperty(key, value);
+                if (ctor != null) return (PropertyBase)ctor.Invoke(new object[] { title, key, value });
+                return new BoolProperty(title, value);
             }
-            catch { return new BoolProperty(key, value); }
+            catch { return new BoolProperty(title, value); }
+        }
+
+        private PropertyBase CreateIntProperty(string title, string key, int value)
+        {
+            try
+            {
+                // IntProperty 타입 탐색
+                var intType = AppDomain.CurrentDomain
+                    .GetAssemblies()
+                    .SelectMany(a => {
+                        try { return a.GetTypes(); } catch { return Type.EmptyTypes; }
+                    })
+                    .FirstOrDefault(t => t.Name == "IntProperty");
+
+                if (intType != null)
+                {
+                    var ctor = intType.GetConstructors()
+                        .FirstOrDefault(c =>
+                        {
+                            var pars = c.GetParameters();
+                            return pars.Length == 3 &&
+                                   pars[0].ParameterType == typeof(string) && // title
+                                   pars[1].ParameterType == typeof(string) && // key
+                                   pars[2].ParameterType == typeof(int);      // value
+                        });
+                    if (ctor != null)
+                        return (PropertyBase)ctor.Invoke(new object[] { title, key, value });
+                }
+
+                // 폴백: 문자열 프로퍼티로 표시
+                return CreateStringProperty(title, key, value.ToString());
+            }
+            catch
+            {
+                return CreateStringProperty(title, key, value.ToString());
+            }
         }
 
         private void btn_Save_Setup_Equipment_Click(object sender, EventArgs e)
@@ -152,15 +212,33 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (pi.PropertyType == typeof(string))
                         {
-                            string v;
-                            try { v = current.GetValue<string>(name); } catch { continue; }
+                            if (!TryGetPcValue<string>(current, pi, name, out var v))
+                                continue;
+
                             pi.SetValue(_config, v ?? string.Empty, null);
                         }
                         else if (pi.PropertyType == typeof(bool))
                         {
-                            bool v;
-                            try { v = current.GetValue<bool>(name); } catch { continue; }
+                            if (!TryGetPcValue<bool>(current, pi, name, out var v))
+                                continue;
+
                             pi.SetValue(_config, v, null);
+                        }
+                        else if (pi.PropertyType == typeof(int))
+                        {
+                            // int로 시도
+                            if (TryGetPcValue<int>(current, pi, name, out var iv))
+                            {
+                                pi.SetValue(_config, iv, null);
+                                continue;
+                            }
+
+                            // string으로 받아서 파싱
+                            if (TryGetPcValue<string>(current, pi, name, out var sv) && int.TryParse(sv, out iv))
+                            {
+                                pi.SetValue(_config, iv, null);
+                                continue;
+                            }
                         }
                     }
                     catch { }
@@ -169,13 +247,14 @@ namespace QMC.LCP_280.Process.Unit
                 // 경로 디렉터리 보장
                 EnsureDirIfPath(_config.LogPath);
                 EnsureDirIfPath(_config.ResultPath);
-                EnsureDirIfPath(_config.BinResultPath);
+                EnsureDirIfPath(_config.InspectionMapPath);
+                EnsureDirIfPath(_config.TXTResultPath);
                 EnsureDirIfPath(_config.PRDResultPath);
                 EnsureDirIfPath(_config.SUMResultPath);
-                EnsureDirIfPath(_config.TXTResultPath);
+                EnsureDirIfPath(_config.BinResultPath);
                 EnsureDirIfPath(_config.WAFResultPath);
+                EnsureDirIfPath(_config.DBDataServerPath);
                 EnsureDirOfFile(_config.ProductionInfoPath);
-                //_config.MapMatchMode
 
                 // 반드시 파일로 저장!
                 var rc = _config.Save(); // BaseConfig.Save() 호출
@@ -184,13 +263,41 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBox.Show("저장 실패 (Save 반환값: " + rc + ")", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-
                 MessageBox.Show("저장 완료", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("저장 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // [ADD] PropertyCollection에서 CLR 속성명(name) 우선, 실패하면 DisplayName(title)로 재시도
+        private bool TryGetPcValue<T>(PropertyCollection pc, PropertyInfo pi, string clrName, out T value)
+        {
+            value = default(T);
+            if (pc == null || pi == null) return false;
+
+            // 1) CLR name으로 시도
+            try
+            {
+                value = pc.GetValue<T>(clrName);
+                return true;
+            }
+            catch { }
+
+            // 2) DisplayName(title)로 시도
+            try
+            {
+                var title = GetDisplayName(pi);
+                if (!string.IsNullOrWhiteSpace(title))
+                {
+                    value = pc.GetValue<T>(title);
+                    return true;
+                }
+            }
+            catch { }
+
+            return false;
         }
 
         private static void EnsureDirIfPath(string path)

@@ -14,9 +14,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
 using static QMC.Common.Component.BaseComponent;
-using static QMC.Common.Motions.MotionAxis;
 using static QMC.Common.CycleTimer;
+using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
 {
@@ -54,7 +55,7 @@ namespace QMC.Common.Unit
             Manual = 1
         }
 
-        //Autto시에 사용되는 ProcessStage다.
+        //Auto시에 사용되는 ProcessStage다.
         //OnRun 에서 사용한다고 생각하자.
         public enum ProcessState
         {
@@ -149,8 +150,17 @@ namespace QMC.Common.Unit
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
         public List<TeachingPosition> TeachingPositions
         {
-            get => Config.TeachingPositions;
-            private set => Config.TeachingPositions = value;
+            get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
+            private set
+            {
+                if (Config == null)
+                {
+                    // Initialize Config if possible or ignore safely
+                    // If Config cannot be created here, just noop to avoid NRE
+                    return;
+                }
+                Config.TeachingPositions = value ?? new List<TeachingPosition>();
+            }
         }
 
         protected BaseUnit(string unitName)
@@ -342,7 +352,7 @@ namespace QMC.Common.Unit
 
             SetRunMode(UnitRunMode.Manual);
             this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
+            //this.State = ProcessState.Stop;         // <-이걸 여기서 하면 안되는거지. RunUnitStatus만 보고 멈춰야지.
             
             return 0;
         }
@@ -393,7 +403,11 @@ namespace QMC.Common.Unit
         public string GetUnitName() => UnitName;
 
 
-        public Material GetMaterial() => m_currentMaterial;
+        public Material GetMaterial()
+        {
+            return m_currentMaterial;
+        }
+
         //public virtual void SetMaterial(Material m) => m_currentMaterial = m;
         public virtual void SetMaterial(Material m)
         {
@@ -531,7 +545,7 @@ namespace QMC.Common.Unit
                     continue;
 
                 bool IsAuto = false;
-                
+
                 if (RunMode == UnitRunMode.Auto)
                 {
                     IsAuto = true;
@@ -540,7 +554,6 @@ namespace QMC.Common.Unit
                 {
                     IsAuto = false;
                 }
-
                 waitErrors = axis.MoveAbs(target, IsAuto, isFine);
             }
 
@@ -552,6 +565,8 @@ namespace QMC.Common.Unit
             foreach (var kv in axisPos)
             {
                 MotionAxis axis = null;
+                double target = kv.Value;
+
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
                 if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis))
                     axis = directAxis;
@@ -559,14 +574,82 @@ namespace QMC.Common.Unit
                 if (axis == null)
                     continue;
 
-                if (axis.WaitMoveDone(-1) != 0)
-                //if(axis.Status.State.InpositionDone == false)
+
+                double timeoutMs = 2000;
+                if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (axis.InPosition(target))
+                    {
+                        break;
+                    }
+                    Thread.Sleep(1);
+                }
+
+                if (axis.WaitMoveDone(-1) != 0 && axis.InPosition(target) == false)
                 {
                     waitErrors++;
                 }
             }
             return waitErrors == 0 ? 0 : -1;
         }
+
+        protected virtual bool IsAxisAtTarget(MotionAxis axis, double target,
+                                              double multiplier = 2.0,
+                                              int stableSamples = 5,
+                                              int sampleDelayMs = 2,
+                                              double minEpsilon = 0.010)
+        {
+            if (axis == null) return true;
+
+            // 드라이버 자체 InPosition 먼저 이용 (정확하면 빠르게 통과)
+            try
+            {
+                if (axis.InPosition(target))
+                    return true;
+            }
+            catch { }
+
+            double tol = 0.0;
+            try
+            {
+                tol = axis.Config != null ? Math.Max(0.0, axis.Config.InposTolerance) : 0.0;
+            }
+            catch { }
+            double relaxedTol = (tol * multiplier) + minEpsilon;
+
+            // 축 이동이 아직 끝나지 않았다면 불안정
+            if (!axis.IsMoveDone())
+                return false;
+
+            int okCount = 0;
+            for (int i = 0; i < stableSamples; i++)
+            {
+                double cur;
+                try { cur = axis.GetPosition(); }
+                catch { return false; }
+
+                if (double.IsNaN(cur) || double.IsInfinity(cur))
+                    return false;
+
+                if (Math.Abs(cur - target) <= relaxedTol)
+                {
+                    okCount++;
+                    if (okCount >= stableSamples)
+                        return true;
+                }
+                else
+                {
+                    okCount = 0; // 연속 조건 끊김
+                }
+
+                if (sampleDelayMs > 0)
+                    Thread.Sleep(sampleDelayMs);
+            }
+            return false;
+        }
+
 
         public virtual void StopTeachingPositionOnce(int selIndex)
         {
@@ -655,7 +738,7 @@ namespace QMC.Common.Unit
 
             try
             {
-                LogAxisMove(axis, target, isFine);
+                //LogAxisMove(axis, target, isFine);
                 var cfg = axis.Config;
                 //double cur = axis.GetPosition();
                 double cur = axis.Status.PV.ActualPosition;
@@ -679,6 +762,18 @@ namespace QMC.Common.Unit
                     return -1;
                 }
 
+                double timeoutMs = 2000;
+                if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (axis.InPosition(target))
+                    {
+                        break;
+                    }
+                    Thread.Sleep(1);
+                }
+
                 if (axis.WaitMoveDone(-1) != 0)
                 {
                     Log.Write(UnitName, "MoveAxisWithSafety",
@@ -693,7 +788,7 @@ namespace QMC.Common.Unit
 
             }finally
             {
-                LogAxisMoveDone(axis, target, isFine);
+                //LogAxisMoveDone(axis, target, isFine);
             }
             
             return 0;
@@ -717,7 +812,7 @@ namespace QMC.Common.Unit
         protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
         protected virtual double TeachingInposEpsilon => 0.010;//1e-6;            // 부동소수 잡음 보정
         protected virtual int TeachingInposStableSampleCount => 5;         // 안정 샘플 횟수
-        protected virtual int TeachingInposSampleDelayMs => 8;             // 샘플 간 간격(ms)
+        protected virtual int TeachingInposSampleDelayMs => 2;             // 샘플 간 간격(ms)
                                                                            // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
         protected bool InPosTeachingAxis(MotionAxis ax, double target)
         {
@@ -732,8 +827,10 @@ namespace QMC.Common.Unit
             var relaxedTol = (tol * TeachingInposToleranceMultiplier) + TeachingInposEpsilon;
 
             // 이동 중이면 아직 도달 아님
-            if (!ax.IsMoveDone()) 
+            if (ax.IsMoveDone() == false)
+            {
                 return false;
+            }
 
             // 3) 디바운싱: 짧게 N회 연속 허용오차 내 유지되는지 확인
             for (int i = 0; i < TeachingInposStableSampleCount; i++)
@@ -750,8 +847,6 @@ namespace QMC.Common.Unit
             }
             return true;
         }
-
-
         public bool InPosTeaching(TeachingPosition tp)
         {
             if (tp == null)
@@ -774,9 +869,7 @@ namespace QMC.Common.Unit
             }
             return true;
         }
-
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-
         public double GetTP(string tpName, string axisName)
         {
             var tp = Config.GetTeachingPosition(tpName);
@@ -785,7 +878,6 @@ namespace QMC.Common.Unit
 
             return 0.0;
         }
-
         #endregion
 
         #region IDisposable
@@ -868,7 +960,7 @@ namespace QMC.Common.Unit
         #endregion
 
         #region Timing Helpers
-        public void WaitByTime(int milliseconds, int pollMs = 1)
+        public void WaitByTime(int milliseconds, int pollMs = 2)
         {
             if (milliseconds <= 0) return;
             if (pollMs < 0) pollMs = 0;

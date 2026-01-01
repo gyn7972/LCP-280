@@ -9,15 +9,24 @@ namespace QMC.LCP_280.Process.Component
     [Serializable]
     public sealed class MeasurementRecipe : QMC.Common.BaseRecipe
     {
-        // 명시적 매개변수 없는 생성자(new() 제약 만족)
-        public MeasurementRecipe() : this(null) { }
-        public MeasurementRecipe(string name = null) : base(name) { }
+        public enum MapRotateOption { None, CW90, CW180, CW270 }
+        public enum MapMirrorOption { None, X, Y, XY }
+        public enum MapPathStartCorner { BottomLeft, BottomRight, TopLeft, TopRight }
+        public enum MapPathPrimaryAxis
+        {
+            XFirst,  // 행 우선(가로 먼저 진행)
+            YFirst   // 열 우선(세로 먼저 진행)
+        }
+        public enum MapPathTraversalMode
+        {
+            Raster,      // 래스터(항상 같은 방향으로 진행, 다음 행/열로 넘어갈 때 되돌아감)
+            Serpentine   // 지그재그(행/열마다 진행 방향 반전)
+        }
 
         // 1. MeasurementParameters (검사 파라미터) 참조
         //[Category("Measurement"), DisplayName("Use Measurement Recipe")]
         //[DefaultValue(true)]
         //public bool UseMeasurementRecipe { get; set; } = true;
-
         //[Category("Measurement"), DisplayName("Measurement Recipe Name")]
         //[DefaultValue("DefaultMeasurement")]
         //public string MeasurementRecipeName { get; set; } = "DefaultMeasurement";
@@ -33,6 +42,7 @@ namespace QMC.LCP_280.Process.Component
         // 2. VisionParameters (비전 파라미터) 참조
         [Category("Vision"), DisplayName("Use Vision Recipe")]
         [DefaultValue(true)]
+        [ReadOnly(true)]
         public bool UseVisionRecipe { get; set; } = true;
 
         [Category("Vision"), DisplayName("Vision Recipe Name")]
@@ -51,17 +61,16 @@ namespace QMC.LCP_280.Process.Component
 
         [Category("Wafer Map"), DisplayName("Wafer Chip PitchX (mm)")]
         [DefaultValue(5.0)]
-        public double WChipPitchX { get; set; } = 5.0;
+        public double WChipPitchX { get; set; } = 9.5;
 
         [Category("Wafer Map"), DisplayName("Wafer Chip PitchY (mm)")]
         [DefaultValue(5.0)]
-        public double WChipPitchY { get; set; } = 5.0;
+        public double WChipPitchY { get; set; } = 9.5;
 
         //[JsonIgnore]
         //[Category("Wafer Map"), DisplayName("Row Count")]
         //[DefaultValue(60)]
         //public int Rows { get; set; } = 5;
-
         //[JsonIgnore]
         //[Category("Wafer Map"), DisplayName("Col Count")]
         //[DefaultValue(60)]
@@ -71,19 +80,38 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue("")]
         public string MapFilePath { get; set; } = string.Empty;
 
-        public enum MapRotateOption { None, CW90, CW180, CW270 }
-        [Category("Wafer Map"), DisplayName("Map Rotate")]
-        [DefaultValue(MapRotateOption.None)]
-        public MapRotateOption MapRotate { get; set; } = MapRotateOption.None;
-
-        public enum MapMirrorOption { None, X, Y, XY }
-        [Category("Wafer Map"), DisplayName("Map Mirror")]
-        [DefaultValue(MapMirrorOption.None)]
-        public MapMirrorOption MapMirror { get; set; } = MapMirrorOption.None;
-
-        [Category("Wafer Map"), DisplayName("Map Match Limit (%)")]
+        [Category("Wafer Map"), DisplayName("Wafer Match Limit (%)")]
         [DefaultValue(90.0)]
-        public double MapMatchLimitPercent { get; set; } = 90.0;
+        public double WaferMatchLimitPercent { get; set; } = 99.9;
+
+        [Category("Wafer Map"), DisplayName("Wafer Rotate")]
+        [DefaultValue(MapRotateOption.None)]
+        [JsonProperty("WaferRotate")]
+        public MapRotateOption WaferRotate { get; set; } = MapRotateOption.None;
+
+        [Category("Wafer Map"), DisplayName("Wafer Mirror")]
+        [DefaultValue(MapMirrorOption.None)]
+        [JsonProperty("WaferMirror")]
+        public MapMirrorOption WaferMirror { get; set; } = MapMirrorOption.None;
+
+        [Category("Wafer Map"), DisplayName("Wafer PathStartCorner")]
+        [DefaultValue(MapPathStartCorner.BottomLeft)]
+        //[ReadOnly(true)]
+        [JsonProperty("WaferPathStartCorner")]
+        public MapPathStartCorner WaferPathStartCorner { get; set; } = MapPathStartCorner.BottomLeft;
+
+        [Category("Wafer Map"), DisplayName("Wafer Path PrimaryAxis")]
+        //[ReadOnly(true)]
+        [DefaultValue(MapPathPrimaryAxis.XFirst)]
+        [JsonProperty("WaferPathPrimaryAxis")]
+        public MapPathPrimaryAxis WaferPathPrimaryAxis { get; set; } = MapPathPrimaryAxis.XFirst;
+
+        [Category("Wafer Map"), DisplayName("Wafer Path TraversalMode")]
+        //[ReadOnly(true)]
+        [DefaultValue(MapPathTraversalMode.Raster)]
+        [JsonProperty("WaferPathTraversalMode")]
+        public MapPathTraversalMode WaferPathTraversalMode { get; set; } = MapPathTraversalMode.Raster;
+
 
         // 3. BinMap(빈 맵) 정보(빈 직경, 칩 크기, 행/열 개수 등)
         // ===== Bin Map =====
@@ -98,6 +126,35 @@ namespace QMC.LCP_280.Process.Component
         [Category("Bin Array"), DisplayName("Bin Pitch Y (mm)")]
         [DefaultValue(1)]
         public double BinPitchYmm { get; set; } = 1;
+
+        [Category("Bin Array"), DisplayName("Bin Rotate")]
+        [DefaultValue(MapRotateOption.None)]
+        [JsonProperty("BinRotate")]
+        public MapRotateOption BinRotate { get; set; } = MapRotateOption.None;
+
+        [Category("Bin Array"), DisplayName("BIn Mirror")]
+        [DefaultValue(MapMirrorOption.None)]
+        [JsonProperty("BinMirror")]
+        public MapMirrorOption BinMirror { get; set; } = MapMirrorOption.None;
+
+        [Category("Bin Array"), DisplayName("BIn PathStartCorner")]
+        [DefaultValue(MapPathStartCorner.BottomLeft)]
+        [JsonProperty("BinPathStartCorner")]
+        //[ReadOnly(true)]
+        public MapPathStartCorner BinPathStartCorner { get; set; } = MapPathStartCorner.BottomLeft;
+
+        [Category("Bin Array"), DisplayName("Bin Path PrimaryAxis")]
+        [DefaultValue(MapPathPrimaryAxis.XFirst)]
+        [JsonProperty("BinPathPrimaryAxis")]
+        //[ReadOnly(true)]
+        public MapPathPrimaryAxis BinPathPrimaryAxis { get; set; } = MapPathPrimaryAxis.XFirst;
+
+        [Category("Bin Array"), DisplayName("Bin Path TraversalMode")]
+        [DefaultValue(MapPathTraversalMode.Serpentine)]
+        [JsonProperty("BinPathTraversalMode")]
+        //[ReadOnly(true)]
+        public MapPathTraversalMode BinPathTraversalMode { get; set; } = MapPathTraversalMode.Serpentine;
+
 
         //[Category("Bin Array"), DisplayName("Bin Count X")]
         //[DefaultValue(10)]
@@ -131,6 +188,21 @@ namespace QMC.LCP_280.Process.Component
         // ===== Measurement Keys =====
         public List<MeasurementKey> Keys { get; set; } = new List<MeasurementKey>();
 
+        [Category("Unit Teaching"), DisplayName("IndexProbe Teaching Recipe Name")]
+        [DefaultValue("Default_ProbeTeaching")]
+        public string IndexChipProbeControllerTeachingRecipeName { get; set; } = string.Empty;
+
+
+        // 명시적 매개변수 없는 생성자(new() 제약 만족)
+        public MeasurementRecipe() : this(null)
+        {
+        }
+
+        public MeasurementRecipe(string name = null) : base(name)
+        {
+        }
+
+
         public override void Reset()
         {
             Keys.Clear();
@@ -141,7 +213,7 @@ namespace QMC.LCP_280.Process.Component
             //if (Rows <= 0 || Cols <= 0) throw new ArgumentOutOfRangeException("Map size invalid.");
             if (WaferDiameter <= 0) throw new ArgumentOutOfRangeException(nameof(WaferDiameter));
             if (WChipPitchX <= 0 || WChipPitchY <= 0) throw new ArgumentOutOfRangeException("Chip size invalid.");
-            if (MapMatchLimitPercent < 0 || MapMatchLimitPercent > 100) throw new ArgumentOutOfRangeException(nameof(MapMatchLimitPercent));
+            if (WaferMatchLimitPercent < 0 || WaferMatchLimitPercent > 100) throw new ArgumentOutOfRangeException(nameof(WaferMatchLimitPercent));
             return true;
         }
     }

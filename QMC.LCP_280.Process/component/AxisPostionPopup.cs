@@ -17,6 +17,8 @@ namespace QMC.LCP_280.Process.Component
     /// </summary>
     public partial class AxisPostionPopup : Form
     {
+        private const int DefaultTargetRows = 26;
+
         private Equipment _equipment;
         private MotionAxisManager _axisManager;
         private readonly List<AxisRow> _rows = new List<AxisRow>();
@@ -98,12 +100,41 @@ namespace QMC.LCP_280.Process.Component
             var axes = _axisManager?.GetAll();
             if (axes != null && axes.Length > 0)
             {
-                // Axis 번호(Setup.AxisNo) 또는 이름 정렬
-                foreach (var ax in axes
-                         .Where(a => a != null)
-                         .OrderBy(a => a.AxisNo))
+                // 실제 축 이름으로 빠른 조회용
+                var axisByName = axes
+                    .Where(a => a != null && !string.IsNullOrWhiteSpace(a.Name))
+                    .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
+                    .ToDictionary(a => a.Name, a => a, StringComparer.OrdinalIgnoreCase);
+
+                // 1) AxisNames.AllInOrder 순서대로 표시 + DisplayNames 적용
+                foreach (var axisName in AxisNames.AllInOrder)
                 {
-                    var item = new ListViewItem(ax.Name ?? "(Unnamed)");
+                    MotionAxis ax;
+                    if (!axisByName.TryGetValue(axisName, out ax))
+                        continue;
+
+                    var display = AxisNames.GetDisplayName(ax.Name);
+
+                    var item = new ListViewItem(display ?? "(Unnamed)");
+                    item.SubItems.Add("----");
+                    listViewAxis.Items.Add(item);
+
+                    _rows.Add(new AxisRow
+                    {
+                        Axis = ax,
+                        Item = item
+                    });
+                }
+
+                // 2) AllInOrder에 없는 축은 뒤에 추가(이름순)
+                foreach (var ax in axisByName.Values
+                    .Where(a => !AxisNames.AllInOrder.Any(n => n.Equals(a.Name, StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    var display = AxisNames.GetDisplayName(ax.Name);
+
+                    var item = new ListViewItem(display ?? "(Unnamed)");
                     item.SubItems.Add("----");
                     listViewAxis.Items.Add(item);
 
@@ -116,10 +147,9 @@ namespace QMC.LCP_280.Process.Component
             }
 
             // 26축 표준 요구인데 실제 축 수 < 26 인 경우 자리 채우기 (옵션)
-            int target = 26;
-            if (_rows.Count < target)
+            if (_rows.Count < DefaultTargetRows)
             {
-                for (int i = _rows.Count; i < target; i++)
+                for (int i = _rows.Count; i < DefaultTargetRows; i++)
                 {
                     var item = new ListViewItem("(Empty)");
                     item.SubItems.Add("-");

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace QMC.LCP_280.Process
 {
@@ -33,8 +34,9 @@ namespace QMC.LCP_280.Process
         public const string EjectorZ        = "Ejector Z Axis";          // 22
         public const string BinFeederY      = "Bin Feeder Y Axis";       // 23
         public const string BinLifterZ      = "Bin Lifter Z Axis";       // 24
-        public const string IndexPlaceZ = "Index Place Z Axis";            // 25
-        public const string IndexT          = "Index T Axis";            // 26
+        public const string IndexPlaceZ     = "Index Place Z Axis";            // 25
+        public const string GripperX        = "Gripper X Axis";            // 26
+        public const string IndexT          = "Index T Axis";            // 27 //25
         
 
         /// <summary>
@@ -42,33 +44,79 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public static readonly string[] AllInOrder = new[]
         {
-            EjectPinZ,      // 00
-            LeftToolT,      // 01
-            RightToolT,     // 02
-            WaferStageX,    // 03
-            WaferStageY,    // 04
-            WaferStageT,    // 05
-            LeftPickZ,      // 06
-            LeftPlaceZ,     // 07
-            IndexZ,         // 08
-            AlignT,         // 09
-            SphereZ,        // 10
-            ProbeZ,         // 11
-            ProbeCardX,     // 12
-            ProbeCardY,     // 13
-            ProbeCardZ,     // 14
-            RightPickZ,     // 15
-            RightPlaceZ,    // 16
-            BinStageX,      // 17
-            BinStageY,      // 18
-            BinStageT,      // 19
-            WaferLifterZ,   // 20
-            WaferFeederY,   // 21
-            EjectorZ,       // 22
-            BinFeederY,     // 23
-            BinLifterZ,     // 24
-            IndexPlaceZ,     //25
-            IndexT,          // 26
+            WaferLifterZ,
+            WaferFeederY,
+            WaferStageX,
+            WaferStageY,
+            WaferStageT,
+            EjectorZ,
+            EjectPinZ,
+            LeftPickZ,
+            LeftPlaceZ,
+            LeftToolT,
+            IndexT,
+            IndexPlaceZ,
+            IndexZ,
+            AlignT,
+            SphereZ,
+            ProbeZ,
+            ProbeCardX,
+            ProbeCardY,
+            ProbeCardZ,
+            GripperX,
+            RightPickZ,
+            RightPlaceZ,
+            RightToolT,
+            BinStageX,
+            BinStageY,
+            BinStageT,
+            BinFeederY,
+            BinLifterZ
         };
+
+        /// <summary>
+        /// UI에 보여줄 축 표시명(디스플레이명) 매핑.
+        /// Key = 실제 축 이름(MotionAxis.Name), Value = 표시명.
+        /// </summary>
+        public static readonly IReadOnlyDictionary<string, string> DisplayNames
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                // TODO: 여기 Value를 원하는 표기(한글/약어/공정명 등)로 변경
+                { WaferLifterZ, "WaferLifterZ" },
+                { WaferFeederY, "WaferFeederY" },
+                { WaferStageX,  "WaferStageX" },
+                { WaferStageY,  "WaferStageY" },
+                { WaferStageT,  "WaferStageT" },
+                { EjectorZ,     "WaferNiddleZ" },
+                { EjectPinZ,    "WaferNiddlePinZ" },
+                { LeftPickZ,    "WaferArmPickZ" },
+                { LeftPlaceZ,   "WaferArmPlaceZ" },
+                { LeftToolT,    "WaferArmT" },
+                { IndexT,       "IndexT" },
+                { IndexPlaceZ,  "IndexPlaceZ" },
+                { IndexZ,       "IndexLoadAlignZ" },
+                { AlignT,       "IndexLoadAlignT" },
+                { SphereZ,      "IndexSphereZ" },
+                { ProbeZ,       "IndexProbeZ" },
+                { ProbeCardX,   "IndexProbeCardX" },
+                { ProbeCardY,   "IndexProbeCardY" },
+                { ProbeCardZ,   "IndexProbeCardZ" },
+                { GripperX,     "IndexGripperX" },
+                { RightPickZ,   "BinArmPickZ" },
+                { RightPlaceZ,  "BinArmPlaceZ" },
+                { RightToolT,   "BinArmT" },
+                { BinStageX,    "BinStageX" },
+                { BinStageY,    "BinStageY" },
+                { BinStageT,    "BinStageT" },
+                { BinFeederY,   "BinFeederY" },
+                { BinLifterZ,   "BinLifterZ" },
+            };
+
+        public static string GetDisplayName(string axisName)
+        {
+            if (string.IsNullOrWhiteSpace(axisName)) return axisName;
+            string display;
+            return DisplayNames.TryGetValue(axisName, out display) ? display : axisName;
+        }
     }
 }

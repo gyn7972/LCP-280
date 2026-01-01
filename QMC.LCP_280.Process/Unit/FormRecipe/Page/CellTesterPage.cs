@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using QMC.Common;
+using QMC.Common.Account;
 using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
 using QMC.Common.UI;
@@ -315,6 +316,12 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 return;
             }
 
+            //var ask = new MessageBoxYesNo();
+            //if (ask.ShowDialog("Test", "시작 하시겠습니까?") != DialogResult.Yes)
+            //{
+            //    return;
+            //}
+
             int repeatCount = 1;
             int intervalMs = 500;// 500;
 
@@ -393,7 +400,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
             _autoMeasureRunning = true;
             var btn = sender as Control;   // 클릭한 버튼만 비활성화
-            if (btn != null) btn.Enabled = false;
+            if (btn != null) 
+                btn.Enabled = false;
 
             // Top/Bottom 모드 읽기
             bool isTop = GetSelectedTopMode();
@@ -462,6 +470,15 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                         {
                             rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
                             if (rc != 0) return -1;
+
+                            rc = controller.MovePositionGripperXIndexUp();
+                            if (rc != 0) return -1;
+
+                            if(controller.SetProbeVac(true) == false)
+                            {
+                                return -1;
+                            }
+
                             rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
                             if (rc != 0) return -1;
                         }
@@ -561,6 +578,11 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     {
                         rc = controller.MovePositionSafetyZ();
                         if (rc != 0) return -1;
+
+                        if (controller.SetProbeVac(false) == false)
+                        {
+                            return -1;
+                        }
                     }
                     catch
                     {
@@ -568,6 +590,11 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                         // 컨트롤러 내부가 안전위치 인터락을 가지고 있으므로 RunInspectionReady로 대체
                         rc = controller.EnsureReady(isFine: false);
                         if (rc != 0) return -1;
+
+                        if (controller.SetProbeVac(false) == false)
+                        {
+                            return -1;
+                        }
                     }
 
                     // 최종 안전 판별(가능 시)
@@ -684,6 +711,166 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
 
             return 0;
+        }
+
+        private void btnTestMotionStart_Click(object sender, EventArgs e)
+        {
+            if (_ctsRepeat != null)
+            {
+                // 이미 동작 중이면 무시
+                return;
+            }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Test", "시작 하시겠습니까?") != DialogResult.Yes)
+            {
+                return;
+            }
+
+            int repeatCount = 1;
+            int intervalMs = 500;
+
+            if (rbvOption.SelectedIndex == 1)
+            {
+                repeatCount = (int)nudRepeatCount.Value;
+                intervalMs = (int)nudIntervalDelay.Value;
+            }
+
+            Task.Run(async () =>
+            {
+                await RunManualMeasureWithControllerMotionAsync(repeatCount, intervalMs).ConfigureAwait(false);
+            });
+        }
+
+        private void btnTestMotionStop_Click(object sender, EventArgs e)
+        {
+            _ctsRepeat?.Cancel();
+
+            try
+            {
+                var controller = Equipment.Instance.GetUnit(Equipment.UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+                controller?.CancelSequence();
+            }
+            catch { }
+        }
+
+
+        private int MoveContactUp_UsingController(int selectedProbeIndex, bool isTop, IndexChipProbeController controller)
+        {
+            int rc;
+
+            if (isTop)
+            {
+                rc = controller.MovePositionTopContact_Index_Ready(selectedProbeIndex);
+                if (rc != 0) 
+                    return -1;
+
+                rc = controller.MovePositionTopContact_Index_Up(selectedProbeIndex);
+                if (rc != 0) 
+                    return -1;
+
+                return 0;
+            }
+
+            // Bottom
+            if (controller.SetProbeVac(true) == false)
+                return -1;
+
+            rc = controller.MovePositionGripperXIndexUp();
+            if (rc != 0) 
+                return -1;
+
+            rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
+            if (rc != 0) 
+                return -1;
+
+            rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
+            if (rc != 0) 
+                return -1;
+
+            return 0;
+        }
+
+        private int MoveContactDownToSafety_UsingController(IndexChipProbeController controller)
+        {
+            int rc = controller.MovePositionSafetyZ();
+            if (rc != 0) 
+                return -1;
+
+            // Bottom Vac Off (Top이면 영향 없음)
+            try { controller.SetProbeVac(false); } catch { }
+
+            return 0;
+        }
+
+        private async Task RunManualMeasureWithControllerMotionAsync(int repeatCount, int intervalMs)
+        {
+            // 기존 RunManualMeasureAsync는 내부에서 _ctsRepeat를 새로 만들어서 Stop 제어가 꼬일 수 있으므로
+            // Motion용 루프는 여기서 _ctsRepeat를 생성/관리합니다.
+            _ctsRepeat = new CancellationTokenSource();
+            var token = _ctsRepeat.Token;
+
+            var rotary = Equipment.Instance.GetUnit(Equipment.UnitKeys.Rotary) as Rotary;
+            var controller = Equipment.Instance.GetUnit(Equipment.UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+
+            if (tester == null || rotary == null || controller == null)
+                return;
+
+            // 시작 시점 UI 값 고정
+            bool isTop = GetSelectedTopMode();
+            int selectedProbeIndex = GetSelectedProbeIndex(); // 0~7 or -1
+
+            try
+            {
+                // 1) SafetyZ 이동
+                token.ThrowIfCancellationRequested();
+                int rc = controller.MovePositionSafetyZ();
+                if (rc != 0) return;
+
+                // 2) (선택된 경우) 지정 소켓으로 1번만 회전 이동
+                token.ThrowIfCancellationRequested();
+                if (selectedProbeIndex >= 0)
+                {
+                    rc = await MoveRotaryToProbeSocketAsync(selectedProbeIndex, rotary, controller, token).ConfigureAwait(false);
+                    if (rc != 0) return;
+                }
+
+                // 3) 반복: Contact Up -> tester.ManualMeasureAsync -> SafetyZ(Down) -> interval
+                for (int i = 0; i < repeatCount; i++)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    // Contact Up(Top/Bottom)
+                    rc = MoveContactUp_UsingController(selectedProbeIndex, isTop, controller);
+                    if (rc != 0) break;
+
+                    token.ThrowIfCancellationRequested();
+
+                    // 측정은 기존대로 ManualMeasureAsync 유지
+                    int rotaryIndex = GetCurrentProbeIndexNo();
+                    int result = await tester.ManualMeasureAsync(rotaryIndex).ConfigureAwait(false);
+                    if (result < 0) break;
+
+                    token.ThrowIfCancellationRequested();
+
+                    // SafetyZ 복귀(Down)
+                    rc = MoveContactDownToSafety_UsingController(controller);
+                    if (rc != 0) break;
+
+                    // interval
+                    if (i < repeatCount - 1)
+                        await Task.Delay(intervalMs, token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Stop
+            }
+            finally
+            {
+                try { _ctsRepeat?.Dispose(); } catch { }
+                _ctsRepeat = null;
+            }
         }
     }
 }

@@ -59,11 +59,18 @@ namespace QMC.Common.Motions
 
         public HomeSequence AddParallelStepByAxisNames(params string[] axisNames)
         {
-            if (axisNames == null || axisNames.Length == 0) return this;
+            if (axisNames == null || axisNames.Length == 0) 
+                return this;
+
             var set = new HashSet<string>(axisNames, StringComparer.OrdinalIgnoreCase);
+
             var picked = _manager.GetAllAxes()?.Where(a => a != null && set.Contains(a.Name)).ToList();
+
             if (picked != null && picked.Count > 0)
+            {
                 _steps.Add(picked);
+            }
+
             return this;
         }
 
@@ -116,9 +123,7 @@ namespace QMC.Common.Motions
             Aborted = false;
             AbortReason = null;
             AbortStepIndex = null;
-
             var all = new List<HomeAxisResult>();
-
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
                 var step = _steps[stepIndex];

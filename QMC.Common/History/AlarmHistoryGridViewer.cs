@@ -63,17 +63,25 @@ namespace QMC.Common.History
 
         private void AddRealtimeAlarm(AlarmHistory history)
         {
-            if (chkEnableDateFilter.Checked && history.Info.GeneratedTime.Date == currentDate.Date)
+            try
             {
-                currentAlarms.Insert(0, history);
-                UpdateStatistics();
-                ApplyFilters();
+                if (chkEnableDateFilter.Checked && history.Info.GeneratedTime.Date == currentDate.Date)
+                {
+                    currentAlarms.Insert(0, history);
+                    UpdateStatistics();
+                    ApplyFilters();
+                }
+                else
+                {
+                    HistoryManager.Instance.ClearCacheByDate(history.Info.GeneratedTime.Date);
+                    LoadRecentAlarmDates();
+                }
             }
-            else
+            catch(Exception ex)
             {
-                HistoryManager.Instance.ClearCacheByDate(history.Info.GeneratedTime.Date);
-                LoadRecentAlarmDates();
+                Log.Write(ex);
             }
+            
         }
 
         private void LoadAlarmsByDate(DateTime date)
@@ -124,40 +132,56 @@ namespace QMC.Common.History
 
         private void UpdateGrid()
         {
-            dataGridView1.Rows.Clear();
-
-            int startIndex = (currentPage - 1) * pageSize;
-            int endIndex = Math.Min(startIndex + pageSize, filteredAlarms.Count);
-
-            for (int i = startIndex; i < endIndex; i++)
+            try
             {
-                var history = filteredAlarms[i];
-                int rowIndex = dataGridView1.Rows.Add();
-                var row = dataGridView1.Rows[rowIndex];
+                dataGridView1.Rows.Clear();
 
-                row.Cells["Time"].Value = history.Info.GeneratedTime.ToString("yyyy-MM-dd HH:mm:ss");
-                row.Cells["AlarmType"].Value = history.Info.Grade;
-                row.Cells["AlarmCode"].Value = history.Info.Code;
-                row.Cells["AlarmSource"].Value = history.Info.Source;
-                row.Cells["AlarmTitle"].Value = history.Info.Title;
-                row.Cells["AlarmCause"].Value = history.Info.Cause;
+                int startIndex = (currentPage - 1) * pageSize;
+                int endIndex = Math.Min(startIndex + pageSize, filteredAlarms.Count);
 
-                if (history.Info.Grade == "Error")
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(255, 240, 240);
-                else if (history.Info.Grade == "Warning")
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 230);
+                for (int i = startIndex; i < endIndex; i++)
+                {
+                    var history = filteredAlarms[i];
+                    int rowIndex = dataGridView1.Rows.Add();
+                    var row = dataGridView1.Rows[rowIndex];
+
+                    row.Cells["Time"].Value = history.Info.GeneratedTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    row.Cells["AlarmType"].Value = history.Info.Grade;
+                    row.Cells["AlarmCode"].Value = history.Info.Code;
+                    row.Cells["AlarmSource"].Value = history.Info.Source;
+                    row.Cells["AlarmTitle"].Value = history.Info.Title;
+                    row.Cells["AlarmCause"].Value = history.Info.Cause;
+
+                    if (history.Info.Grade == "Error")
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(255, 240, 240);
+                    else if (history.Info.Grade == "Warning")
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 230);
+                }
             }
+            catch
+            {
+
+            }
+            
         }
 
         private void UpdateStatistics()
         {
-            int total = currentAlarms.Count;
-            int errorCount = currentAlarms.Count(a => a.Info.Grade == "Error");
-            int warningCount = currentAlarms.Count(a => a.Info.Grade == "Warning");
+            try
+            {
+                int total = currentAlarms.Count;
+                int errorCount = currentAlarms.Count(a => a.Info.Grade == "Error");
+                int warningCount = currentAlarms.Count(a => a.Info.Grade == "Warning");
 
-            lblTotal.Text = $"Total: {total}";
-            lblError.Text = $"Error: {errorCount}";
-            lblWarning.Text = $"Warning: {warningCount}";
+                lblTotal.Text = $"Total: {total}";
+                lblError.Text = $"Error: {errorCount}";
+                lblWarning.Text = $"Warning: {warningCount}";
+            }
+            catch( Exception ex)
+            {
+                Log.Write(ex);
+            }
+            
         }
 
         private void UpdatePaginationInfo()

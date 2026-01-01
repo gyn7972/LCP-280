@@ -25,7 +25,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private readonly int _tabBorderWidth = 2;
         private readonly Color _tabBorderColor = Color.Black;
-        private readonly Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
+        private readonly Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Bold);
 
         private void tabControl1_DrawItem(object sender, DrawItemEventArgs e)
         {

@@ -420,11 +420,11 @@
     <Compile Include="FormBottom.Designer.cs">
       <DependentUpon>FormBottom.cs</DependentUpon>
     </Compile>
-    <Compile Include="FormWorking.cs">
+    <Compile Include="FormMenual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FormWorking.Designer.cs">
-      <DependentUpon>FormWorking.cs</DependentUpon>
+    <Compile Include="FormMenual.Designer.cs">
+      <DependentUpon>FormMenual.cs</DependentUpon>
     </Compile>
     <Compile Include="FormSetup.cs">
       <SubType>Form</SubType>
@@ -469,7 +469,7 @@
     <Compile Include="FormManagerMain.cs" />
     <Compile Include="FormManagerRecipe.cs" />
     <Compile Include="FormManagerSetup.cs" />
-    <Compile Include="FormManagerWorking.cs" />
+    <Compile Include="FormManagerMenual.cs" />
     <Compile Include="FormTop.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -711,8 +711,8 @@
     <EmbeddedResource Include="FormBottom.resx">
       <DependentUpon>FormBottom.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FormWorking.resx">
-      <DependentUpon>FormWorking.cs</DependentUpon>
+    <EmbeddedResource Include="FormMenual.resx">
+      <DependentUpon>FormMenual.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormSetup.resx">
       <DependentUpon>FormSetup.cs</DependentUpon>

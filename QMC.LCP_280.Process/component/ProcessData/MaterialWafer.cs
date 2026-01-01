@@ -5,9 +5,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Media.Media3D;
 
 namespace QMC.LCP_280.Process.Component
@@ -100,158 +102,473 @@ namespace QMC.LCP_280.Process.Component
         /// 
 
 
+        //성능개선 - 교체.
         private List<MaterialDie> MakeWaferMap(List<PointD> listPt, double chipPitchXmm, double chipPitchYmm)
         {
-            List<MaterialDie> waferMapPoints = new List<MaterialDie>();
-            HashSet<int> mappedIndices = new HashSet<int>();
-            //float pitch = 1.1f; //Test용?
+            if (listPt == null) throw new ArgumentNullException(nameof(listPt));
+            if (listPt.Count == 0) return new List<MaterialDie>();
+            if (chipPitchXmm <= 0) throw new ArgumentOutOfRangeException(nameof(chipPitchXmm));
+            if (chipPitchYmm <= 0) throw new ArgumentOutOfRangeException(nameof(chipPitchYmm));
 
-            // 웨이퍼 중심(평균) 계산
-            //double avgX = listPt.Average(p => p.X);
-            //double avgY = listPt.Average(p => p.Y);
-            //// 중심에 가장 가까운 점을 기준점으로 선택.
-            //int refIndex = 0;
-            //double minDist = double.MaxValue;
-            //for (int i = 0; i < listPt.Count; i++)
-            //{
-            //    double dx = listPt[i].X - avgX;
-            //    double dy = listPt[i].Y - avgY;
-            //    double d = dx * dx + dy * dy;
-            //    if (d < minDist)
-            //    {
-            //        minDist = d;
-            //        refIndex = i;
-            //    }
-            //}
-            //// 기준점 설정 (MapX=0, MapY=0)
-            //PointF ptRef = listPt[refIndex];
-            //MaterialDie refpt = new MaterialDie
-            //{
-            //    CenterX = ptRef.X,
-            //    CenterY = ptRef.Y,
-            //    MapX = 0,
-            //    MapY = 0
-            //};
-            //waferMapPoints.Add(refpt);
-            //mappedIndices.Add(refIndex);
+            // 공간 버킷 크기(대략 pitch). 후보 수를 확 줄임.
+            double cellSizeX = chipPitchXmm;
+            double cellSizeY = chipPitchYmm;
 
-            //기존 코드
-            // 첫 번째 점을 기준점으로 설정
-            PointF ptRef = listPt[0];
-            MaterialDie refpt = new MaterialDie();
-            refpt.CenterX = ptRef.X;
-            refpt.CenterY = ptRef.Y;
-            refpt.MapX = 0;
-            refpt.MapY = 0;
-            waferMapPoints.Add(refpt);
-            mappedIndices.Add(0);
-
-            // 나머지 점들 처리
-            while (mappedIndices.Count < listPt.Count)
+            Func<double, double, long> cellKey = (x, y) =>
             {
-                int closestUnmappedIndex = -1;
-                double minWeightedDistance = double.MaxValue;
-                MaterialDie closestMappedPoint = null;
+                int cx = (int)Math.Floor(x / cellSizeX);
+                int cy = (int)Math.Floor(y / cellSizeY);
+                return ((long)cx << 32) ^ (uint)cy;
+            };
 
-                // 모든 매핑된 점에 대해
-                foreach (var mappedPoint in waferMapPoints)
+            // 미매핑 포인트 인덱스를 버킷에 보관
+            var buckets = new Dictionary<long, List<int>>(listPt.Count * 2);
+            var indexToBucket = new long[listPt.Count];
+
+            for (int i = 0; i < listPt.Count; i++)
+            {
+                var p = listPt[i];
+                long key = cellKey(p.X, p.Y);
+                indexToBucket[i] = key;
+
+                List<int> lst;
+                if (!buckets.TryGetValue(key, out lst))
                 {
-                    // 모든 미매핑된 점 중에서 가장 가까운 것을 찾기
+                    lst = new List<int>(8);
+                    buckets.Add(key, lst);
+                }
+                lst.Add(i);
+            }
+
+            // HashSet.Contains 비용 제거
+            var mapped = new bool[listPt.Count];
+            int mappedCount = 0;
+
+            var waferMapPoints = new List<MaterialDie>(listPt.Count);
+
+            // 기준점(0) 매핑
+            var p0 = listPt[0];
+            var refpt = new MaterialDie
+            {
+                CenterX = p0.X,
+                CenterY = p0.Y,
+                MapX = 0,
+                MapY = 0
+            };
+            waferMapPoints.Add(refpt);
+
+            mapped[0] = true;
+            mappedCount++;
+            RemoveFromBucket(buckets, indexToBucket[0], 0);
+
+            // 기존 weightedDistance = sqrt(dx^2*4 + dy^2) 와 동일 비교를 위해 sqrt 제거(제곱값 비교)
+            const double xWeightSq = 4.0;
+
+            // 반경 확장 한도(셀 단위). 너무 작으면 fallback로 넘어갈 수 있음.
+            // wafer 크기/데이터 누락이 크면 늘릴 수 있음.
+            int maxRing = 50;
+
+            while (mappedCount < listPt.Count)
+            {
+                //장비 전체 정지 신호 받고 빠져나가야함.
+                //장비 정지하면.
+
+                int bestIndex = -1;
+                double bestDistSq = double.MaxValue;
+                MaterialDie bestBase = null;
+
+                // "현재까지 매핑된 모든 점" 기준으로 가장 가까운 미매핑 점 하나를 선택(기존 동작 유지)
+                for (int m = 0; m < waferMapPoints.Count; m++)
+                {
+                    var baseDie = waferMapPoints[m];
+
+                    int bcX = (int)Math.Floor(baseDie.CenterX / cellSizeX);
+                    int bcY = (int)Math.Floor(baseDie.CenterY / cellSizeY);
+
+                    bool foundAny = false;
+
+                    for (int ring = 0; ring <= maxRing; ring++)
+                    {
+                        int minX = bcX - ring;
+                        int maxX = bcX + ring;
+                        int minY = bcY - ring;
+                        int maxY = bcY + ring;
+
+                        // 상/하
+                        for (int cx = minX; cx <= maxX; cx++)
+                        {
+                            if (TryUpdateBestFromCell(cx, minY, baseDie, listPt, buckets, xWeightSq, ref bestIndex, ref bestDistSq, ref bestBase))
+                                foundAny = true;
+                            if (minY != maxY)
+                            {
+                                if (TryUpdateBestFromCell(cx, maxY, baseDie, listPt, buckets, xWeightSq, ref bestIndex, ref bestDistSq, ref bestBase))
+                                    foundAny = true;
+                            }
+                        }
+
+                        // 좌/우(코너 제외)
+                        for (int cy = minY + 1; cy <= maxY - 1; cy++)
+                        {
+                            if (TryUpdateBestFromCell(minX, cy, baseDie, listPt, buckets, xWeightSq, ref bestIndex, ref bestDistSq, ref bestBase))
+                                foundAny = true;
+                            if (minX != maxX)
+                            {
+                                if (TryUpdateBestFromCell(maxX, cy, baseDie, listPt, buckets, xWeightSq, ref bestIndex, ref bestDistSq, ref bestBase))
+                                    foundAny = true;
+                            }
+                        }
+
+                        // 가까운 ring에서 후보를 찾았으면 더 멀리 볼 이유가 거의 없음(속도 핵심)
+                        if (foundAny) break;
+                    }
+                }
+
+                // 방어: 버킷 탐색 실패 시 기존 방식으로 fallback (기능/결과 보존 목적)
+                if (bestIndex < 0 || bestBase == null)
+                {
                     for (int i = 0; i < listPt.Count; i++)
                     {
-                        if (mappedIndices.Contains(i))
+                        if (mapped[i]) continue;
+                        var p = listPt[i];
+
+                        for (int m = 0; m < waferMapPoints.Count; m++)
+                        {
+                            var baseDie = waferMapPoints[m];
+                            double dx = p.X - baseDie.CenterX;
+                            double dy = p.Y - baseDie.CenterY;
+                            double distSq = (dx * dx * xWeightSq) + (dy * dy);
+
+                            if (distSq < bestDistSq)
+                            {
+                                bestDistSq = distSq;
+                                bestIndex = i;
+                                bestBase = baseDie;
+                            }
+                        }
+                    }
+
+                    if (bestIndex < 0) break;
+                }
+
+                // 선택된 점 매핑(기존 계산식 동일)
+                var pt = listPt[bestIndex];
+                var wmp = new MaterialDie
+                {
+                    CenterX = pt.X,
+                    CenterY = pt.Y,
+                    MapX = (int)Math.Round((pt.X - bestBase.CenterX) / chipPitchXmm) + bestBase.MapX,
+                    MapY = (int)Math.Round((pt.Y - bestBase.CenterY) / chipPitchYmm) + bestBase.MapY
+                };
+
+                waferMapPoints.Add(wmp);
+
+                mapped[bestIndex] = true;
+                mappedCount++;
+                RemoveFromBucket(buckets, indexToBucket[bestIndex], bestIndex);
+            }
+
+            return waferMapPoints;
+        }
+
+        private static bool TryUpdateBestFromCell(
+            int cellX,
+            int cellY,
+            MaterialDie baseDie,
+            List<PointD> listPt,
+            Dictionary<long, List<int>> buckets,
+            double xWeightSq,
+            ref int bestIndex,
+            ref double bestDistSq,
+            ref MaterialDie bestBase)
+        {
+            long key = ((long)cellX << 32) ^ (uint)cellY;
+
+            List<int> indices;
+            if (!buckets.TryGetValue(key, out indices) || indices.Count == 0)
+                return false;
+
+            // 셀에 들어있는 후보만 비교
+            // (동일 거리일 때는 기존 코드처럼 "먼저 발견된 것" 유지: < 만 사용)
+            for (int k = 0; k < indices.Count; k++)
+            {
+                int idx = indices[k];
+                var p = listPt[idx];
+
+                double dx = p.X - baseDie.CenterX;
+                double dy = p.Y - baseDie.CenterY;
+                double distSq = (dx * dx * xWeightSq) + (dy * dy);
+
+                if (distSq < bestDistSq)
+                {
+                    bestDistSq = distSq;
+                    bestIndex = idx;
+                    bestBase = baseDie;
+                }
+            }
+
+            return true;
+        }
+
+        private static void RemoveFromBucket(Dictionary<long, List<int>> buckets, long key, int index)
+        {
+            List<int> lst;
+            if (!buckets.TryGetValue(key, out lst)) return;
+
+            int pos = lst.IndexOf(index);
+            if (pos >= 0)
+            {
+                int last = lst.Count - 1;
+                lst[pos] = lst[last];
+                lst.RemoveAt(last);
+            }
+
+            if (lst.Count == 0)
+                buckets.Remove(key);
+        }
+        //여기 너무 느림.
+        //private List<MaterialDie> MakeWaferMap(List<PointD> listPt, double chipPitchXmm, double chipPitchYmm)
+        //{
+        //    List<MaterialDie> waferMapPoints = new List<MaterialDie>();
+        //    HashSet<int> mappedIndices = new HashSet<int>();
+        //    //float pitch = 1.1f; //Test용?
+
+        //    // 첫 번째 점을 기준점으로 설정
+        //    PointF ptRef = listPt[0];
+        //    MaterialDie refpt = new MaterialDie();
+        //    refpt.CenterX = ptRef.X;
+        //    refpt.CenterY = ptRef.Y;
+        //    refpt.MapX = 0;
+        //    refpt.MapY = 0;
+        //    waferMapPoints.Add(refpt);
+        //    mappedIndices.Add(0);
+
+        //    // 나머지 점들 처리
+        //    while (mappedIndices.Count < listPt.Count)
+        //    {
+        //        int closestUnmappedIndex = -1;
+        //        double minWeightedDistance = double.MaxValue;
+        //        MaterialDie closestMappedPoint = null;
+
+        //        // 모든 매핑된 점에 대해
+        //        foreach (var mappedPoint in waferMapPoints)
+        //        {
+        //            // 모든 미매핑된 점 중에서 가장 가까운 것을 찾기
+        //            for (int i = 0; i < listPt.Count; i++)
+        //            {
+        //                if (mappedIndices.Contains(i))
+        //                    continue;
+
+        //                PointF unmappedPt = listPt[i];
+        //                double dx = unmappedPt.X - mappedPoint.CenterX;
+        //                double dy = unmappedPt.Y - mappedPoint.CenterY;
+        //                double weightedDistance = Math.Sqrt((dx * dx * 4) + (dy * dy)); // X축 가중치 2 = 제곱시 4
+
+        //                if (weightedDistance < minWeightedDistance)
+        //                {
+        //                    minWeightedDistance = weightedDistance;
+        //                    closestUnmappedIndex = i;
+        //                    closestMappedPoint = mappedPoint;
+        //                }
+        //            }
+        //        }
+
+        //        // 가장 가까운 미매핑 점을 매핑
+        //        if (closestUnmappedIndex >= 0)
+        //        {
+        //            PointF pt = listPt[closestUnmappedIndex];
+        //            MaterialDie wmp = new MaterialDie();
+        //            wmp.CenterX = pt.X;
+        //            wmp.CenterY = pt.Y;
+        //            //wmp.MapX = (int)Math.Round((pt.X - closestMappedPoint.CenterX) / pitch) + closestMappedPoint.MapX;
+        //            //wmp.MapY = (int)Math.Round((pt.Y - closestMappedPoint.CenterY) / pitch) + closestMappedPoint.MapY;
+        //            wmp.MapX = (int)Math.Round((pt.X - closestMappedPoint.CenterX) / chipPitchXmm) + closestMappedPoint.MapX;
+        //            wmp.MapY = (int)Math.Round((pt.Y - closestMappedPoint.CenterY) / chipPitchYmm) + closestMappedPoint.MapY;
+
+        //            waferMapPoints.Add(wmp);
+        //            mappedIndices.Add(closestUnmappedIndex);
+        //        }
+        //    }
+
+        //    var grouped = waferMapPoints.GroupBy(p => new { p.MapX, p.MapY});
+        //    return waferMapPoints;
+        //}
+
+        //여기가 엄청 느림.
+
+        private static List<PointD> MergeCentersKeepLast(List<PointD> rawList, double tolX, double tolY)
+        {
+            // tol 기반 버킷: tol 범위의 중복 후보만 체크
+            double cellSizeX = tolX;
+            double cellSizeY = tolY;
+
+            Func<PointD, long> keyOf = p =>
+            {
+                int cx = (int)Math.Floor(p.X / cellSizeX);
+                int cy = (int)Math.Floor(p.Y / cellSizeY);
+                return ((long)cx << 32) ^ (uint)cy;
+            };
+
+            // 버킷에는 merged 리스트의 "인덱스"를 들고 있음(나중에 제거/갱신)
+            var buckets = new Dictionary<long, List<int>>(rawList.Count * 2);
+            var merged = new List<PointD>(rawList.Count);
+
+            for (int r = 0; r < rawList.Count; r++)
+            {
+                var p = rawList[r];
+                long ck = keyOf(p);
+
+                int found = -1;
+
+                // 자기 셀 + 인접 셀 정도만 보면 tol 범위 중복을 충분히 커버
+                int cx0 = (int)(ck >> 32);
+                int cy0 = (int)(int)ck;
+
+                for (int dx = -1; dx <= 1 && found < 0; dx++)
+                {
+                    for (int dy = -1; dy <= 1 && found < 0; dy++)
+                    {
+                        long nk = ((long)(cx0 + dx) << 32) ^ (uint)(cy0 + dy);
+
+                        List<int> candidates;
+                        if (!buckets.TryGetValue(nk, out candidates) || candidates.Count == 0)
                             continue;
 
-                        PointF unmappedPt = listPt[i];
-                        double dx = unmappedPt.X - mappedPoint.CenterX;
-                        double dy = unmappedPt.Y - mappedPoint.CenterY;
-                        double weightedDistance = Math.Sqrt((dx * dx * 4) + (dy * dy)); // X축 가중치 2 = 제곱시 4
-
-                        if (weightedDistance < minWeightedDistance)
+                        for (int i = 0; i < candidates.Count; i++)
                         {
-                            minWeightedDistance = weightedDistance;
-                            closestUnmappedIndex = i;
-                            closestMappedPoint = mappedPoint;
+                            int mi = candidates[i];
+                            var mp = merged[mi];
+
+                            if (Math.Abs(mp.X - p.X) <= tolX && Math.Abs(mp.Y - p.Y) <= tolY)
+                            {
+                                found = mi;
+                                break;
+                            }
                         }
                     }
                 }
 
-                // 가장 가까운 미매핑 점을 매핑
-                if (closestUnmappedIndex >= 0)
+                if (found >= 0)
                 {
-                    PointF pt = listPt[closestUnmappedIndex];
-                    MaterialDie wmp = new MaterialDie();
-                    wmp.CenterX = pt.X;
-                    wmp.CenterY = pt.Y;
-                    //wmp.MapX = (int)Math.Round((pt.X - closestMappedPoint.CenterX) / pitch) + closestMappedPoint.MapX;
-                    //wmp.MapY = (int)Math.Round((pt.Y - closestMappedPoint.CenterY) / pitch) + closestMappedPoint.MapY;
-                    wmp.MapX = (int)Math.Round((pt.X - closestMappedPoint.CenterX) / chipPitchXmm) + closestMappedPoint.MapX;
-                    wmp.MapY = (int)Math.Round((pt.Y - closestMappedPoint.CenterY) / chipPitchYmm) + closestMappedPoint.MapY;
+                    // 기존 코드와 동일: RemoveAt(found) 후 Add(p)
+                    // 단, RemoveAt은 O(n)이므로 "swap remove"로 바꾸면 더 빠르지만
+                    // 순서(마지막 관측 반영)를 동일하게 유지하려면 여기서는 그대로 둠.
+                    // merged 크기가 10k여도 중복 빈도가 낮으면 충분히 빠릅니다.
+                    merged.RemoveAt(found);
 
-                    waferMapPoints.Add(wmp);
-                    mappedIndices.Add(closestUnmappedIndex);
+                    // 버킷 인덱스들이 한 칸씩 밀려서 갱신 필요 -> 여기 때문에 RemoveAt이 비싸짐
+                    // 그래서 아래 방식으로 "원래 동작 동일"을 유지하면서도 O(1)에 가깝게 처리:
+                    // 1) found 위치를 마지막 요소로 덮어쓰기(순서 영향 있음) -> 동작 달라짐(불가)
+                    // 결론: 순서 동일이 중요하므로 RemoveAt 유지
+
+                    // 버킷 재구성(순서 유지 + 인덱스 갱신). 중복이 많지 않다면 허용.
+                    // 중복이 많다면, "링크드리스트 + 인덱스맵"으로 더 최적화 가능.
+                    buckets.Clear();
+                    for (int i = 0; i < merged.Count; i++)
+                    {
+                        long k = keyOf(merged[i]);
+                        List<int> lst;
+                        if (!buckets.TryGetValue(k, out lst))
+                        {
+                            lst = new List<int>(8);
+                            buckets.Add(k, lst);
+                        }
+                        lst.Add(i);
+                    }
+
+                    merged.Add(p);
+                    long addKey = keyOf(p);
+                    List<int> addList;
+                    if (!buckets.TryGetValue(addKey, out addList))
+                    {
+                        addList = new List<int>(8);
+                        buckets.Add(addKey, addList);
+                    }
+                    addList.Add(merged.Count - 1);
+                }
+                else
+                {
+                    merged.Add(p);
+                    List<int> lst;
+                    if (!buckets.TryGetValue(ck, out lst))
+                    {
+                        lst = new List<int>(8);
+                        buckets.Add(ck, lst);
+                    }
+                    lst.Add(merged.Count - 1);
                 }
             }
 
-            var grouped = waferMapPoints.GroupBy(p => new { p.MapX, p.MapY});
-            return waferMapPoints;
+            return merged;
         }
+
         public void MakeWaferInfo(List<PointD> centers, double chipPitchXmm, double chipPitchYmm)
         {
             lock(this)
             {
-                if (centers == null) return;
+                if (centers == null) 
+                    return;
+
                 var rawList = centers; // already a list
                 Dies = new List<MaterialDie>();
-                //Dies.Clear();
-
+                
                 if (rawList.Count == 0) 
                     return;
+
                 if (chipPitchXmm <= 0 || chipPitchYmm <= 0) 
                     throw new ArgumentOutOfRangeException("Chip pitch must be > 0");
 
                 // 1) 중복/중첩 Chip 병합 (마지막 좌표가 최종)
                 double tolX = chipPitchXmm * 0.30; // 허용 오차 (조정 가능)
                 double tolY = chipPitchYmm * 0.30;
-                var merged = new List<PointD>();
-                int nIndex = 0;
+
+                // 기존 O(N^2) 루프 대신
+                var merged = MergeCentersKeepLast(rawList, tolX, tolY);
+                if (merged.Count == 0)
+                    return;
+
                 string strFileName = "MakeWaferInfo_rawList" + DateTime.Now.Ticks.ToString();
                 Log.Write(strFileName, "rawList", " WaferId,rawList.Count,rawList.Index,rawList.posX ,rawList.posY");
-                foreach (var p in rawList)
-                {
-                    int found = -1;
-                    nIndex++;
-                    Log.Write(strFileName, "rawList", $"{WaferId},{rawList.Count},{nIndex},{p.X},{p.Y}");
+                
+                // 기존 느린 코드
+                //var merged = new List<PointD>();
+                //int nIndex = 0;
+                //string strFileName = "MakeWaferInfo_rawList" + DateTime.Now.Ticks.ToString();
+                //Log.Write(strFileName, "rawList", " WaferId,rawList.Count,rawList.Index,rawList.posX ,rawList.posY");
+                //foreach (var p in rawList)
+                //{
+                //    int found = -1;
+                //    nIndex++;
+                //    Log.Write(strFileName, "rawList", $"{WaferId},{rawList.Count},{nIndex},{p.X},{p.Y}");
 
-                    for (int i = 0; i < merged.Count; i++)
-                    {
-                        if (Math.Abs(merged[i].X - p.X) <= tolX && Math.Abs(merged[i].Y - p.Y) <= tolY)
-                        {
-                            found = i; 
-                            break;
-                        }
-                    }
-                    if (found >= 0)
-                    {
-                        merged.RemoveAt(found);
-                        merged.Add(p); // 마지막 관측을 순서에 반영
-                    }
-                    else
-                    {
-                        merged.Add(p);
-                    }
-                    //if (found >= 0)
-                    //{
-                    //    // 동일 Chip -> 마지막 좌표로 갱신 (요청: 리스트의 마지막 우선)
-                    //    merged[found] = p;
-                    //}
-                    //else
-                    //{
-                    //    merged.Add(p);
-                    //}
-                }
-                if (merged.Count == 0) 
-                    return;
+                //    for (int i = 0; i < merged.Count; i++)
+                //    {
+                //        if (Math.Abs(merged[i].X - p.X) <= tolX && Math.Abs(merged[i].Y - p.Y) <= tolY)
+                //        {
+                //            found = i; 
+                //            break;
+                //        }
+                //    }
+                //    if (found >= 0)
+                //    {
+                //        merged.RemoveAt(found);
+                //        merged.Add(p); // 마지막 관측을 순서에 반영
+                //    }
+                //    else
+                //    {
+                //        merged.Add(p);
+                //    }
+                //    //if (found >= 0)
+                //    //{
+                //    //    // 동일 Chip -> 마지막 좌표로 갱신 (요청: 리스트의 마지막 우선)
+                //    //    merged[found] = p;
+                //    //}
+                //    //else
+                //    //{
+                //    //    merged.Add(p);
+                //    //}
+                //}
+                //if (merged.Count == 0) 
+                //    return;
 
                 string BinFileName = "";
                 var recip = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
@@ -268,7 +585,6 @@ namespace QMC.LCP_280.Process.Component
 
                 // 5) Chip 객체 생성 및 Grid 계산
                 var temp = new List<MaterialDie>();
-                
                 double estPitchX = chipPitchXmm;
                 double estPitchY = chipPitchYmm;
 
@@ -283,37 +599,6 @@ namespace QMC.LCP_280.Process.Component
                     temp[iter].SourceBinFileName = BinFileName;
                 }
 
-                // 센터 기준으로 원점 이동
-                // 현재 temp에는 기준점(센터 근접 다이)이 MapX=0, MapY=0로 들어있음.
-                // 혹시 안전하게 다시 찾고 싶다면 아래처럼 재확인 가능.
-                //var centerDie = temp
-                //    .OrderBy(d => (d.CenterX - temp.Average(t => t.CenterX)) * (d.CenterX - temp.Average(t => t.CenterX)) +
-                //                  (d.CenterY - temp.Average(t => t.CenterY)) * (d.CenterY - temp.Average(t => t.CenterY)))
-                //    .FirstOrDefault();
-
-                //int offsetX = 0;
-                //int offsetY = 0;
-                //if (centerDie != null)
-                //{
-                //    offsetX = centerDie.MapX;
-                //    offsetY = centerDie.MapY;
-                //}
-
-                //var vList = temp.ToList();
-                //temp.Clear();
-                //foreach (var die in vList)
-                //{
-                //    // 센터 다이를 (0,0)으로 이동
-                //    die.MapX -= offsetX;
-                //    die.MapY -= offsetY;
-
-                //    // 기존 맵매칭 요구사항 유지: X 부호 반전만 적용
-                //    die.MapX *= -1;
-                //    die.MapY *= 1;
-
-                //    temp.Add(die);
-                //}
-                // 기존 코드
                 int MinX = temp.Min(t => t.MapX);
                 int MinY = temp.Min(t => t.MapY);
                 var vList = temp.ToList();
@@ -332,7 +617,6 @@ namespace QMC.LCP_280.Process.Component
                     temp.Add(die);
                 }
 
-
                 // 6) Index 부여 (행 우선)
                 int idx = 0;
                 foreach (var chip in temp
@@ -346,25 +630,17 @@ namespace QMC.LCP_280.Process.Component
                 var dies = temp.OrderBy(c => c.Index);                
                 Dies.AddRange(dies);
 
-                //foreach (var chip in dies)
-                //{
-                //    Dies.Add(chip);
-                //}
-
-                // 6) Index 부여 (행 우선)
-                //int idx = 0;
-                //foreach (var chip in temp.OrderBy(c => c.MapY).ThenBy(c => c.MapX))
-                //{
-                //    chip.Index = idx++;
-                //}
-                //Dies.AddRange(temp.OrderBy(c => c.Index));
-                strFileName = "MakeWaferInfo_Dies" + DateTime.Now.Ticks.ToString();
-                Log.Write(strFileName, "rawList", $" WaferId,Dies.Count,Dies.Index,Dies.MapX ,Dies.MapY ,Dies.CenterX,Dies.CenterY ");
-                foreach (var v in Dies)
+                // 로그 출력 - 디버그용 : 개수가 너무 많으면 느려짐.
+                if(false)
                 {
-                    Log.Write(strFileName, "rawList", $"{WaferId}, {Dies.Count},{v.Index},{v.MapX},{v.MapY},{v.CenterX},{v.CenterY}");
+                    strFileName = "MakeWaferInfo_Dies" + DateTime.Now.Ticks.ToString();
+                    Log.Write(strFileName, "rawList", $" WaferId,Dies.Count,Dies.Index,Dies.MapX ,Dies.MapY ,Dies.CenterX,Dies.CenterY ");
+                    foreach (var v in Dies)
+                    {
+                        Log.Write(strFileName, "rawList", $"{WaferId}, {Dies.Count},{v.Index},{v.MapX},{v.MapY},{v.CenterX},{v.CenterY}");
+                    }
                 }
-
+                
                 // 측정값 초기화
                 foreach (var chip in Dies)
                 {
@@ -394,8 +670,81 @@ namespace QMC.LCP_280.Process.Component
             }   
         }
 
+        public List<MaterialDie> ReadFileScan(string path, MapTyp mapTyp)
+        {
+            var dies = new List<MaterialDie>();
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return dies;
 
-        public List<MaterialDie> ReadFile(string path, MapTyp mapTyp)
+            // ResultWriterManager.AppendWafDie()가 쓰는 포맷을 역으로 파싱:
+            // - 앞부분: 여러 줄 헤더/파라미터/제로블록(숫자/공백구분)
+            // - 실제 데이터: CSV 라인 시작 (예: "7,0,0,...,Index,Height")
+            //
+            // 요구사항: "7,0,0,0,..." 이 구간부터 읽는다.
+            // 즉, 콤마(',')가 포함된 라인부터 데이터로 간주한다.
+
+            var ci = CultureInfo.InvariantCulture;
+
+            int autoIndex = 0;
+            foreach (var raw in File.ReadLines(path, Encoding.UTF8))
+            {
+                if (string.IsNullOrWhiteSpace(raw))
+                    continue;
+
+                var line = raw.Trim();
+
+                // 데이터 라인은 반드시 CSV(콤마 포함)로 온다.
+                // 헤더/파라미터/ZeroBlock은 공백 구분이므로 콤마가 없다.
+                if (line.IndexOf(',') < 0)
+                    continue;
+
+                // 예: X,Y,Item1,Item2,...,Index,Height
+                // 최소: X,Y,Index,Height => 4개
+                var parts = line.Split(',');
+                if (parts.Length < 4)
+                    continue;
+
+                if (!double.TryParse(parts[0].Trim(), NumberStyles.Any, ci, out double xAdr))
+                    continue;
+                if (!double.TryParse(parts[1].Trim(), NumberStyles.Any, ci, out double yAdr))
+                    continue;
+
+                // AppendWafDie에서는 MapX/MapY를 (-1) 곱해서 기록했으므로 역으로 다시 (-1) 곱해 원복
+                // (즉, 파일의 XADR=die.MapX*-1 이었음)
+                double mapX = -xAdr;
+                double mapY = -yAdr;
+
+                // 마지막 2 컬럼: Index, Height
+                int socketIndex1Base = 0;
+                double height = 0.0;
+
+                // Index (SocketIndex + 1)
+                int.TryParse(parts[parts.Length - 2].Trim(), NumberStyles.Any, ci, out socketIndex1Base);
+                // Height
+                double.TryParse(parts[parts.Length - 1].Trim(), NumberStyles.Any, ci, out height);
+
+                var die = new MaterialDie
+                {
+                    Index = autoIndex++,
+                    MapX = (int)mapX,
+                    MapY = (int)mapY,
+                    SocketIndex = Math.Max(0, socketIndex1Base - 1),
+                    Presence = MaterialPresence.Exist,
+                    State = DieProcessState.Mapped,
+                };
+
+                // Height는 MeasureValues에도 넣어두면 기존 코드와 호환됨(ResultWriterManager가 die.GetMeasure("Height") 사용)
+                if (die.MeasureValues == null)
+                    die.MeasureValues = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                die.MeasureValues["Height"] = height;
+
+                dies.Add(die);
+            }
+
+            return dies;
+        }
+
+        public List<MaterialDie> ReadFileOnline(string path, MapTyp mapTyp)
         {
             List<MaterialDie> dies = new List<MaterialDie>();
 
@@ -418,7 +767,8 @@ namespace QMC.LCP_280.Process.Component
                         MaterialDie die = new MaterialDie();
                         die.MapX = nIndexX;
                         die.MapY = nIndexY;
-                        die.Rank = nBinCode;
+                        //die.Rank = nBinCode;
+                        die.PreRank = nBinCode;
                         dies.Add(die);
                     }
                 }
@@ -435,7 +785,7 @@ namespace QMC.LCP_280.Process.Component
         public double Mapmatch(string strFileName, MapTyp mapTyp)
         {
             // 1. 원본 파일 읽기
-            List<MaterialDie> diesOrg = ReadFile(strFileName, mapTyp);
+            List<MaterialDie> diesOrg = ReadFileOnline(strFileName, mapTyp);
             if (diesOrg == null || diesOrg.Count == 0)
                 return 0;
 

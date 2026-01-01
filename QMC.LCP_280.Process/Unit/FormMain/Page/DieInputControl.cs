@@ -7,31 +7,22 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using static QMC.Common.Material;
+using static QMC.LCP_280.Process.Component.MeasurementRecipe;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class DieInputControl : UserControl
     {
-        public event EventHandler<DisplayView.DisplayItemEventArgs> MotorMoveRequested;
+        public event EventHandler<DisplayView_DieInput.DisplayItemEventArgs> MotorMoveRequested;
         private List<MaterialDie> _dies = new List<MaterialDie>();
+        
         // 픽업된 좌표를 누적 보관 (UI 강제 유지용)
         private readonly HashSet<Point> _pickedCoords = new HashSet<Point>();
         // 마지막 실제 Pick 좌표
         private Point? _lastPickedCoord;
         // 기존 Pick 완료 좌표
         private Point? _AfterPickCoord;
-        // 화면 표시용 180도 회전 토글 (기본: ON)
-        private bool _rotate180ForDisplay = true;
-        public bool Rotate180View
-        {
-            get => _rotate180ForDisplay;
-            set
-            {
-                if (_rotate180ForDisplay == value) return;
-                _rotate180ForDisplay = value;
-                SetDieList(_dies);
-            }
-        }
+
         // 화면 표시를 맵 중심(pivot) 기준 상대좌표(0,0 원점)로 보낼지 여부
         private bool _centerOnPivot = true;
         public bool CenterOnPivot
@@ -45,120 +36,209 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
         // 회전/센터 기준 (MapX / MapY 범위 중심)
-        private double _pivotX;
-        private double _pivotY;
+        private int _pivotX;
+        private int _pivotY;
         private bool _hasPivot;
+
+        // ===== [NEW] 장비↔뷰 고정 축 매핑 (하드코딩) =====
+        // 장비의 X,Y를 View 좌표와 1:1 맞추기 위한 고정 변환을 먼저 적용합니다.
+        // 필요에 따라 아래 상수를 설정하십시오.
+        private sealed class AxisMap
+        {
+            public bool SwapXY;      // true면 X<->Y 교환
+            public bool InvertX;     // true면 X 부호 반전
+            public bool InvertY;     // true면 Y 부호 반전
+        }
+        // 장비→뷰로 보여줄 때 적용할 매핑
+        private static readonly AxisMap EquipmentToView = new AxisMap
+        {
+            SwapXY = false,
+            InvertX = true,
+            InvertY = true
+        };
+        // 뷰→장비로 좌표를 돌려줄 때 적용할 역매핑
+        private static readonly AxisMap ViewToEquipment = new AxisMap
+        {
+            SwapXY = false,
+            InvertX = true,
+            InvertY = true
+        };
+
+        private static Point ApplyAxisMap(Point p, AxisMap m)
+        {
+            int x = p.X, y = p.Y;
+            if (m.SwapXY) { var t = x; x = y; y = t; }
+            if (m.InvertX) x = -x;
+            if (m.InvertY) y = -y;
+            return new Point(x, y);
+        }
+
+        // [NEW] 표시 옵션(레시피 동기화)
+        private MapRotateOption _rotateDisplay = MapRotateOption.None;
+        public MapRotateOption WaferRotateView
+        {
+            get => _rotateDisplay;
+            set
+            {
+                if (_rotateDisplay == value) return;
+                _rotateDisplay = value;
+                SetDieList(_dies);
+            }
+        }
+
+        private MapMirrorOption _mirrorDisplay = MapMirrorOption.None;
+        public MapMirrorOption WaferMirrorView
+        {
+            get => _mirrorDisplay;
+            set
+            {
+                if (_mirrorDisplay == value) return;
+                _mirrorDisplay = value;
+                SetDieList(_dies);
+            }
+        }
+
+        private MapPathStartCorner _pathStartCorner = MapPathStartCorner.BottomLeft;
+        public MapPathStartCorner WaferPathStartCorner
+        {
+            get => _pathStartCorner;
+            set
+            {
+                if (_pathStartCorner == value) return;
+                _pathStartCorner = value;
+                SetDieList(_dies);
+            }
+        }
+
+        private MapPathPrimaryAxis _pathPrimaryAxis = MapPathPrimaryAxis.XFirst;
+        public MapPathPrimaryAxis WaferPathPrimaryAxis
+        {
+            get => _pathPrimaryAxis;
+            set
+            {
+                if (_pathPrimaryAxis == value) return;
+                _pathPrimaryAxis = value;
+                SetDieList(_dies);
+            }
+        }
+
+        private MapPathTraversalMode _pathTraversalMode = MapPathTraversalMode.Serpentine;
+        public MapPathTraversalMode WaferPathTraversalMode
+        {
+            get => _pathTraversalMode;
+            set
+            {
+                if (_pathTraversalMode == value) return;
+                _pathTraversalMode = value;
+                SetDieList(_dies);
+            }
+        }
+
+        private void SyncWaferViewFromRecipe()
+        {
+            try
+            {
+                var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                if (recipe != null)
+                {
+                    WaferRotateView = recipe.WaferRotate;
+                    WaferMirrorView = recipe.WaferMirror;
+                    WaferPathStartCorner = recipe.WaferPathStartCorner;
+                    WaferPathPrimaryAxis = recipe.WaferPathPrimaryAxis;
+                    WaferPathTraversalMode = recipe.WaferPathTraversalMode;
+                }
+            }
+            catch { /* ignore */ }
+        }
 
         private void RecalcPivot()
         {
             _hasPivot = false;
             if (_dies == null || _dies.Count == 0) return;
 
-            double minX = _dies.Min(c => c.MapX);
-            double maxX = _dies.Max(c => c.MapX);
-            double minY = _dies.Min(c => c.MapY);
-            double maxY = _dies.Max(c => c.MapY);
+            int minX = _dies.Min(c => c.MapX);
+            int maxX = _dies.Max(c => c.MapX);
+            int minY = _dies.Min(c => c.MapY);
+            int maxY = _dies.Max(c => c.MapY);
 
-            _pivotX = (minX + maxX) * 0.5;
-            _pivotY = (minY + maxY) * 0.5;
+            _pivotX = (minX + maxX);
+            _pivotY = (minY + maxY);
             _hasPivot = true;
-
-            //double minX = _dies.Min(c => c.MapX);
-            //double maxX = _dies.Max(c => c.MapX);
-            //double minY = _dies.Min(c => c.MapY);
-            //double maxY = _dies.Max(c => c.MapY);
-
-            //_pivotX = (minX + maxX) * 0.5;
-            //_pivotY = (minY + maxY) * 0.5;
-            //_hasPivot = true;
         }
 
         // 모델(MapX/MapY) -> 디스플레이 좌표
-        private PointD ToDisplay(PointD model)
+        private Point ToDisplay(Point model)
         {
-            if (!_hasPivot) return model;
+            if (!_hasPivot) 
+                return ApplyAxisMap(model, EquipmentToView);
+
+            // 0) 고정 장비→뷰 매핑 먼저 적용
+            Point mapped = ApplyAxisMap(model, EquipmentToView);
 
             // 1) 센터 상대좌표 변환
-            PointD rel = _centerOnPivot
-                ? new PointD(model.X - _pivotX, model.Y - _pivotY)
+            //PointD rel = _centerOnPivot
+            //    ? new PointD(mapped.X - _pivotX, mapped.Y - _pivotY)
+            //    : mapped;
+            Point rel = _centerOnPivot
+                ? new Point(model.X - _pivotX, model.Y - _pivotY)
                 : model;
 
-            // 2) 180도 회전 (원점 기준 점대칭)
-            //Rotate180View = true;
-            //if (Rotate180View)
-            //{
-            //    rel = new PointD(-rel.X, -rel.Y);
-            //}
+            // [NEW] 레시피 옵션 동기화
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            if (recipe != null)
+            {
+                WaferRotateView = recipe.WaferRotate;
+                WaferMirrorView = recipe.WaferMirror;
+                WaferPathStartCorner = recipe.WaferPathStartCorner;
+                WaferPathPrimaryAxis = recipe.WaferPathPrimaryAxis;
+                WaferPathTraversalMode = recipe.WaferPathTraversalMode;
+            }
 
-            // 2) X 방향 반전만 적용 (Y는 그대로)
-            rel = new PointD(rel.X, -rel.Y);
+            //180도 회전해야. 장비랑 비젼이랑 1:1?
+            rel = new Point(-rel.X, -rel.Y);
+            //Y반전도?.
+            rel = new Point(-rel.X, rel.Y);
 
             return rel;
         }
 
         // 디스플레이 -> 모델(MapX/MapY)
-        private PointD FromDisplay(PointD display)
+        private Point FromDisplay(Point display)
         {
-            if (!_hasPivot) return display;
-            PointD rel = display;
+            // 레시피 동기화는 동일하게 유지
+            if (!_hasPivot)
+            {
+                // 뷰→장비 축 역매핑 적용만
+                return ApplyAxisMap(display, ViewToEquipment);
+            }
 
-            //Rotate180View = true;
-            //// 1) 역회전
-            //if (Rotate180View)
-            //{
-            //    rel = new PointD(-rel.X, -rel.Y);
-            //}
+            Point rel = display;
 
-            // 1) X 방향 반전의 역변환 (Y는 그대로)
-            rel = new PointD(display.X, -display.Y);
+            // [NEW] 레시피 옵션 동기화
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            if (recipe != null)
+            {
+                WaferRotateView = recipe.WaferRotate;
+                WaferMirrorView = recipe.WaferMirror;
+                WaferPathStartCorner = recipe.WaferPathStartCorner;
+                WaferPathPrimaryAxis = recipe.WaferPathPrimaryAxis;
+                WaferPathTraversalMode = recipe.WaferPathTraversalMode;
+            }
 
-            // 2) 절대 좌표 복원
-            PointD model = _centerOnPivot
-                ? new PointD(rel.X + _pivotX, rel.Y + _pivotY)
+            //180도 회전해야. 장비랑 비젼이랑 1:1?
+            rel = new Point(-rel.X, -rel.Y);
+            //Y반전도?.
+            rel = new Point(-rel.X, rel.Y);
+
+            // 1) 절대 좌표 복원 (pivot)
+            Point modelLikeView = _centerOnPivot
+                ? new Point(rel.X + _pivotX, rel.Y + _pivotY)
                 : rel;
 
+            // 0) 마지막으로 뷰→장비 고정 축 역매핑 적용
+            Point model = ApplyAxisMap(modelLikeView, ViewToEquipment);
             return model;
         }
-
-        //// 모델(MapX/MapY) -> 디스플레이 좌표
-        //private PointD ToDisplay(PointD model)
-        //{
-        //    if (!_hasPivot) return model;
-
-        //    // 1) 센터 상대좌표 변환
-        //    PointD rel = _centerOnPivot
-        //        ? new PointD(model.X - _pivotX, model.Y - _pivotY)
-        //        : model;
-
-        //    // 2) 180도 회전 (원점 기준 점대칭)
-        //    Rotate180View = true;
-        //    if (Rotate180View)
-        //    {
-        //        rel = new PointD(-rel.X, -rel.Y);
-        //    }
-        //    return rel;
-        //}
-
-        //// 디스플레이 -> 모델(MapX/MapY)
-        //private PointD FromDisplay(PointD display)
-        //{
-        //    if (!_hasPivot) return display;
-        //    PointD rel = display;
-
-        //    Rotate180View = true;
-        //    // 1) 역회전
-        //    if (Rotate180View)
-        //    {
-        //        rel = new PointD(-rel.X, -rel.Y);
-        //    }
-
-        //    // 2) 절대 좌표 복원
-        //    PointD model = _centerOnPivot
-        //        ? new PointD(rel.X + _pivotX, rel.Y + _pivotY)
-        //        : rel;
-
-        //    return model;
-        //}
 
         // 히스토리 표시 여부
         private bool _showPickedHistory = true;
@@ -171,14 +251,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 _showPickedHistory = value;
                 SetDieList(_dies);
             }
-        }
-
-        // 남은 다이(실제 웨이퍼 위) 계산
-        // => "찾은(Exist) 다이 수"로 정의 (라벨 Found 계산에 사용)
-        private int GetRemainingDieCount()
-        {
-            //return _dies.Count(d => d.State == DieProcessState.Mapped);
-            return _dies.Count(d => d.Presence == MaterialPresence.Exist);
         }
 
         // Found (감지된 다이) 개수: Presence==Exist 기준
@@ -198,36 +270,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             int found = GetFoundDieCount();     // 감지된(Exist) 다이 총수
             int total = _dies.Count;            // 전체 셀(Exist + NotExist)
             lblDieCountValue.Text = $"{found} / {total}";
-
-            //if (this.InvokeRequired)
-            //{
-            //    this.Invoke(new Action(UpdateDieCount));
-            //    return;
-            //}
-            //int remaining = GetRemainingDieCount();
-            //int pickedHist = _pickedCoords.Count;
-            //// 필요 시 UI Label 2개로 분리하거나 하나에 "남음/총" 형태로
-            //lblDieCountValue.Text = $"{remaining} / {pickedHist + remaining}";
-            ////lblDieCountValue.Text = remaining.ToString();
-            //// 남은 다이가 0이면 히스토리/강조 숨김 모드로 전환(표시 일관성)
-            //if (remaining == 0)
-            //{
-            //    _lastPickedCoord = null;
-            //    // 히스토리는 유지하고 싶지 않다면 아래 주석 해제
-            //    // _pickedCoords.Clear();
-            //    _showPickedHistory = false;
-            //}
         }
-        //private void UpdateDieCount()
-        //{
-        //    if (this.InvokeRequired)
-        //    {
-        //        this.Invoke(new Action(() => UpdateDieCount()));
-        //        return;
-        //    }
-        //    int count = _dies.Count(c => c.State == DieProcessState.Mapped || c.State == DieProcessState.Picked);
-        //    lblDieCountValue.Text = count.ToString();
-        //}
+        
 
         public DieInputControl()
         {
@@ -237,6 +281,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // WaferId 라벨 더블클릭으로 입력 처리
             if (lblWaferIdValue != null)
                 lblWaferIdValue.DoubleClick += lblWaferIdValue_DoubleClick;
+
+            // [NEW] 초기 로드 시 레시피 설정과 표시 회전/미러/경로 연동
+            SyncWaferViewFromRecipe();
         }
 
         // Equipment에서 유닛 얻기 헬퍼
@@ -316,20 +363,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private void OnDisplayView_MotorMoveRequested(object sender, DisplayView.DisplayItemEventArgs e)
+        private void OnDisplayView_MotorMoveRequested(object sender, DisplayView_DieInput.DisplayItemEventArgs e)
         {
             if (e?.Item != null && _hasPivot)
             {
                 // 화면 좌표 → 원래 Map 기준 좌표
                 var modelPos = FromDisplay((PointD)e.Item.Position);
-                var correctedItem = new DisplayView.DisplayItem
+                var correctedItem = new DisplayView_DieInput.DisplayItem
                 {
                     Position = modelPos,      // 외부로는 Map 좌표 전달
+                    DieMap = e.Item.DieMap,
                     State = e.Item.State,
                     DieId = e.Item.DieId,
                     Info = e.Item.Info
                 };
-                var args = new DisplayView.DisplayItemEventArgs
+                var args = new DisplayView_DieInput.DisplayItemEventArgs
                 {
                     Item = correctedItem,
                     ScreenPosition = e.ScreenPosition
@@ -349,73 +397,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
             lblWaferIdValue.Text = waferId;
         }
-
-        //// 모델에서 새 리스트가 들어와도, 이미 픽업된 좌표는 강제로 Picked 유지
-        //public void SetDieList(List<MaterialDie> chips)
-        //{
-        //    if (this.InvokeRequired)
-        //    {
-        //        this.Invoke(new Action(() => SetDieList(chips)));
-        //        return;
-        //    }
-
-        //    var incoming = chips ?? new List<MaterialDie>();
-
-        //    // 좌표 기준으로 Picked 강제 재적용
-        //    foreach (var c in incoming)
-        //    {
-        //        var p = new PointD(c.MapX, c.MapY);
-        //        if (_pickedCoords.Contains(p))
-        //        {
-        //            if(c.State == DieProcessState.Error)
-        //                c.State = DieProcessState.Error;
-        //            else
-        //                c.State = DieProcessState.Picked;
-        //        }
-        //    }
-
-        //    _chips = incoming;
-        //    UpdateDieCount();
-
-        //    var items = _chips.Select(c =>
-        //    {
-        //        var p = new PointD(c.MapX, c.MapY);
-
-        //        // 기본 상태
-        //        var state = ConvertState(c.State);
-
-        //        // 1) 현재 픽업 좌표는 최우선으로 PickedUp
-        //        if (_lastPickedCoord.HasValue && _lastPickedCoord.Value == p)
-        //        {
-        //            state = DisplayView.ItemState.PickedUp;
-        //        }
-        //        else if (c.State == DieProcessState.Error)
-        //        {
-        //            state = DisplayView.ItemState.Empty;
-        //        }
-        //        // 2) 누적된(과거) 픽업 좌표는 AfterPickUp
-        //        else if (_pickedCoords.Contains(p))
-        //        {
-        //            state = DisplayView.ItemState.AfterPickUp;
-        //        }
-        //        //// 3) 아직 픽업 전이면서 다음 예정 좌표는 BeforePickUp
-        //        //else if (_beforePickCoord.HasValue && _beforePickCoord.Value == p)
-        //        //{
-        //        //    state = DisplayView.ItemState.BeforePickUp;
-        //        //}
-
-        //        return new DisplayView.DisplayItem
-        //        {
-        //            Position = p,
-        //            State = state,
-        //            DieId = c.Index, //c.Index + 1,
-        //            Info = c.Name
-        //        };
-        //    }).ToList();
-
-        //    displayView1.SetItems(items);
-        //    displayView1.Refresh();
-        //}
 
         // NotExist도 Empty로 표시하도록 전체 다이 사용
         public void SetDieList(List<MaterialDie> chips)
@@ -445,15 +426,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             bool highlightCurrent = _showPickedHistory && GetFoundDieCount() > 0;
             var items = _dies.Select(c =>
             {
-                var modelPos = new PointD(c.MapX, c.MapY);
-                var displayPos = ToDisplay(modelPos);
-                var pInt = new Point((int)Math.Round(modelPos.X), (int)Math.Round(modelPos.Y));
+                var MapPos = new Point(c.MapX, c.MapY);
+                var displayPos = ToDisplay(MapPos);
+                var pInt = new Point(MapPos.X, MapPos.Y);
 
-                DisplayView.ItemState state;
+                DisplayView_DieInput.ItemState state;
                 if (c.Presence == MaterialPresence.NotExist)
                 {
                     // 못 찾은 자리 → 빈 슬롯
-                    state = DisplayView.ItemState.Empty;
+                    state = DisplayView_DieInput.ItemState.Empty;
                 }
                 else
                 {
@@ -462,26 +443,27 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     // 현재 픽업 강조
                     if (highlightCurrent &&
                         _lastPickedCoord.HasValue &&
-                        Math.Abs(_lastPickedCoord.Value.X - modelPos.X) < 0.001 &&
-                        Math.Abs(_lastPickedCoord.Value.Y - modelPos.Y) < 0.001)
+                        Math.Abs(_lastPickedCoord.Value.X - MapPos.X) < 0.001 &&
+                        Math.Abs(_lastPickedCoord.Value.Y - MapPos.Y) < 0.001)
                     {
-                        state = DisplayView.ItemState.PickedUp;
+                        state = DisplayView_DieInput.ItemState.PickedUp;
                     }
                     else if (c.State == DieProcessState.Error)
                     {
-                        state = DisplayView.ItemState.Error;
+                        state = DisplayView_DieInput.ItemState.Error;
                     }
                     else
                     {
                         if (_showPickedHistory && _pickedCoords.Contains(pInt))
-                            state = DisplayView.ItemState.AfterPickUp;
+                            state = DisplayView_DieInput.ItemState.AfterPickUp;
                         // 히스토리 숨김 옵션이어도 찾은 다이는 계속 표시
                     }
                 }
 
-                return new DisplayView.DisplayItem
+                return new DisplayView_DieInput.DisplayItem
                 {
-                    Position = displayPos,
+                    Position = displayPos, //modelPos, //displayPos,
+                    DieMap = MapPos,
                     State = state,
                     DieId = c.Index,
                     Info = c.Name
@@ -493,113 +475,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             UpdateDieCount();
         }
 
-        //public void SetDieList(List<MaterialDie> chips)
-        //{
-        //    if (this.InvokeRequired)
-        //    {
-        //        this.Invoke(new Action(() => SetDieList(chips)));
-        //        return;
-        //    }
-
-        //    var incoming = chips ?? new List<MaterialDie>();
-        //    // 기존 Pick 유지
-        //    foreach (var c in incoming)
-        //    {
-        //        var pInt = new Point((int)Math.Round(c.MapX), (int)Math.Round(c.MapY));
-        //        if (_pickedCoords.Contains(pInt))
-        //        {
-        //            if (c.State != DieProcessState.Error)
-        //                c.State = DieProcessState.Picked;
-        //        }
-        //    }
-
-        //    _dies = incoming;
-        //    UpdateDieCount();
-        //    RecalcPivot(); // 중심 재계산
-
-        //    var items = _dies.Select(c =>
-        //    {
-        //        var modelPos = new PointD(c.MapX, c.MapY);
-        //        var displayPos = ToDisplay(modelPos);
-
-        //        var state = ConvertState(c.State);
-
-        //        // 현재 픽업된 좌표 강조
-        //        if (_lastPickedCoord.HasValue &&
-        //            Math.Abs(_lastPickedCoord.Value.X - modelPos.X) < 0.001 &&
-        //            Math.Abs(_lastPickedCoord.Value.Y - modelPos.Y) < 0.001)
-        //        {
-        //            state = DisplayView.ItemState.PickedUp;
-        //        }
-        //        else if (c.State == DieProcessState.Error)
-        //        {
-        //            state = DisplayView.ItemState.Empty;
-        //        }
-        //        else
-        //        {
-        //            var pInt = new Point((int)Math.Round(modelPos.X), (int)Math.Round(modelPos.Y));
-        //            if (_showPickedHistory && _pickedCoords.Contains(pInt))
-        //                state = DisplayView.ItemState.AfterPickUp;
-        //            else if (!_showPickedHistory && c.State == DieProcessState.Picked)
-        //                state = DisplayView.ItemState.Empty; // 히스토리 숨김 시 이미 뺀 자리 비우기
-        //        }
-
-        //        return new DisplayView.DisplayItem
-        //        {
-        //            Position = displayPos,
-        //            State = state,
-        //            DieId = c.Index,
-        //            Info = c.Name
-        //        };
-        //    }).ToList();
-
-        //    //var items = _dies.Select(c =>
-        //    //{
-        //    //    var modelPos = new PointD(c.MapX, c.MapY);
-        //    //    var displayPos = ToDisplay(modelPos);
-
-        //    //    var state = ConvertState(c.State);
-
-        //    //    // 현재 픽업 좌표 강조
-        //    //    if (_lastPickedCoord.HasValue &&
-        //    //        Math.Abs(_lastPickedCoord.Value.X - modelPos.X) < 0.001 &&
-        //    //        Math.Abs(_lastPickedCoord.Value.Y - modelPos.Y) < 0.001)
-        //    //    {
-        //    //        state = DisplayView.ItemState.PickedUp;
-        //    //    }
-        //    //    else if (c.State == DieProcessState.Error)
-        //    //    {
-        //    //        state = DisplayView.ItemState.Empty;
-        //    //    }
-        //    //    else
-        //    //    {
-        //    //        var pInt = new Point((int)Math.Round(modelPos.X), (int)Math.Round(modelPos.Y));
-        //    //        if (_pickedCoords.Contains(pInt))
-        //    //            state = DisplayView.ItemState.AfterPickUp;
-        //    //    }
-
-        //    //    return new DisplayView.DisplayItem
-        //    //    {
-        //    //        Position = displayPos,
-        //    //        State = state,
-        //    //        DieId = c.Index,
-        //    //        Info = c.Name
-        //    //    };
-        //    //}).ToList();
-
-        //    // (필요 시) DisplayView가 음수 좌표를 잘라낸다면 여기서 중앙 정렬 offset 적용 가능
-        //    // TranslateToViewCenter(items);
-
-        //    displayView1.SetItems(items);
-        //    displayView1.Refresh();
-        //}
 
         public void OnWaferExchangeStart()
         {
             ResetPickedMarks();          // 히스토리 좌표 제거
             _showPickedHistory = false;  // 교체 중 히스토리 숨김(원하면 true로 유지 가능)
         }
-        private DisplayView.ItemState ConvertState(DieProcessState state)
+
+        private DisplayView_DieInput.ItemState ConvertState(DieProcessState state)
         {
             switch (state)
             {
@@ -608,13 +491,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 case DieProcessState.Inspected:
                 case DieProcessState.Placed:
                 //case DieProcessState.Rejected:
-                    return DisplayView.ItemState.AfterPickUp;
+                    return DisplayView_DieInput.ItemState.AfterPickUp;
                 case DieProcessState.Mapped:
-                    return DisplayView.ItemState.Present;
+                    return DisplayView_DieInput.ItemState.Present;
                 case DieProcessState.Rejected:
-                    return DisplayView.ItemState.Error;
+                    return DisplayView_DieInput.ItemState.Error;
                 default:
-                    return DisplayView.ItemState.Empty;
+                    return DisplayView_DieInput.ItemState.Empty;
             }
         }
 
@@ -793,22 +676,5 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         }
 
-        // (선택) 화면 중앙 정렬 유틸 (DisplayView 구현에 따라 필요 시 사용)
-        // private void TranslateToViewCenter(List<DisplayView.DisplayItem> items)
-        // {
-        //     if (items == null || items.Count == 0) return;
-        //     double minX = items.Min(i => i.Position.X);
-        //     double maxX = items.Max(i => i.Position.X);
-        //     double minY = items.Min(i => i.Position.Y);
-        //     double maxY = items.Max(i => i.Position.Y);
-        //     double currentCenterX = (minX + maxX) * 0.5;
-        //     double currentCenterY = (minY + maxY) * 0.5;
-        //     double targetCenterX = 0;
-        //     double targetCenterY = 0;
-        //     double dx = targetCenterX - currentCenterX;
-        //     double dy = targetCenterY - currentCenterY;
-        //     foreach (var it in items)
-        //         it.Position = new PointD(it.Position.X + dx, it.Position.Y + dy);
-        // }
     }
 }

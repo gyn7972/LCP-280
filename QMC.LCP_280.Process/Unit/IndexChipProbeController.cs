@@ -19,12 +19,6 @@ using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    /// <summary>
-    /// IndexChipProbeController Unit
-    ///  - Probe Z / Probe Card XYZ / Sphere Z 축 Teaching Positions
-    ///  - Sphere Forward/Backward Cylinder + Probe Card Vacuum IO 바인딩
-    ///  - OutputStage 구조 패턴 적용 (Regions / Helpers / High-Level API)
-    /// </summary>
     public class IndexChipProbeController : BaseUnit<IndexChipProbeControllerConfig>
     {
         public enum AlarmKeys
@@ -35,6 +29,9 @@ namespace QMC.LCP_280.Process.Unit
             eSphereNotForward = 4704,
             eSphereFBTimeout = 4705,
             eProbeCardZNotSafety = 4706,
+            eProbeZNotIndexUp = 4707,
+            eSphereMoveDownTimeout = 4708,
+            eSphereMoveUpTimeout = 4709,
         }
 
         #region InitAlarm
@@ -88,6 +85,31 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eProbeZNotIndexUp;
+            alarm.Title = "Probe Z Not Index Up.";
+            alarm.Cause = "Probe Z 축이 Index Up 위치가 아닙니다. 포지션 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eSphereMoveDownTimeout;
+            alarm.Title = "Sphere Move Down Timeout";
+            alarm.Cause = "Sphere Z 축이 Down 위치 이동 중 실패하였습니다. 포지션 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eSphereMoveUpTimeout;
+            alarm.Title = "Sphere Move Up Timeout";
+            alarm.Cause = "Sphere Z 축이 Up 위치 이동 중 실패하였습니다. 포지션 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
         }
         #endregion
 
@@ -96,20 +118,23 @@ namespace QMC.LCP_280.Process.Unit
         IndexChipProber IndexChipProber { get; set; }
         #endregion
 
-        #region Config / Teaching
+        #region Config / Teaching /Recipe
 
         public IndexChipProbeControllerConfig IndexChipProbeControllerConfig => Config;
+        private IndexChipProbeControllerRecipe Recipe => Config?.TeachingRecipe;
 
         #endregion
 
         #region Axes
-        private MotionAxis _probeZ, _probeCardX, _probeCardY, _probeCardZ, _sphereZ;
+        private MotionAxis _probeZ, _probeCardX, _probeCardY, _probeCardZ, _sphereZ, _GripperX;
         public MotionAxis AxisProbeZ => _probeZ;
         public MotionAxis AxisProbeCardX => _probeCardX;
         public MotionAxis AxisProbeCardY => _probeCardY;
         public MotionAxis AxisProbeCardZ => _probeCardZ;
         public MotionAxis AxisSphereZ => _sphereZ;              //Top
+        public MotionAxis AxisGripperX => _GripperX;            //Bottom 전용.
         #endregion
+
         // Safety 동작 중 여부
         private bool _isSafetyMoving = false;
 
@@ -128,14 +153,17 @@ namespace QMC.LCP_280.Process.Unit
         #region ctor / Initialization
         public IndexChipProbeController(IndexChipProbeControllerConfig config = null) : base(new IndexChipProbeControllerConfig())
         {
-
             AddComponents();
         }
 
         public override void AddComponents()
         {
+            // [CHG] Config.LoadAndBindAxes()는 내부에서 Recipe 로드까지 위임하지만,
+            // Teaching은 명시적으로 Recipe를 기준으로 로딩/기본값 세팅까지 수행하는 쪽이 명확함
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            Config.InitializeDefaultTeachingPositions();
+
+            // [CHG] Teaching 기본값은 Recipe에 생성
+            Config.TeachingRecipe?.InitializeDefaultTeachingPositions(save: true);
 
             BindAxes();
             BindIoDomains();
@@ -165,7 +193,74 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.ProbeCardY, ref _probeCardY);
             BindAxis(mgr, unitName, AxisNames.ProbeCardZ, ref _probeCardZ);
             BindAxis(mgr, unitName, AxisNames.SphereZ, ref _sphereZ);
+            BindAxis(mgr, unitName, AxisNames.GripperX, ref _GripperX);
         }
+
+        private IList<TeachingPosition> GetTeachingList()
+        {
+            var r = Config?.TeachingRecipe;
+            if (r?.TeachingPositions != null)
+                return r.TeachingPositions;
+
+            return Config?.TeachingPositions ?? new List<TeachingPosition>();
+        }
+        public override double GetTP(string tpName, string axisName)
+        {
+            try
+            {
+                var recipe = Config?.TeachingRecipe;
+                var tp = recipe?.Get(tpName);
+                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v))
+                    return v;
+
+                // fallback: 기존 방식 (Config)
+                return base.GetTP(tpName, axisName);
+            }
+            catch
+            {
+                return base.GetTP(tpName, axisName);
+            }
+        }
+        private TeachingPosition GetTeachingPosition(string tpName)
+        {
+            var r = Recipe;
+            if (r != null)
+                return r.Get(tpName);
+
+            // 혹시라도 TeachingRecipe가 null인 비정상 상태 대비(호환/안전)
+            return Config.GetTeachingPosition(tpName);
+        }
+        private void SaveTeachingPosition(TeachingPosition tp)
+        {
+            var r = Recipe;
+            if (r != null)
+            {
+                r.UpsertFiltered(tp, save: true);
+                return;
+            }
+
+            Config.SetTeachingPosition(tp);
+        }
+        public override bool InPosTeaching(string positionName)
+        {
+            var recipe = Config?.TeachingRecipe;
+            var tp = recipe?.Get(positionName);
+            if (tp == null)
+                return base.InPosTeaching(positionName);
+
+            foreach (var kv in tp.AxisPositions)
+            {
+                if (!Axes.TryGetValue(kv.Key, out var axis))
+                    return false;
+
+                // BaseUnit의 Teaching 완화 판정 재사용
+                // (InPosTeachingAxis가 protected라면 여기에서 사용 가능)
+                if (!InPos(axis, kv.Value) && !axis.InPosition(kv.Value))
+                    return false;
+            }
+            return true;
+        }
+
         public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
         {
             bool bRet = base.IsInterlockOK(baseComponent, e);
@@ -181,7 +276,34 @@ namespace QMC.LCP_280.Process.Unit
                     AxisProbeZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                     return false;
-                }    
+                }
+
+                if(baseComponent == this.AxisProbeZ)
+                {
+                    //Ready 위치 이동시에 알람 걸림.
+                    if (IsPositionProbeCardZSafety() == false
+                        && IsBottomIndexZReady(GetProbeIndexNo()) == false)
+                    {   
+                        AxisProbeCardZ?.EmgStop();
+                        AxisProbeZ?.EmgStop();
+                        PostAlarm((int)AlarmKeys.eProbeCardZNotSafety);
+                        return false;
+                    }
+                }
+
+                if (baseComponent == this.AxisProbeCardZ)
+                {
+                    //Ready 위치 이동시에 알람 걸림.
+                    //조건 필요.
+                    //if (IsPositionGripperXIndexUp() == false 
+                    //    && IsBottomIndexZReady(GetProbeIndexNo()) == false)
+                    //{
+                    //    AxisProbeCardZ?.EmgStop();
+                    //    AxisProbeZ?.EmgStop();
+                    //    PostAlarm((int)AlarmKeys.eProbeZNotIndexUp);
+                    //    return false;
+                    //}
+                }
                 //if (this.Rotary.IsAxisMoving(AxisNames.IndexT))
                 //{
                 //    AxisProbeCardZ?.EmgStop();
@@ -252,16 +374,61 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionSafetyZ(bool isFine = false)
         {
+            int nRet = 0;
             _isSafetyMoving = true;
             try
             {
-                return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone, isFine);
+                string tpName = $"SafetyZone";
+                var tpObj = GetTeachingPosition(tpName);
+                if (tpObj == null)
+                {
+                    Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
+                    return -1;
+                }
+
+                double dZPos = 0.0;
+                //if (IsPositionProbeCardZSafety() == false) //무조건 움직이자.
+                {
+                    dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
+                    nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed tp={tpName} posZ={dZPos}");
+                        return -1;
+                    }
+                }
+
+                //if (IsPositionProbeZSafety() == false) //무조건 움직이자.
+                {
+                    dZPos = GetTP(tpName, AxisNames.ProbeZ);
+                    nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeZ move failed tp={tpName} posZ={dZPos}");
+                        return -1;
+                    }
+                }
+
+                return nRet;
+                //return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone, isFine);
             }
             finally
             {
                 _isSafetyMoving = false;
             }
         }
+        //private int OnMovePositionSafetyZ(bool isFine = false)
+        //{
+        //    _isSafetyMoving = true;
+        //    try
+        //    {
+        //        return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone, isFine);
+        //    }
+        //    finally
+        //    {
+        //        _isSafetyMoving = false;
+        //    }
+        //}
         private int IsMoveInterLockSafetyZ()
         {
             int nRet = 0;
@@ -347,7 +514,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionSphereZDown(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Down, isFine);
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Measure, isFine);
         }
         private int IsMoveInterLockSphereZDown()
         {
@@ -436,7 +603,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionSphereZReady(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready, isFine);
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Ready, isFine);
         }
         private int IsMoveInterLockSphereZReady()
         {
@@ -512,6 +679,19 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
+            if(IsTopRequired() == false)
+            {
+                Log.Write(UnitName, "MovePositionTopContact_Index_Contact", "Top Mode가 아닙니다.");
+                return -1;
+            }
+
+            if(nIndex != GetProbeIndexNo())
+            {
+                Log.Write(UnitName, "MovePositionTopContact_Index_Contact", "Index Number가 맞지 않습니다.");
+                return -1;
+            }
+
+
             Task<int> task = MovePositionAsyncTopContact_Index_Up(nIndex, isFine);
             while (IsEndTask(task) == false)
             {
@@ -553,8 +733,9 @@ namespace QMC.LCP_280.Process.Unit
             //    }
             //}
 
-            string tpName = $"Top_Index{teachingIdx}_Up";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //string tpName = $"Top_Index{teachingIdx}_Up";
+            string tpName = Recipe.GetTopContactName(nIndex);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Up] Teaching not found: {tpName}");
@@ -682,8 +863,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Ready] Invalid index {nIndex}. Range 0~7 or 1~8");
                 return -1;
             }
-            string tpName = $"Top_Index{teachingIdx}_Ready";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //string tpName = $"Top_Index{teachingIdx}_Ready";
+            string tpName = Recipe.GetTopReadyName(nIndex);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_Ready] Teaching not found: {tpName}");
@@ -778,8 +960,9 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"Top_Index{teachingIdx}_Ready";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //string tpName = $"Top_Index{teachingIdx}_Ready";
+            string tpName = Recipe.GetTopReadyName(nIndex);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionTopContact_Index_ReadyZ] Teaching not found: {tpName}");
@@ -800,6 +983,23 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MovePositionBottomContact_Index_Up(int nIndex = 0, bool isFine = false)
         {
+            if (IsBottomContactIndexZUp(nIndex) == true)
+            {
+                return 0;
+            }
+
+            if (IsTopRequired() == true)
+            {
+                Log.Write(UnitName, "MovePositionTopContact_Index_Up", "Bottom Mode가 아닙니다.");
+                return -1;
+            }
+
+            if (nIndex != GetProbeIndexNo())
+            {
+                Log.Write(UnitName, "MovePositionTopContact_Index_Up", "Index Number가 맞지 않습니다.");
+                return -1;
+            }
+
             Task<int> task = MovePositionAsyncBottomContact_Index_Up(nIndex, isFine);
             while (IsEndTask(task) == false)
             {
@@ -838,7 +1038,7 @@ namespace QMC.LCP_280.Process.Unit
             //    return -1;
             //}
             string tpName = $"SafetyZone";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
@@ -846,7 +1046,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             double dZPos = 0.0;
-            if (IsBottomIndexZUp(nIndex))
+            if (IsBottomContactIndexZUp(nIndex))
             {
                 dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
                 nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
@@ -857,8 +1057,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            tpName = $"Bottom_Index{teachingIdx}_Up";
-            tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //tpName = $"Bottom_Index{teachingIdx}_Up";
+            tpName = Recipe.GetBottomContactName(nIndex);
+            tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] Teaching not found: {tpName}");
@@ -898,6 +1099,15 @@ namespace QMC.LCP_280.Process.Unit
                 AxisProbeCardZ?.EmgStop();
                 AxisSphereZ?.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+                nRet = -1;
+                return nRet;
+            }
+
+            if (IsPositionGripperXIndexUp() == false)
+            {
+                AxisProbeCardZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eProbeZNotIndexUp);
+                Log.Write(UnitName, $"[IsMoveInterLockBottomContact_Index_Up] GripperX not Index Up");
                 nRet = -1;
                 return nRet;
             }
@@ -951,7 +1161,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             string tpName = $"SafetyZone";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
@@ -959,7 +1169,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             double dZPos = 0.0;
-            if (IsBottomIndexZUp(nIndex))
+            if (IsBottomContactIndexZUp(nIndex))
             {
                 dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
                 nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
@@ -970,8 +1180,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            tpName = $"Bottom_Index{teachingIdx}_Ready";
-            tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //tpName = $"Bottom_Index{teachingIdx}_Ready";
+            tpName = Recipe.GetBottomReadyName(nIndex);
+            tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] Teaching not found: {tpName}");
@@ -980,7 +1191,7 @@ namespace QMC.LCP_280.Process.Unit
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
             nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dYPos);
+            nRet &= OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posX={dXPos}");
@@ -1030,8 +1241,9 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"Bottom_Index{teachingIdx}_Ready";
-            var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            //string tpName = $"Bottom_Index{teachingIdx}_Ready";
+            string tpName = Recipe.GetBottomReadyName(nIndex);
+            var tpObj = GetTeachingPosition(tpName);
             if (tpObj == null)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] Teaching not found: {tpName}");
@@ -1049,17 +1261,274 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        #region Z-Axis In-Position Checkers (Teaching별 Z축만 검사)
 
+
+        public int MovePositionGripperXReady(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncGripperXReady(isFine);
+            while (IsEndTask(task) == false)
+            {
+                IsMoveInterLockGripperXReady();
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> MovePositionAsyncGripperXReady(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionGripperXReady(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionGripperXReady(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Ready, isFine);
+        }
+        private int IsMoveInterLockGripperXReady()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (Rotary.IsIndexMoving())
+            {
+                AxisProbeZ?.EmgStop();
+                AxisProbeCardX?.EmgStop();
+                AxisProbeCardY?.EmgStop();
+                AxisProbeCardZ?.EmgStop();
+                AxisSphereZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncGripperXReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionGripperXReady(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisProbeZ?.EmgStop();
+                            AxisProbeCardX?.EmgStop();
+                            AxisProbeCardY?.EmgStop();
+                            AxisProbeCardZ?.EmgStop();
+                            AxisSphereZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockSphereZDown();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+        public bool IsPositionGripperXReady()
+        {
+            bool bRet = false;
+            bRet = IsAxisInTeachingPosition(AxisGripperX,
+                IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Ready.ToString(),
+                AxisNames.GripperX);
+            return bRet;
+        }
+           
+        public int MovePositionGripperXClamp(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncGripperXClamp(isFine);
+            while (IsEndTask(task) == false)
+            {
+                IsMoveInterLockGripperXClamp();
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> MovePositionAsyncGripperXClamp(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionGripperXClamp(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionGripperXClamp(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Clamp, isFine);
+        }
+        private int IsMoveInterLockGripperXClamp()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (Rotary.IsIndexMoving())
+            {
+                AxisProbeZ?.EmgStop();
+                AxisProbeCardX?.EmgStop();
+                AxisProbeCardY?.EmgStop();
+                AxisProbeCardZ?.EmgStop();
+                AxisSphereZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncGripperXClamp(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionGripperXClamp(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisProbeZ?.EmgStop();
+                            AxisProbeCardX?.EmgStop();
+                            AxisProbeCardY?.EmgStop();
+                            AxisProbeCardZ?.EmgStop();
+                            AxisSphereZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockGripperXClamp();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+        public bool IsPositionGripperXClamp()
+        {
+            bool bRet = false;
+            bRet = IsAxisInTeachingPosition(AxisGripperX,
+                IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Clamp.ToString(),
+                AxisNames.GripperX);
+            return bRet;
+        }
+
+        public int MovePositionGripperXIndexUp(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncGripperXIndexUp(isFine);
+            while (IsEndTask(task) == false)
+            {
+                IsMoveInterLockGripperXIndexUp();
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> MovePositionAsyncGripperXIndexUp(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionGripperXIndexUp(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionGripperXIndexUp(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Index_Contact, isFine);
+        }
+        private int IsMoveInterLockGripperXIndexUp()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (Rotary.IsIndexMoving())
+            {
+                AxisProbeZ?.EmgStop();
+                AxisProbeCardX?.EmgStop();
+                AxisProbeCardY?.EmgStop();
+                AxisProbeCardZ?.EmgStop();
+                AxisSphereZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncGripperXIndexUp(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionGripperXIndexUp(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisProbeZ?.EmgStop();
+                            AxisProbeCardX?.EmgStop();
+                            AxisProbeCardY?.EmgStop();
+                            AxisProbeCardZ?.EmgStop();
+                            AxisSphereZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockGripperXIndexUp();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+        public bool IsPositionGripperXIndexUp()
+        {
+            bool bRet = false;
+            bRet = IsAxisInTeachingPosition(AxisProbeZ,
+                IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Index_Contact.ToString(),
+                AxisNames.ProbeZ);
+            return bRet;
+        }
+
+
+        #region Z-Axis In-Position Checkers (Teaching별 Z축만 검사)
         // Sphere Z 개별 확인
         public bool IsSphereZAtReady()
             => IsAxisInTeachingPosition(AxisSphereZ,
-                IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
+                IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Ready.ToString(),
                 AxisNames.SphereZ);
 
         public bool IsSphereZAtDown()
             => IsAxisInTeachingPosition(AxisSphereZ,
-                IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Down.ToString(),
+                IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Measure.ToString(),
                 AxisNames.SphereZ);
 
         // SafetyZone에서 각 Z축만 개별 확인 (기존 함수 활용)
@@ -1079,7 +1548,8 @@ namespace QMC.LCP_280.Process.Unit
             else
                 return false;
 
-            string tpName = $"Top_Index{idx}_Up";
+            //string tpName = $"Top_Index{idx}_Up";
+            string tpName = Recipe.GetTopContactName(nIndex);
             return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
         }
 
@@ -1092,12 +1562,13 @@ namespace QMC.LCP_280.Process.Unit
                 idx = nIndex + 1;
             else return false;
 
-            string tpName = $"Top_Index{idx}_Ready";
+            //string tpName = $"Top_Index{idx}_Ready";
+            string tpName = Recipe.GetTopReadyName(nIndex);
             return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
         }
 
         // BottomContact: ProbeCardZ만 검사 (Index 0~7 또는 1~8 허용)
-        public bool IsBottomIndexZUp(int nIndex)
+        public bool IsBottomContactIndexZUp(int nIndex)
         {
             int idx;
             if (nIndex >= 1 && nIndex <= 8)
@@ -1107,7 +1578,8 @@ namespace QMC.LCP_280.Process.Unit
             else
                 return false;
 
-            string tpName = $"Bottom_Index{idx}_Up";
+            //string tpName = $"Bottom_Index{idx}_Up";
+            string tpName = Recipe.GetBottomContactName(nIndex);
             return IsAxisInTeachingPosition(AxisProbeCardZ, tpName, AxisNames.ProbeCardZ);
         }
 
@@ -1121,7 +1593,8 @@ namespace QMC.LCP_280.Process.Unit
             else
                 return false;
 
-            string tpName = $"Bottom_Index{idx}_Ready";
+            //string tpName = $"Bottom_Index{idx}_Ready";
+            string tpName = Recipe.GetBottomReadyName(nIndex);
             return IsAxisInTeachingPosition(AxisProbeCardZ, tpName, AxisNames.ProbeCardZ);
         }
         #endregion
@@ -1135,7 +1608,7 @@ namespace QMC.LCP_280.Process.Unit
         private bool TryGetTeachingAxisPosition(string tpName, string axisName, out double target)
         {
             target = 0.0;
-            var tp = Config.GetTeachingPosition(tpName);
+            var tp = GetTeachingPosition(tpName);
             if (tp == null || tp.AxisPositions == null)
                 return false;
             return tp.AxisPositions.TryGetValue(axisName, out target);
@@ -1176,7 +1649,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return IsAxisInTeachingPosition(AxisProbeZ,
-                IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
+                IndexChipProbeControllerRecipe.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeZ);
         }
             
@@ -1202,7 +1675,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return IsAxisInTeachingPosition(AxisProbeCardZ,
-                IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
+                IndexChipProbeControllerRecipe.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeCardZ);
         }
             
@@ -1210,13 +1683,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             // Up 우선
             if (IsAxisInTeachingPosition(AxisSphereZ,
-                    IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
+                    IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Ready.ToString(),
                     AxisNames.SphereZ))
                 return true;
 
             // Up 이 없거나 InPosition 아니면 Ready 로 재확인
             return IsAxisInTeachingPosition(AxisSphereZ,
-                    IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
+                    IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Ready.ToString(),
                     AxisNames.SphereZ);
         }
 
@@ -1237,48 +1710,75 @@ namespace QMC.LCP_280.Process.Unit
             return bRet1 && bRet2;
         }
 
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
         #endregion
 
         #region Teaching Helpers
-        public void TeachCurrentPosition(string positionName, string description = null)
-        {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
-        }
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return -1;
-            int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
+            if (string.IsNullOrWhiteSpace(positionName))
             {
-                if (Axes.TryGetValue(axisKey, out var axis))
+                Log.Write(UnitName, nameof(MoveToTeachingPosition),
+                        $"[TeachingMove] TeachingPositions에서 '{positionName}' 을 찾지 못했습니다.");
+                return -1;
+            }
+
+            int result = 0;
+            IndexChipProbeControllerRecipe.TeachingPositionName en;
+            if (Enum.TryParse(positionName, out en))
+            {
+                int selIndex = FindTeachingSelectionIndex(positionName);
+                if (selIndex >= 0)
                 {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
+                    // TeachingPositionControl의 vel 규칙(Fine=1 / Coarse=5)을 반영
+                    bool isFine = vel <= 1.0;
+                    result = MoveToTeachingPositionBySelectionIndex(selIndex, isFine);
+                }
+                else
+                {
+                    // enum인데 index를 못 찾으면 실패 처리(원인 로그)
+                    Log.Write(UnitName, nameof(MoveToTeachingPosition),
+                        $"[TeachingMove] TeachingPositions에서 '{positionName}' index를 찾지 못했습니다.");
+                    return -1;
+                }   
+            }
+
+            return result;
+
+            //var tp = GetTeachingPosition(positionName);
+            //if (tp == null) return -1;
+            //int result = 0;
+            //foreach (var axisKey in tp.AxisPositions.Keys)
+            //{
+            //    if (Axes.TryGetValue(axisKey, out var axis))
+            //    {
+            //        double pos = tp.AxisPositions[axisKey];
+            //        int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+            //        if (r != 0) result = r;
+            //    }
+            //}
+            //return result;
+        }
+
+        private int FindTeachingSelectionIndex(string positionName)
+        {
+            try
+            {
+                var list = GetTeachingList();
+                if (list == null) return -1;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var tp = list[i];
+                    if (tp != null && string.Equals(tp.Name, positionName, StringComparison.OrdinalIgnoreCase))
+                        return i;
                 }
             }
-            return result;
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            return -1;
         }
-        //public bool InPosTeaching(string positionName)
-        //{
-        //    var tp = Config.GetTeachingPosition(positionName);
-        //    if (tp == null) return false;
-        //    foreach (var kv in tp.AxisPositions)
-        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-        //    return true;
-        //}
         #endregion
 
         #region Low-Level IO Access
@@ -1438,7 +1938,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
 
             base.OnStop();
             return ret;
@@ -1511,16 +2010,31 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(2);
             }
 
+            // 하부 Z-Axis.
+            nRet = MovePositionSafetyZ();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSafetyZ failed");
+                return -1;
+            }
+
             if (Config.ViewMode == false)
             {
                 if (IsSphereForward() == false)
                 {
-                    if (SetSphereFB(true))
+                    //if (SetSphereFB(true))
                     {
-                    	Thread.Sleep(200);
+                        SetSphereFB(true);
+
+                        Thread.Sleep(500);
                         var sw = Stopwatch.StartNew();
-                        while (IsSphereForward() == false)
+                        while (true)
                         {
+                            if (IsSphereForward())
+                            {
+                                break;
+                            }
+
                             if (sw.ElapsedMilliseconds > 5000)
                             {
                                 PostAlarm((int)AlarmKeys.eSphereFBTimeout);
@@ -1540,10 +2054,20 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSphereZDown failed");
                         return -1;
                     }
+
+                    var sw = Stopwatch.StartNew();
                     while (IsSphereZAtDown() == false)
                     {
                         if (IsStop)
                             return 0;
+
+                        if (sw.ElapsedMilliseconds > 5000)
+                        {
+                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                            Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] SphereZ Down Timeout");
+                            return -1;
+                        }
+
                         Thread.Sleep(1);
                     }
                 }
@@ -1562,12 +2086,19 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (IsSphereBackward() == false)
                 {
-                    if (SetSphereFB(false))
+                    //if (SetSphereFB(false))
                     {
-                    	Thread.Sleep(200);
+                        SetSphereFB(false);
+
+                        Thread.Sleep(500);
                         var sw = Stopwatch.StartNew();
-                        while (IsSphereBackward() == false)
+                        while (true)
                         {
+                            if (IsSphereBackward())
+                            {
+                                break;
+                            }
+
                             if (sw.ElapsedMilliseconds > 5000)
                             {
                                 PostAlarm((int)AlarmKeys.eSphereFBTimeout);
@@ -1580,13 +2111,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            // 하부 Z-Axis.
-            nRet = MovePositionSafetyZ();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "RunInspectionReady", "[RunInspectionReady] MovePositionSafetyZ failed");
-                return -1;
-            }
+            
             return nRet;
         }
 
@@ -1646,16 +2171,18 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     if (IsSphereForward() == false)
                     {
-                        Thread.Sleep(200);
-                        if (SetSphereFB(true))
+                        
+                        //if (SetSphereFB(true))
                         {
+                            SetSphereFB(true);
+                            Thread.Sleep(500);
                             var sw = Stopwatch.StartNew();
                             while (IsSphereForward() == false)
                             {
                                 if (sw.ElapsedMilliseconds > 5000)
                                 {
                                     PostAlarm((int)AlarmKeys.eSphereFBTimeout);
-                                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] SphereFB-F Timeout");
+                                    Log.Write(UnitName, "RunInspection", "SphereFB-F Timeout");
                                     return -1;
                                 }
                                 Thread.Sleep(1);
@@ -1668,13 +2195,19 @@ namespace QMC.LCP_280.Process.Unit
                         nRet = MovePositionSphereZDown();
                         if (nRet != 0)
                         {
-                            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                            Log.Write(UnitName, "RunInspection", "MovePositionSphereZDown failed");
                             return -1;
                         }
+
+                        var sw = Stopwatch.StartNew();
                         while (IsSphereZAtDown() == false)
                         {
-                            if (IsStop)
-                                return 0;
+                            if (sw.ElapsedMilliseconds > 5000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereMoveDownTimeout);
+                                Log.Write(UnitName, "RunInspection", "MovePositionSphereZDown Timeout");
+                                return -1;
+                            }
                             Thread.Sleep(1);
                         }
                     }
@@ -1686,16 +2219,29 @@ namespace QMC.LCP_280.Process.Unit
                         nRet = MovePositionSphereZReady();
                         if (nRet != 0)
                         {
-                            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionSphereZDown failed");
+                            Log.Write(UnitName, "RunInspection", "MovePositionSphereZDown failed");
                             return -1;
+                        }
+
+                        var sw = Stopwatch.StartNew();
+                        while (IsSphereZAtReady() == false)
+                        {
+                            if (sw.ElapsedMilliseconds > 5000)
+                            {
+                                PostAlarm((int)AlarmKeys.eSphereMoveUpTimeout);
+                                Log.Write(UnitName, "RunInspection", "MovePositionSphereZReady Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
                     }
 
                     if (IsSphereBackward() == false)
                     {
-                        if (SetSphereFB(false))
+                        //if (SetSphereFB(false))
                         {
-                            Thread.Sleep(200);
+                            SetSphereFB(false);
+                            Thread.Sleep(500);
                             var sw = Stopwatch.StartNew();
                             while (IsSphereBackward() == false)
                             {
@@ -1763,6 +2309,13 @@ namespace QMC.LCP_280.Process.Unit
                     die.Presence = Material.MaterialPresence.Exist;
                 }
 
+                nRet = MovePositionGripperXReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                    return -1;
+                }
+
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
                 {
@@ -1778,6 +2331,7 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
+                SetProbeVac(false);
                 socket.SetState(Rotary.RotarySocketState.Probed);
                 LogSequence("End");
                 return nRet;
@@ -1788,7 +2342,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                if(this.IsProbeSafetyAxisPos() == false)
+                SetProbeVac(false);
+                if (this.IsProbeSafetyAxisPos() == false)
                 {
                     nRet = MovePositionSafetyZ();
                     if (nRet != 0)
@@ -1898,12 +2453,37 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
+                SetProbeVac(true);
+
+                nRet = MovePositionGripperXReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                    return -1;
+                }
+
+                nRet = MovePositionGripperXIndexUp(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
+                    return -1;
+                }
 
                 nRet = MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
                     return -1;
+                }
+
+                if (Config.GripperMode)
+                {
+                    nRet = MovePositionGripperXClamp(bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                        return -1;
+                    }
                 }
 
                 nRet = MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
@@ -1993,5 +2573,288 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
         #endregion
+
+
+        public override int MoveTeachingPositionOnce(int selIndex, bool isFine)
+        {
+            int waitErrors = 0;
+
+            string teachName = string.Empty;
+            bool bSuccssed = Config.GetTeachingPositionName(selIndex, out teachName);
+            if (!bSuccssed)
+            {
+                Log.Write(UnitName, nameof(MoveTeachingPositionOnce),
+                    $"[TEACH 이동 오류] 인덱스 '{selIndex}' 티칭포지션 이름을 찾을 수 없습니다.");
+                return -1;
+            }
+
+            var list = GetTeachingList();
+            var tp = list.FirstOrDefault(t => t != null && string.Equals(t.Name, teachName, StringComparison.OrdinalIgnoreCase));
+            if (tp == null)
+            {
+                Log.Write(UnitName, nameof(MoveTeachingPositionOnce),
+                    $"[TEACH 이동 오류] TeachingPosition을 찾을 수 없습니다. name='{teachName}'");
+                return -1;
+            }
+
+            var axisPos = GetAxisPositions(tp);
+            if (axisPos == null)
+                return -1;
+
+            var axisObj = GetAxisObjects(tp);
+
+            foreach (var kv in axisPos)
+            {
+                string key = kv.Key;
+                double target = kv.Value;
+
+                MotionAxis axis = null;
+                if (axisObj != null && axisObj.TryGetValue(key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(key, out var direct))
+                    axis = direct;
+
+                if (axis == null)
+                {
+                    foreach (var ap in Axes)
+                    {
+                        if (ap.Value != null &&
+                            (ap.Key.Equals(key, StringComparison.OrdinalIgnoreCase) ||
+                             ap.Value.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            axis = ap.Value;
+                            break;
+                        }
+                    }
+                }
+
+                if (axis == null)
+                    continue;
+
+                bool isAuto = RunMode == UnitRunMode.Auto;
+                waitErrors = axis.MoveAbs(target, isAuto, isFine);
+            }
+
+            if (waitErrors != 0)
+                return -1;
+
+            foreach (var kv in axisPos)
+            {
+                MotionAxis axis = null;
+                double target = kv.Value;
+
+                if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis))
+                    axis = directAxis;
+
+                if (axis == null)
+                    continue;
+
+                double timeoutMs = 2000;
+                if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
+
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (axis.InPosition(target))
+                        break;
+                    Thread.Sleep(1);
+                }
+
+                if (axis.WaitMoveDone(-1) != 0 && axis.InPosition(target) == false)
+                    waitErrors++;
+            }
+
+            return waitErrors == 0 ? 0 : -1;
+        }
+
+        public override void StopTeachingPositionOnce(int selIndex)
+        {
+            string teachName = string.Empty;
+            bool bSucceeded = Config.GetTeachingPositionName(selIndex, out teachName);
+            if (!bSucceeded)
+                return;
+
+            var list = GetTeachingList();
+            var tp = list.FirstOrDefault(t => t != null && string.Equals(t.Name, teachName, StringComparison.OrdinalIgnoreCase));
+            if (tp == null)
+                return;
+
+            var axisPos = GetAxisPositions(tp);
+            if (axisPos == null)
+                return;
+
+            var axisObj = GetAxisObjects(tp);
+
+            foreach (var kv in axisPos)
+            {
+                MotionAxis axis = null;
+                if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var direct))
+                    axis = direct;
+                if (axis == null) continue;
+
+                try { axis.Stop(); } catch { }
+            }
+        }
+
+
+        /// <summary>
+        /// UI(Teaching Page 등)에서 "티칭 인덱스" 기반으로 해당 티칭 위치로 이동시키는 공용 API.
+        /// - 다른 Page에서도 동일하게 사용 가능
+        /// </summary>
+        public int MoveToTeachingPositionBySelectionIndex(int teachingSelIndex, bool isFine = false)
+        {
+            if (Config == null)
+                return -1;
+
+            string tpName;
+            if (!Config.GetTeachingPositionName(teachingSelIndex, out tpName) || string.IsNullOrWhiteSpace(tpName))
+                return -1;
+
+            IndexChipProbeControllerRecipe.TeachingPositionName en;
+            if (!Enum.TryParse(tpName, out en))
+            {
+                return -1;
+            }
+
+            int nIndex = -1;
+            switch (en)
+            {
+                // ===== Top =====
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index1_Contact: 
+                    nIndex = 0; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index1_Ready: 
+                    nIndex = 0; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index2_Contact: 
+                    nIndex = 1; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index2_Ready: 
+                    nIndex = 1; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index3_Contact: 
+                    nIndex = 2; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index3_Ready: 
+                    nIndex = 2; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index4_Contact: 
+                    nIndex = 3; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index4_Ready: 
+                    nIndex = 3; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index5_Contact: 
+                    nIndex = 4; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index5_Ready: 
+                    nIndex = 4; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index6_Contact: 
+                    nIndex = 5; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index6_Ready: 
+                    nIndex = 5; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index7_Contact: 
+                    nIndex = 6; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index7_Ready: 
+                    nIndex = 6; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index8_Contact: 
+                    nIndex = 7; 
+                    return MovePositionTopContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Top_Index8_Ready: 
+                    nIndex = 7; 
+                    return MovePositionTopContact_Index_Ready(nIndex, isFine);
+
+                // ===== Bottom =====
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index1_Contact: 
+                    nIndex = 0; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index1_Ready: 
+                    nIndex = 0; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index2_Contact: 
+                    nIndex = 1; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index2_Ready: 
+                    nIndex = 1; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index3_Contact: 
+                    nIndex = 2; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index3_Ready: 
+                    nIndex = 2; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index4_Contact: 
+                    nIndex = 3; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index4_Ready: 
+                    nIndex = 3; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index5_Contact: 
+                    nIndex = 4; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index5_Ready: 
+                    nIndex = 4; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index6_Contact: 
+                    nIndex = 5; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index6_Ready: 
+                    nIndex = 5; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index7_Contact: 
+                    nIndex = 6; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index7_Ready: 
+                    nIndex = 6; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index8_Contact: 
+                    nIndex = 7; 
+                    return MovePositionBottomContact_Index_Up(nIndex, isFine);
+                case IndexChipProbeControllerRecipe.TeachingPositionName.Bottom_Index8_Ready: 
+                    nIndex = 7; 
+                    return MovePositionBottomContact_Index_Ready(nIndex, isFine);
+
+                // ===== Etc =====
+                case IndexChipProbeControllerRecipe.TeachingPositionName.SafetyZone:
+                    return MovePositionSafetyZ(isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Ready:
+                    return MovePositionSphereZReady(isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.SphereZ_Measure:
+                    return MovePositionSphereZDown(isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Ready:
+                    return MovePositionGripperXReady(isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Clamp:
+                    return MovePositionGripperXClamp(isFine);
+
+                case IndexChipProbeControllerRecipe.TeachingPositionName.GripperX_Index_Contact:
+                    return MovePositionGripperXIndexUp(isFine);
+
+                default:
+                    return -1;
+            }
+        }
+
     }
 }

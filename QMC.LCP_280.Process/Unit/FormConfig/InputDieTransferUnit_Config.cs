@@ -243,6 +243,27 @@ namespace QMC.LCP_280.Process.Unit
 
         private async void OnPositionTeachingMoveRequested(object sender, MovePositionEventArgs e)
         {
+            //Unit에 전부 아래 주석처럼 적용해야함.
+            //try
+            //{
+            //    if (_unit == null) return;
+
+            //    int rc = await _unit.MoveByTeachingIndexAsync(e.Index, e.IsFine);
+            //    if (rc != 0)
+            //    {
+            //        var mbErr = new MessageBoxOk();
+            //        mbErr.ShowDialog("Error.", "Teaching Position 이동 실패");
+            //        return;
+            //    }
+
+            //    var mbOk = new MessageBoxOk();
+            //    mbOk.ShowDialog("Information.", "Teaching Position 이동 완료");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+
             try
             {
                 if (_unit == null)
@@ -297,7 +318,6 @@ namespace QMC.LCP_280.Process.Unit
                                     mbErr.ShowDialog("Error.", "ToolT 이동 실패");
                                     return;
                                 }
-
                                 break;
 
                             case InputDieTransferConfig.TeachingPositionName.SafetyZone:
@@ -469,137 +489,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
             }
         }
-
-        //private async void OnPositionTeachingMoveRequested(object sender, MovePositionEventArgs e)
-        //{
-        //    try
-        //    {
-        //        if (_unit == null)
-        //            return;
-
-        //        int nRet = 0;
-        //        int nIndex = _unit.GetLoadIndexNo();
-        //        var mb = new MessageBoxYesNo();
-        //        var confirmResult = mb.ShowDialog("Confirmation.", "선택한 Teaching Position으로 이동하시겠습니까?");
-        //        if (confirmResult != DialogResult.Yes)
-        //        {
-        //            return;
-        //        }
-
-        //        //티칭 이름 확인
-        //        string tpName = string.Empty;
-        //        var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
-        //        //티칭 enum으로 분기하여 축 순서 결정
-        //        if (hasName)
-        //        {
-        //            InputDieTransferConfig.TeachingPositionName en;
-        //            if (Enum.TryParse(tpName, out en))
-        //            {
-        //                switch (en)
-        //                {
-        //                    case InputDieTransferConfig.TeachingPositionName.Pickup:
-        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
-        //                            return;
-        //                        }
-
-        //                        nRet = _unit.MovePositionPickUpToolT(e.IsFine);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
-        //                            return;
-        //                        }
-
-        //                        nRet = _unit.MovePositionPickUpPickZ(e.IsFine);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
-        //                            return;
-        //                        }
-        //                        break;
-
-        //                    case InputDieTransferConfig.TeachingPositionName.Ready:
-        //                        nRet = _unit.MovePositionPickUpToolT(e.IsFine);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "ToolT 이동 실패");
-        //                            return;
-        //                        }
-        //                        break;
-
-        //                    case InputDieTransferConfig.TeachingPositionName.SafetyZone:
-        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
-        //                            return;
-        //                        }
-        //                        break;
-
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index1:
-        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
-        //                            return;
-        //                        }
-
-        //                        nRet = _unit.MovePositionPlace_Index(nIndex);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "Index1 위치 이동 실패");
-        //                            return;
-        //                        }
-
-        //                        break;
-
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index2:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index3:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index4:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index5:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index6:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index7:
-        //                    case InputDieTransferConfig.TeachingPositionName.Place_Index8:
-
-        //                        nRet = _unit.MovePositionSafetyZ(e.IsFine); // SafetyZ 선행 이동
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "SafetyZ 이동 실패");
-        //                            return;
-        //                        }
-
-        //                        nRet = _unit.MovePositionPlace_Index(nIndex, e.IsFine);
-        //                        if (nRet != 0)
-        //                        {
-        //                            var mbErr = new MessageBoxOk();
-        //                            mbErr.ShowDialog("Error.", "Index 위치 이동 실패");
-        //                            return;
-        //                        }
-        //                        break;
-
-        //                    default:
-        //                        break;
-        //                }
-        //            }
-        //        }
-        //        var mb1 = new MessageBoxOk();
-        //        mb1.ShowDialog("Information.", "Teaching Position 이동 완료");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //    }
-        //}
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)
         {

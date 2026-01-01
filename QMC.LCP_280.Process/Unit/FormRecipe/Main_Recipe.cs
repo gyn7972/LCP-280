@@ -22,6 +22,54 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         private string _recipesDir;
         private string _clipboardRecipePath; // copy/paste용
 
+        // [ADD] UI 읽기전용 타이틀 모음 + 로그인 레벨 규칙
+        private readonly HashSet<string> _uiReadOnlyTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // 로그인 레벨(예시: 장비 쪽 로그인 매니저가 있으면 매핑해서 사용)
+        private enum LoginLevel { Operator = 0, Engineer = 1, Admin = 2 }
+
+        // 타이틀별 최소 편집 레벨(원하면 Category/Name 기반으로 확장)
+        private static readonly Dictionary<string, LoginLevel> _minLevelByTitle =
+            new Dictionary<string, LoginLevel>(StringComparer.OrdinalIgnoreCase)
+            {
+                // 예시 매핑: 필요에 따라 항목 추가/수정
+                //{ "Wafer Diameter (mm)", LoginLevel.Engineer },
+                //{ "Wafer Chip PitchX (mm)", LoginLevel.Engineer },
+                //{ "Wafer Chip PitchY (mm)", LoginLevel.Engineer },
+                //{ "Binning Spec Sheet File", LoginLevel.Admin },
+                //{ "Test Condition Set File", LoginLevel.Engineer },
+                //// 경로/방향 설정 등
+                //{ "Wafer Rotate", LoginLevel.Operator },
+                //{ "Wafer Mirror", LoginLevel.Operator },
+                //{ "Wafer PathStartCorner", LoginLevel.Engineer },
+                //{ "Wafer Path PrimaryAxis", LoginLevel.Engineer },
+                //{ "Wafer Path TraversalMode", LoginLevel.Engineer },
+                //{ "Bin Rotate", LoginLevel.Operator },
+                //{ "BIn Mirror", LoginLevel.Operator },
+                //{ "BIn PathStartCorner", LoginLevel.Engineer },
+                //{ "Bin Path PrimaryAxis", LoginLevel.Engineer },
+                //{ "Bin Path TraversalMode", LoginLevel.Engineer },
+            };
+        private LoginLevel GetCurrentLoginLevel()
+        {
+            try
+            {
+                // 실제 로그인 시스템과 연결
+                // 예: var lv = Equipment.Instance?.LoginManager?.CurrentLevel;
+                // 여기서는 없을 때 기본 Operator로 설정
+                return LoginLevel.Operator;
+            }
+            catch { return LoginLevel.Operator; }
+        }
+
+        private bool IsEditableByLogin(string title)
+        {
+            var cur = GetCurrentLoginLevel();
+            if (_minLevelByTitle.TryGetValue(title, out var minLv))
+                return cur >= minLv;
+            // 매핑이 없으면 기본 허용
+            return true;
+        }
+
         public Main_Recipe()
         {
             InitializeComponent();
@@ -170,28 +218,27 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         {
             _pc = new PropertyCollection();
             _propMap = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+            _uiReadOnlyTitles.Clear();
 
-            if (r == null)
-            {
-                propertyCollectionView.SetProperties(_pc);
-                return;
-            }
+            if (r == null) { propertyCollectionView.SetProperties(_pc); return; }
 
             // Header: Recipe Name
             _pc.Add(new TitleOnlyProperty(r.Name ?? "Recipe"));
 
             // Group by Category attribute. If none, group by "General"
+            //var props = r.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            //              .Where(p => p.CanRead && p.CanWrite)
+            //              .ToList();
             var props = r.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                          .Where(p => p.CanRead && p.CanWrite)
-                          .ToList();
+                  .Where(p => p.CanRead) // set 없이도 표시는 가능
+                  .ToList();
 
             var groups = new SortedDictionary<string, List<PropertyInfo>>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in props)
             {
                 var cat = p.GetCustomAttributes(typeof(CategoryAttribute), true).FirstOrDefault() as CategoryAttribute;
                 var groupName = cat != null && !string.IsNullOrEmpty(cat.Category) ? cat.Category : "General";
-                List<PropertyInfo> list;
-                if (!groups.TryGetValue(groupName, out list))
+                if (!groups.TryGetValue(groupName, out var list))
                 {
                     list = new List<PropertyInfo>();
                     groups[groupName] = list;
@@ -204,23 +251,112 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 _pc.Add(new TitleOnlyProperty(kv.Key));
                 foreach (var p in kv.Value)
                 {
+                    if (!IsSupportedPropertyType(p.PropertyType)) continue;
+
                     var dn = p.GetCustomAttributes(typeof(DisplayNameAttribute), true).FirstOrDefault() as DisplayNameAttribute;
                     string title = dn != null && !string.IsNullOrEmpty(dn.DisplayName) ? dn.DisplayName : p.Name;
 
-                    // Skip unsupported property types (e.g., collections, complex objects)
-                    if (!IsSupportedPropertyType(p.PropertyType))
-                    {
-                        continue; // do not add to UI or prop map
-                    }
-
                     var val = p.GetValue(r, null);
+
+                    // 편집 가능 여부 판단:
+                    //  - ReadOnly 특성
+                    //  - setter 없음
+                    //  - 로그인 레벨 미충족
+                    var ro = p.GetCustomAttributes(typeof(ReadOnlyAttribute), true).FirstOrDefault() as ReadOnlyAttribute;
+                    bool readOnlyAttr = ro?.IsReadOnly == true;
+                    bool noSetter = !p.CanWrite;
+                    bool loginDenied = !IsEditableByLogin(title);
+
+                    bool isReadOnly = readOnlyAttr || noSetter || loginDenied;
+
                     _pc.Add(title, "", val);
-                    if (!_propMap.ContainsKey(title)) _propMap.Add(title, p);
+
+                    if (isReadOnly)
+                    {
+                        _uiReadOnlyTitles.Add(title);
+                        // 저장 대상에서 제외
+                    }
+                    else
+                    {
+                        if (!_propMap.ContainsKey(title))
+                            _propMap.Add(title, p);
+                    }
                 }
             }
 
             propertyCollectionView.GroupName = "Property";
             propertyCollectionView.SetProperties(_pc);
+
+            // [중요] UI 편집 컨트롤 비활성화 적용
+            ApplyUiReadOnly(_uiReadOnlyTitles);
+
+        }
+
+        private void ApplyUiReadOnly(IEnumerable<string> readOnlyTitles)
+        {
+            try
+            {
+                // PropertyCollectionView가 타이틀 단위로 편집여부를 제어하는 API를 제공한다고 가정
+                // 없을 경우 아래 확장 메서드를 컨트롤에 추가하세요.
+                propertyCollectionView.SetReadOnlyTitles(readOnlyTitles.ToArray());
+            }
+            catch
+            {
+                // Fallback: 편집 불가가 하나라도 있으면 Save만 막는 등 보수적 처리
+                // 이 영역은 필요 시 비워두세요.
+            }
+        }
+
+        private void ApplyPropertiesToRecipe()
+        {
+            if (_current == null || _pc == null || _propMap == null) return;
+
+            try
+            {
+                propertyCollectionView.Apply();
+
+                foreach (var prop in _pc)
+                {
+                    if (prop is TitleOnlyProperty) continue;
+                    
+                    // 읽기 전용/로그인 미허용 항목은 _propMap에 없음 → 자동 스킵
+                    if (!_propMap.TryGetValue(prop.Title, out var pi))
+                        continue;
+
+                    object v = prop.Value;
+                    try
+                    {
+                        if (v != null)
+                        {
+                            var targetType = pi.PropertyType;
+                            object converted = v;
+                            if (targetType.IsEnum)
+                                converted = Enum.Parse(targetType, v.ToString());
+                            else if (targetType != v.GetType())
+                                converted = Convert.ChangeType(v, targetType);
+
+                            pi.SetValue(_current, converted, null);
+                        }
+                        else
+                        {
+                            pi.SetValue(_current, null, null);
+                        }
+                    }
+                    catch { /* 변환/설정 실패는 무시 */ }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("속성 적용 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // [선택] 로그인 레벨 변경 시 호출해 UI 즉시 갱신
+        public void OnLoginLevelChanged()
+        {
+            var eq = Equipment.Instance;
+            _current = eq.EquipmentRecipe.GetRecipe();
+            BuildPropertyFromRecipe(_current);
         }
 
         private static bool IsSupportedPropertyType(Type type)
@@ -243,53 +379,95 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             return false;
         }
 
-        private void ApplyPropertiesToRecipe()
-        {
-            if (_current == null || _pc == null || _propMap == null) 
-                return;
+        //private void ApplyPropertiesToRecipe()
+        //{
+        //    if (_current == null || _pc == null || _propMap == null) return;
 
-            try
-            {
-                propertyCollectionView.Apply();
+        //    try
+        //    {
+        //        propertyCollectionView.Apply();
 
-                foreach (var prop in _pc)
-                {
-                    var titleOnly = prop as TitleOnlyProperty;
-                    if (titleOnly != null) continue;
+        //        foreach (var prop in _pc)
+        //        {
+        //            if (prop is TitleOnlyProperty) continue;
 
-                    PropertyInfo pi;
-                    if (!_propMap.TryGetValue(prop.Title, out pi)) continue;
+        //            if (!_propMap.TryGetValue(prop.Title, out var pi))
+        //                continue; // 잠금된 항목 혹은 표시 전용은 스킵
 
-                    object v = prop.Value;
-                    try
-                    {
-                        if (v != null)
-                        {
-                            var targetType = pi.PropertyType;
-                            object converted = v;
-                            if (targetType.IsEnum)
-                            {
-                                converted = Enum.Parse(targetType, v.ToString());
-                            }
-                            else if (targetType != v.GetType())
-                            {
-                                converted = Convert.ChangeType(v, targetType);
-                            }
-                            pi.SetValue(_current, converted, null);
-                        }
-                        else
-                        {
-                            pi.SetValue(_current, null, null);
-                        }
-                    }
-                    catch { }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("속성 적용 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //            object v = prop.Value;
+        //            try
+        //            {
+        //                if (v != null)
+        //                {
+        //                    var targetType = pi.PropertyType;
+        //                    object converted = v;
+        //                    if (targetType.IsEnum)
+        //                        converted = Enum.Parse(targetType, v.ToString());
+        //                    else if (targetType != v.GetType())
+        //                        converted = Convert.ChangeType(v, targetType);
+
+        //                    pi.SetValue(_current, converted, null);
+        //                }
+        //                else
+        //                {
+        //                    pi.SetValue(_current, null, null);
+        //                }
+        //            }
+        //            catch { /* 변환/설정 실패는 무시 */ }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("속성 적용 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
+        //private void ApplyPropertiesToRecipe()
+        //{
+        //    if (_current == null || _pc == null || _propMap == null) 
+        //        return;
+
+        //    try
+        //    {
+        //        propertyCollectionView.Apply();
+
+        //        foreach (var prop in _pc)
+        //        {
+        //            var titleOnly = prop as TitleOnlyProperty;
+        //            if (titleOnly != null) continue;
+
+        //            PropertyInfo pi;
+        //            if (!_propMap.TryGetValue(prop.Title, out pi)) continue;
+
+        //            object v = prop.Value;
+        //            try
+        //            {
+        //                if (v != null)
+        //                {
+        //                    var targetType = pi.PropertyType;
+        //                    object converted = v;
+        //                    if (targetType.IsEnum)
+        //                    {
+        //                        converted = Enum.Parse(targetType, v.ToString());
+        //                    }
+        //                    else if (targetType != v.GetType())
+        //                    {
+        //                        converted = Convert.ChangeType(v, targetType);
+        //                    }
+        //                    pi.SetValue(_current, converted, null);
+        //                }
+        //                else
+        //                {
+        //                    pi.SetValue(_current, null, null);
+        //                }
+        //            }
+        //            catch { }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("속성 적용 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
         // ===== Buttons =====
         private void btnNew_Click(object sender, EventArgs e)
@@ -318,12 +496,23 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            var name = recipeListView.SelectedItemName;
-            if (string.IsNullOrWhiteSpace(name)) 
+            var mb = new MessageBoxYesNo();
+            var drConfirm = mb.ShowDialog("Confirmation", "Recipe Open?");
+            if (drConfirm != DialogResult.Yes)
+            {
                 return;
+            }
+
+            var name = recipeListView.SelectedItemName;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                Log.Write("MainRecipe", "btnOpen_Click", "Fail.");
+                return;
+            }
+
             LoadRecipe(name);
-
-
+            var mb1 = new MessageBoxOk();
+            mb1.ShowDialog("Info!", $"Recipe Open Success.");
         }
 
         private void btnCopy_Click(object sender, EventArgs e)
@@ -385,11 +574,12 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
         private void SaveCurrent()
         {
+            var mb = new MessageBoxOk();
             try
             {
                 if (_current == null)
                 {
-                    MessageBox.Show("저장할 레시피가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    mb.ShowDialog("Information!", $"Recipe None.");
                     return;
                 }
                 ApplyPropertiesToRecipe();
@@ -397,25 +587,13 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 eq.EquipmentRecipe.SaveCurrentRecipe();
                 RefreshRecipeList();
                 SelectRecipeInList(_current.Name);
-                MessageBox.Show("저장 완료", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-
-                //ApplyPropertiesToRecipe();
-                //if (_current == null)
-                //{
-                //    MessageBox.Show("저장할 레시피가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                //    return;
-                //}
-
-                //RecipeManager.Save(_current);
-
-                //RefreshRecipeList();
-                //SelectRecipeInList(_current.Name);
-                //MessageBox.Show("저장 완료", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                mb.ShowDialog("Information!", $"Save Sucess.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("저장 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Log.Write(ex);
+                mb.ShowDialog("Error!", $"Save Fail.");
             }
         }
 

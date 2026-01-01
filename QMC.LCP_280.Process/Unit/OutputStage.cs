@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Equipment;
+using System.Diagnostics;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -184,6 +185,153 @@ namespace QMC.LCP_280.Process.Unit
 
 
         MaterialDie _currentDie = null;
+
+
+        // ================== Takt Time(Die Place Interval) ==================
+        private readonly object _placeTaktLock = new object();
+        private DateTime _lastDiePlacedAt = DateTime.MinValue;
+
+        /// <summary>
+        /// "Bin Wafer에 die를 내려놓은 시점" 기준으로 다음 die를 내려놓을 때까지의 간격을 측정합니다.
+        /// (즉, Place-to-Place takt)
+        /// </summary>
+        public CycleTimer DiePlaceTaktTimer { get; } = new CycleTimer();
+
+        public sealed class DiePlaceTaktEventArgs : EventArgs
+        {
+            public int DieIndex { get; }
+            public DateTime PreviousPlacedAt { get; }
+            public DateTime CurrentPlacedAt { get; }
+            public TimeSpan Interval { get; }
+
+            public DiePlaceTaktEventArgs(int dieIndex, DateTime previous, DateTime current)
+            {
+                DieIndex = dieIndex;
+                PreviousPlacedAt = previous;
+                CurrentPlacedAt = current;
+                Interval = current - previous;
+            }
+        }
+
+        /// <summary>
+        /// 직전 Place → 이번 Place 간격이 측정되어 CycleTimer에 누적된 직후 발생합니다.
+        /// </summary>
+        public event EventHandler<DiePlaceTaktEventArgs> DiePlaceTaktMeasured;
+
+        /// <summary>측정 데이터 초기화(런 시작/레시피 변경 시 호출 권장)</summary>
+        public void ResetDiePlaceTakt()
+        {
+            lock (_placeTaktLock)
+            {
+                _lastDiePlacedAt = DateTime.MinValue;
+                DiePlaceTaktTimer.Clear();
+                DiePlaceTaktTimer.TotalElapsed = TimeSpan.Zero;
+            }
+        }
+
+        private void RecordDiePlaceTakt(MaterialDie die)
+        {
+            // PlaceDie는 die/wafer null 체크를 상위에서 하고 있으나, 안전하게 방어
+            if (die == null)
+                return;
+
+            DateTime now = DateTime.Now;
+            DateTime prev;
+
+            lock (_placeTaktLock)
+            {
+                prev = _lastDiePlacedAt;
+
+                // 첫 Place는 기준점만 잡고 종료
+                if (prev == DateTime.MinValue)
+                {
+                    _lastDiePlacedAt = now;
+                    return;
+                }
+
+                // [FIX] 정확한 prev→now를 CycleTimer에 누적
+                DiePlaceTaktTimer.Add(prev, now);
+
+                _lastDiePlacedAt = now;
+            }
+
+            // 정확한 interval은 prev/now로 계산해서 내보냄
+            var args = new DiePlaceTaktEventArgs(die.Index, prev, now);
+
+            Log.Write(UnitName, "DiePlaceTakt",
+                $"DieIndex={args.DieIndex}, IntervalMs={args.Interval.TotalMilliseconds:F1}, Prev={args.PreviousPlacedAt:HH:mm:ss.fff}, Now={args.CurrentPlacedAt:HH:mm:ss.fff}");
+
+            // [ADD] CSV 저장
+            try 
+            { 
+                AppendDiePlaceTaktCsv(args); 
+            } 
+            catch (Exception ex) 
+            { Log.Write(UnitName, "DiePlaceTaktCsv", ex.Message); }
+
+            try { DiePlaceTaktMeasured?.Invoke(this, args); } catch { }
+        }
+
+        private readonly object _taktCsvLock = new object();
+
+        private string GetDiePlaceTaktCsvPath(DateTime now)
+        {
+            string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log", "TaktTime");
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            return Path.Combine(dir, $"OutputStage_DiePlaceTakt_{now:yyyyMMdd}.csv");
+        }
+
+        private void AppendDiePlaceTaktCsv(DiePlaceTaktEventArgs args)
+        {
+            if (args == null)
+                return;
+
+            // 시뮬/드라이런이면 필요 없으면 여기서 return 처리 가능
+            // if (Config.IsSimulation || Config.IsDryRun) return;
+
+            var now = DateTime.Now;
+            string path = GetDiePlaceTaktCsvPath(now);
+
+            // 통계 스냅샷
+            double avgMs = DiePlaceTaktTimer.Average.TotalMilliseconds;
+            double minMs = DiePlaceTaktTimer.Minimum.TotalMilliseconds;
+            double maxMs = DiePlaceTaktTimer.Maximum.TotalMilliseconds;
+            int count = DiePlaceTaktTimer.CycleTimes?.Count ?? 0;
+
+            lock (_taktCsvLock)
+            {
+                bool exists = File.Exists(path);
+                using (var w = new StreamWriter(path, true, Encoding.UTF8))
+                {
+                    if (!exists)
+                    {
+                        w.WriteLine("Time,DieIndex,PrevTime,NowTime,IntervalMs,AvgMs,MinMs,MaxMs,Count");
+                    }
+
+                    w.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "{0},{1},{2},{3},{4:F1},{5:F1},{6:F1},{7:F1},{8}",
+                        now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.DieIndex,
+                        args.PreviousPlacedAt.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.CurrentPlacedAt.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.Interval.TotalMilliseconds,
+                        avgMs, minMs, maxMs, count));
+                }
+            }
+        }
+
+
+
+        // [ADD] GetBinWorldPosition()에서 런타임 중심 인덱스가 흔들리지 않도록 스냅샷 캐싱
+        private readonly object _indexCenterLock = new object();
+        private bool _indexCenterInitialized;
+        private double _indexCenterXSnapshot;
+        private double _indexCenterYSnapshot;
+
+
+
         public OutputStage(OutputStageConfig config = null)
             : base(new OutputStageConfig())
         {
@@ -199,7 +347,8 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            if(Config.TCorrectionMode)
+            // 사용안한다고 Load를 안할필요는없지...
+            //if(Config.TCorrectionMode)
             {
                 LoadTCorrectionCsvAndApply(Config.TCorrectionFile);
             }
@@ -245,25 +394,7 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.BinStageY, ref _axY);
             BindAxis(mgr, unitName, AxisNames.BinStageT, ref _axT);
         }
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
 
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        //public bool InPosTeaching(TeachingPosition tp)
-        //{
-        //    if (tp == null)
-        //        return false;
-        //    return InPosTeaching(tp.Name);
-        //}
-        //public bool InPosTeaching(string name)
-        //{
-        //    var (t, pz, plz) = Config.GetPositionWithOffset(name);
-        //    return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
-        //}
         #endregion
 
         #region IO Domain Mapping (Reorganized)
@@ -1108,8 +1239,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -1521,6 +1650,9 @@ namespace QMC.LCP_280.Process.Unit
             // 6) UI & 이벤트
             UpdateUI();
             OnDiePlaced(die);
+
+            // [NEW] Place-to-Place takt 측정 (DiePlaced 이벤트 이후/이전은 취향인데, "실제 Place 처리 완료" 기준으로는 여기 권장)
+            RecordDiePlaceTakt(die);
         }
         #endregion
 
@@ -1640,10 +1772,10 @@ namespace QMC.LCP_280.Process.Unit
                     return false;
 
                 _currentDie = next;
-
+                double baseT = GetTeahcingPosCenterT();
                 double dx = 0;
                 double dy = 0;
-                double dt = 0;
+                double dt = baseT;
                 if (die != null)
                 {
                     dx = die.UnloadAlignOffsetX;
@@ -1658,6 +1790,17 @@ namespace QMC.LCP_280.Process.Unit
                 binY = next.BinY;
                 var (tx, ty) = GetBinWorldPosition(binX, binY);
 
+                Log.Write(UnitName, "TryReserveNextEmptyBin",
+                    $"Origin Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}");
+
+                if (Config.TCorrectionMode)
+                {
+                    if (this.linkTypeXYTStageCorrection == null)
+                    {
+                        LoadTCorrectionCsvAndApply(Config.TCorrectionFile);
+                    }
+                }
+
                 if (Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
                 {
                     XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
@@ -1670,12 +1813,10 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    double baseT = GetTeahcingPosCenterT();
                     binX = tx + dx;
                     binY = ty + dy;
                     dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
                 }
-
                 slot = next;
 
                 bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
@@ -1705,36 +1846,63 @@ namespace QMC.LCP_280.Process.Unit
             // 3) 중심 인덱스 계산
             double indexCenterX, indexCenterY;
 
-            var wafer = GetMaterialWafer();
-            if (wafer?.Dies != null && wafer.Dies.Count > 0)
+            lock (_indexCenterLock)
             {
-                lock (wafer.Dies)
+                if (!_indexCenterInitialized)
                 {
-                    // 현재 맵 데이터로부터 격자 범위를 구해 중심 인덱스 산출
-                    int minIdxX = (int)Math.Round(wafer.Dies.Min(d => d.BinX));
-                    int maxIdxX = (int)Math.Round(wafer.Dies.Max(d => d.BinX));
-                    int minIdxY = (int)Math.Round(wafer.Dies.Min(d => d.BinY));
-                    int maxIdxY = (int)Math.Round(wafer.Dies.Max(d => d.BinY));
+                    var wafer = GetMaterialWafer();
+                    if (wafer?.Dies != null && wafer.Dies.Count > 0)
+                    {
+                        lock (wafer.Dies)
+                        {
+                            // 맵 데이터로부터 격자 범위를 구해 중심 인덱스 산출
+                            // (주의) BinX/BinY가 "인덱스"라는 전제. 런 중 값이 바뀌면 스냅샷으로 고정해 흔들림 방지
+                            int minIdxX = (int)Math.Round(wafer.Dies.Min(d => d.BinX));
+                            int maxIdxX = (int)Math.Round(wafer.Dies.Max(d => d.BinX));
+                            int minIdxY = (int)Math.Round(wafer.Dies.Min(d => d.BinY));
+                            int maxIdxY = (int)Math.Round(wafer.Dies.Max(d => d.BinY));
 
-                    indexCenterX = (minIdxX + maxIdxX) / 2.0;
-                    indexCenterY = (minIdxY + maxIdxY) / 2.0;
+                            _indexCenterXSnapshot = (minIdxX + maxIdxX) / 2.0;
+                            _indexCenterYSnapshot = (minIdxY + maxIdxY) / 2.0;
+                            _indexCenterInitialized = true;
+
+                            Log.Write(UnitName, "GetBinWorldPosition",
+                                $"IndexCenter snapshot initialized: X={_indexCenterXSnapshot:F3}, Y={_indexCenterYSnapshot:F3}, " +
+                                $"MinMaxX=({minIdxX},{maxIdxX}), MinMaxY=({minIdxY},{maxIdxY})");
+
+                            //기존
+                            //indexCenterX = (minIdxX + maxIdxX) / 2.0;
+                            //indexCenterY = (minIdxY + maxIdxY) / 2.0;
+                        }
+                    }
+                    else
+                    {
+                        // 맵 데이터가 없으면 웨이퍼 지름 + 피치로 격자 개수를 추정
+                        double diameterMm = (recipe.WaferDiameter > 0) ? recipe.WaferDiameter : 0.0;
+                        double marginMm = 0.0; // 필요 시 설정으로 분리 가능
+                        double radiusMm = Math.Max(0.0, diameterMm / 2.0 - marginMm);
+
+                        int halfCellsX = (pitchX > 0) ? (int)Math.Floor(radiusMm / pitchX) : 0;
+                        int halfCellsY = (pitchY > 0) ? (int)Math.Floor(radiusMm / pitchY) : 0;
+
+                        int cntX = Math.Max(1, halfCellsX * 2 + 1);
+                        int cntY = Math.Max(1, halfCellsY * 2 + 1);
+
+                        _indexCenterXSnapshot = (cntX - 1) / 2.0;
+                        _indexCenterYSnapshot = (cntY - 1) / 2.0;
+                        _indexCenterInitialized = true;
+
+                        Log.Write(UnitName, "GetBinWorldPosition",
+                            $"IndexCenter snapshot initialized (fallback): X={_indexCenterXSnapshot:F3}, Y={_indexCenterYSnapshot:F3}, cntX={cntX}, cntY={cntY}");
+
+                        //기존
+                        //indexCenterX = (cntX - 1) / 2.0;
+                        //indexCenterY = (cntY - 1) / 2.0;
+                    }
                 }
-            }
-            else
-            {
-                // 맵 데이터가 없으면 웨이퍼 지름 + 피치로 격자 개수를 추정
-                double diameterMm = (recipe.WaferDiameter > 0) ? recipe.WaferDiameter : 0.0;
-                double marginMm = 0.0; // 필요 시 설정으로 분리 가능
-                double radiusMm = Math.Max(0.0, diameterMm / 2.0 - marginMm);
 
-                int halfCellsX = (pitchX > 0) ? (int)Math.Floor(radiusMm / pitchX) : 0;
-                int halfCellsY = (pitchY > 0) ? (int)Math.Floor(radiusMm / pitchY) : 0;
-
-                int cntX = Math.Max(1, halfCellsX * 2 + 1);
-                int cntY = Math.Max(1, halfCellsY * 2 + 1);
-
-                indexCenterX = (cntX - 1) / 2.0;
-                indexCenterY = (cntY - 1) / 2.0;
+                indexCenterX = _indexCenterXSnapshot;
+                indexCenterY = _indexCenterYSnapshot;
             }
 
             // 4) 인덱스 오프셋 → 월드(mm) 오프셋
@@ -1954,6 +2122,17 @@ namespace QMC.LCP_280.Process.Unit
         public void ResetForNewRun(bool moveToSafeReady = true, bool clearWafer = true, bool clearOffsets = true)
         {
             int nRet = 0;
+
+            ResetDiePlaceTakt();
+
+            // [ADD] Bin center index snapshot reset
+            lock (_indexCenterLock)
+            {
+                _indexCenterInitialized = false;
+                _indexCenterXSnapshot = 0.0;
+                _indexCenterYSnapshot = 0.0;
+            }
+
             // 1) 런타임/시퀀스 플래그 초기화
             _currentDie = null;
             // 2) 비전 리소스 정리(선택)
@@ -2122,6 +2301,14 @@ namespace QMC.LCP_280.Process.Unit
                         // Index는 보존하되, 정렬(순회)은 별도 루틴에서 수행
                         // 리스트는 Index 오름차순으로 정렬하여 보관(선택)
                         dst.Dies = list.OrderBy(d => d.Index).ToList();
+
+                        // [ADD] 맵을 새로 클론하면 중심 인덱스 스냅샷을 다시 계산하도록 리셋
+                        lock (_indexCenterLock)
+                        {
+                            _indexCenterInitialized = false;
+                            _indexCenterXSnapshot = 0.0;
+                            _indexCenterYSnapshot = 0.0;
+                        }
 
                         UpdateUI();
                         Log.Write(UnitName, "CloneDieMapFromInputStage",
@@ -2890,21 +3077,23 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-
         private void CalcTCorrection()
         {
-            //_recodes ->TCorrectionResults
+            // _recodes ->TCorrectionResults
             linkTypeXYTStageCorrection = new LinkTypeXYTStageCorrection();
             var v = TCorrectionResults.OrderBy(t => t.StageT).ThenBy(t => t.MarkIndex);
 
+            const double thetaMatchTol = 1e-6; // [ADD] theta grouping tolerance
+
             foreach (var rec in v)
             {
-                var buffer = linkTypeXYTStageCorrection.CorrectionPoints.
-                    Where(p => p.CommandTheta == rec.StageT);
-                XyCoordinate xyCoordinate = new XyCoordinate() 
+                var buffer = linkTypeXYTStageCorrection.CorrectionPoints
+                    .Where(p => Math.Abs(p.CommandTheta - rec.StageT) <= thetaMatchTol);
+
+                XyCoordinate xyCoordinate = new XyCoordinate()
                 { X = rec.StageX + rec.FoundOffsetX, Y = rec.StageY + rec.FoundOffsetY };
-                
-                if (buffer.Count() == 0)
+
+                if (buffer.Any() == false)
                 {
                     var point = new List<XyCoordinate>();
                     point.Add(xyCoordinate);
@@ -2924,14 +3113,57 @@ namespace QMC.LCP_280.Process.Unit
                     else
                     {
                         point.Add(xyCoordinate);
-
                     }
-
                 }
             }
+
             linkTypeXYTStageCorrection.SetZeroCommandTheta(0.3);
             this.linkTypeXYTStageCorrection = linkTypeXYTStageCorrection;
         }
+        //private void CalcTCorrection()
+        //{
+        //    //_recodes ->TCorrectionResults
+        //    linkTypeXYTStageCorrection = new LinkTypeXYTStageCorrection();
+        //    var v = TCorrectionResults.OrderBy(t => t.StageT).ThenBy(t => t.MarkIndex);
+
+        //    const double thetaMatchTol = 1e-6; // [ADD] theta grouping tolerance
+
+        //    foreach (var rec in v)
+        //    {
+        //        var buffer = linkTypeXYTStageCorrection.CorrectionPoints.
+        //            Where(p => p.CommandTheta == rec.StageT);
+
+        //        XyCoordinate xyCoordinate = new XyCoordinate() 
+        //        { X = rec.StageX + rec.FoundOffsetX, Y = rec.StageY + rec.FoundOffsetY };
+
+        //        if (buffer.Count() == 0)
+        //        {
+        //            var point = new List<XyCoordinate>();
+        //            point.Add(xyCoordinate);
+        //            for (int iter = 0; iter < 3; iter++)
+        //            {
+        //                point.Add(new XyCoordinate() { X = 0, Y = 0 });
+        //            }
+        //            linkTypeXYTStageCorrection.AddCorrectionPoint(point, rec.StageT);
+        //        }
+        //        else
+        //        {
+        //            var point = buffer.First().PointDs;
+        //            if (rec.MarkIndex <= point.Count)
+        //            {
+        //                point[rec.MarkIndex - 1] = xyCoordinate;
+        //            }
+        //            else
+        //            {
+        //                point.Add(xyCoordinate);
+
+        //            }
+
+        //        }
+        //    }
+        //    linkTypeXYTStageCorrection.SetZeroCommandTheta(0.3);
+        //    this.linkTypeXYTStageCorrection = linkTypeXYTStageCorrection;
+        //}
 
         /// <summary>
         /// 지정 경로를 강제로 사용하여 로드하고 보정 링크를 구성합니다.
@@ -2968,6 +3200,95 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "LoadTCorrectionCsvAndApply",
                 $"성공: {path}, Marks={marks?.Count ?? 0}, Range={rangeDeg:F3}, Step={stepDeg:F3}, Rows={recs.Count}");
             return 0;
+        }
+
+       
+        private readonly object _reserveLock = new object();
+        public int ForceCompleteAndAllowUnload(string reason = null)
+        {
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null || wafer.Dies == null)
+                    return 0;
+
+                lock (_reserveLock)
+                {
+                    lock (wafer.Dies)
+                    {
+                        foreach (var d in wafer.Dies)
+                        {
+                            if (d == null) 
+                                continue;
+
+                            // 아직 정리되지 않은 항목은 전부 Rejected로 마킹
+                            if (d.State != DieProcessState.Placed && d.State != DieProcessState.Rejected)
+                            {
+                                d.State = DieProcessState.Rejected;
+
+                                // 여기 Presence는 프로젝트 내 의미가 섞여있는데,
+                                // 현재 코드 흐름(HasNextDie/TryReserveNextEmptyBin)이 Presence를 무시하므로
+                                // 기존 MarkCurrentReservedMissing과 동일하게 Exist로 맞춥니다.
+                                d.Presence = Material.MaterialPresence.Exist;
+                            }
+                        }
+
+
+                        //여기서 Completed 할 필요가 없지.
+                        // Completed 조건은.. Feeder에서 확인하면 되니깐.
+                        //wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                    }
+                }
+
+                UpdateUI();
+                Log.Write(UnitName, "ForceCompleteAndAllowUnload",
+                    $"Forced Completed. reason={reason ?? "null"}");
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ForceCompleteAndAllowUnload", ex.Message);
+                return -1;
+            }
+        }
+
+        private bool IsExternalDieBufferEmpty()
+        {
+            try
+            {
+                // Rotary(언로드 스테이션에 서 있는 소켓) 쪽 die 존재 여부
+                // 여기 조건 다시 생각해야함.
+                //var rotaryDie = RotaryUnit?.GetUnloadSocketMaterial();
+
+                // OutputDieTransfer가 현재 들고있는 die 존재 여부
+                var odtDie = OutputDieTransfer?.GetMaterial() as MaterialDie;
+
+                //return (rotaryDie == null) && (odtDie == null);
+                return (odtDie == null);
+            }
+            catch
+            {
+                // 안전하게: 판단 불가면 강제완료하지 않음
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// "입력 웨이퍼 종료" 같은 외부 종료 조건에서,
+        /// Rotary(언로드 소켓) + OutputDieTransfer 모두 die가 비어있을 때만
+        /// OutputStage 웨이퍼를 강제 Completed 처리하여 언로딩이 진행되도록 합니다.
+        /// </summary>
+        public int ForceCompleteAndAllowUnloadWhenBuffersEmpty(string reason = null)
+        {
+            if (!IsExternalDieBufferEmpty())
+            {
+                Log.Write(UnitName, "ForceCompleteAndAllowUnloadWhenBuffersEmpty",
+                    "Skipped: Rotary unload socket or OutputDieTransfer still has die.");
+                return 1; // 스킵(조건 미충족)
+            }
+
+            return ForceCompleteAndAllowUnload(reason);
         }
     }
 }

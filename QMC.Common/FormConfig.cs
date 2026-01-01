@@ -15,7 +15,7 @@ namespace QMC.Common
         private int _tabHeight = 32; // ★ 높이 확대 (기존 28)
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
-        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Regular); // ★ 폰트 약간 확대
+        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Bold); // ★ 폰트 약간 확대
 
         // 2줄 고정 설정
         private const int _desiredTabRows = 2; // ★ 추가
@@ -130,41 +130,111 @@ namespace QMC.Common
             try
             {
                 var configForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Config);
-
+                // Tab에 표시할 텍스트(원하는 이름)
+                // 1) 원하는 "탭 표시명" + "정렬 순서" (FormMenual 방식)
                 var desiredOrder = new[]
                 {
-                    "InputCassetteLifter","InputFeeder","InputStage","InputStageEjector",
-                    "InputDieTransfer","Rotary","IndexLoadAligner","IndexChipProbeController",
-                    "IndexChipProber","IndexUnloadAligner","OutputDieTransfer","OutputStage",
-                    "OutputCassetteLifter","OutputFeeder"
+                    "Wafer_Cassette",
+                    "Wafer_Feeder",
+                    "Wafer_Stage",
+                    "Wafer_Niddle",
+                    "Wafer_Arm",
+                    "Index",
+                    "Index_LoadAlign",
+                    "Index_ProbeCont.",
+                    "Index_Prober",
+                    "Index_UnloadAlign",
+                    "Bin_Arm",
+                    "Bin_Stage",
+                    "Bin_Feeder",
+                    "Bin_Cassette",
                 };
-                var indexMap = desiredOrder
-                    .Select((name, idx) => new { name, idx })
-                    .ToDictionary(x => x.name, x => x.idx);
 
-                configForms = configForms
-                    .OrderBy(f => indexMap.ContainsKey(f.DisplayName) ? indexMap[f.DisplayName] : int.MaxValue)
-                    .ThenBy(f => f.DisplayName)
-                    .ToList();
+                // ★ 여기: 실제 FormInfo.DisplayName 값(주석에 있는 기존 이름) -> 탭 표시 텍스트(원하는 이름) 매핑
+                var displayNameToTabText = new Dictionary<string, string>
+                {
+                    { "InputCassetteLifter", "Wafer_Cassette" },
+                    { "InputFeeder", "Wafer_Feeder" },
+                    { "InputStage", "Wafer_Stage" },
+                    { "InputStageEjector", "Wafer_Niddle" },
+                    { "InputDieTransfer", "Wafer_Arm" },
+                    { "Rotary", "Index" },
+                    { "IndexLoadAligner", "Index_LoadAlign" },
+                    { "IndexChipProbeController", "Index_ProbeCont." },
+                    { "IndexChipProber", "Index_Prober" },
+                    { "IndexUnloadAligner", "Index_UnloadAlign" },
+                    { "OutputDieTransfer", "Bin_Arm" },
+                    { "OutputStage", "Bin_Stage" },
+                    { "OutputFeeder", "Bin_Feeder" },
+                    { "OutputCassetteLifter", "Bin_Cassette" },
+                };
 
-                foreach (var formInfo in configForms)
-                    CreateTabFromFormInfo(formInfo);
+                // 정규화 함수 (FormMenual과 동일 컨셉)
+                string Normalize(string s) => (s ?? string.Empty).Trim();
 
-                if (configForms.Count == 0)
+                // DisplayName(원본) -> 탭 표시명으로 변환
+                string ResolveTabText(FormInfo fi)
+                {
+                    if (fi == null) return string.Empty;
+
+                    string mapped;
+                    if (displayNameToTabText.TryGetValue(Normalize(fi.DisplayName), out mapped))
+                        return Normalize(mapped);
+
+                    return Normalize(fi.DisplayName);
+                }
+
+                // 3) desiredOrder 기반 lookup 구성(탭 표시명 기준)
+                var lookup = configForms
+                    .GroupBy(f => ResolveTabText(f), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+                var ordered = new List<FormInfo>();
+                var used = new HashSet<FormInfo>();
+
+                // 4) 원하는 순서대로 추가
+                foreach (var rawName in desiredOrder)
+                {
+                    var key = Normalize(rawName);
+                    List<FormInfo> list;
+                    if (lookup.TryGetValue(key, out list) && list.Count > 0)
+                    {
+                        foreach (var fi in list)
+                        {
+                            if (used.Add(fi))
+                                ordered.Add(fi);
+                        }
+                    }
+                }
+
+                // 5) desiredOrder에 없는 나머지 추가(등록 순서 유지)
+                foreach (var fi in configForms)
+                {
+                    if (used.Add(fi))
+                        ordered.Add(fi);
+                }
+
+                // 6) 탭 생성 (탭 텍스트는 ResolveTabText 결과로)
+                foreach (var fi in ordered)
+                {
+                    var tabText = ResolveTabText(fi);
+                    CreateTabFromFormInfo(fi, tabText);
+                }
+
+                if (ordered.Count == 0)
                     CreateSampleTabs();
             }
             catch (Exception ex)
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", $"config 폼 로드 중 오류 발생: {ex.Message}");
-
                 CreateSampleTabs();
             }
         }
 
-        private void CreateTabFromFormInfo(FormInfo formInfo)
+        private void CreateTabFromFormInfo(FormInfo formInfo, string tabText)
         {
-            var tabPage = new TabPage(formInfo.DisplayName)
+            var tabPage = new TabPage(tabText)
             {
                 Tag = formInfo,
                 BackColor = Color.White

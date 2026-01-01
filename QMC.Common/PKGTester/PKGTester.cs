@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using NPOI.OpenXmlFormats.Dml;
 using QMC.Common.Component;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QMC.Common.PKGTester
 {
@@ -413,21 +415,17 @@ namespace QMC.Common.PKGTester
         private async Task<int> DoMeasure(int rotaryIndex)
         {
             stopWatch.Restart();
-
             TaskCompletionSource<bool> tcs = null;
             CASSpectrometer.DeviceEventHandler handler = null;
             Task<int> spcTask = null;
             Task<int> smuTask = null;
+            Task<int> smuTotal = null;
 
             try
             {
                 ResetResultItem();
                 if (!CanMeasure())
                 {
-                    //Test
-                    //if (!BinningDataProcess())
-                    //    throw new Exception("Failed to binning data.");
-
                     Log.Write("PKGTester", "Cannot perform measurement. Check the condition set and instrument status.");
                     throw new InvalidOperationException("Cannot perform measurement.");
                 }
@@ -436,14 +434,25 @@ namespace QMC.Common.PKGTester
                 handler = (s) => { tcs.TrySetResult(true); };
                 spectrometer.OnMeasureCommandSended += handler;
 
-                try 
-                { 
-                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
-                        Thread.CurrentThread.Name = "DoSpectrometerMeasure"; 
-                } catch 
+                try
+                {
+                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                        Thread.CurrentThread.Name = "DoSourcemeterMeasure";
+                }
+                catch
+                { }
+                smuTask = Task.Run(() => DoSourcemeterMeasure());
+
+                Thread.Sleep(10);
+
+                try
+                {
+                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                        Thread.CurrentThread.Name = "DoSpectrometerMeasure";
+                }
+                catch
                 { }
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
-
                 var timeoutTask = Task.Delay(2000);
                 if (HasTaskSpectrometer())
                 {
@@ -451,35 +460,63 @@ namespace QMC.Common.PKGTester
                     if (completed == timeoutTask)
                     {
                         Log.Write("PKGTester", "Spectrometer send measurement command timed out.");
-                        throw new TimeoutException("Spectrometer command timeout.");
+                        return -1;
                     }
                     Thread.Sleep(10);
                 }
 
-                try 
-                { 
-                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
-                        Thread.CurrentThread.Name = "DoSourcemeterMeasure"; 
-                } 
-                catch 
-                { }
-                 smuTask = Task.Run(() => DoSourcemeterMeasure());
+                
 
+                //여기 오면 측정은 완료.
                 int[] codes = await Task.WhenAll(spcTask, smuTask);
                 if (codes.Any(r => r != 0))
-                    throw new Exception("Instrument measure incomplete.");
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Measurement failed in one of the instruments.");
+                    return -1;
+                }
+
+                stopWatch.Stop();
+                measureTime = stopWatch.Elapsed;
+
+                // 순차로 진행. // Script 해보고 안되면 이거다...
+                //try
+                //{
+                //    if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                //        Thread.CurrentThread.Name = "DoMeasureTotal";
+                //}
+                //catch
+                //{ }
+                //smuTotal = Task.Run(() => DoMeasureTotal());
+                //int[] codes = await Task.WhenAll(smuTotal);
+                //if (codes.Any(r => r != 0))
+                //{
+                //    Log.Write("PKGTester", "DoMeasure", "Measurement failed in one of the instruments.");
+                //    throw new Exception("Instrument measure incomplete.");
+                //}
 
                 if (!GetResultProcess())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to process measurement results.");
                     throw new Exception("Failed to process data.");
+                }
 
                 if (!CalibrateDataProcess(rotaryIndex))
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to calibrate measurement data.");
                     throw new Exception("Failed to calibrate data.");
+                }
 
                 if (!CalulateUserDefineItem())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to calculate user defined items.");
                     throw new Exception("Failed to calculate user define item.");
+                }
 
                 if (!BinningDataProcess())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to binning measurement data.");
                     throw new Exception("Failed to binning data.");
+                }
 
                 return 0;
             }
@@ -487,7 +524,7 @@ namespace QMC.Common.PKGTester
             {
                 //TEST로 막아둠.
                 ResetResultItem();
-                Log.Write(this, ex.Message);
+                Log.Write("PKGTester", ex.Message);
                 return -1;
             }
             finally
@@ -495,6 +532,7 @@ namespace QMC.Common.PKGTester
                 spectrometer.OnMeasureCommandSended -= handler;
                 spcTask?.Dispose();
                 smuTask?.Dispose();
+                smuTotal?.Dispose();
                 stopWatch.Stop();
                 measureTime = stopWatch.Elapsed;
             }
@@ -522,6 +560,134 @@ namespace QMC.Common.PKGTester
         {
             if (!HasTaskSpectrometer()) return 0;
             return await Task.Run(() => spectrometer.Measure());
+        }
+
+        private async Task<int> DoMeasureTotal()
+        {
+            if (!HasTaskSourcemeter()) return 0;
+            if (!HasTaskSpectrometer()) return 0;
+
+            return await Task.Run(() => DoMeasureTotalAsync());
+        }
+
+
+        private System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch(); // Timeout check
+        public int DoMeasureTotalAsync()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = sourcemeter.Channels["smua"];
+                channel.ClearMeasureData();
+                if (Config.IsSimulation)
+                {
+                    channel.SimulateBufferData();
+                    // 시뮬레이션 시 분광기도 최소 호출 (예외 무시)
+                    try { spectrometer.Measure(); } catch { }
+                    return 0;
+                }
+
+                // 1) 컨택저항
+                if (channel.HasContactRCommand())
+                {
+                    if (!channel.RunContactRCommand())
+                    {
+                        Log.Write("PKGTester", "DoMeasureTotalAsync", "Contact resistance measurement failed.");
+                        return -1;
+                    }
+                }
+
+                // measure
+                if (!channel.RunCommands())
+                {
+                    Log.Write("PKGTester", "DoMeasureTotalAsync", "RunCommands failed");
+                    return -1;
+                }
+
+
+                // 2.1) VF 안정화 대기 (설정 기반, 비차단)
+                // 예: ConditionSet 또는 Spectrometer Config에서 가져오도록 변경 가능
+                int vfStabilizeMs = 3000; // TODO: 설정으로 치환
+                WaitByTime(vfStabilizeMs, pollMs: 2);
+                // 또는 await Task.Delay(vfStabilizeMs);
+
+
+                //TackTime 문제 발생. - 장비 시작전에 셋팅.
+                // 3) CAS 파라미터 적용 + 다크 커런트(필요 시)
+                // 분광기 설정 정책에 따라 하나를 선택
+                //int rcParam = spectrometer.ApplyParameter();
+                //if (rcParam != 0)
+                //{
+                //    Log.Write("PKGTester", "DoMeasureTotalAsync", "ApplyParameter failed rc=" + rcParam);
+                //    return -1;
+                //}
+                // 필요 시: -> 웨이퍼 교체 시 한 번씩 하자.
+                // int rcDark = spectrometer.MeasureDarkCurrent();
+                // if (rcDark != 0)
+                // {
+                // Log.Write("PKGTester", "DoMeasureTotalAsync", "MeasureDarkCurrent failed rc=" + rcDark);
+                // return -1;
+                // }
+
+                // 3) CAS 측정 (이 시점에는 VF 안정됨)
+                int casCode = spectrometer.Measure();
+                if (casCode != 0)
+                {
+                    Log.Write("PKGTester", "DoMeasureTotalAsync", "Spectrometer.Measure failed rc=" + casCode);
+                    return -1;
+                }
+
+                // 5) SMU 완료 대기 + 타임아웃
+                stopwatch.Restart();
+                while (!channel.WaitComplete())
+                {
+                    if (stopwatch.ElapsedMilliseconds > sourcemeter.Config.MeasureTimeout)
+                    {
+                        Log.Write("PKGTester", "DoMeasureTotalAsync", "Timeout waiting SMU channel complete");
+                        return -1;
+                    }
+                    Thread.Sleep(10);
+                }
+
+                if (!channel.ReadBufferData())
+                {
+                    Log.Write("PKGTester", "DoMeasureTotalAsync", "ReadBufferData failed");
+                    return -1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                //OnMeasureFailed?.Invoke(this, ex.Message);
+                return -1;
+            }
+            finally
+            {
+                stopwatch.Stop();
+            }
+            return 0;
+        }
+
+        private void WaitByTime(int vfStabilizeMs = 10, int pollMs = 2)
+        {
+            // 입력 방어
+            if (vfStabilizeMs <= 0)
+                return;
+            if (pollMs < 1)
+                pollMs = 1;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                // 지정 시간까지 간단한 폴링 대기
+                while (sw.ElapsedMilliseconds < vfStabilizeMs)
+                {
+                    Thread.Sleep(pollMs);
+                }
+            }
+            finally
+            {
+                sw.Stop();
+            }
         }
 
         private bool GetResultProcess()
@@ -559,10 +725,18 @@ namespace QMC.Common.PKGTester
                     {
                         var itemResult = result.Items[item.Name];
                         double value = itemResult.RawData;
+
+                        // 1) Total Gain/Offset 먼저 적용
+                        if (item.UseTotalGain)
+                            value *= item.TotalGain;
+                        if (item.UseTotalOffset)
+                            value += item.TotalOffset;
+
                         if (item.UseGain[rotaryIndex])
                             value *= item.Gain[rotaryIndex];
                         if (item.UseOffset[rotaryIndex])
                             value += item.Offset[rotaryIndex];
+
                         itemResult.Value = value;
                     }
                 }
@@ -627,8 +801,6 @@ namespace QMC.Common.PKGTester
         {
             try
             {
-                //TEST - 장비에서는 꼭 막자...
-                //binningClassifier.IsSimulation = true;
                 binningClassifier.IsSimulation = false;
 
                 var binningResult = binningClassifier.Classify(result.Items);

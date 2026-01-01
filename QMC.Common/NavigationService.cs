@@ -45,8 +45,8 @@ namespace QMC.Common
                     return new FormAdapterControl(new FormMain()) { Dock = DockStyle.Fill };
                 case MenuButtonType.Config:
                     return new FormAdapterControl(new FormConfig()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Working:
-                    return new FormAdapterControl(new FormWorking()) { Dock = DockStyle.Fill };
+                case MenuButtonType.Menual:
+                    return new FormAdapterControl(new FormMenual()) { Dock = DockStyle.Fill };
                 case MenuButtonType.Recipe:
                     return new FormAdapterControl(new FormRecipe()) { Dock = DockStyle.Fill };
                 case MenuButtonType.Setup:
@@ -80,7 +80,7 @@ namespace QMC.Common
             {
                 case MenuButtonType.Main: return FormManagerMain.Instance.CreateMainForm();
                 case MenuButtonType.Config: return FormManagerConfig.Instance.CreateConfigForm();
-                case MenuButtonType.Working: return FormManagerWorking.Instance.CreateWorkingForm();
+                case MenuButtonType.Menual: return FormManagerMenual.Instance.CreateMenaulForm();
                 case MenuButtonType.Recipe: return FormManagerRecipe.Instance.CreateRecipeForm();
                 case MenuButtonType.Setup: return FormManagerSetup.Instance.CreateSetupForm();
                 case MenuButtonType.Log: return FormManagerLog.Instance.CreateLogForm();

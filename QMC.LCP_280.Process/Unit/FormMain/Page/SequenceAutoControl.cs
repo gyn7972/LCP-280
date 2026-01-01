@@ -10,7 +10,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     public partial class SequenceAutoControl : UserControl
     {
         #region Auto Sequence Events
-
         /// <summary>
         /// Auto Sequence 버튼 클릭 이벤트 인자
         /// </summary>
@@ -27,7 +26,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             public string Command { get; set; }
             public bool IsActive { get; set; }
         }
-
         #endregion
 
         #region Events
@@ -51,6 +49,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _lastStartSwState = false;
         private bool _lastStopSwState = false;
         private bool _lastResetSwState = false;
+
+        private string _command = string.Empty;
+        private bool _isAction = false;
+
+        private bool _uiStateDrivenByForm = false;
+        private int _lastFormStateTick = 0;
+        private const int FormStateTimeoutMs = 1000;
 
         #endregion
 
@@ -200,27 +205,69 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         /// <summary>
         /// 램프 상태 업데이트
         /// </summary>
+        /// 20251222 - 수정 필요. 장비 실제 상태도 같이 보고 적용해야함.
         private void UpdateLampStates(EquipmentStatusSnapshot snapshot)
         {
-            if (snapshot?.Outputs == null) return;
+            if (snapshot?.Outputs == null) 
+                return;
+
+            // Form 갱신이 한동안 없으면 I/O 표시로 복귀
+            if (_uiStateDrivenByForm)
+            {
+                int now = Environment.TickCount;
+                if (unchecked(now - _lastFormStateTick) <= FormStateTimeoutMs)
+                    return;
+
+                _uiStateDrivenByForm = false;
+            }
+
+            snapshot.Outputs.TryGetValue("START_LAMP", out bool startLamp);
+            snapshot.Outputs.TryGetValue("STOP_LAMP", out bool stopLamp);
+            snapshot.Outputs.TryGetValue("RESET_LAMP", out bool resetLamp);
+
+            if (startLamp)
+            {
+                btn_Auto_Start.BackColor = _activeColor;
+                btn_Auto_Stop.BackColor = _defaultColor;
+                btn_Auto_Reset.BackColor = _defaultColor;
+            }
+            else if (stopLamp)
+            {
+                btn_Auto_Start.BackColor = _defaultColor;
+                btn_Auto_Stop.BackColor = _activeColor;
+                btn_Auto_Reset.BackColor = _defaultColor;
+            }
+            else if (resetLamp)
+            {
+                btn_Auto_Start.BackColor = _defaultColor;
+                btn_Auto_Stop.BackColor = _defaultColor;
+                btn_Auto_Reset.BackColor = _activeColor;
+            }
+            else
+            {
+                btn_Auto_Start.BackColor = _defaultColor;
+                btn_Auto_Stop.BackColor = _defaultColor;
+                btn_Auto_Reset.BackColor = _defaultColor;
+            }
+
 
             // START_LAMP (Y000) 상태
-            if (snapshot.Outputs.TryGetValue("START_LAMP", out bool startLamp))
-            {
-                btn_Auto_Start.BackColor = startLamp ? _activeColor : _defaultColor;
-            }
+            //if (snapshot.Outputs.TryGetValue("START_LAMP", out bool startLamp))
+            //{
+            //    btn_Auto_Start.BackColor = startLamp ? _activeColor : _defaultColor;
+            //}
 
-            // STOP_LAMP (Y001) 상태
-            if (snapshot.Outputs.TryGetValue("STOP_LAMP", out bool stopLamp))
-            {
-                btn_Auto_Stop.BackColor = stopLamp ? _activeColor : _defaultColor;
-            }
+            //// STOP_LAMP (Y001) 상태
+            //if (snapshot.Outputs.TryGetValue("STOP_LAMP", out bool stopLamp))
+            //{
+            //    btn_Auto_Stop.BackColor = stopLamp ? _activeColor : _defaultColor;
+            //}
 
-            // RESET_LAMP (Y002) 상태
-            if (snapshot.Outputs.TryGetValue("RESET_LAMP", out bool resetLamp))
-            {
-                btn_Auto_Reset.BackColor = resetLamp ? _activeColor : _defaultColor;
-            }
+            //// RESET_LAMP (Y002) 상태
+            //if (snapshot.Outputs.TryGetValue("RESET_LAMP", out bool resetLamp))
+            //{
+            //    btn_Auto_Reset.BackColor = resetLamp ? _activeColor : _defaultColor;
+            //}
         }
 
         /// <summary>
@@ -304,11 +351,22 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 return;
             }
 
+            // Form에서 한번이라도 상태를 내려주기 시작하면, 이후 UI는 Form 상태를 우선으로 함
+            _uiStateDrivenByForm = true;
+            _lastFormStateTick = Environment.TickCount;
+
+            _command = e.Command;
+            _isAction = e.IsActive;
+
+            if (e.IsActive)
+            {
+                foreach (var btn in _buttonCommands.Keys)
+                    btn.BackColor = _defaultColor;
+            }
+
             var button = _buttonCommands.FirstOrDefault(x => x.Value == e.Command).Key;
             if (button != null)
-            {
                 button.BackColor = e.IsActive ? _activeColor : _defaultColor;
-            }
         }
 
         /// <summary>

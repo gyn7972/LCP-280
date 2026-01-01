@@ -39,8 +39,11 @@ namespace QMC.Common.Motions
         // ===== 등록/해제 =====
         public void Register(string unitName, MotionAxis axis)
         {
-            if (axis == null) throw new ArgumentNullException(nameof(axis));
-            if (string.IsNullOrEmpty(unitName)) throw new ArgumentNullException(nameof(unitName));
+            if (axis == null) 
+                throw new ArgumentNullException(nameof(axis));
+
+            if (string.IsNullOrEmpty(unitName)) 
+                throw new ArgumentNullException(nameof(unitName));
 
             var key = MakeKey(unitName, axis.Name);
 

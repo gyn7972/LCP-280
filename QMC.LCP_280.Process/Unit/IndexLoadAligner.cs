@@ -214,7 +214,7 @@ namespace QMC.LCP_280.Process.Unit
             _isSafetyMoving = true;
             try
             {
-                return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.SafetyZone, isFine);
+                return MoveTeachingPositionOnce((int)IndexLoadAlignerRecipe.TeachingPositionName.SafetyZone, isFine);
             }
             finally
             {
@@ -522,7 +522,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionAlignTForward(bool isFine = false)
         {
             int nRet = 0;
-            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward, isFine);
+            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Foward, isFine);
             if(nRet != 0)
             {
                 return -1;
@@ -598,7 +598,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionAlignTBackward(bool isFine = false)
         {
             int nRet = 0;
-            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward, isFine);
+            nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Backward, isFine);
             if (nRet != 0)
             {
                 return -1;
@@ -653,7 +653,7 @@ namespace QMC.LCP_280.Process.Unit
         // === AlignT_Ready ===
         public int MovePositionAlignTReady(bool isFine = false)
         {
-            string readyName = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready.ToString();
+            string readyName = IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Ready.ToString();
             if (InPosTeaching(readyName))
             {
                 return 0;
@@ -681,7 +681,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionAlignTReady(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready, isFine);
+            return MoveTeachingPositionOnce((int)IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Ready, isFine);
         }
         private int IsMoveInterLockAlignTReady()
         {
@@ -723,19 +723,19 @@ namespace QMC.LCP_280.Process.Unit
         // AlignT 위치 확인
         public bool IsAlignTReady()
         {
-            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready.ToString();
+            var name = IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Ready.ToString();
             return InPosTeaching(name);
         }
 
         public bool IsAlignTForward()
         {
-            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward.ToString();
+            var name = IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Foward.ToString();
             return InPosTeaching(name);
         }
 
         public bool IsAlignTBackward()
         {
-            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward.ToString();
+            var name = IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Backward.ToString();
             return InPosTeaching(name);
         }
 
@@ -802,7 +802,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsPositionAlignZSafety()
         {
-            const string tpName = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+            const string tpName = nameof(IndexLoadAlignerRecipe.TeachingPositionName.SafetyZone);
             if (AxisIndexZ == null)
                 return true;
 
@@ -914,8 +914,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -1366,6 +1364,7 @@ namespace QMC.LCP_280.Process.Unit
             finally
             {
                 IsStatus_AlignDoneXY = true;
+                IndexAlignerCam.SuspendedImageDisplay = false;
             }
             return nRet;
         }

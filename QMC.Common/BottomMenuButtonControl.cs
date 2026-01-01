@@ -14,7 +14,7 @@ namespace QMC.Common
     public enum MenuButtonType
     {
         Main,
-        Working,
+        Menual,    //Working,
         Recipe,
         Config,
         Setup,
@@ -83,7 +83,7 @@ namespace QMC.Common
             rightPanel.Controls.Clear();
             _listMenuButtons.Clear();
 
-            var leftButtons = new[] { MenuButtonType.Main, MenuButtonType.Working, MenuButtonType.Recipe, MenuButtonType.Config, MenuButtonType.Setup, MenuButtonType.Log };
+            var leftButtons = new[] { MenuButtonType.Main, MenuButtonType.Menual, MenuButtonType.Recipe, MenuButtonType.Config, MenuButtonType.Setup, MenuButtonType.Log };
             var rightButtons = new[] { MenuButtonType.Login, MenuButtonType.Exit };
 
             int btnWidth = 120;

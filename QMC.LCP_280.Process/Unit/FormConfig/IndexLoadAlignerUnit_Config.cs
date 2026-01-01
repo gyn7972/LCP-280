@@ -256,12 +256,12 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (hasName)
                 {
-                    IndexLoadAlignerConfig.TeachingPositionName en;
+                    IndexLoadAlignerRecipe.TeachingPositionName en;
                     if (Enum.TryParse(tpName, out en))
                     {
                         switch (en)
                         {
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index1_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index1_Up:
                                 nIndex = 0;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -270,7 +270,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index1_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index1_Ready:
                                 nIndex = 0;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -280,7 +280,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index2_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index2_Up:
                                 nIndex = 1;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -289,7 +289,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index2_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index2_Ready:
                                 nIndex = 1;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -299,7 +299,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index3_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index3_Up:
                                 nIndex = 2;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -308,7 +308,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index3_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index3_Ready:
                                 nIndex = 2;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -318,7 +318,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index4_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index4_Up:
                                 nIndex = 3;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -327,7 +327,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index4_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index4_Ready:
                                 nIndex = 3;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -337,7 +337,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index5_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index5_Up:
                                 nIndex = 4;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -346,7 +346,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index5_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index5_Ready:
                                 nIndex = 4;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -356,7 +356,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index6_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index6_Up:
                                 nIndex = 5;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -365,7 +365,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index6_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index6_Ready:
                                 nIndex = 5;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -375,7 +375,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index7_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index7_Up:
                                 nIndex = 6;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -384,7 +384,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index7_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index7_Ready:
                                 nIndex = 6;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -394,7 +394,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index8_Up:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index8_Up:
                                 nIndex = 7;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZUp(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -403,7 +403,7 @@ namespace QMC.LCP_280.Process.Unit
                                     return;
                                 }
                                 break;
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index8_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignZ_Index8_Ready:
                                 nIndex = 7;
                                 nRet = await Task.Run(() => _unit.MovePositionAlignZReady(nIndex, e.IsFine));
                                 if (nRet != 0)
@@ -413,7 +413,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Foward:
                                 nRet = await Task.Run(() => _unit.MovePositionAlignTForward(e.IsFine));
                                 if (nRet != 0)
                                 {
@@ -422,7 +422,7 @@ namespace QMC.LCP_280.Process.Unit
                             }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Backward:
                                 nRet = await Task.Run(() => _unit.MovePositionAlignTBackward(e.IsFine));
                                 if (nRet != 0)
                                 {
@@ -431,7 +431,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.AlignT_Ready:
                                 nRet = await Task.Run(() => _unit.MovePositionAlignTReady(e.IsFine));
                                 if (nRet != 0)
                                 {
@@ -440,7 +440,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 break;
 
-                            case IndexLoadAlignerConfig.TeachingPositionName.SafetyZone:
+                            case IndexLoadAlignerRecipe.TeachingPositionName.SafetyZone:
                                 nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine));
                                 if (nRet != 0)
                                 {

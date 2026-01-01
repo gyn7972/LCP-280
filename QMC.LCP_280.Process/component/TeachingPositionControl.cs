@@ -604,10 +604,17 @@ namespace QMC.LCP_280.Process.Component
                 }
                 else
                 {
-                    var arr = _entries.Select(e => e.Display)
-                                      .OrderBy(s => s)
-                                      .ToArray();
+                    var arr = _entries
+                        .OrderBy(e => e.UnitKey, StringComparer.OrdinalIgnoreCase)   // Unit 그룹은 유지
+                        .ThenBy(e => GetEnumOrderIndex(e.UnitKey, e.PositionName))   // ★ enum 순서
+                        .ThenBy(e => e.Display, StringComparer.OrdinalIgnoreCase)    // fallback (동일 인덱스/미매칭 시)
+                        .Select(e => e.Display)
+                        .ToArray();
                     positionItemView?.SetItems(arr);
+                    //var arr = _entries.Select(e => e.Display)
+                    //                  .OrderBy(s => s)          //<-- 알파벳 순 정렬
+                    //                  .ToArray();
+                    //positionItemView?.SetItems(arr);
                     SafeUI(() => positionItemView.SelectedIndex = 0);
                 }
             }
@@ -618,6 +625,39 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
+        private int GetEnumOrderIndex(string unitKey, string positionName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(unitKey) || string.IsNullOrWhiteSpace(positionName))
+                    return int.MaxValue;
+
+                if (!_unitRefs.TryGetValue(unitKey, out var unit) || unit == null)
+                    return int.MaxValue;
+
+                var cfg = unit.Config;
+                if (cfg == null)
+                    return int.MaxValue;
+
+                // GetTeachingPositionName(selIndex) 기준으로 순차 탐색
+                // (대부분 티칭 개수가 작으므로 충분히 빠름)
+                for (int i = 0; i < 500; i++) // 상한: 필요 시 조정
+                {
+                    if (!cfg.GetTeachingPositionName(i, out var name) || string.IsNullOrWhiteSpace(name))
+                        break;
+
+                    if (string.Equals(name, positionName, StringComparison.OrdinalIgnoreCase))
+                        return i;
+                }
+            }
+            catch
+            {
+                // ignore -> fallback
+            }
+
+            return int.MaxValue;
+        }
+
         private void MoveSelected()
         {
             try
@@ -626,6 +666,8 @@ namespace QMC.LCP_280.Process.Component
                 if (string.IsNullOrEmpty(display)) return;
                 if (!_displayToEntry.TryGetValue(display, out var entry)) return;
 
+                //인터락 관련 내용 전부 확인 완료하고 구동 버튼 활성화 해야함.
+                //return;
                 // 이동 확인 메시지
                 var ask = new MessageBoxYesNo();
                 if (ask.ShowDialog("Move Confirm", $"{entry.Display} 위치로 이동하시겠습니까?") != DialogResult.Yes)

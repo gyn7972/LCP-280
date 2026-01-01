@@ -1,6 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
 using QMC.Common.Motions; // MotionAxis 등 사용
+using System;
+using System.Collections.Generic;
 
 namespace QMC.Common.Component
 {
@@ -12,6 +13,7 @@ namespace QMC.Common.Component
         public Dictionary<string, object> ExtraInfo { get; set; } = new Dictionary<string, object>();
 
         // 축 정보: 축 이름 → MotionAxis 객체
+        [JsonIgnore]
         public Dictionary<string, MotionAxis> Axes { get; set; } = new Dictionary<string, MotionAxis>();
 
         public TeachingPosition() { }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,6 +16,25 @@ namespace QMC.Common
     public partial class MainForm : Form
     {
         #region Field
+        // ★ Win32: 닫기(X) 버튼만 제거용
+        private const int GWL_STYLE = -16;
+        private const int WS_SYSMENU = 0x00080000;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetMenu(IntPtr hWnd, IntPtr hMenu);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int DrawMenuBar(IntPtr hWnd);
+
         private bool _isShuttingDown;
 
         private Size MainSize;
@@ -38,6 +58,9 @@ namespace QMC.Common
         public MainForm()
         {
             InitializeComponent();
+
+            // 기존: 이것은 Min/Max까지 없어지므로 제거/주석 처리 필요
+            // this.ControlBox = false;
 
             // Jog Panel
             this.Text = "QMC";   // ← 작업표시줄 툴팁에 보이는 문자열
@@ -63,6 +86,32 @@ namespace QMC.Common
                 }
                 catch { }
             };
+        }
+
+        private void HideCloseButtonOnly()
+        {
+            // 시스템 메뉴(닫기 버튼 포함)를 제거하면 X만 사라지고,
+            // Minimize/Maximize는 MinimizeBox/MaximizeBox 설정으로 유지됨.
+            int style = GetWindowLong(this.Handle, GWL_STYLE);
+            style &= ~WS_SYSMENU;
+            SetWindowLong(this.Handle, GWL_STYLE, style);
+
+            // 메뉴 갱신
+            SetMenu(this.Handle, IntPtr.Zero);
+            GetSystemMenu(this.Handle, true);
+            DrawMenuBar(this.Handle);
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // ★ 최소화/최대화는 유지
+            this.MinimizeBox = true;
+            this.MaximizeBox = true;
+
+            // ★ X만 숨김
+            HideCloseButtonOnly();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -151,7 +200,17 @@ namespace QMC.Common
         // [MOD] 종료 이벤트 비동기화
         private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_isShuttingDown) return;
+            // ★ 사용자가 X(닫기) 누른 경우: 종료하지 말고 숨김
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                //this.Hide();
+                return;
+            }
+
+            if (_isShuttingDown) 
+                return;
+
             _isShuttingDown = true;
             this.Enabled = false;
             this.Cursor = Cursors.WaitCursor;
@@ -515,7 +574,7 @@ namespace QMC.Common
                 // 모든 FormManager 타입의 자동 등록 실행
                 FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
                 FormManagerMain.Instance.AutoRegisterUnitMainForms();
-                FormManagerWorking.Instance.AutoRegisterUnitWorkingForms();
+                FormManagerMenual.Instance.AutoRegisterUnitManualForms();
                 FormManagerRecipe.Instance.AutoRegisterUnitRecipeForms();
                 FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
                 FormManagerLog.Instance.AutoRegisterUnitLogForms();

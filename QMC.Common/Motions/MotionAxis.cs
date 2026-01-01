@@ -44,14 +44,66 @@ namespace QMC.Common.Motions
         public enum AlarmKey
         {
             FirstAlarm = 1000,
-            Axis_XXXXXXXXX1_Fail,
-            Axis_XXXXXXXXX2_Fail,
-            Axis_XXXXXXXXX3_Fail,
-            AxisHomeTimeout // 홈 타임아웃 추가
+            AxisServoOff,
+            AxisDriverAlarm,
+            AxisPositiveLimit,
+            AxisNegativeLimit,
+            AxisHomeTimeout, // 홈 타임아웃 추가
         }
         #endregion
 
-        
+        protected override void InitAlarm()
+        {
+            string strTemp = string.Empty;
+            strTemp = string.Format(Name + "Axis Error");
+            AlarmInfo alarm = new AlarmInfo();
+            // 홈 타임아웃 알람 등록
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisHomeTimeout;
+            alarm.Title = Name + " Home Timeout";
+            alarm.Cause = Name + " home operation timed out";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            // ===== 추가: 서버/알람/리밋 감시 알람 등록 =====
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisServoOff;
+            alarm.Title = Name + " Servo Off";
+            alarm.Cause = Name + " servo is OFF";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisDriverAlarm;
+            alarm.Title = Name + " Driver Alarm";
+            alarm.Cause = Name + " driver alarm is ON";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisPositiveLimit;
+            alarm.Title = Name + " +Limit";
+            alarm.Cause = Name + " positive limit sensor is ON";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisNegativeLimit;
+            alarm.Title = Name + " -Limit";
+            alarm.Cause = Name + " negative limit sensor is ON";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+
+        // ===== 추가: 감시 알람 중복 방지 래치 =====
+        private readonly object _alarmLatchLock = new object();
+        private readonly HashSet<AlarmKey> _postedMonitorAlarms = new HashSet<AlarmKey>();
+
 
         // === 홈 성공 알림 이벤트(글로벌) ===
         public static event Action<MotionAxis> HomeSucceeded;
@@ -131,43 +183,6 @@ namespace QMC.Common.Motions
         {
             if (correction == null) throw new ArgumentNullException(nameof(correction));
             lock (_gate) { _correction = correction; }
-        }
-
-        // ===== 장비 내부 알람 =====
-        protected override void InitAlarm()
-        {
-            string strTemp = string.Empty;
-            strTemp = string.Format(Name + "Axis Error");
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX1_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX2_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX3_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            // 홈 타임아웃 알람 등록
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKey.AxisHomeTimeout;
-            alarm.Title = Name + " Home Timeout";
-            alarm.Cause = Name + " home operation timed out";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
         }
 
         public int AlarmPost(AlarmKey AlarmCode)
@@ -1593,36 +1608,77 @@ namespace QMC.Common.Motions
             }
         }
 
-        //public bool IsMoveDone()
-        //{
-        //    if(IsSim)
-        //    {
-        //        lock(_simLock)
-        //        {
-        //            return !_simIsMoving;
-        //        }
-        //    }
-        //    else if(_driver != null)
-        //    {
-        //        return _driver.ReadDone(AxisNo);
-        //    }
-        //    else if(_ckdDriver != null)
-        //   {
-        //        // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
-        //        //return _ckdDriver.IsRunWait();
-        //        bool b1 = Status.State.InpositionDone;
-        //        bool b2 = Status.State.Inposition;
-        //        if( b1 && b2)
-        //        {
-        //            return true;
-        //        }
-        //        else
-        //        {
-        //            return false;
-        //        }
-        //            //return b1 & b2;
-        //    }
-        //    return false;
-        //}
+        // ===== 추가: 조건이 true일 때 1회만 AlarmPost (중복 방지) =====
+        private void PostOnceWhenTrue(AlarmKey key, bool condition)
+        {
+            if (!condition)
+            {
+                // 조건이 해제되면 래치 해제(다음에 다시 발생 가능하도록)
+                lock (_alarmLatchLock) { _postedMonitorAlarms.Remove(key); }
+                return;
+            }
+
+            bool alreadyPosted;
+            lock (_alarmLatchLock) { alreadyPosted = !_postedMonitorAlarms.Add(key); }
+            if (alreadyPosted) return;
+
+            try { AlarmPost(key); }
+            catch (Exception ex) { Log.Write(ex); }
+        }
+
+        /// <summary>
+        /// 서버오프(Servo OFF), 드라이버 알람, 리밋 상태를 점검하고 필요 시 알람을 발생시킵니다.
+        /// - 주기적으로(예: 타이머 100~500ms) 호출하는 용도
+        /// - 기존 AlarmPost/AlarmManager 인프라 그대로 사용
+        /// </summary>
+        public void CheckAndPostSafetyAlarms()
+        {
+            try
+            {
+                bool servoOn = true;
+                bool alarmOn = false;
+                bool posLimit = false;
+                bool negLimit = false;
+
+                if (IsSim)
+                {
+                    lock (_simLock)
+                    {
+                        servoOn = _simServoOn;
+                        alarmOn = _simAlarm;
+                        // 시뮬은 리밋 센서 개념이 없으므로 false 유지
+                    }
+                }
+                else if (_driver != null)
+                {
+                    servoOn = _driver.ReadServoOn(AxisNo);
+                    alarmOn = _driver.ReadAlarm(AxisNo);
+                    posLimit = _driver.ReadPositiveLimit(AxisNo);
+                    negLimit = _driver.ReadNegativeLimit(AxisNo);
+                }
+                else if (_ckdDriver != null)
+                {
+                    servoOn = _ckdDriver.IsServoOn();
+                    alarmOn = _ckdDriver.IsAlarm();
+                    // CKD는 DD Motor라 별도 +/- limit 없음(현재 Status에서도 false 처리)
+                }
+                else
+                {
+                    // 드라이버 미할당은 여기서 알람 처리 정책이 애매하므로 우선 무시
+                    return;
+                }
+
+                // 조건별 알람 발생(조건 true일 때 1회만)
+                PostOnceWhenTrue(AlarmKey.AxisServoOff, !servoOn);
+                PostOnceWhenTrue(AlarmKey.AxisDriverAlarm, alarmOn);
+                PostOnceWhenTrue(AlarmKey.AxisPositiveLimit, posLimit);
+                PostOnceWhenTrue(AlarmKey.AxisNegativeLimit, negLimit);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
     }
 }

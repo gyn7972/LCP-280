@@ -13,27 +13,35 @@ namespace QMC.Common
     [DefaultProperty("TextBoxFontSize")]
     public partial class PropertyCollectionView : UserControl
     {
-        // ----- Performance / Logging Flags -----
         public static bool GlobalVerboseLogging = false;
         [Browsable(false)] public bool FastBuild { get; set; } = true;
         [Browsable(false)] public bool SuppressResizeInvalidation { get; set; } = true;
 
         private TableLayoutPanel tableLayoutPanel;
         private Panel scrollPanel;
-        private GroupBox groupBox; // GroupBox to wrap the property controls
+        private GroupBox groupBox;
 
-        // 디자이너에서 편집 가능한 속성의 기본값
-        protected Font _textBoxFont = new Font("맑은 고딕", 10f); // Windows Forms 기본 폰트와 크기
+        protected Font _textBoxFont = new Font("맑은 고딕", 10f);
         private HorizontalAlignment _textBoxTextAlign = HorizontalAlignment.Left;
 
-        private const int MinVisibleRows = 3; // 최소 보이는 행 수 줄임
-        private const int MaxVisibleRows = 15; // 최대 보이는 행 수 설정
-        private const int GroupBoxHeaderHeight = 20; // GroupBox 헤더 높이
-        private const int GroupBoxPadding = 20; // GroupBox 패딩
+        private const int MinVisibleRows = 3;
+        private const int MaxVisibleRows = 15;
+        private const int GroupBoxHeaderHeight = 20;
+        private const int GroupBoxPadding = 20;
 
-        // GroupBox 이름 프로퍼티
+        private HashSet<string> _readOnlyTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // [ADD] 행 메타정보 저장용 구조체 + 리스트
+        private struct RowInfo
+        {
+            public string Title;
+            public Control Editor;
+            public Label TitleLabel;
+        }
+        private readonly List<RowInfo> _rows = new List<RowInfo>();
+
         [Browsable(true)]
-        [Category("Appearance")] 
+        [Category("Appearance")]
         [Description("GroupBox 이름")]
         public string GroupName
         {
@@ -75,11 +83,9 @@ namespace QMC.Common
             set { if (_textBoxTextAlign != value) { _textBoxTextAlign = value; RefreshProperties(); } }
         }
 
-        // 텍스트박스와 PropertyBase 매핑을 위한 리스트
         private List<Tuple<TextBox, PropertyBase>> _textBoxPropertyMap = new List<Tuple<TextBox, PropertyBase>>();
         private PropertyCollection _currentProperties;
 
-        // ===== 구조 캐시/에디터 캐시(빠른 재바인딩) =====
         private readonly List<Label> _titleLabelOrder = new List<Label>();
         private readonly List<Control> _editorOrder = new List<Control>();
         private readonly List<Type> _propTypeOrder = new List<Type>();
@@ -127,7 +133,6 @@ namespace QMC.Common
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
-            // flicker 최소화
             EnableFlickerFree(this);
             EnableFlickerFree(scrollPanel);
             EnableFlickerFree(tableLayoutPanel);
@@ -135,20 +140,17 @@ namespace QMC.Common
             scrollPanel.Controls.Add(tableLayoutPanel);
             groupBox.Controls.Add(scrollPanel);
 
-            // 가로 스크롤 안 나오게(패널 폭에 맞춰 width를 따라가게)
             scrollPanel.Resize += (s, e) =>
             {
                 var sbw = SystemInformation.VerticalScrollBarWidth;
                 tableLayoutPanel.Width = scrollPanel.ClientSize.Width - sbw;
             };
 
-            // (옵션) 깜빡임 줄이기
             this.DoubleBuffered = true;
             if (GlobalVerboseLogging)
                 Console.WriteLine($"🔧 PropertyCollectionView 초기화: UserControl={this.Size}, GroupBox=Fill");
         }
 
-        // Designer에서 크기 조정시 로그 출력
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
@@ -162,7 +164,6 @@ namespace QMC.Common
             }
         }
 
-        // Designer에서 크기 설정시 로그 출력
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
@@ -170,15 +171,13 @@ namespace QMC.Common
                 Console.WriteLine($"🔧 PropertyCollectionView SetBoundsCore: Size=({width}, {height}), DesignMode={this.DesignMode}");
         }
 
-        /// <summary>
-        /// PropertyCollection을 화면에 표시 (최적화 적용).
-        /// 동일한 구조(필드 수/타입 순서)라면 컨트롤 재사용하여 빠르게 값만 갱신합니다.
-        /// </summary>
         public virtual void SetProperties(PropertyCollection properties)
         {
             if (properties != null && TryUpdateInPlace(properties))
             {
-                _currentProperties = properties; // 구조 동일 → 빠른 갱신
+                _currentProperties = properties;
+                // [UPDATE] 빠른 재바인딩 시에도 읽기전용 적용을 재반영
+                ApplyReadOnlyStateToEditors();
                 return;
             }
 
@@ -190,7 +189,7 @@ namespace QMC.Common
                 tableLayoutPanel?.SuspendLayout();
             }
 
-            this.Visible = false; // 빌드 중 깜빡임 제거
+            this.Visible = false;
 
             tableLayoutPanel.Controls.Clear();
             tableLayoutPanel.RowStyles.Clear();
@@ -202,6 +201,7 @@ namespace QMC.Common
             _editorOrder.Clear();
             _propTypeOrder.Clear();
             _propertyCountWithoutHeaders = 0;
+            _rows.Clear(); // [ADD] 행 캐시 초기화
 
             if (properties == null || properties.Count == 0)
             {
@@ -240,7 +240,7 @@ namespace QMC.Common
                         Padding = new Padding(2),
                         Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
                         BackColor = Color.LightGray,
-                        Visible = true // 헤더는 즉시 표시
+                        Visible = true
                     };
                     controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
                     columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
@@ -282,6 +282,9 @@ namespace QMC.Common
                     _editorOrder.Add(comboBox);
                     _propTypeOrder.Add(typeof(ComboBoxProperty));
                     _propertyCountWithoutHeaders++;
+
+                    // [ADD] 행 캐시에 저장
+                    _rows.Add(new RowInfo { Title = prop.Title, Editor = comboBox, TitleLabel = titleLabel });
                 }
                 else
                 {
@@ -306,8 +309,7 @@ namespace QMC.Common
                             Margin = new Padding(4, (textBoxHeight - 18) / 2, 0, 0),
                             Visible = true
                         };
-                        BindCheckBoxToBool(cb, bp); editor = cb;
-                        _propTypeOrder.Add(typeof(BoolProperty));
+                        BindCheckBoxToBool(cb, bp); editor = cb; _propTypeOrder.Add(typeof(BoolProperty));
                     }
                     else if (prop is IntProperty ip)
                     { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToInt(tb, ip); editor = tb; _propTypeOrder.Add(typeof(IntProperty)); }
@@ -335,6 +337,7 @@ namespace QMC.Common
                     else
                     { var tb = MakeValueTextBox(textBoxHeight); tb.TextChanged += (s, e) => prop.SetValue(tb.Text); tb.Tag = prop; editor = tb; _propTypeOrder.Add(prop.GetType()); }
 
+                    // 기본 색/잠금 처리(입력 파라미터가 아닌 경우 잠금 스타일)
                     if (properties.IsInputParameter)
                     {
                         if (!(editor is Panel))
@@ -354,12 +357,16 @@ namespace QMC.Common
                         }
                         else editor.Enabled = false;
                     }
+
                     editor.Visible = true;
                     controlsToAdd.Add(Tuple.Create(editor, 1, row));
 
                     _titleLabelOrder.Add(titleLabel);
                     _editorOrder.Add(editor);
                     _propertyCountWithoutHeaders++;
+
+                    // [ADD] 행 캐시에 저장 (패널인 경우도 그대로 Editor 저장)
+                    _rows.Add(new RowInfo { Title = prop.Title, Editor = editor, TitleLabel = titleLabel });
                 }
                 row++;
             }
@@ -383,16 +390,18 @@ namespace QMC.Common
             scrollPanel.AutoScrollMinSize = new Size(0, tableLayoutPanel.PreferredSize.Height + 2);
             if (scrollPanel.VerticalScroll.Maximum > 0)
                 scrollPanel.VerticalScroll.Value = 0;
+
+            // [NEW] 현재 지정된 읽기전용 타이틀 적용
+            ApplyReadOnlyStateToEditors();
+
             if (GlobalVerboseLogging)
                 Console.WriteLine($"🔧 SetProperties 완료(FastBuild={FastBuild}): UserControl={this.Size}, Items={properties.Count}");
         }
 
-        // 컨트롤 재사용 빠른 업데이트 시도 (구조 동일 시)
         private bool TryUpdateInPlace(PropertyCollection properties)
         {
             if (_editorOrder.Count == 0 || _propTypeOrder.Count == 0) return false;
 
-            // 새 구조 요약 (TitleOnly 제외한 항목 수/타입 순서)
             var newTypes = new List<Type>();
             int cnt = 0;
             foreach (var p in properties)
@@ -415,15 +424,14 @@ namespace QMC.Common
                 if (newTypes[i] != _propTypeOrder[i]) return false;
             }
 
-            // 구조 동일 → 값/라벨 텍스트만 갱신 + 매핑 재바인딩
             _textBoxPropertyMap.Clear();
+            _rows.Clear(); // [ADD] 빠른 재바인딩에서도 새 행을 다시 구성
 
             int index = 0;
             foreach (var p in properties)
             {
                 if (p is TitleOnlyProperty) continue;
 
-                // 라벨 텍스트 갱신
                 if (index < _titleLabelOrder.Count)
                     _titleLabelOrder[index].Text = p.Title;
 
@@ -434,7 +442,6 @@ namespace QMC.Common
                     var cb = editor as ComboBox;
                     if (cb != null)
                     {
-                        // 옵션 차이가 크면 재구성(간단 비교)
                         if (cb.Items.Count != cbp.Options.Count || cb.Items.Cast<object>().Select(o => o.ToString()).SequenceEqual(cbp.Options) == false)
                         {
                             cb.Items.Clear();
@@ -450,7 +457,7 @@ namespace QMC.Common
                     var cb = editor as CheckBox;
                     if (cb != null)
                     {
-                        cb.CheckedChanged += (s, e) => bp.Value = cb.Checked; // 새 p에도 바인딩
+                        cb.CheckedChanged += (s, e) => bp.Value = cb.Checked;
                         cb.Checked = bp.Value;
                     }
                 }
@@ -517,6 +524,10 @@ namespace QMC.Common
                     }
                 }
 
+                // [ADD] 행 캐시 갱신
+                var titleLabel = (index < _titleLabelOrder.Count) ? _titleLabelOrder[index] : null;
+                _rows.Add(new RowInfo { Title = p.Title, Editor = editor, TitleLabel = titleLabel });
+
                 index++;
             }
 
@@ -537,7 +548,6 @@ namespace QMC.Common
             Height = textBoxHeight
         };
 
-        // 경로 선택이 필요한 필드명 판단
         private static bool ShouldUsePathPicker(string title)
         {
             if (string.IsNullOrEmpty(title)) return false;
@@ -551,7 +561,6 @@ namespace QMC.Common
             return title.IndexOf("path", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        // 텍스트박스 + ... 버튼을 포함한 패널 생성 (파일/폴더 선택 모두 지원)
         private Control MakePathPickerPanel(TextBox tb, bool enable, bool selectFolder)
         {
             var panel = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) };
@@ -625,17 +634,12 @@ namespace QMC.Common
             return panel;
         }
 
-        /// <summary>
-        /// 텍스트박스의 값을 PropertyCollection에 적용합니다.
-        /// </summary>
         public void Apply()
         {
             foreach (var pair in _textBoxPropertyMap)
             {
                 var textBox = pair.Item1;
                 var property = pair.Item2;
-
-                // 타입 보존 적용: 입력 문자열을 각 타입으로 변환하여 대입
                 try
                 {
                     var s = textBox.Text ?? string.Empty;
@@ -665,33 +669,24 @@ namespace QMC.Common
                     }
                     else if (property is BoolProperty bp)
                     {
-                        // 체크박스는 TextBoxMap에 포함되지 않지만 방어적으로 처리
                         if (bool.TryParse(s, out var v)) bp.Value = v;
                     }
                     else
                     {
-                        // 알 수 없는 타입은 문자열로 저장(기존 동작 유지)
                         property.SetValue(s);
                     }
                 }
                 catch
                 {
-                    // 무시: 잘못된 형식은 기존 값 유지
+                    // ignore
                 }
             }
         }
 
-        /// <summary>
-        /// 🚀 현재 설정된 PropertyCollection을 반환합니다.
-        /// </summary>
         public PropertyCollection GetCurrentProperties() => _currentProperties;
 
-        /// <summary>
-        /// 속성 변경 시 UI를 새로고침합니다.
-        /// </summary>
         private void RefreshProperties() { if (_currentProperties != null) SetProperties(_currentProperties); }
 
-        // ===== 즉시 반영 바인딩 유틸 =====
         private void BindTextBoxToDouble(TextBox tb, DoubleProperty p)
         { tb.Text = p.Value.ToString(CultureInfo.InvariantCulture); tb.TextChanged += (s, e) => { if (double.TryParse(tb.Text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var v)) p.Value = v; }; tb.Tag = p; _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)p)); }
         private void BindTextBoxToFloat(TextBox tb, FloatProperty p)
@@ -705,7 +700,6 @@ namespace QMC.Common
         private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
         { cb.Checked = p.Value; cb.CheckedChanged += (s, e) => p.Value = cb.Checked; cb.Tag = p; }
 
-        // 깜빡임 최소화 공통 함수 (리플렉션으로 protected 멤버 호출)
         private static void EnableFlickerFree(Control c)
         {
             if (c == null) return;
@@ -720,6 +714,89 @@ namespace QMC.Common
                 miUpdateStyles?.Invoke(c, null);
             }
             catch { }
+        }
+
+        // [NEW] 읽기전용 타이틀 지정 + 즉시 적용
+        public void SetReadOnlyTitles(params string[] titles)
+        {
+            _readOnlyTitles = new HashSet<string>(titles ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            ApplyReadOnlyStateToEditors();
+        }
+
+        // [NEW] 내부 에디터들에 읽기전용 상태 반영
+        private void ApplyReadOnlyStateToEditors()
+        {
+            try
+            {
+                foreach (var row in _rows)
+                {
+                    bool ro = _readOnlyTitles.Contains(row.Title);
+                    var editor = row.Editor;
+
+                    // 기본 Enable/Disable
+                    editor.Enabled = !ro;
+
+                    // 타입별 추가 잠금 처리
+                    if (editor is TextBox tb)
+                    {
+                        tb.ReadOnly = ro;
+                        tb.TabStop = !ro;
+                        if (ro)
+                        {
+                            tb.ForeColor = Color.LimeGreen;
+                            tb.BackColor = Color.Black;
+                        }
+                        else
+                        {
+                            tb.ForeColor = Color.Black;
+                            tb.BackColor = Color.White;
+                        }
+                    }
+                    else if (editor is Panel pnl)
+                    {
+                        // 패널 내부 TextBox/ComboBox/Button 모두 반영
+                        foreach (Control c in pnl.Controls)
+                        {
+                            if (c is TextBox innerTb)
+                            {
+                                innerTb.ReadOnly = ro;
+                                innerTb.TabStop = !ro;
+                                innerTb.Enabled = !ro;
+                            }
+                            else if (c is ComboBox cb)
+                            {
+                                cb.Enabled = !ro;
+                                cb.DropDownStyle = ComboBoxStyle.DropDownList;
+                            }
+                            else if (c is Button btn)
+                            {
+                                btn.Enabled = !ro;
+                                btn.Visible = !ro ? btn.Visible : btn.Visible; // 필요시 숨김으로 바꿀 수 있음
+                            }
+                            else
+                            {
+                                c.Enabled = !ro;
+                            }
+                        }
+                    }
+                    else if (editor is ComboBox cb)
+                    {
+                        cb.Enabled = !ro;
+                        cb.DropDownStyle = ComboBoxStyle.DropDownList;
+                    }
+                    else if (editor is CheckBox chk)
+                    {
+                        chk.Enabled = !ro;
+                    }
+                    // 기타 에디터 타입은 Enabled로 충분
+                }
+
+                Invalidate();
+            }
+            catch
+            {
+                // 안전하게 무시
+            }
         }
     }
 }

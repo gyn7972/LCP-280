@@ -11,12 +11,6 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    /// <summary>
-    /// IndexChipProbeControllerConfig
-    ///  - Probe Z / Probe Card XYZ / Sphere Z Teaching Positions
-    ///  - Sphere FW/BW Cylinder + Probe Card Vacuum I/O 명칭 상수화
-    ///  - OutputStageConfig 패턴 구조 적용
-    /// </summary>
     public class IndexChipProbeControllerConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>장치 IO 명칭</summary>
@@ -33,98 +27,6 @@ namespace QMC.LCP_280.Process.Unit
             public const string SPHERE_BW_VLV  = "SPHERE BW";                // Y027 (Backward valve)
             public const string PROBE_VAC_VLV  = "PROBE CARD VACUUM";        // Y075 (Vac valve or combined channel)
         }
-
-        public enum TeachingPositionName
-        {
-            Top_Index1_Up,
-            Top_Index1_Ready,
-            Top_Index2_Up,
-            Top_Index2_Ready,
-            Top_Index3_Up,
-            Top_Index3_Ready,
-            Top_Index4_Up,
-            Top_Index4_Ready,
-            Top_Index5_Up,
-            Top_Index5_Ready,
-            Top_Index6_Up,
-            Top_Index6_Ready,
-            Top_Index7_Up,
-            Top_Index7_Ready,
-            Top_Index8_Up,
-            Top_Index8_Ready,
-            Bottom_Index1_Up,
-            Bottom_Index1_Ready,
-            Bottom_Index2_Up,
-            Bottom_Index2_Ready,
-            Bottom_Index3_Up,
-            Bottom_Index3_Ready,
-            Bottom_Index4_Up,
-            Bottom_Index4_Ready,
-            Bottom_Index5_Up,
-            Bottom_Index5_Ready,
-            Bottom_Index6_Up,
-            Bottom_Index6_Ready,
-            Bottom_Index7_Up,
-            Bottom_Index7_Ready,
-            Bottom_Index8_Up,
-            Bottom_Index8_Ready,
-            SphereZ_Ready,
-            SphereZ_Down,
-            SafetyZone,
-        }
-        
-        public override bool GetTeachingPositionName(int selIndex, out string name)
-        {
-            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
-            {
-                name = "None";
-                return false;
-            }
-            TeachingPositionName tpn = (TeachingPositionName)selIndex;
-            name = tpn.ToString();
-            return true;
-        }
-
-        [JsonIgnore]
-        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
-        {
-            // 기본: 2축 모두 사용. 필요 시 특정 포지션에서 한 축만 사용하도록 배열 수정.
-            { TeachingPositionName.Top_Index1_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index1_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index2_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index2_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index3_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index3_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index4_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index4_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index5_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index5_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index6_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index6_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index7_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index7_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index8_Up,        new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.Top_Index8_Ready,     new [] { AxisNames.ProbeZ } },
-            { TeachingPositionName.SphereZ_Ready,               new [] { AxisNames.SphereZ } },
-            { TeachingPositionName.SphereZ_Down,                new [] { AxisNames.SphereZ } },
-            { TeachingPositionName.SafetyZone,                  new [] { AxisNames.ProbeZ, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index1_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index1_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index2_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index2_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index3_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index3_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index4_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index4_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index5_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index5_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index6_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index6_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index7_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index7_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index8_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-            { TeachingPositionName.Bottom_Index8_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
-        };
 
         #region Hard IO Tables
         [JsonIgnore]
@@ -147,6 +49,13 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 5, Name = IO.PROBE_VAC_VLV, Disp = "Y075" },
         };
         #endregion
+        
+        [JsonIgnore]
+        public new List<TeachingPosition> TeachingPositions
+        {
+            get => base.TeachingPositions;
+            set => base.TeachingPositions = value;
+        }
 
         [Category("SetupConfig"), DisplayName("IndexOfProbe")]
         [DefaultValue(0)]
@@ -170,135 +79,109 @@ namespace QMC.LCP_280.Process.Unit
         [JsonProperty("ViewMode")]
         public bool ViewMode { get; set; } = false;
 
-        public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
+        [Category("SetupConfig"), DisplayName("Gripper Mode")]
+        [DefaultValue(false)]
+        [JsonProperty("GripperMode")]
+        public bool GripperMode { get; set; } = false;
 
-        /// <summary>Teaching Position 기본 생성 (축 매핑 적용)</summary>
-        public void InitializeDefaultTeachingPositions()
+
+        [JsonIgnore]
+        private IndexChipProbeControllerRecipe _teachingRecipeCache;
+        [JsonIgnore]
+        private string _teachingRecipeNameCache; // [ADD] 마지막으로 사용한 recipe name
+
+        [JsonIgnore]
+        public IndexChipProbeControllerRecipe TeachingRecipe
         {
-            if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
-            foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
+            get
             {
-                string posName = name.ToString();
-                if (!existing.Contains(posName))
+                try
                 {
-                    var axes = GetAxisNamesForPosition(posName);
-                    var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0;
-                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                    var eq = Equipment.Instance;
+                    var er = eq?.EquipmentRecipe;
+
+                    // [CHG] MeasurementRecipe가 들고있는 UnitRecipeName을 단일 규약으로 사용
+                    var teachingRecipeName = er?.GetOrLoadIndexChipProbeControllerTeachingRecipeName();
+                    if (string.IsNullOrWhiteSpace(teachingRecipeName))
+                        teachingRecipeName = "Default_ProbeTeaching";
+
+                    // [ADD] CurrentRecipe가 나중에 세팅되어 이름이 바뀌면 캐시 무효화
+                    if (!string.Equals(_teachingRecipeNameCache, teachingRecipeName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _teachingRecipeNameCache = teachingRecipeName;
+                        _teachingRecipeCache = null;
+                    }
+
+                    if (_teachingRecipeCache != null &&
+                        string.Equals(_teachingRecipeCache.Name, teachingRecipeName, StringComparison.OrdinalIgnoreCase))
+                        return _teachingRecipeCache;
+
+                    var cached = er?.IndexChipProbeControllerTeachingRecipe;
+                    if (cached != null &&
+                        string.Equals(cached.Name, teachingRecipeName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _teachingRecipeCache = cached;
+                        return _teachingRecipeCache;
+                    }
+
+                    _teachingRecipeCache = RecipeManager.LoadOrCreate<IndexChipProbeControllerRecipe>(teachingRecipeName);
+                    try { er?.SetIndexChipProbeControllerTeachingRecipe(_teachingRecipeCache); } catch { }
+                    return _teachingRecipeCache;
+                }
+                catch
+                {
+                    if (_teachingRecipeCache == null)
+                        _teachingRecipeCache = RecipeManager.LoadOrCreate<IndexChipProbeControllerRecipe>("Default_ProbeTeaching");
+                    return _teachingRecipeCache;
                 }
             }
-            ApplyAxisMapping();
-            Saveconfig();
         }
 
-        /// <summary>Teaching Position 추가/갱신 (허용된 축만 유지)</summary>
+        public void InvalidateTeachingRecipeCache()
+        {
+            _teachingRecipeCache = null;
+            _teachingRecipeNameCache = null;
+        }
+
+        // ===== 기존 호환 API: 내부 구현은 Recipe로 위임 =====
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+            => TeachingRecipe.GetTeachingPositionName(selIndex, out name);
+
+        public void InitializeDefaultTeachingPositions()
+            => TeachingRecipe.InitializeDefaultTeachingPositions(save: true);
+
         public void SetTeachingPosition(TeachingPosition tp)
-        {
-            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
-            var filtered = new Dictionary<string, double>();
-            foreach (var axis in allowed)
-            {
-                double v = 0;
-                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
-                filtered[axis] = v;
-            }
-            tp.AxisPositions = filtered;
+            => TeachingRecipe.UpsertFiltered(tp, save: true);
 
-            var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
-            if (exist != null)
-            {
-                exist.AxisPositions = tp.AxisPositions;
-                exist.Description = tp.Description;
-                exist.ExtraInfo = tp.ExtraInfo;
-            }
-            else TeachingPositions.Add(tp);
-            Saveconfig();
-        }
-
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
-
-        /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
-        public int Saveconfig()
-        {
-            var pure = TeachingPositions
-                .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-                .ToList();
-            var backup = TeachingPositions;
-            TeachingPositions = pure;
-            try { return Save(); }
-            finally { TeachingPositions = backup; }
-        }
+        public TeachingPosition GetTeachingPosition(string name)
+            => TeachingRecipe.Get(name);
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int rc = Load();
-            if (rc != 0) return rc;
+            if (rc != 0) 
+                return rc;
 
-            var loaded = TeachingPositions ?? new List<TeachingPosition>();
-            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
-            foreach (var t in loaded)
-            {
-                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
-                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
-            }
+            return TeachingRecipe.LoadAndBindAxes(axisManager);
+        }
+            
 
-            var rebuilt = new List<TeachingPosition>();
-            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
-            {
-                string posName = en.ToString();
-                TeachingPosition tp;
-                if (byName.TryGetValue(posName, out tp) && tp != null)
-                {
-                    rebuilt.Add(tp);
-                }
-                else
-                {
-                    var axes = GetAxisNamesForPosition(posName);
-                    var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0;
-                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
-                }
-            }
+        public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") 
+        { 
 
-            TeachingPositions = rebuilt;
-
-            ApplyAxisMapping();
-
-            if (axisManager != null)
-            {
-                foreach (var tp in TeachingPositions)
-                    tp.BindAxes(axisManager, "Unit");
-            }
-            return 0;
         }
 
-        /// <summary>매핑에 따라 불필요 축 제거 / 누락 축 추가</summary>
-        public void ApplyAxisMapping()
+        public int Saveconfig()
         {
-            foreach (var tp in TeachingPositions)
-            {
-                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
-                var current = tp.AxisPositions ?? new Dictionary<string, double>();
-                var next = new Dictionary<string, double>();
-                foreach (var axis in allowed)
-                {
-                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
-                }
-                tp.AxisPositions = next;
+            try 
+            { 
+                return Save(); 
             }
-        }
-
-        /// <summary>Position 이름 기반 허용 축 목록 반환</summary>
-        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
-        {
-            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
-            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            catch(Exception ex) 
             {
-                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+                Log.Write(ex);
             }
-            // 기본(백워드 호환)
-            return new[] { AxisNames.ProbeZ, AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ, AxisNames.SphereZ };
+            return -1;
         }
 
         #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)

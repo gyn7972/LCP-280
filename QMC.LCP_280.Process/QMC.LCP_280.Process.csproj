@@ -145,11 +145,23 @@
     <Compile Include="Component\AxisPostionPopup.Designer.cs">
       <DependentUpon>AxisPostionPopup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\DieScanMapControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\DieScanMapControl.Designer.cs">
+      <DependentUpon>DieScanMapControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\DIOControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Component\DIOControl.Designer.cs">
       <DependentUpon>DIOControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\DisplayView_DieScanMap.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\DisplayView_DieScanMap.Designer.cs">
+      <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\FormInputWaferID.cs">
       <SubType>Form</SubType>
@@ -157,7 +169,19 @@
     <Compile Include="Component\FormInputWaferID.Designer.cs">
       <DependentUpon>FormInputWaferID.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormMapMatchManual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormMapMatchManual.Designer.cs">
+      <DependentUpon>FormMapMatchManual.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\HomeHooks.cs" />
+    <Compile Include="Component\IndexCalibrationDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\IndexCalibrationDialog.Designer.cs">
+      <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\InterlockManager.cs" />
     <Compile Include="Component\MachineHomeCoordinator.cs" />
     <Compile Include="Component\ManualSeqReproTestRunner.cs" />
@@ -217,6 +241,12 @@
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
     <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
     <Compile Include="Component\Recipe\RecipeManager.cs" />
+    <Compile Include="Component\TaktMonitorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\TaktMonitorDialog.Designer.cs">
+      <DependentUpon>TaktMonitorDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\TCorrectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -281,11 +311,11 @@
     <Compile Include="Unit\FormMain\Page\DieOutputControl.Designer.cs">
       <DependentUpon>DieOutputControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\Page\DisplayView.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieInput.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\Page\DisplayView.Designer.cs">
-      <DependentUpon>DisplayView.cs</DependentUpon>
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieInput.Designer.cs">
+      <DependentUpon>DisplayView_DieInput.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.cs">
       <SubType>UserControl</SubType>
@@ -293,11 +323,11 @@
     <Compile Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.Designer.cs">
       <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutputControl.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutput.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutputControl.Designer.cs">
-      <DependentUpon>DisplayView_DieOutputControl.cs</DependentUpon>
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutput.Designer.cs">
+      <DependentUpon>DisplayView_DieOutput.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
@@ -473,17 +503,17 @@
     <Compile Include="Unit\FormSetup\Page\VisionControl.Designer.cs">
       <DependentUpon>VisionControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\ChipUnloading_Working.cs">
+    <Compile Include="Unit\FormMenual\UnloadArm_Menual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\ChipUnloading_Working.Designer.cs">
-      <DependentUpon>ChipUnloading_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormMenual\UnloadArm_Menual.Designer.cs">
+      <DependentUpon>UnloadArm_Menual.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\Process_Working.cs">
+    <Compile Include="Unit\FormMenual\Index_Menual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\Process_Working.Designer.cs">
-      <DependentUpon>Process_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormMenual\Index_Menual.Designer.cs">
+      <DependentUpon>Index_Menual.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormRecipe\Page\CellTesterPage.cs">
       <SubType>UserControl</SubType>
@@ -497,33 +527,33 @@
     <Compile Include="Unit\FormRecipe\Page\TestConditionSetPage.Designer.cs">
       <DependentUpon>TestConditionSetPage.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\OutputWafer_Working.cs">
+    <Compile Include="Unit\FormMenual\Bin_Menual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\OutputWafer_Working.Designer.cs">
-      <DependentUpon>OutputWafer_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormMenual\Bin_Menual.Designer.cs">
+      <DependentUpon>Bin_Menual.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\InputWafer_Working.cs">
+    <Compile Include="Unit\FormMenual\Wafer_Menual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\InputWafer_Working.Designer.cs">
-      <DependentUpon>InputWafer_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormMenual\Wafer_Menual.Designer.cs">
+      <DependentUpon>Wafer_Menual.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\GageRnR.cs" />
-    <Compile Include="Unit\GageRnRConfig.cs" />
     <Compile Include="Unit\IndexChipProbeController.cs" />
     <Compile Include="Unit\IndexChipProbeControllerConfig.cs" />
+    <Compile Include="Unit\IndexChipProbeControllerRecipe.cs" />
     <Compile Include="Unit\IndexChipProber.cs" />
     <Compile Include="Unit\IndexChipProberConfig.cs" />
     <Compile Include="Unit\IndexLoadAligner.cs" />
     <Compile Include="Unit\IndexLoadAlignerConfig.cs" />
+    <Compile Include="Unit\IndexLoadAlignerRecipe.cs" />
     <Compile Include="Unit\IndexUnloadAligner.cs" />
     <Compile Include="Unit\IndexUnloadAlignerConfig.cs" />
-    <Compile Include="Unit\FormWork\ChipLoading_Working.cs">
+    <Compile Include="Unit\FormMenual\LoadArm_Menual.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\ChipLoading_Working.Designer.cs">
-      <DependentUpon>ChipLoading_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormMenual\LoadArm_Menual.Designer.cs">
+      <DependentUpon>LoadArm_Menual.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\InputFeederConfig.cs" />
     <Compile Include="Unit\InputFeeder.cs" />
@@ -588,12 +618,6 @@
     </Compile>
     <Compile Include="Unit\FormConfig\IndexChipProbeControllerUnit_Config.Designer.cs">
       <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Unit\FormConfig\GageRnRUnit_Config.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\FormConfig\GageRnRUnit_Config.Designer.cs">
-      <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormConfig\InputFeederUnit_Config.cs">
       <SubType>Form</SubType>
@@ -686,11 +710,23 @@
     <EmbeddedResource Include="Component\AxisPostionPopup.resx">
       <DependentUpon>AxisPostionPopup.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\DieScanMapControl.resx">
+      <DependentUpon>DieScanMapControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\DIOControl.resx">
       <DependentUpon>DIOControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\DisplayView_DieScanMap.resx">
+      <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\FormInputWaferID.resx">
       <DependentUpon>FormInputWaferID.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormMapMatchManual.resx">
+      <DependentUpon>FormMapMatchManual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\IndexCalibrationDialog.resx">
+      <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\ManualSequenceControl.resx">
       <DependentUpon>ManualSequenceControl.cs</DependentUpon>
@@ -745,14 +781,14 @@
     <EmbeddedResource Include="Unit\FormMain\Page\DieOutputControl.resx">
       <DependentUpon>DieOutputControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView.resx">
-      <DependentUpon>DisplayView.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieInput.resx">
+      <DependentUpon>DisplayView_DieInput.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.resx">
       <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieOutputControl.resx">
-      <DependentUpon>DisplayView_DieOutputControl.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieOutput.resx">
+      <DependentUpon>DisplayView_DieOutput.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.resx">
       <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
@@ -857,11 +893,11 @@
     <EmbeddedResource Include="Unit\FormSetup\Page\VisionControl.resx">
       <DependentUpon>VisionControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\ChipUnloading_Working.resx">
-      <DependentUpon>ChipUnloading_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMenual\UnloadArm_Menual.resx">
+      <DependentUpon>UnloadArm_Menual.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\ChipLoading_Working.resx">
-      <DependentUpon>ChipLoading_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMenual\LoadArm_Menual.resx">
+      <DependentUpon>LoadArm_Menual.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\InputStageEjectorUnit_Config.resx">
       <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
@@ -886,9 +922,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\IndexChipProbeControllerUnit_Config.resx">
       <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormConfig\GageRnRUnit_Config.resx">
-      <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\InputFeederUnit_Config.resx">
       <DependentUpon>InputFeederUnit_Config.cs</DependentUpon>
@@ -917,14 +950,14 @@
     <EmbeddedResource Include="Unit\FormSetup\Vision_Setup.resx">
       <DependentUpon>Vision_Setup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\Process_Working.resx">
-      <DependentUpon>Process_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMenual\Index_Menual.resx">
+      <DependentUpon>Index_Menual.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\OutputWafer_Working.resx">
-      <DependentUpon>OutputWafer_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMenual\Bin_Menual.resx">
+      <DependentUpon>Bin_Menual.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\InputWafer_Working.resx">
-      <DependentUpon>InputWafer_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMenual\Wafer_Menual.resx">
+      <DependentUpon>Wafer_Menual.cs</DependentUpon>
     </EmbeddedResource>
     <None Include=".editorconfig" />
     <None Include="LanguageManagerAlarmUpdate.md" />

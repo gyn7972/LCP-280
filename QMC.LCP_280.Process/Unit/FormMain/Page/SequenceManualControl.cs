@@ -81,21 +81,28 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private void OnSequenceButtonClick(object sender, EventArgs e)
         {
             var button = sender as IndividualMenuButton;
-            if (button == null || !_buttonActions.ContainsKey(button)) return;
+            if (button == null || !_buttonActions.ContainsKey(button)) 
+                return;
 
             var (sequenceName, action) = _buttonActions[button];
-
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog($"Manual {sequenceName} {action}",
-                $"Manual {sequenceName} {action} 진행하시겠습니까?") == DialogResult.Yes)
+            // 부모 Form으로 이벤트 전달 (UI는 부모가 상태 변경 이벤트로 알려줌)
+            SequenceButtonRequested?.Invoke(this, new SequenceEventArgs
             {
-                // 부모 Form으로 이벤트 전달 (UI는 부모가 상태 변경 이벤트로 알려줌)
-                SequenceButtonRequested?.Invoke(this, new SequenceEventArgs
-                {
-                    SequenceName = sequenceName,
-                    Action = action
-                });
-            }
+                SequenceName = sequenceName,
+                Action = action
+            });
+
+            //var ask = new MessageBoxYesNo();
+            //if (ask.ShowDialog($"Manual {sequenceName} {action}",
+            //    $"Manual {sequenceName} {action} 진행하시겠습니까?") == DialogResult.Yes)
+            //{
+            //    // 부모 Form으로 이벤트 전달 (UI는 부모가 상태 변경 이벤트로 알려줌)
+            //    SequenceButtonRequested?.Invoke(this, new SequenceEventArgs
+            //    {
+            //        SequenceName = sequenceName,
+            //        Action = action
+            //    });
+            //}
         }
 
         /// <summary>

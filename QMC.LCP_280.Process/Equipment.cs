@@ -136,6 +136,12 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public event EventHandler<EquipmentErrorEventArgs> ErrorOccurred;
 
+        // [ADD] 초기화 완료 플래그 (InitializeEquipment 성공적으로 끝났을 때만 true)
+        private volatile bool _isEquipmentInitialized;
+        public bool IsEquipmentInitialized => _isEquipmentInitialized;
+
+        private volatile bool _isAxisHomed;
+        public bool IsAxisHomed => _isAxisHomed;
 
         private AjinAxlBoardHost _axlHost = null;                 // Ajin 보드 수명 관리(AXL.Open/Close + MOT 로드)
         // ==== Motion 관리 ====
@@ -153,12 +159,13 @@ namespace QMC.LCP_280.Process
         public MotionAxisManager AxisManager => _axisManager;
         public DioScanService DioScan => _dioScan;
         public DIOUnit UnitIO => _unitIO;
-
         // [+] CKD Motor Driver (PDO Mapping) 추가
         private CKDMotorDriver _ckdDriver;
 
-        #region Camera 관련 
+        private readonly object _motionSafetyStopLock = new object();
+        private volatile bool _motionSafetyStopIssued;
 
+        #region Camera 관련 
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, HIKGigECamera> Cameras { get; } = new Dictionary<string, HIKGigECamera>(StringComparer.OrdinalIgnoreCase);
         // === 편의 프로퍼티 추가 ===
@@ -292,14 +299,18 @@ namespace QMC.LCP_280.Process
         //재현성및 1:1모드
         public bool bIndexCal { get; set; } = true;
 
-
         #endregion
 
         #region Constructor & Initialization
 
         private Equipment()
         {
+            // [ADD] 초기화 전에도 UI가 null 참조로 죽지 않도록 빈 컨테이너는 만들어 둠
+            Units = new ConcurrentDictionary<string, IUnit>();
+            _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
+            EqState = EquipmentState.Stopped;
 
+            _isEquipmentInitialized = false;
         }
 
         /// <summary>
@@ -309,6 +320,10 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                // [ADD] 초기화 시작 시점에 false로 리셋(부분 실패 시에도 잠김 유지)
+                _isEquipmentInitialized = false;
+                _isAxisHomed = false; // [ADD] 재기동/재초기화 시 Home 다시 요구
+
                 // [ADD] ThreadPool 워밍업 및 최소 스레드 수 상향 (Task.Run 첫 호출 지연 감소)
                 try
                 {
@@ -406,10 +421,14 @@ namespace QMC.LCP_280.Process
                     }
                 }
 
+                _motionSafetyStopIssued = false;
+                _isEquipmentInitialized = true; // 모든 초기화가 성공적으로 끝났음을 표시
                 OnStateChanged(EquipmentState.Ready);
             }
             catch (Exception ex)
             {
+                _isEquipmentInitialized = false;
+                _isAxisHomed = false; // [ADD]
                 OnStateChanged(EquipmentState.Error);
                 OnErrorOccurred($"설비 초기화 중 오류 발생: {ex.Message}");
                 //throw;
@@ -459,7 +478,6 @@ namespace QMC.LCP_280.Process
             TryAdd(new OutputStage(), "OutputStage");
             TryAdd(new OutputCassetteLifter(), "OutputCassetteLifter");
             TryAdd(new OutputFeeder(), "OutputFeeder");
-            TryAdd(new GageRnR(), "GageRnR");
             TryAdd(new EquipmentStatus(), "EquipmentStatus"); // 신규 상태 유닛
         }
 
@@ -860,61 +878,99 @@ namespace QMC.LCP_280.Process
                     SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
                 }
 
+                // 유닛 Stop 트리거
                 (unitObj as QMC.Common.Unit.BaseUnit)?.Stop();
+
+                // 실행 태스크 취소(있다면)
                 execInfo.CancellationTokenSource?.Cancel();
 
+                // 1) 기존 수명 태스크 종료 대기 (있을 경우)
+                bool byTask = true;
                 if (execInfo.ExecutionTask != null)
                 {
-                    var ok = await WaitForUnitStopAsync(unitName, execInfo.ExecutionTask).ConfigureAwait(false);
-                    Log.Write("Equipment", $"Unit '{unitName}' 정지 {(ok ? "완료" : "실패/타임아웃")}");
-                    return ok;
+                    byTask = await WaitForUnitStopAsync(unitName, execInfo.ExecutionTask).ConfigureAwait(false);
+                }
+
+                // 2) 보강: 유닛 상태 폴링(실제 RunUnitStatus/IsStop 기반)로 정지 확인
+                var bu = unitObj as QMC.Common.Unit.BaseUnit;
+                bool byState = await PollUnitFullyStoppedAsync(unitName, bu, timeoutMs: 20000, pollMs: 80).ConfigureAwait(false);
+
+                bool ok = byTask && byState;
+                Log.Write("Equipment", $"Unit '{unitName}' 정지 {(ok ? "완료" : "실패/타임아웃")} (task={byTask}, state={byState})");
+
+                // 최종 상태 반영
+                if (ok)
+                {
+                    SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
                 }
                 else
                 {
-                    // 수명 태스크가 없다면 즉시 정지로 간주(레거시 유닛)
-                    SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
-                    Log.Write("Equipment", $"Unit '{unitName}' 정지 완료(ExecutionTask 없음)");
-                    return true;
+                    SetAndRaiseUnitState(unitName, UnitStatus.Error);
                 }
-                //execInfo.IsRunning = false;
-                //execInfo.StopTime = DateTime.Now;
-                //SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
-                //SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
-                //Console.WriteLine($"Unit '{unitName}' 정지 완료");
-                //return true;
+
+                return ok;
             }
             catch (Exception ex)
             {
                 SetAndRaiseUnitState(unitName, UnitStatus.Error);
-                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 Log.Write(ex);
                 return false;
             }
         }
 
-        /// <summary>
-        /// Unit 정지 완료 대기
-        /// </summary>
+        // 실행 태스크 대기(기존 로직 유지) + 실패 시 Error
         private async Task<bool> WaitForUnitStopAsync(string unitName, Task executionTask)
         {
             try
             {
                 var timeoutTask = Task.Delay(10000);
-                var completedTask = await Task.WhenAny(executionTask, timeoutTask);
+                var completedTask = await Task.WhenAny(executionTask, timeoutTask).ConfigureAwait(false);
 
                 if (completedTask == timeoutTask)
                 {
-                    Log.Write("Equipment", $"Unit '{unitName}' 정지 타임아웃");
-                    SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                    Log.Write("Equipment", $"Unit '{unitName}' 정지 타임아웃(ExecutionTask)");
+                    // 주의: 여기서 바로 Error로 확정하지 않고, 상태 폴링으로 추가 확인 예정
                     return false;
                 }
 
-                Log.Write("Equipment", $"Unit '{unitName}' 정지 완료");
+                Log.Write("Equipment", $"Unit '{unitName}' 정지(ExecutionTask) 완료");
                 return true;
             }
             catch (Exception ex)
             {
-                SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        // [NEW] 유닛의 실제 상태(Stoppd/IsStop)로 완전 정지 확인을 폴링
+        private async Task<bool> PollUnitFullyStoppedAsync(string unitName, BaseUnit unit, int timeoutMs, int pollMs)
+        {
+            if (unit == null) 
+                return true; // 유닛 객체가 없으면 더 이상 확인 불가 → 완료로 간주
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    // 유닛이 실제로 정지 상태로 전이했는지 확인
+                    bool stopped =
+                        unit.RunUnitStatus == BaseUnit.UnitStatus.Stopped
+                        || unit.IsStop
+                        || unit.IsCycleStop;
+
+                    if (stopped)
+                        return true;
+
+                    await Task.Delay(pollMs).ConfigureAwait(false);
+                }
+
+                Log.Write("Equipment", $"Unit '{unitName}' 상태 폴링 타임아웃 - 실제 정지 확인 실패");
+                return false;
+            }
+            catch (Exception ex)
+            {
                 Log.Write(ex);
                 return false;
             }
@@ -1276,6 +1332,25 @@ namespace QMC.LCP_280.Process
                 catch { }
                 Cameras.Clear();
 
+                // Sourcemeters
+                try
+                {
+                    foreach (var sm in Sourcemeters.Values)
+                        try { (sm as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Sourcemeters.Clear();
+
+                // Spectrometers
+                try
+                {
+                    foreach (var spc in Spectrometers.Values)
+                        try { (spc as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Spectrometers.Clear();
+
+
                 // LightControllers 추가
                 try
                 {
@@ -1306,24 +1381,6 @@ namespace QMC.LCP_280.Process
                 }
                 catch { }
                 Barcoders.Clear();
-
-                // Sourcemeters
-                try
-                {
-                    foreach (var sm in Sourcemeters.Values)
-                        try { (sm as IDisposable)?.Dispose(); } catch { }
-                }
-                catch { }
-                Sourcemeters.Clear();
-
-                // Spectrometers
-                try
-                {
-                    foreach (var spc in Spectrometers.Values)
-                        try { (spc as IDisposable)?.Dispose(); } catch { }
-                }
-                catch { }
-                Spectrometers.Clear();
 
                 // Units
                 try
@@ -1429,12 +1486,79 @@ namespace QMC.LCP_280.Process
             if (_motionStatusScanner == null)
             {
                 _motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
-                _motionStatusScanner.AxisStatusUpdated += (axis, status) => { /* 필요 시 이벤트 처리 */ };
+
+                _motionStatusScanner.AxisStatusUpdated += (axis, status) =>
+                {
+                    try
+                    {
+                        if (_disposed || _isShuttingDown) return;
+                        if (!_isEquipmentInitialized) return;
+                        if (!IsAxisHomed) return;
+                        if (axis == null || status == null) return;
+
+                        // 1) 기존 알람 시스템 사용 (AlarmPost)
+                        axis.CheckAndPostSafetyAlarms();
+
+                        // 2) Fault 조건이면 즉시 정지
+                        bool fault =
+                            (status.IO != null) &&
+                            (!status.IO.ServoOn
+                             || status.IO.Alarm
+                             || status.IO.PositiveLimitSensor
+                             || status.IO.NegativeLimitSensor);
+
+                        if (fault)
+                        {
+                            IssueImmediateMotionStopOnce();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write("Equipment", "[MotionSafety] AxisStatusUpdated error: " + ex);
+                    }
+                };
+
                 _motionStatusScanner.Start();
+
+                //_motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                //_motionStatusScanner.AxisStatusUpdated += (axis, status) => { /* 필요 시 이벤트 처리 */ };
+                //_motionStatusScanner.Start();
             }
-            //var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
-            //scanner.AxisStatusUpdated += (axis, status) => { };
-            //scanner.Start();
+        }
+
+        private void IssueImmediateMotionStopOnce()
+        {
+            if (_motionSafetyStopIssued)
+                return;
+
+            lock (_motionSafetyStopLock)
+            {
+                if (_motionSafetyStopIssued)
+                    return;
+
+                _motionSafetyStopIssued = true;
+            }
+
+            try
+            {
+                Log.Write("Equipment", "[MotionSafety] Fault detected -> EMG STOP all axes");
+
+                var axes = _axisManager != null ? _axisManager.GetAll() : null;
+                if (axes != null)
+                {
+                    foreach (var a in axes)
+                    {
+                        try { a.EmgStop(); } catch { }
+                    }
+                }
+
+                // 상태 정책: 즉시 Error로
+                OnStateChanged(EquipmentState.Error);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
 
         private void ClearAllMotionAlarmsOnStartup()
@@ -1579,7 +1703,7 @@ namespace QMC.LCP_280.Process
                 DecJerkPercent = 50
             };
             if (!File.Exists(configPath)) config.TrySave(configPath, out _);
-            if (axisName != "Index T Axis")
+            if (axisName != AxisNames.IndexT)
             {
                 var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
                 return new MotionAxis(setup, config, driver);
@@ -2026,8 +2150,941 @@ namespace QMC.LCP_280.Process
 
         public bool m_bBuzzerOff { get; set; } = false;
 
+
+        // [ADD] 초기화 필요 동작을 격리하기 위한 공통 Guard
+        // - 초기화 전에는 설비가 "어떤 동작도" 하지 않게 하는 핵심 게이트
+        private void EnsureInitializedOrThrow(string actionName)
+        {
+            if (_disposed) 
+                throw new ObjectDisposedException(nameof(Equipment));
+
+            if (_isShuttingDown) 
+                throw new InvalidOperationException("장비 종료 중입니다.");
+
+            if (!_isEquipmentInitialized)
+                throw new InvalidOperationException($"장비 초기화가 필요합니다. (요청 동작: {actionName})");
+        }
+
+
+        // [ADD] 외부(Operator_Main 등)에서 Home 완료를 알리는 API
+        public void MarkAxisHomed()
+        {
+            _isAxisHomed = true;
+        }
+
+        // [ADD] Home 완료를 다시 무효화(필요 시: 알람/리셋/재초기화 시점에 호출)
+        public void ResetAxisHomed()
+        {
+            _isAxisHomed = false;
+        }
+
+        // [ADD] "오토/이동 가능" 조건을 한 곳에서 관리
+        public bool CanRunAutoOrMoveAxes => IsEquipmentInitialized && IsAxisHomed;
+
+        // [ADD] 공통 Guard (오토/축이동 전용)
+        public bool EnsureAxisReadyForAutoOrMove(string actionName)
+        {
+            // 기존 Guard 재사용 (InitializeEquipment 완료 여부)
+            EnsureInitializedOrThrow(actionName);
+            bool bRet = false;
+            if (_isAxisHomed == false)
+            {
+                var mb = new MessageBoxOk();
+                mb.TopMost = true;
+                mb.ShowDialog("Error!", "축 Home(원점복귀)가 필요합니다.");
+
+                bRet = false;
+                return bRet;
+            }
+
+            bRet = true;
+            return bRet;
+        }
+
+        #region Unit Helper
+
+        // =========================
+        // [ADD] Unit-level lock (공유 유닛 충돌 방지)
+        // =========================
+        private readonly object _unitGateMapLock = new object();
+        private readonly Dictionary<string, SemaphoreSlim> _unitGateMap =
+            new Dictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
+
+        private SemaphoreSlim GetUnitGate(string unitName)
+        {
+            if (string.IsNullOrWhiteSpace(unitName))
+                return null;
+
+            lock (_unitGateMapLock)
+            {
+                if (!_unitGateMap.TryGetValue(unitName, out var gate))
+                {
+                    gate = new SemaphoreSlim(1, 1);
+                    _unitGateMap[unitName] = gate;
+                }
+                return gate;
+            }
+        }
+
+        private async Task<bool> TryEnterUnitGatesAsync(IEnumerable<string> unitNames, string opName, CancellationToken ct)
+        {
+            var names = (unitNames ?? Enumerable.Empty<string>())
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase) // deadlock 방지: 항상 동일 순서로 lock
+                .ToList();
+
+            var acquired = new List<SemaphoreSlim>();
+            try
+            {
+                foreach (var n in names)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    var g = GetUnitGate(n);
+                    if (g == null) continue;
+
+                    // Fail-fast 대신 "대기"로 하는 것이 실제 운용에서 자연스러움
+                    await g.WaitAsync(ct).ConfigureAwait(false);
+                    acquired.Add(g);
+                }
+
+                return true;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                Log.Write("Equipment", $"[UnitGate] {opName} gate acquire 실패: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                //if (acquired.Count == 0) return;
+
+                // 실 패/예외인 경우 여기서 release
+                // 성공인 경우는 호출자가 finally에서 ReleaseUnitGates(acquired) 호출
+                // -> 여기서는 성공/실패를 구분하기 어렵기 때문에, 성공 시에는 acquired를 반환하는 패턴이 필요함.
+                // 단, 본 프로젝트 스타일 유지 위해 아래 helper(WithUnitGatesAsync)로 감싼다.
+            }
+        }
+
+        private void ReleaseUnitGates(List<SemaphoreSlim> acquired)
+        {
+            if (acquired == null) return;
+            for (int i = acquired.Count - 1; i >= 0; i--)
+            {
+                try { acquired[i]?.Release(); } catch { }
+            }
+        }
+
+        // 유닛 게이트를 잡고 action을 실행하는 공통 헬퍼
+        private async Task<T> WithUnitGatesAsync<T>(IEnumerable<string> unitNames, string opName, CancellationToken ct, Func<Task<T>> action)
+        {
+            var names = (unitNames ?? Enumerable.Empty<string>())
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var acquired = new List<SemaphoreSlim>();
+            try
+            {
+                foreach (var n in names)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var g = GetUnitGate(n);
+                    if (g == null) continue;
+
+                    await g.WaitAsync(ct).ConfigureAwait(false);
+                    acquired.Add(g);
+                }
+
+                return await action().ConfigureAwait(false);
+            }
+            finally
+            {
+                ReleaseUnitGates(acquired);
+            }
+        }
+
+        private Task WithUnitGatesAsync(IEnumerable<string> unitNames, string opName, CancellationToken ct, Func<Task> action)
+        {
+            return WithUnitGatesAsync<object>(unitNames, opName, ct, async () =>
+            {
+                await action().ConfigureAwait(false);
+                return null;
+            });
+        }
+
+        private IEnumerable<string> GetUnitNamesForSequenceStart(string sequenceName)
+        {
+            return GetUnitsForSequence(sequenceName)
+                .Where(u => u != null && !string.IsNullOrWhiteSpace(u.UnitName))
+                .Select(u => u.UnitName)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private IEnumerable<string> GetUnitNamesForSequenceReady(string sequenceName)
+        {
+            // [FIX] Ready 단계에서 건드릴 가능성이 있는 유닛을 "합집합"으로 락:
+            // 1) ReadyTasks에서 실제 호출되는 유닛
+            // 2) 해당 시퀀스가 소유하는 유닛(향후 Ready가 내부적으로 이 유닛들도 건드릴 수 있으므로 방어)
+            return GetUnitNamesForSequenceReadyTasks(sequenceName)
+                .Concat(GetUnitNamesForSequenceStart(sequenceName))
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private IEnumerable<string> GetUnitNamesForSequenceReadyTasks(string sequenceName)
+        {
+            // BuildReadyTasks에서 실제로 건드리는 유닛 기준
+            // (BuildReadyTasks의 switch와 같이 유지보수)
+            switch (sequenceName)
+            {
+                case "InputWafer":
+                    return new[] { UnitKeys.InputFeeder, UnitKeys.InputStageEjector };
+
+                case "ChipLoading":
+                    return new[] { UnitKeys.InputDieTransfer };
+
+                case "Process":
+                    return new[] { UnitKeys.IndexLoadAligner, UnitKeys.IndexChipProbeController };
+
+                case "ChipUnloading":
+                    return new[] { UnitKeys.OutputDieTransfer };
+
+                case "OutputWafer":
+                    return new[] { UnitKeys.OutputFeeder };
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        #endregion
+
+        #region Sequnce Helper
+        // =========================
+        // Sequence 통합(NEW)
+        // =========================
+        // [MOD] All(전체) 동작은 전역 게이트로 직렬화
+        private readonly SemaphoreSlim _sequenceAllGate = new SemaphoreSlim(1, 1);
+
+        // [ADD] 단일 시퀀스 동작은 시퀀스별 게이트로 직렬화(서로 다른 시퀀스는 동시 허용)
+        private readonly object _sequenceGateMapLock = new object();
+        private readonly Dictionary<string, SemaphoreSlim> _sequenceGateMap =
+            new Dictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
+
+        private SemaphoreSlim GetSequenceGate(string sequenceName)
+        {
+            if (string.IsNullOrWhiteSpace(sequenceName))
+                return _sequenceAllGate;
+
+            lock (_sequenceGateMapLock)
+            {
+                if (!_sequenceGateMap.TryGetValue(sequenceName, out var gate))
+                {
+                    gate = new SemaphoreSlim(1, 1);
+                    _sequenceGateMap[sequenceName] = gate;
+                }
+                return gate;
+            }
+        }
+
+        private readonly object _sequenceStateGate = new object();
+        private readonly HashSet<string> _sequenceReady = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _sequenceRunning = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly string[] _sequenceOrder =
+        {
+            "InputWafer","ChipLoading","Process","ChipUnloading","OutputWafer"
+        };
+
+        public bool IsAnySequenceBusy
+        {
+            get
+            {
+                lock (_sequenceStateGate)
+                {
+                    return _sequenceRunning.Count > 0;
+                }
+            }
+        }
+
+        public IReadOnlyCollection<string> GetSequenceReadySnapshot()
+        {
+            lock (_sequenceStateGate) return _sequenceReady.ToList().AsReadOnly();
+        }
+
+        public IReadOnlyCollection<string> GetSequenceRunningSnapshot()
+        {
+            lock (_sequenceStateGate) return _sequenceRunning.ToList().AsReadOnly();
+        }
+
+        public async Task<bool> SequenceReadyAsync(string sequenceName, CancellationToken ct)
+        {
+            if (!await TryEnterPerSequenceGateAsync(sequenceName, "SequenceReadyAsync:" + sequenceName, ct).ConfigureAwait(false))
+                return false;
+
+            try
+            {
+                return await SequenceReadyCoreAsync(sequenceName, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                ExitPerSequenceGate(sequenceName);
+            }
+        }
+
+        public async Task<bool> SequenceStartAsync(string sequenceName, CancellationToken ct)
+        {
+            if (!await TryEnterPerSequenceGateAsync(sequenceName, "SequenceStartAsync:" + sequenceName, ct).ConfigureAwait(false))
+                return false;
+
+            try
+            {
+                return await SequenceStartCoreAsync(sequenceName, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                ExitPerSequenceGate(sequenceName);
+            }
+        }
+
+        public async Task SequenceStopAsync(string sequenceName, CancellationToken ct)
+        {
+            if (!await TryEnterPerSequenceGateAsync(sequenceName, "SequenceStopAsync:" + sequenceName, ct).ConfigureAwait(false))
+                return;
+
+            try
+            {
+                await SequenceStopCoreAsync(sequenceName, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                ExitPerSequenceGate(sequenceName);
+            }
+        }
+
+        // ======= All API에서 SequenceXxxAsync 대신 Core 호출 =======
+
+        public async Task<bool> SequenceReadyAllAsync(CancellationToken ct)
+        {
+            if (!await TryEnterSequenceAllGateAsync("SequenceReadyAllAsync", ct).ConfigureAwait(false))
+                return false;
+
+            try
+            {
+                EnsureAxisReadyForAutoOrMove("SequenceReadyAll");
+
+                lock (_sequenceStateGate)
+                {
+                    if (_sequenceRunning.Count > 0)
+                        return false;
+
+                    _sequenceReady.Clear();
+                }
+                RaiseSequenceUiStateChanged();
+
+                foreach (var seq in _sequenceOrder)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    var ok = await SequenceReadyCoreAsync(seq, ct).ConfigureAwait(false);
+                    if (!ok)
+                        return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                ExitSequenceAllGate();
+            }
+        }
+
+        public async Task<bool> SequenceStartAllAsync(CancellationToken ct)
+        {
+            if (!await TryEnterSequenceAllGateAsync("SequenceStartAllAsync", ct).ConfigureAwait(false))
+                return false;
+
+            try
+            {
+                EnsureAxisReadyForAutoOrMove("SequenceStartAll");
+
+                lock (_sequenceStateGate)
+                {
+                    if (_sequenceRunning.Count > 0)
+                        return false;
+                }
+
+                // 1) 전체 Ready를 "시퀀스 단위 병렬"로 수행
+                //    (각 시퀀스 내부 Ready Task도 parallel=true 이므로 결과적으로 더 동시성이 높아짐)
+                var readyTasks = _sequenceOrder.Select(seq => SequenceReadyCoreAsync(seq, ct)).ToArray();
+                var readyResults = await Task.WhenAll(readyTasks).ConfigureAwait(false);
+                if (!readyResults.All(r => r))
+                {
+                    Log.Write("Equipment", "[SEQ] StartAll: 전체 Ready 실패");
+                    return false;
+                }
+
+                // 2) Start 대상 유닛을 전체 시퀀스에서 한번에 수집(중복 제거)
+                var allUnits = GetAllUnitsForAllSequencesDistinct();
+
+                // Running 상태 표시(시퀀스 전체를 Running으로 표시)
+                lock (_sequenceStateGate)
+                {
+                    _sequenceReady.Clear();
+                    foreach (var seq in _sequenceOrder)
+                        _sequenceRunning.Add(seq);
+                }
+                RaiseSequenceUiStateChanged();
+
+                // 3) 전체 유닛 병렬 Start + Running 대기
+                var startOk = await StartUnitsDistinctAsync(allUnits, ct, parallel: true).ConfigureAwait(false);
+                if (!startOk)
+                {
+                    Log.Write("Equipment", "[SEQ] StartAll: 전체 Start 실패");
+
+                    lock (_sequenceStateGate)
+                    {
+                        _sequenceRunning.Clear();
+                    }
+
+                    RaiseSequenceUiStateChanged();
+                    return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                ExitSequenceAllGate();
+            }
+        }
+
+        private List<BaseUnit> GetAllUnitsForAllSequencesDistinct()
+        {
+            var list = new List<BaseUnit>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var seq in _sequenceOrder)
+            {
+                foreach (var u in GetUnitsForSequence(seq))
+                {
+                    if (u == null) continue;
+
+                    var key = string.IsNullOrEmpty(u.UnitName) ? u.GetHashCode().ToString() : u.UnitName;
+                    if (seen.Add(key))
+                        list.Add(u);
+                }
+            }
+
+            return list;
+        }
+
+        private async Task<bool> StartUnitsDistinctAsync(List<BaseUnit> units, CancellationToken ct, bool parallel)
+        {
+            if (units == null || units.Count == 0)
+                return false;
+
+            if (parallel)
+            {
+                var startTasks = units.Select(TryStartUnitAsync).ToArray();
+                var started = await Task.WhenAll(startTasks).ConfigureAwait(false);
+                if (!started.All(r => r))
+                    return false;
+
+                var waitTasks = units.Select(u => WaitForUnitRunningAsync(u, 5000, ct)).ToArray();
+                var waited = await Task.WhenAll(waitTasks).ConfigureAwait(false);
+                return waited.All(r => r);
+            }
+
+            foreach (var u in units)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                if (!await TryStartUnitAsync(u).ConfigureAwait(false))
+                    return false;
+
+                if (!await WaitForUnitRunningAsync(u, 5000, ct).ConfigureAwait(false))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> SequenceStopAllAsync(CancellationToken ct)
+        {
+            if (!await TryEnterSequenceAllGateAsync("SequenceStopAllAsync", ct).ConfigureAwait(false))
+                return false;
+
+            try
+            {
+                EnsureInitializedOrThrow("SequenceStopAll");
+
+                foreach (var seq in _sequenceOrder)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    await SequenceStopCoreAsync(seq, ct).ConfigureAwait(false);
+                }
+
+                // Unit Stop 보강 (EquipmentStatus 제외)
+                if (Units != null)
+                {
+                    foreach (var u in Units.Values.OfType<BaseUnit>())
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (IsStopExemptUnit(u)) continue;
+
+                        try
+                        {
+                            if (!string.IsNullOrEmpty(u.UnitName))
+                                await StopUnitAsync(u.UnitName).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) { Log.Write(ex); }
+                    }
+                }
+
+                lock (_sequenceStateGate)
+                {
+                    _sequenceReady.Clear();
+                    _sequenceRunning.Clear();
+                }
+
+                RaiseSequenceUiStateChanged();
+                return true;
+            }
+            finally
+            {
+                ExitSequenceAllGate();
+            }
+        }
+
+        // ======= Core 구현(게이트 획득 금지) 추가 =======
+
+        private async Task<bool> SequenceReadyCoreAsync(string sequenceName, CancellationToken ct)
+        {
+            EnsureAxisReadyForAutoOrMove("SequenceReady:" + sequenceName);
+
+            lock (_sequenceStateGate)
+            {
+                // [MOD] 전체 Running이 있으면 거부(X) → 해당 시퀀스가 Running이면 거부(O)
+                if (_sequenceRunning.Contains(sequenceName))
+                    return false;
+
+                if (_sequenceReady.Contains(sequenceName))
+                    return true;
+            }
+
+            // [ADD] 공유 유닛 충돌 방지: Ready에 필요한 유닛 gate 획득 후 실행
+            var ok = await WithUnitGatesAsync(
+                GetUnitNamesForSequenceReady(sequenceName),
+                "ReadyCore:" + sequenceName,
+                ct,
+                async () => await ReadyUnitsForSequenceAsync(sequenceName, ct, parallel: true).ConfigureAwait(false)
+            ).ConfigureAwait(false);
+
+            if (!ok) return false;
+
+            lock (_sequenceStateGate)
+            {
+                _sequenceReady.Add(sequenceName);
+            }
+
+            RaiseSequenceUiStateChanged();
+            return true;
+        }
+
+        private async Task<bool> SequenceStartCoreAsync(string sequenceName, CancellationToken ct)
+        {
+            EnsureAxisReadyForAutoOrMove("SequenceStart:" + sequenceName);
+
+            lock (_sequenceStateGate)
+            {
+                if (_sequenceRunning.Contains(sequenceName))
+                    return true;
+            }
+
+            // Ready 보정(Core 사용) - ReadyCore 자체가 UnitGate 잡기 때문에 별도 처리 불필요
+            var readyOk = await SequenceReadyCoreAsync(sequenceName, ct).ConfigureAwait(false);
+            if (!readyOk) return false;
+
+            lock (_sequenceStateGate)
+            {
+                _sequenceReady.Remove(sequenceName);
+                _sequenceRunning.Add(sequenceName);
+            }
+            RaiseSequenceUiStateChanged();
+
+            // [ADD] 공유 유닛 충돌 방지: Start에 필요한 유닛 gate 획득 후 실행
+            var startOk = await WithUnitGatesAsync(
+                GetUnitNamesForSequenceStart(sequenceName),
+                "StartCore:" + sequenceName,
+                ct,
+                async () => await StartUnitsForSequenceAsync(sequenceName, ct, parallel: true).ConfigureAwait(false)
+            ).ConfigureAwait(false);
+
+            if (!startOk)
+            {
+                lock (_sequenceStateGate) 
+                { 
+                    _sequenceRunning.Remove(sequenceName); 
+                }
+                RaiseSequenceUiStateChanged();
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task SequenceStopCoreAsync(string sequenceName, CancellationToken ct)
+        {
+            EnsureInitializedOrThrow("SequenceStop:" + sequenceName);
+
+            // [ADD] 공유 유닛 충돌 방지: Stop에 필요한 유닛 gate 획득 후 실행
+            await WithUnitGatesAsync(
+                GetUnitNamesForSequenceStart(sequenceName),
+                "StopCore:" + sequenceName,
+                ct,
+                async () => await StopUnitsForSequenceAsync(sequenceName).ConfigureAwait(false)
+            ).ConfigureAwait(false);
+
+            lock (_sequenceStateGate)
+            {
+                _sequenceReady.Remove(sequenceName);
+                _sequenceRunning.Remove(sequenceName);
+            }
+            RaiseSequenceUiStateChanged();
+        }
+
+        // --- Gate helpers (Fail-Fast) ---
+
+        private async Task<bool> TryEnterSequenceAllGateAsync(string opName, CancellationToken ct)
+        {
+            EnsureInitializedOrThrow(opName);
+
+            bool ok = await _sequenceAllGate.WaitAsync(0, ct).ConfigureAwait(false);
+            if (!ok)
+            {
+                Log.Write("Equipment", $"{opName} 거부: 다른 전체 시퀀스 동작이 진행 중");
+                return false;
+            }
+            return true;
+        }
+
+        private void ExitSequenceAllGate()
+        {
+            try { _sequenceAllGate.Release(); } catch { }
+        }
+
+        private async Task<bool> TryEnterPerSequenceGateAsync(string sequenceName, string opName, CancellationToken ct)
+        {
+            EnsureInitializedOrThrow(opName);
+
+            var gate = GetSequenceGate(sequenceName);
+
+            bool ok = await gate.WaitAsync(0, ct).ConfigureAwait(false);
+            if (!ok)
+            {
+                Log.Write("Equipment", $"{opName} 거부: '{sequenceName}' 시퀀스 동작이 이미 진행 중");
+                return false;
+            }
+            return true;
+        }
+
+        private void ExitPerSequenceGate(string sequenceName)
+        {
+            try
+            {
+                var gate = GetSequenceGate(sequenceName);
+                gate.Release();
+            }
+            catch { }
+        }
+
+        // --- Internal helpers ---
+        private async Task<bool> ReadyUnitsForSequenceAsync(string sequenceName, CancellationToken ct, bool parallel = true)
+        {
+            var tasksFactory = BuildReadyTasks(sequenceName).ToList();
+            if (tasksFactory.Count == 0)
+            {
+                Log.Write("Equipment", $"[SEQ] ReadyTasks 없음: seq='{sequenceName}'");
+                return false;
+            }
+
+            if (parallel)
+            {
+                var tasks = tasksFactory.Select(f => f(ct)).ToArray();
+                var rcs = await Task.WhenAll(tasks).ConfigureAwait(false);
+
+                if (!rcs.All(rc => rc == 0))
+                {
+                    Log.Write("Equipment", $"[SEQ] Ready 실패: seq='{sequenceName}', rcs=[{string.Join(",", rcs)}]");
+                    return false;
+                }
+
+                return true;
+            }
+
+            foreach (var f in tasksFactory)
+            {
+                ct.ThrowIfCancellationRequested();
+                var rc = await f(ct).ConfigureAwait(false);
+                if (rc != 0)
+                {
+                    Log.Write("Equipment", $"[SEQ] Ready 실패: seq='{sequenceName}', rc={rc}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private IEnumerable<Func<CancellationToken, Task<int>>> BuildReadyTasks(string sequenceName)
+        {
+            var inputFeeder = GetUnit(UnitKeys.InputFeeder) as InputFeeder;
+            var inputDieTransfer = GetUnit(UnitKeys.InputDieTransfer) as InputDieTransfer;
+            var outputDieTransfer = GetUnit(UnitKeys.OutputDieTransfer) as OutputDieTransfer;
+            var outputFeeder = GetUnit(UnitKeys.OutputFeeder) as OutputFeeder;
+            var inputStageEjector = GetUnit(UnitKeys.InputStageEjector) as InputStageEjector;
+            var indexLoadAligner = GetUnit(UnitKeys.IndexLoadAligner) as IndexLoadAligner;
+            var indexChipProbeController = GetUnit(UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+
+            switch (sequenceName)
+            {
+                case "InputWafer":
+                    return new Func<CancellationToken, Task<int>>[]
+                    {
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return inputFeeder?.EnsureReady() ?? -1;
+                        }, ct),
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return inputStageEjector?.CheckReady() ?? -1;
+                        }, ct),
+                    };
+
+                case "ChipLoading":
+                    return new Func<CancellationToken, Task<int>>[]
+                    {
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return inputDieTransfer?.EnsureReady() ?? -1;
+                        }, ct)
+                    };
+
+                case "Process":
+                    return new Func<CancellationToken, Task<int>>[]
+                    {
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return indexLoadAligner?.EnsureReady() ?? -1;
+                        }, ct),
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return indexChipProbeController?.EnsureReady() ?? -1;
+                        }, ct),
+                    };
+
+                case "ChipUnloading":
+                    return new Func<CancellationToken, Task<int>>[]
+                    {
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return outputDieTransfer?.EnsureReady() ?? -1;
+                        }, ct)
+                    };
+
+                case "OutputWafer":
+                    return new Func<CancellationToken, Task<int>>[]
+                    {
+                        ct => Task.Run(() =>
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            return outputFeeder?.EnsureReady() ?? -1;
+                        }, ct)
+                    };
+            }
+
+            return Enumerable.Empty<Func<CancellationToken, Task<int>>>();
+        }
+
+        private IEnumerable<BaseUnit> GetUnitsForSequence(string sequenceName)
+        {
+            BaseUnit U(string key) => GetUnit(key);
+
+            switch (sequenceName)
+            {
+                case "InputWafer":
+                    return new[] { U(UnitKeys.InputFeeder), U(UnitKeys.InputCassetteLifter), U(UnitKeys.InputStage) }.Where(u => u != null);
+
+                case "ChipLoading":
+                    return new[] { U(UnitKeys.InputDieTransfer), U(UnitKeys.InputStageEjector) }.Where(u => u != null);
+
+                case "Process":
+                    return new[]
+                    {
+                        U(UnitKeys.Rotary),
+                        U(UnitKeys.IndexLoadAligner),
+                        U(UnitKeys.IndexChipProbeController),
+                        U(UnitKeys.IndexChipProber),
+                        U(UnitKeys.IndexUnloadAligner)
+                    }.Where(u => u != null);
+
+                case "ChipUnloading":
+                    return new[] { U(UnitKeys.OutputDieTransfer) }.Where(u => u != null);
+
+                case "OutputWafer":
+                    return new[] { U(UnitKeys.OutputFeeder), U(UnitKeys.OutputCassetteLifter), U(UnitKeys.OutputStage) }.Where(u => u != null);
+            }
+
+            return Enumerable.Empty<BaseUnit>();
+        }
+
+        private async Task<bool> StartUnitsForSequenceAsync(string sequenceName, CancellationToken ct, bool parallel = true)
+        {
+            var units = GetUnitsForSequence(sequenceName).ToList();
+            if (units.Count == 0) return false;
+
+            // 중복 제거
+            var distinctUnits = new List<BaseUnit>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var u in units)
+            {
+                var key = string.IsNullOrEmpty(u.UnitName) ? u.GetHashCode().ToString() : u.UnitName;
+                if (seen.Add(key)) distinctUnits.Add(u);
+            }
+
+            if (parallel)
+            {
+                var startTasks = distinctUnits.Select(TryStartUnitAsync).ToArray();
+                var started = await Task.WhenAll(startTasks).ConfigureAwait(false);
+                if (!started.All(r => r)) return false;
+
+                var waitTasks = distinctUnits.Select(u => WaitForUnitRunningAsync(u, 5000, ct)).ToArray();
+                var waited = await Task.WhenAll(waitTasks).ConfigureAwait(false);
+                return waited.All(r => r);
+            }
+
+            foreach (var u in distinctUnits)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!await TryStartUnitAsync(u).ConfigureAwait(false)) return false;
+                if (!await WaitForUnitRunningAsync(u, 5000, ct).ConfigureAwait(false)) return false;
+            }
+            return true;
+        }
+
+        private async Task<bool> TryStartUnitAsync(BaseUnit unit)
+        {
+            if (unit == null) return false;
+
+            var unitName = unit.UnitName;
+            if (string.IsNullOrEmpty(unitName))
+                return false;
+
+            if (unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning || unit.IsRunning)
+                return true;
+
+            return await StartUnitAsync(unitName).ConfigureAwait(false);
+        }
+
+        private async Task<bool> WaitForUnitRunningAsync(BaseUnit unit, int timeoutMs, CancellationToken ct)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning || unit.IsRunning)
+                    return true;
+
+                await Task.Delay(100, ct).ConfigureAwait(false);
+            }
+
+            return unit.RunUnitStatus == BaseUnit.UnitStatus.AutoRunning || unit.IsRunning;
+        }
+
+        private async Task StopUnitsForSequenceAsync(string sequenceName)
+        {
+            var units = GetUnitsForSequence(sequenceName).ToList();
+            foreach (var u in units)
+            {
+                try
+                {
+                    if (u != null && !string.IsNullOrEmpty(u.UnitName))
+                        await StopUnitAsync(u.UnitName).ConfigureAwait(false);
+                }
+                catch (Exception ex) { Log.Write(ex); }
+            }
+        }
+
+        private static bool IsStopExemptUnit(BaseUnit u)
+        {
+            if (u == null) return false;
+            if (u is EquipmentStatus) return true;
+
+            var name = u.UnitName;
+            if (!string.IsNullOrEmpty(name) &&
+                name.Equals(UnitKeys.EquipmentStatus, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var typeName = u.GetType().Name;
+            if (string.Equals(typeName, "EquipmentStatus", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        }
+
+
+        // =========================
+        // [ADD] Sequence UI Snapshot/Event (SSOT)
+        // =========================
+        public sealed class SequenceUiSnapshot
+        {
+            public IReadOnlyCollection<string> Ready { get; set; }
+            public IReadOnlyCollection<string> Running { get; set; }
+
+            // 편의
+            public bool AnyRunning => Running != null && Running.Count > 0;
+            public bool AnyReady => Ready != null && Ready.Count > 0;
+        }
+
+        public event EventHandler SequenceUiStateChanged;
+
+        private void RaiseSequenceUiStateChanged()
+        {
+            try { SequenceUiStateChanged?.Invoke(this, EventArgs.Empty); } catch { }
+        }
+
+        public SequenceUiSnapshot GetSequenceUiSnapshot()
+        {
+            lock (_sequenceStateGate)
+            {
+                return new SequenceUiSnapshot
+                {
+                    Ready = _sequenceReady.ToList().AsReadOnly(),
+                    Running = _sequenceRunning.ToList().AsReadOnly()
+                };
+            }
+        }
+
+
+        #endregion
+
+
+
+
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    /// 클래스 및 열거형 정의
     #region Supporting Classes and Enums
     /// <summary>
     /// Unit 실행 정보

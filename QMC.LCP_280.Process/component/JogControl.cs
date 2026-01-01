@@ -18,6 +18,21 @@ namespace QMC.LCP_280.Process.Unit
         private MotionAxisManager _axisManager;
         private Timer _posTimer;
 
+        // [ADD] 표시명(UI) -> 실제 축 이름(MotionAxis.Name) 매핑
+        private readonly Dictionary<string, string> _axisDisplayToAxisName
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        private string GetSelectedAxisName()
+        {
+            //selectAxisListBoxItemsView
+            var displayName = selectAxisListBoxItemsView?.SelectedItemName;
+            if (string.IsNullOrWhiteSpace(displayName))
+                return null;
+
+            string axisName;
+            return _axisDisplayToAxisName.TryGetValue(displayName, out axisName) ? axisName : displayName;
+        }
+
         public JogControl()
         {
             InitializeComponent();
@@ -29,6 +44,32 @@ namespace QMC.LCP_280.Process.Unit
 
             InitializeUI();
         }
+
+        // [ADD] Home(축 초기화) 전에는 모든 모션을 차단하는 공통 Guard
+        private bool EnsureAxisReadyOrShowMessage(string actionName)
+        {
+            try
+            {
+                var eq = EquipmentInst;
+                if (eq == null)
+                {
+                    MessageBox.Show("Equipment 인스턴스를 찾을 수 없습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                bool bRet = eq.EnsureAxisReadyForAutoOrMove(actionName);
+                return bRet;
+            }
+            catch (Exception ex)
+            {
+                // 요구사항: Home 전에는 “실패 메시지로 끝나도록”
+                MessageBox.Show(ex.Message, "초기화 필요",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
 
         // ===== 초기화 (Motion_Setup 스타일) =====
         private void InitializeUI()
@@ -91,11 +132,13 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // ===== 축 목록 바인딩 =====
+        // ===== 축 목록 바인딩 (순서: AxisNames.AllInOrder / 표시: AxisNames.DisplayNames) =====
         private void BindAxisList()
         {
             try
             {
+                _axisDisplayToAxisName.Clear();
+
                 if (_axisManager == null)
                 {
                     MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
@@ -104,14 +147,51 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                selectAxisListBoxItemsView.SetItems();
+                var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? new string[0];
+                if (axisNames.Length == 0)
+                {
+                    selectAxisListBoxItemsView.SetItems();
+                    return;
+                }
 
-                // Axis를 전부 하고 싶을때 하자.
-                //var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? new string[0];
-                //if (axisNames.Length > 0)
-                //    selectAxisListBoxItemsView.SetItems(axisNames);
-                //else
-                //    selectAxisListBoxItemsView.SetItems();
+                var exists = new HashSet<string>(axisNames, StringComparer.OrdinalIgnoreCase);
+                var displayList = new List<string>();
+
+                // 1) AllInOrder 순서대로 표시
+                foreach (var axisName in AxisNames.AllInOrder)
+                {
+                    if (!exists.Contains(axisName))
+                        continue;
+
+                    var display = AxisNames.GetDisplayName(axisName);
+
+                    // 표시명이 중복될 경우 유니크 처리
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
+
+                // 2) AllInOrder에 없는 축이 있으면 뒤에 붙임(이름순)
+                var remaining = axisNames
+                    .Where(n => !AxisNames.AllInOrder.Any(o => o.Equals(n, StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var axisName in remaining)
+                {
+                    var display = AxisNames.GetDisplayName(axisName);
+
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
+
+                selectAxisListBoxItemsView.SetItems(displayList.ToArray());
+                if (displayList.Count > 0)
+                    selectAxisListBoxItemsView.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -125,16 +205,60 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                _axisDisplayToAxisName.Clear();
+
                 if (axisNames == null)
                 {
                     selectAxisListBoxItemsView.SetItems();
                     return;
                 }
-                var arr = axisNames.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToArray();
+
+                // 들어온 축 이름(=실제 MotionAxis.Name) 정리
+                var arr = axisNames
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
                 if (arr.Length == 0)
+                {
                     selectAxisListBoxItemsView.SetItems();
-                else
-                    selectAxisListBoxItemsView.SetItems(arr);
+                    return;
+                }
+
+                // 1) AxisNames.AllInOrder 기준으로 먼저 정렬 (티칭 목록 중 포함된 것만)
+                var exists = new HashSet<string>(arr, StringComparer.OrdinalIgnoreCase);
+                var displayList = new List<string>();
+
+                foreach (var axisName in AxisNames.AllInOrder)
+                {
+                    if (!exists.Contains(axisName))
+                        continue;
+
+                    var display = AxisNames.GetDisplayName(axisName);
+
+                    // 표시명 중복 방지
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
+
+                // 2) AllInOrder에 없는 축은 입력 목록 기준으로 뒤에 추가(표시명 적용)
+                foreach (var axisName in arr.Where(n => !AxisNames.AllInOrder.Any(o => o.Equals(n, StringComparison.OrdinalIgnoreCase))))
+                {
+                    var display = AxisNames.GetDisplayName(axisName);
+
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
+
+                selectAxisListBoxItemsView.SetItems(displayList.ToArray());
+                if (displayList.Count > 0)
+                    selectAxisListBoxItemsView.SelectedIndex = 0;
             }
             catch (Exception ex)
             {
@@ -155,7 +279,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName(); // 실제 축 이름
                 UpdateJogEnableByAxisName(axisName);
                 UpdatePositionOnce();
                 UpdateUIByAxisSelection(axisName);
@@ -211,30 +335,30 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateJogEnableByAxisName(string axisName)
         {
-            if (axisName == "Index T Axis")
+            if (axisName != null && axisName.Equals(AxisNames.IndexT, StringComparison.OrdinalIgnoreCase))
             {
-                // CKD DD Motor
                 btnXMinus.Enabled = btnXPlus.Enabled = false;
                 btnYMinus.Enabled = btnYPlus.Enabled = false;
                 btnZMinus.Enabled = btnZPlus.Enabled = false;
                 btnTMinus.Enabled = btnTPlus.Enabled = false;
                 btnPrevIndex.Enabled = btnNextIndex.Enabled = true;
+                btnStop.Enabled = true;
+                return;
             }
-            else
-            {
-                bool x = HasAxisLetter(axisName, "X");
-                bool y = HasAxisLetter(axisName, "Y");
-                bool z = HasAxisLetter(axisName, "Z");
-                bool t = HasAxisLetter(axisName, "T");
 
-                btnXMinus.Enabled = btnXPlus.Enabled = x;
-                btnYMinus.Enabled = btnYPlus.Enabled = y;
-                btnZMinus.Enabled = btnZPlus.Enabled = z;
-                btnTMinus.Enabled = btnTPlus.Enabled = t;
-                btnPrevIndex.Enabled = btnNextIndex.Enabled = false;
-            }
+            bool x = HasAxisLetter(axisName, "X");
+            bool y = HasAxisLetter(axisName, "Y");
+            bool z = HasAxisLetter(axisName, "Z");
+            bool t = HasAxisLetter(axisName, "T");
+
+            btnXMinus.Enabled = btnXPlus.Enabled = x;
+            btnYMinus.Enabled = btnYPlus.Enabled = y;
+            btnZMinus.Enabled = btnZPlus.Enabled = z;
+            btnTMinus.Enabled = btnTPlus.Enabled = t;
+            btnPrevIndex.Enabled = btnNextIndex.Enabled = false;
             btnStop.Enabled = true;
         }
+
         private static bool HasAxisLetter(string name, string letter)
         {
             if (string.IsNullOrEmpty(name)) return false;
@@ -273,7 +397,7 @@ namespace QMC.LCP_280.Process.Unit
         private void UpdatePositionOnce()
         {
             if (_axisManager == null) return;
-            string axisName = selectAxisListBoxItemsView.SelectedItemName;
+            string axisName = GetSelectedAxisName(); // 실제 축 이름
             if (string.IsNullOrEmpty(axisName)) 
                 return;
 
@@ -305,8 +429,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                if (!EnsureAxisReadyOrShowMessage("Jog")) return;
+
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName(); // 실제 축 이름
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -343,7 +469,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName(); // 실제 축 이름
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -359,8 +485,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                if (!EnsureAxisReadyOrShowMessage("Jog.IndexPrev")) return;
+
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName(); // 실제 축 이름
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -378,8 +506,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                if (!EnsureAxisReadyOrShowMessage("Jog.IndexNext")) return;
+
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName();
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -398,7 +528,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName();
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -417,8 +547,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                if (!EnsureAxisReadyOrShowMessage("Jog.MoveAbs")) return;
+
                 if (_axisManager == null) return;
-                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                string axisName = GetSelectedAxisName();
                 if (string.IsNullOrEmpty(axisName)) return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
@@ -585,9 +717,8 @@ namespace QMC.LCP_280.Process.Unit
         private void UpdateUIByAxisSelection(string axisName)
         {
             bool hasAxis = !string.IsNullOrEmpty(axisName);
-            if (axisName == "Index T Axis")
+            if (axisName != null && axisName.Equals(AxisNames.IndexT, StringComparison.OrdinalIgnoreCase))
             {
-                // CKD DD Motor
                 btnXMinus.Enabled = btnXPlus.Enabled = false;
                 btnYMinus.Enabled = btnYPlus.Enabled = false;
                 btnZMinus.Enabled = btnZPlus.Enabled = false;
@@ -602,6 +733,7 @@ namespace QMC.LCP_280.Process.Unit
                 btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
                 btnPrevIndex.Enabled = btnNextIndex.Enabled = false;
             }
+
             btnStop.Enabled = hasAxis;
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
         }

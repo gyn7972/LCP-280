@@ -7,7 +7,7 @@ namespace QMC.Common
 {
     /// <summary>
     /// Common Tab host that loads forms registered for a MenuButtonType using FormManager.
-    /// Replaces duplicated code in FormMain/FormConfig/FormWorking/FormRecipe/FormSetup/FormLog.
+    /// Replaces duplicated code in FormMain/FormConfig/FormManual/FormRecipe/FormSetup/FormLog.
     /// Keeps lazy-loading and SetPanelSize behavior.
     /// </summary>
     public class TabbedViewHost : UserControl, IResizable
@@ -47,7 +47,7 @@ namespace QMC.Common
             {
                 case MenuButtonType.Main: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Main);
                 case MenuButtonType.Config: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Config);
-                case MenuButtonType.Working: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
+                case MenuButtonType.Menual: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Menual);
                 case MenuButtonType.Recipe: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Recipe);
                 case MenuButtonType.Setup: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Setup);
                 case MenuButtonType.Log: return FormManager.Instance.GetRegisteredForms(MenuButtonType.Log);

@@ -2,6 +2,7 @@
 using QMC.Common.Account;
 using QMC.Common.IOUtil;
 using QMC.Common.PKGTester;
+using QMC.LCP_280.Process.Work;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -70,17 +71,54 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         private readonly object _headerLock = new object();
 
         private static readonly string _runDate = DateTime.Now.ToString("yyyyMMdd");
-        private string BaseDir { 
+        private string _baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData");
+        private string _logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+
+        public string BaseDir { 
             get 
-            { 
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate); 
-            } 
+            {
+                return _baseDir;
+                //return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate); 
+            }
+            set
+            {
+                 _baseDir = value;
+            }
         }
-        private string LogDir { 
-            get 
-            { 
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", _runDate); 
-            } 
+
+        private string LogDir {
+            get
+            {
+                // 1) 외부에서 강제로 세팅한 값이 있으면 그 값을 최우선 사용
+                if (!string.IsNullOrWhiteSpace(_logDir))
+                    return _logDir;
+
+                // 2) EquipmentConfig 기반 경로
+                try
+                {
+                    var cfg = Equipment.Instance?.EquipmentConfig;
+                    if (cfg != null)
+                    {
+                        // 네트워크 모드에서는 설정 경로 우선
+                        if (cfg.NetworkMode > 1 && !string.IsNullOrWhiteSpace(cfg.LogPath))
+                            return cfg.LogPath;
+                    }
+                }
+                catch
+                {
+                    // ignore (fallback 사용)
+                }
+
+                // 3) 기본 fallback
+                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+            }
+            set
+            {
+                // 재귀 방지 + 정규화
+                _logDir = string.IsNullOrWhiteSpace(value)
+                    ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs")
+                    : value.Trim();
+            }
         }
 
         private readonly object _ioLock = new object();
@@ -94,11 +132,13 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
         public ResultWriterManager()
         {
-            // 날짜 폴더 미리 생성
             try
             {
                 Directory.CreateDirectory(BaseDir);
-                Directory.CreateDirectory(LogDir);
+
+                var logDir = LogDir;
+                if (!string.IsNullOrWhiteSpace(logDir))
+                    Directory.CreateDirectory(logDir);
             }
             catch { /* 필요시 Log.Write(e) */ }
         }
@@ -150,13 +190,24 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         public int AppendTxTDie(MaterialDie die)
         {
             PKGTesterResult result = die.TesterResult;
-
             string waferId = SafeWaferId(die.SourceWaferId);
-            string dir = Path.Combine(BaseDir, waferId);
-            Directory.CreateDirectory(dir);
-            //string file = Path.Combine(dir, waferId + "_" + DateTime.Now.ToString("yyyyMMdd") + ".txt");
-            string file = Path.Combine(dir, waferId + ".txt");
 
+            var eqpConfig = Equipment.Instance.EquipmentConfig;
+            int nNetworkMode = eqpConfig.NetworkMode;
+            string dir = "";
+            if (nNetworkMode == 0)
+            {
+                BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+                dir = Path.Combine(BaseDir, waferId);
+            }
+            else if(nNetworkMode > 1)
+            {
+                string strDir = eqpConfig.TXTResultPath;
+                dir = Path.Combine(strDir, waferId);
+            }
+            Directory.CreateDirectory(dir);
+
+            string file = Path.Combine(dir, waferId + ".txt");
             string strBinFileName = die.SourceBinFileName;//  "none.bin"; //불러와야함.
             lock (_ioLock)
             {
@@ -218,7 +269,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             }
 
             string waferId = SafeWaferId(die.SourceWaferId);
-            string dir = Path.Combine(BaseDir, waferId);
+            //string dir = Path.Combine(BaseDir, waferId);
+            //Directory.CreateDirectory(dir);
+            var eqpConfig = Equipment.Instance.EquipmentConfig;
+            int nNetworkMode = eqpConfig.NetworkMode;
+            string dir = "";
+            if (nNetworkMode == 0)
+            {
+                BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+                dir = Path.Combine(BaseDir, waferId);
+            }
+            else if (nNetworkMode > 1)
+            {
+                string strDir = eqpConfig.BinResultPath;
+                dir = Path.Combine(strDir, waferId);
+            }
             Directory.CreateDirectory(dir);
             string file = Path.Combine(dir, waferId + ".bin");
 
@@ -269,7 +334,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             //string file = Path.Combine(dir, waferId + ".sum");
 
             string waferId = SafeWaferId(die.SourceWaferId);
-            string dir = Path.Combine(BaseDir, waferId);
+            //string dir = Path.Combine(BaseDir, waferId);
+            //Directory.CreateDirectory(dir);
+            var eqpConfig = Equipment.Instance.EquipmentConfig;
+            int nNetworkMode = eqpConfig.NetworkMode;
+            string dir = "";
+            if (nNetworkMode == 0)
+            {
+                BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+                dir = Path.Combine(BaseDir, waferId);
+            }
+            else if (nNetworkMode > 1)
+            {
+                string strDir = eqpConfig.SUMResultPath;
+                dir = Path.Combine(strDir, waferId);
+            }
             Directory.CreateDirectory(dir);
             string file = Path.Combine(dir, waferId + ".sum");
             lock (_ioLock)
@@ -363,10 +442,10 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             PrdContext.HeaderLines.Add("1"); //<- ?
             PrdContext.HeaderLines.Add("1"); //<- ?
             PrdContext.HeaderLines.Add("13089"); //<-전체 검사 갯수.. //SumContext.TotalCount // 이 항목은 계속 업데이트 되어야함.
-            PrdContext.HeaderLines.Add(waferId);
-            PrdContext.HeaderLines.Add(waferId);
             PrdContext.HeaderLines.Add(binFile);
             PrdContext.HeaderLines.Add(binFile);
+            PrdContext.HeaderLines.Add(waferId);
+            PrdContext.HeaderLines.Add(waferId);
             PrdContext.HeaderLines.Add(loginId); // <-로그인 ID  AccountManager.CurrentAccount.UserID
             PrdContext.HeaderLines.Add(SumContext.EqpName);
 
@@ -425,7 +504,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 return -1;
 
             string waferId = SafeWaferId(die.SourceWaferId);
-            string dir = Path.Combine(BaseDir, waferId);
+            //string dir = Path.Combine(BaseDir, waferId);
+            //Directory.CreateDirectory(dir);
+            var eqpConfig = Equipment.Instance.EquipmentConfig;
+            int nNetworkMode = eqpConfig.NetworkMode;
+            string dir = "";
+            if (nNetworkMode == 0)
+            {
+                BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+                dir = Path.Combine(BaseDir, waferId);
+            }
+            else if (nNetworkMode > 1)
+            {
+                string strDir = eqpConfig.PRDResultPath;
+                dir = Path.Combine(strDir, waferId);
+            }
             Directory.CreateDirectory(dir);
             string file = Path.Combine(dir, waferId + ".prd");
             var r = die.TesterResult;
@@ -504,82 +597,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             return 0;
         }
 
-        //public int AppendPrdDie(MaterialDie die)
-        //{
-        //    if (die == null || die.TesterResult == null) 
-        //        return -1;
-
-        //    string waferId = SafeWaferId(die.SourceWaferId);
-        //    string dir = Path.Combine(BaseDir, waferId);
-        //    Directory.CreateDirectory(dir);
-        //    string file = Path.Combine(dir, waferId + ".prd");
-        //    var r = die.TesterResult;
-
-        //    lock (_ioLock)
-        //    {
-        //        bool exists = File.Exists(file);
-        //        using (var w = new StreamWriter(file, true, Encoding.UTF8))
-        //        {
-        //            if (!exists)
-        //            {
-        //                //file없으면 여기서 header한번만들고 쓰자.
-        //                BuildPrdHeader(die);
-
-        //                // 상단 메타 헤더 출력
-        //                foreach (var line in PrdContext.HeaderLines)
-        //                    w.WriteLine(line);
-        //                // (Item Parameter)
-        //                foreach (var line in PrdContext.ParameterBlock)
-        //                    w.WriteLine(line);
-        //                // (Zero 블록 유지)
-        //                foreach (var line in PrdContext.ZeroBlock1)
-        //                    w.WriteLine(line);
-        //                foreach (var line in PrdContext.ZeroBlock2)
-        //                    w.WriteLine(line);
-
-        //                // CSV 헤더 출력
-        //                w.WriteLine(string.Join(",", PrdContext.DataColumns));
-        //            }
-        //            else
-        //            {
-        //                // 재시작 등으로 DataColumns 비어 있으면 복구 시도
-        //                if (!PrdContext.HeaderInitialized)
-        //                    BuildPrdHeader(die);
-        //            }
-
-        //            // Rank (TesterResult 우선, 없으면 Die.Rank)
-        //            int rank = r.BinningResult != null ? r.BinningResult.BinNo : die.Rank;
-        //            // 값 매핑 사전 준비 (아이템 값)
-        //            var itemDict = GetInternalItemDict(r) ?? new Dictionary<string, TestItemResult>();
-        //            var sb = new StringBuilder(256);
-        //            foreach (var col in PrdContext.DataColumns)
-        //            {
-        //                if (sb.Length > 0) sb.Append(',');
-        //                switch (col)
-        //                {
-        //                    case "XADR": sb.Append(die.MapX * -1); break;
-        //                    case "YADR": sb.Append(die.MapY * -1); break;
-        //                    case "RANK": sb.Append(rank); break;
-        //                    case "Index": sb.Append(die.SocketIndex + 1); break;
-        //                    default:
-        //                        {
-        //                            TestItemResult ti;
-        //                            if (itemDict.TryGetValue(col, out ti) && ti != null)
-        //                                sb.Append(ti.Value);
-        //                            else
-        //                                sb.Append("0");
-        //                        }
-        //                        break;
-        //                }
-        //            }
-        //            w.WriteLine(sb.ToString());
-        //        }
-        //    }
-        //    return 0;
-        //}
-
-        // ResultWriterManager 클래스 내부
-
         /// <summary>
         /// WAF 파일에서 사용할 측정 아이템 컬럼 순서를 한 번만 구축
         /// (아이템 이름 라인은 쓰지 않고, 값만 이 순서대로 출력)
@@ -656,7 +673,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 return -1;
 
             string waferId = SafeWaferId(die.SourceWaferId);
-            string dir = Path.Combine(BaseDir, waferId);
+            //string dir = Path.Combine(BaseDir, waferId);
+            //Directory.CreateDirectory(dir);
+            var eqpConfig = Equipment.Instance.EquipmentConfig;
+            int nNetworkMode = eqpConfig.NetworkMode;
+            string dir = "";
+            if (nNetworkMode == 0)
+            {
+                BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+                dir = Path.Combine(BaseDir, waferId);
+            }
+            else if (nNetworkMode > 1)
+            {
+                string strDir = eqpConfig.WAFResultPath;
+                dir = Path.Combine(strDir, waferId);
+            }
             Directory.CreateDirectory(dir);
             string file = Path.Combine(dir, waferId + ".waf");
             PKGTesterResult r = die.TesterResult;
@@ -1040,42 +1071,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
                 seq++;
             }
-            //foreach (var it in CurrentTestConditionSet.Items)
-            //{
-            //    double srcVal = it.SourceValue;
-            //    double srcTime = it.SourceTime;
-            //    double measTime = it.MeasureTime;
-            //    double srcLimit = it.MeasureLimit;
-
-            //    // Expression 에서 Low/High 추출 시도 (예: "255 290", "2.9 3.25", "452.5 460" 또는 "255~290")
-            //    (double low, double high) = TryExtractRange(it.Expression);
-
-            //    // Gain / Offset 첫 번째 값
-            //    double gain0 = (it.Gain != null && it.Gain.Length > 0) ? it.Gain[0] : 0.0;
-            //    double offset0 = (it.Offset != null && it.Offset.Length > 0) ? it.Offset[0] : 0.0;
-
-            //    // 타입 enum → 정수 출력
-            //    int typeCode = (int)it.Type;
-
-            //    // 포맷: "SourceValue SourceTime,MeasureTime Type MeasureLimit Low High Gain0 Offset0"
-            //    // 소수 표현 규칙: 예제에 맞춰 기본은 필요한 자리만, Gain/Offset은 0.##### / High/Low는 입력 그대로
-            //    string line =
-            //        srcVal.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        srcTime.ToString("0.#####", CultureInfo.InvariantCulture) + "," +
-            //        measTime.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        typeCode + " " +
-            //        srcLimit.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        low.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        high.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        gain0.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        offset0.ToString("0.#####", CultureInfo.InvariantCulture);
-
-            //    PrdContext.ParameterBlock.Add(line);
-            //    WafContext.ParameterBlock.Add(line);
-            //    SumContext.ParameterBlock.Add(line);
-            //}
-
-            // 아래 ZeroBlock1 / ZeroBlock2 는 기존 유지(초기화되지 않았다면 호출 측에서 채워짐)
         }
 
         // Expression 문자열에서 범위 (Low, High) 추출: "a b", "a  b", "a~b"
@@ -1150,5 +1145,137 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 }
             }
         }
+
+
+        // ======== Production Summary CSV (YYYYMMWaferTotalOUT_DB.csv) ========
+        // 생산요약 한 줄 데이터 모델
+        public class ProductionSummaryRow
+        {
+            public DateTime Date { get; set; }                 // yyyy-MM-dd
+            public string EquipmentName { get; set; }          // 설비명 (예: VA1VPRO03)
+            public string Model { get; set; }                  // 모델명
+            public TimeSpan DayProductionTime { get; set; }    // 주간생산시간 (HH:mm:ss)
+            public int DayCount { get; set; }                  // 주간 수량
+            public TimeSpan NightProductionTime { get; set; }  // 야간생산시간 (HH:mm:ss)
+            public int NightCount { get; set; }                // 야간 수량
+            public double YieldPercent { get; set; }           // 수율(예: 99.84)
+            public TimeSpan TotalProductionTime { get; set; }  // Total 생산시간 (HH:mm:ss)
+            public int TotalCount { get; set; }                // Total 수량
+        }
+
+        // 파일명 규칙: YYYYMM + "WaferTotalOUT_DB.csv"
+        // 경로: EquipmentConfig.ProductionInfoPath(있으면 우선, 파일 또는 디렉터리 둘 다 허용) → 없으면 BaseDir
+        private string GetProductionInfoFilePath()
+        {
+            string ym = DateTime.Now.ToString("yyyyMM", CultureInfo.InvariantCulture);
+            string fileName = ym + "WaferTotalOUT_DB.csv";
+            string FilePath = "";
+            try
+            {
+                var cfg = Equipment.Instance?.EquipmentConfig;
+                string path = cfg?.ProductionInfoPath;
+
+                if(cfg.NetworkMode == 0)
+                {
+                    //BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProductionInfo", _runDate);
+                    FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProductionInfo", fileName);
+                    return FilePath;
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(path))
+                    {
+                        // 디렉터리로 지정된 경우
+                        if (Directory.Exists(path))
+                        {
+                            return Path.Combine(path, fileName);
+                        }
+
+                        // 파일 경로로 지정된 경우 → 동일 폴더에 규칙 파일명으로 저장
+                        string dir = Path.GetDirectoryName(path);
+                        if (!string.IsNullOrWhiteSpace(dir))
+                        {
+                            // 디렉터리가 없으면 생성
+                            if (!Directory.Exists(dir))
+                                Directory.CreateDirectory(dir);
+
+                            return Path.Combine(dir, fileName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ResultWriterManager", "GetProductionInfoFilePath", ex.Message);
+                // fall through to BaseDir
+            }
+
+            // 기본 경로: 날짜 폴더(BaseDir)
+            return Path.Combine(BaseDir, fileName);
+        }
+
+        // HH:mm:ss 고정 포맷 (누적 24시간 초과 시에도 시간 누적 표시)
+        private static string FormatTimeSpan(TimeSpan ts)
+        {
+            long totalSeconds = (long)Math.Max(0, ts.TotalSeconds);
+            int h = (int)(totalSeconds / 3600);
+            int m = (int)((totalSeconds % 3600) / 60);
+            int s = (int)(totalSeconds % 60);
+            return $"{h:00}:{m:00}:{s:00}";
+        }
+
+        /// <summary>
+        /// 생산요약 CSV에 행 추가. 파일이 없으면 헤더를 먼저 씁니다.
+        /// 컬럼: 날짜,설비명,Model,주간생산시간,주간,야간생산시간,야간,수율,Total,TotalCount
+        /// 파일명: YYYYMMWaferTotalOUT_DB.csv
+        /// </summary>
+        public int AppendProductionSummaryRow(ProductionSummaryRow row)
+        {
+            if (row == null) return -1;
+
+            string file = GetProductionInfoFilePath();
+            string dir = Path.GetDirectoryName(file);
+            if (string.IsNullOrWhiteSpace(dir)) 
+                dir = BaseDir;
+            Directory.CreateDirectory(dir);
+
+            lock (_ioLock)
+            {
+                bool exists = File.Exists(file);
+                using (var w = new StreamWriter(file, true, Encoding.UTF8))
+                {
+                    if (!exists)
+                    {
+                        // 헤더 1회
+                        w.WriteLine("날짜,설비명,Model,주간생산시간,주간,야간생산시간,야간,수율,Total,TotalCount");
+                    }
+
+                    // 값 라인
+                    string date = row.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    string eqp = row.EquipmentName ?? string.Empty;
+                    string model = row.Model ?? string.Empty;
+                    string dayTime = FormatTimeSpan(row.DayProductionTime);
+                    string nightTime = FormatTimeSpan(row.NightProductionTime);
+                    string totalTime = FormatTimeSpan(row.TotalProductionTime);
+                    string yield = row.YieldPercent.ToString("0.##", CultureInfo.InvariantCulture);
+
+                    w.WriteLine(string.Join(",",
+                        date,
+                        eqp,
+                        model,
+                        dayTime,
+                        row.DayCount.ToString(CultureInfo.InvariantCulture),
+                        nightTime,
+                        row.NightCount.ToString(CultureInfo.InvariantCulture),
+                        yield,
+                        totalTime,
+                        row.TotalCount.ToString(CultureInfo.InvariantCulture)
+                    ));
+                }
+            }
+            return 0;
+        }
+
+        // ======== End of Production Summary CSV ========
     }
 }

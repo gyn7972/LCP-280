@@ -613,12 +613,12 @@ namespace QMC.LCP_280.Process.Unit
 
         ///////////////////////////////////////////////////////////////////////////////////////////
         // Single Pickup (Non-Index) - 구조 통일 (Index 기반 메서드 패턴과 동일 스타일)
-        public int MovePositionPickUp(bool isFine = false)
+        public int MovePositionPickDown(bool isFine = false)
         {
-            Task<int> task = MovePositionAsyncPickUp(isFine);
+            Task<int> task = MovePositionAsyncPickDown(isFine);
             while (!IsEndTask(task))
             {
-                int interlock = IsMoveInterLockPickUp();
+                int interlock = IsMoveInterLockPickDown();
                 if (interlock != 0)
                 {
                     return -1;
@@ -628,15 +628,15 @@ namespace QMC.LCP_280.Process.Unit
             return task.Result;
         }
 
-        private Task<int> MovePositionAsyncPickUp(bool isFine = false)
+        private Task<int> MovePositionAsyncPickDown(bool isFine = false)
         {
             return Task.Run(() =>
             {
-                return OnMovePositionPickUp(isFine);
+                return OnMovePositionPickDown(isFine);
             });
         }
 
-        private int OnMovePositionPickUp(bool isFine = false)
+        private int OnMovePositionPickDown(bool isFine = false)
         {
             // 안전 Z 위치 확인 후 필요 시 이동
             if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
@@ -659,7 +659,7 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
-        private int IsMoveInterLockPickUp()
+        private int IsMoveInterLockPickDown()
         {
             // InputStage 축 움직임 감시
             if (InputStage != null && InputStage.IsAnyAxisMoving())
@@ -808,7 +808,7 @@ namespace QMC.LCP_280.Process.Unit
             return Task.Run(() =>
             {
                 // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
-                var coreTask = Task.Run(() => OnMovePositionPickUp(isFine), ct);
+                var coreTask = Task.Run(() => OnMovePositionPickDown(isFine), ct);
 
                 while (!IsEndTask(coreTask))
                 {
@@ -824,7 +824,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -999; // 취소 코드
                     }
 
-                    int nRtn = IsMoveInterLockPickUp();
+                    int nRtn = IsMoveInterLockPickDown();
                     if (nRtn != 0)
                     {
                         return -1;
@@ -1667,8 +1667,6 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop(); 
             return ret; 
         }
@@ -1679,34 +1677,93 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRet = 0;
-
+                // ===== Snapshot log (원인 파악 1순위) =====
+                MaterialDie held = this.GetMaterial() as MaterialDie;
                 MaterialWafer wafer = this.InputStage.GetMaterialWafer();
-                if (wafer != null)
+                bool chipMappingDone = false;
+                bool hasNextDie = false;
+                try 
+                { 
+                    chipMappingDone = this.InputStage.ChipMappingDone; 
+                } 
+                catch { }
+                
+                try 
+                { 
+                    hasNextDie = this.InputStage.HasNextDie(); 
+                } 
+                catch { }
+
+                Log.Write(UnitName, nameof(OnRunReady),
+                    $"State={State}, " +
+                    $"Held={(held == null ? "null" : $"Exist={held.Presence},State={held.State},Map=({held.MapX:F3},{held.MapY:F3})")}, " +
+                    $"Wafer={(wafer == null ? "null" : $"Exist={wafer.Presence},Proc={wafer.ProcessSatate},Id={wafer.WaferId}")}, " +
+                    $"ChipMappingDone={chipMappingDone}, " +
+                    $"HasNextDie={hasNextDie}");
+
+                // ===== 우선순위 1) 이미 들고 있는 다이가 있으면 Place 진행 가능하도록 Work로 진입 =====
+                // (웨이퍼 언로드되어도 DieTransfer는 들고 있는 다이를 로터리에 내려놓아야 함)
+                if (held != null 
+                    && held.Presence == Material.MaterialPresence.Exist)
                 {
-                    if (wafer.Presence == Material.MaterialPresence.Exist)
+                    State = ProcessState.Work;
+                    return 0;
+                }
+
+                // ===== 우선순위 2) 스테이지에서 픽업할 다이가 준비되어 있을 때만 Work 진입 =====
+                if (wafer != null
+                    && wafer.Presence == Material.MaterialPresence.Exist
+                    && wafer.ProcessSatate == Material.MaterialProcessSatate.Processing
+                    && chipMappingDone
+                    && hasNextDie)
+                {
+                    State = ProcessState.Work;
+                    return 0;
+                }
+
+                // ===== 그 외: Ready 자세 유지 =====
+                if (IsPositionToolTReady() == false)
+                {
+                    nRet = MovePositionReady();
+                    if (nRet != 0)
                     {
-                        if (wafer.ProcessSatate == Material.MaterialProcessSatate.Processing
-                            && this.InputStage.HasNextDie()
-                            && this.InputStage.ChipMappingDone)
-                        {
-                            State = ProcessState.Work;
-                        }
-                        else
-                        {
-                            if(IsPositionToolTReady() == false)
-                            {
-                                nRet = MovePositionReady();
-                                if (nRet != 0)
-                                {
-                                    Log.Write(UnitName, "[OnRunReady] MovePositionReady failed");
-                                    PostAlarm((int)AlarmKeys.eInputDieTransferMoveFail);
-                                    return -1; 
-                                }
-                            }
-                        }
+                        Log.Write(UnitName, "[OnRunReady] MovePositionReady failed");
+                        PostAlarm((int)AlarmKeys.eInputDieTransferMoveFail);
+                        return -1;
                     }
                 }
                 return nRet;
+
+                // 기존 코드
+                {
+                    //MaterialWafer wafer = this.InputStage.GetMaterialWafer();
+                    //if (wafer != null)
+                    //{
+                    //    if (wafer.Presence == Material.MaterialPresence.Exist)
+                    //    {
+                    //        if (wafer.ProcessSatate == Material.MaterialProcessSatate.Processing
+                    //            && this.InputStage.HasNextDie()
+                    //            && this.InputStage.ChipMappingDone)
+                    //        {
+                    //            State = ProcessState.Work;
+                    //        }
+                    //        else
+                    //        {
+                    //            if(IsPositionToolTReady() == false)
+                    //            {
+                    //                nRet = MovePositionReady();
+                    //                if (nRet != 0)
+                    //                {
+                    //                    Log.Write(UnitName, "[OnRunReady] MovePositionReady failed");
+                    //                    PostAlarm((int)AlarmKeys.eInputDieTransferMoveFail);
+                    //                    return -1; 
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //}
+                    //return nRet;
+                }
             }
             finally
             {
@@ -1721,17 +1778,6 @@ namespace QMC.LCP_280.Process.Unit
                 int nRet = 0;
                 int nArmIndex = GetInputTrArmIndex();
                 MaterialDie DieTr = this.GetMaterial() as MaterialDie;
-
-                if(InputStage.IsRingPresent() == false 
-                    && InputStage.IsPlateUp() == false)
-                {
-
-                    AxisPickZ?.EmgStop();
-                    AxisToolT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] Wafer None failed");
-                    return -1;
-                }
 
                 if (DieTr != null && IsVacuumOK(nArmIndex))
                 {
@@ -1765,6 +1811,16 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     State = ProcessState.Complete;
                     return nRet;
+                }
+
+                if (InputStage.IsRingPresent() == false
+                    && InputStage.IsPlateUp() == false)
+                {
+                    AxisPickZ?.EmgStop();
+                    AxisToolT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] Wafer None failed");
+                    return -1;
                 }
 
                 MaterialWafer waferStage = this.InputStage.GetMaterialWafer();
@@ -1820,11 +1876,18 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                bool haveDieOnArm = (waferDie != null 
-                                    || waferDie.State == DieProcessState.Picked);
-                if (haveDieOnArm)
+                //bool haveDieOnArm = (waferDie != null 
+                //                    || waferDie.State == DieProcessState.Picked);
+                //if (haveDieOnArm)
+                bool shouldPickFromStage = (waferDie != null
+                                           && waferDie.Presence == Material.MaterialPresence.Exist
+                                           && waferDie.State != DieProcessState.Picked);
+                Log.Write(UnitName, "OnRunWork",
+                        $"PickDecision shouldPickFromStage={shouldPickFromStage}, " +
+                        $"waferDie={(waferDie == null ? "null" : $"Exist={waferDie.Presence},State={waferDie.State},Map=({waferDie.MapX:F3},{waferDie.MapY:F3}),Index={waferDie.Index}")}");
+                
+                if (shouldPickFromStage)
                 {
-
                     Log.Write("kkkkkkRotary", "RaiseEjectorForPick");
                     TaktStart("RaiseEjectorForPick");
                     try
@@ -1894,8 +1957,6 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         TaktEnd("SyncPickPinRetreat");
                     }
-
-
                     Log.Write("kkkkkkRotary", "SyncPickPinRetreat");
                     if (nRet != 0) 
                     {
@@ -1909,7 +1970,8 @@ namespace QMC.LCP_280.Process.Unit
                     if (IsVacuumOK(nArmIndex))
                     {
                         var res = InputStageVaccumOff();
-                        if (!res.flowControl) return res.value;
+                        if (!res.flowControl) 
+                            return res.value;
 
                         TaktStart("CommitPickedDie");
                         try
@@ -1954,37 +2016,6 @@ namespace QMC.LCP_280.Process.Unit
                         this.State = ProcessState.Ready;
                         return 0;
                     }
-
-                    //if (IsVacuumOK(nArmIndex))
-                    //{
-                    //    var res = InputStageVaccumOff();
-                    //    if (!res.flowControl) return res.value;
-
-                    //    TaktStart("CommitPickedDie");
-                    //    try
-                    //    {
-                    //        nRet = CommitPickedDie();
-                    //    }
-                    //    finally
-                    //    {
-                    //        TaktEnd("CommitPickedDie");
-                    //    }
-                    //    if (nRet != 0) 
-                    //    {
-                    //        AxisPickZ?.EmgStop();
-                    //        AxisToolT?.EmgStop();
-                    //        PostAlarm((int)AlarmKeys.eInputDieTransferCommitPickedDie);
-                    //        Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed"); 
-                    //        return -1; 
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    nRet = CommitNotPickedDie();
-                    //    this.SetMaterial(null);
-                    //    this.State = ProcessState.Ready;
-                    //    return 0;
-                    //}
                 }
 
 
@@ -2025,7 +2056,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 int nRet = 0;
 
-                Log.Write("kkkkkkRotary", "PlaceChipDown Start11");
+                //Log.Write("kkkkkkRotary", "PlaceChipDown Start11");
                 if (Rotary.RequestInputDieTrDie == false) 
                     return 0;
 
@@ -2047,8 +2078,6 @@ namespace QMC.LCP_280.Process.Unit
                 { 
                     return MoveStageToNextDie(out var die); 
                 });
-
-               
 
                 TaktStart("PlaceChipDown");
                 try
@@ -2144,6 +2173,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[PrepareNextDie] wafer is null");
                 return -1;
             }
+
             if (wafer.Presence != Material.MaterialPresence.Exist)
             {
                 return 0;
@@ -2293,7 +2323,7 @@ namespace QMC.LCP_280.Process.Unit
 
             SetVacuum(nArmIndex, true, false);
             
-            nRet = MovePositionPickUp(bFineSpeed);
+            nRet = MovePositionPickDown(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp failed");
@@ -2302,6 +2332,10 @@ namespace QMC.LCP_280.Process.Unit
            
             return nRet;
         }
+
+        
+
+
         public int EjectorVacuumOn(bool bFineSpeed = true)
         {
             if (InputStageEjector == null)
@@ -2530,8 +2564,6 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         int idx = wafer.Dies.IndexOf(WaferDie);
                         
-                        
-
                         if (idx >= 0)
                         {
                             WaferDie.State = DieProcessState.Rejected;
@@ -2577,7 +2609,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return RotateToolTForPlace(bFineSpeed);
             });
-            Thread.Sleep(30);
+            Thread.Sleep(50);
             //Log.Write(UnitName, "RotateToolTForPlace_AsyncWait", "RecheckDieAndAlign Start");
             Task<int> t2 = Task.Factory.StartNew(() =>
             {
@@ -2673,6 +2705,34 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
 
         }
+
+        public int ChipPickDownReturn(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ChipPickDown;
+            }
+
+            int nArmIndex = GetInputTrArmIndex();
+
+            nRet = MovePositionPickDown(bFineSpeed); //이게 다운이다.!!
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp failed");
+                return -1;
+            }
+
+            SetVacuum(nArmIndex, false, false);
+            SetVent(nArmIndex, true);
+            Thread.Sleep(100);
+            SetVent(nArmIndex, false);
+            SetBlow(nArmIndex, true);
+            Thread.Sleep(100);
+            return nRet;
+        }
+
+
         public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
         {
             int nRet = 0;
@@ -2760,6 +2820,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = this.InputStage.MoveStageToNextDie(out die);
             return nRet;
         }
+
         public int RotateToolTForPlace(bool bFineSpeed = false)
         {
             if (AxisToolT == null)
@@ -2966,5 +3027,85 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             return false;
         }
+
+        /// <summary>
+        /// Config Form(PositionTeachingControl)에서 사용하던 티칭 이동 로직을 Unit으로 이동.
+        /// - teachingIndex: Config.TeachingPositions 인덱스
+        /// - isFine: Fine/Coarse
+        /// 반환: 0=성공, -1=실패
+        /// </summary>
+        public int MoveByTeachingIndex(int teachingIndex, bool isFine)
+        {
+            string tpName;
+            if (Config == null || !Config.GetTeachingPositionName(teachingIndex, out tpName) || string.IsNullOrWhiteSpace(tpName))
+                return -1;
+
+            InputDieTransferConfig.TeachingPositionName en;
+            if (!Enum.TryParse(tpName, out en))
+                return -1;
+
+            return MoveByTeachingName(en, isFine);
+        }
+
+        /// <summary>
+        /// TeachingPositionName 기반 이동 라우팅(핵심).
+        /// Form에서 switch 하던 것을 이 함수로 이동.
+        /// </summary>
+        public int MoveByTeachingName(InputDieTransferConfig.TeachingPositionName teachingName, bool isFine)
+        {
+            int rc;
+            int placeIndex;
+
+            switch (teachingName)
+            {
+                case InputDieTransferConfig.TeachingPositionName.Pickup:
+                    rc = MovePositionSafetyZ(isFine);
+                    if (rc != 0) return -1;
+
+                    rc = MovePositionPickUpToolT(isFine);
+                    if (rc != 0) return -1;
+
+                    rc = MovePositionPickUpPickZ(isFine);
+                    if (rc != 0) return -1;
+
+                    return 0;
+
+                case InputDieTransferConfig.TeachingPositionName.Ready:
+                    rc = MovePositionReady(isFine);
+                    return rc == 0 ? 0 : -1;
+
+                case InputDieTransferConfig.TeachingPositionName.SafetyZone:
+                    rc = MovePositionSafetyZ(isFine);
+                    return rc == 0 ? 0 : -1;
+
+                case InputDieTransferConfig.TeachingPositionName.Place_Index1: placeIndex = 0; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index2: placeIndex = 1; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index3: placeIndex = 2; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index4: placeIndex = 3; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index5: placeIndex = 4; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index6: placeIndex = 5; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index7: placeIndex = 6; break;
+                case InputDieTransferConfig.TeachingPositionName.Place_Index8: placeIndex = 7; break;
+
+                default:
+                    return -1;
+            }
+
+            // Place_Index 공통 처리
+            rc = MovePositionSafetyZ(isFine);
+            if (rc != 0) return -1;
+
+            rc = MovePositionPlace_Index(placeIndex, isFine);
+            return rc == 0 ? 0 : -1;
+        }
+
+        /// <summary>
+        /// UI에서 await 하기 편한 비동기 래퍼.
+        /// </summary>
+        public Task<int> MoveByTeachingIndexAsync(int teachingIndex, bool isFine)
+        {
+            return Task.Run(() => MoveByTeachingIndex(teachingIndex, isFine));
+        }
+
     }
 }

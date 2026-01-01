@@ -133,6 +133,7 @@ namespace QMC.LCP_280.Process.Unit
         IndexUnloadAligner IndexUnloadAligner { get; set; }
         OutputDieTransfer OutputDieTransfer { get; set; }
         InputStage InputStage { get; set; } // 추가: InputStage 참조
+        OutputStage OutputStage { get; set; } // 추가: OutputStage 참조
         #endregion
 
         #region Axis
@@ -595,6 +596,7 @@ namespace QMC.LCP_280.Process.Unit
             IndexUnloadAligner = Equipment.Instance.GetUnit(UnitKeys.IndexUnloadAligner) as IndexUnloadAligner;
             OutputDieTransfer = Equipment.Instance.GetUnit(UnitKeys.OutputDieTransfer) as OutputDieTransfer;
             InputStage = Equipment.Instance.GetUnit(UnitKeys.InputStage) as InputStage; // 추가: 바인딩
+            OutputStage = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage; // 추가: 바인딩
         }
         private void BindAxes()
         {
@@ -639,6 +641,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn; 
         }
+        #endregion
 
         #region Index Move (with Interlock)
         public bool TryMoveIndexPrev(out string reason)
@@ -1176,6 +1179,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
+
+        // [ADD] OutputStage 강제 Completed 중복 호출 방지용 래치
+        //  - Input wafer 종료 조건이 유지되는 동안 ForceComplete가 틱마다 반복 호출되는 것을 방지
+        //  - 조건이 다시 깨지면(false) 자동으로 래치 해제되어 다음 웨이퍼에 재동작 가능
+        private bool _outStageForceCompletedLatched = false;
+
         #endregion
 
 
@@ -1222,7 +1231,6 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-                //this.State = ProcessState.Stop;
                 this.OnStop();
                 return -1;
             }
@@ -1240,8 +1248,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -1271,7 +1277,6 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-                //this.State = ProcessState.Stop;
                 this.OnStop();
                 return -1;
             }
@@ -1296,9 +1301,6 @@ namespace QMC.LCP_280.Process.Unit
                 int nIndex = GetLoadIndexNo();
                 bool useSocket = this.Config.GetUseSocket(nIndex);
 
-                // === INPUT (Load 위치) 처리 영역 (DryRun 단순화) =========================
-                //RequestInputDieTrDie = false;
-                
                 // 변경: InputStage에 공급 가능한 Die가 있는 경우에만 요청 신호 설정
                 bool hasNextDie = true;
                 if (true)
@@ -1347,8 +1349,6 @@ namespace QMC.LCP_280.Process.Unit
                                     else
                                     {
                                         RequestInputDieTrDie = false; // 명시적으로 요청 안 함
-                                        // 필요 시 로그:
-                                        // Log.Write(UnitName, "[OnRunWork] InputStage에 남은 Die 없음 → Load 요청 스킵");
                                     }
                                 }
                                 else
@@ -1375,7 +1375,7 @@ namespace QMC.LCP_280.Process.Unit
                             }
                         }
                     }
-                    Log.Write("kkkkkkRotary", "InputDieTransfer Request");
+                    //Log.Write("kkkkkkRotary", "InputDieTransfer Request");
                 }
                 else
                 {
@@ -1396,7 +1396,68 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                if(useSocket)
+
+                // [ADD] 조기 return 전에 ForceComplete 조건을 먼저 평가
+                // - "모든 die가 소진되어 더 이상 ExecuteUnitAction/WaitPostActionSettled로 진입하지 않는" 케이스에서
+                //   OutputStage가 Processing으로 남아 언로딩이 막히는 문제를 방지
+                try
+                {
+                    bool inputWaferCompleted = false;
+                    var Wafer = InputStage.GetMaterialWafer();
+                    if (Wafer != null)
+                    {
+                        if(Wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                        {
+                            inputWaferCompleted = true;
+                        }
+                    }
+                    else
+                    {
+                        inputWaferCompleted = true;
+                    }
+
+                    bool inputDone = (hasNextDie == false);
+                    bool rotaryEmpty = (IsHaveDie() == false);
+                    bool odtEmpty = (OutputDieTransfer == null) || (OutputDieTransfer.GetMaterial() == null);
+                    bool outStageHasBin = (OutputStage != null)
+                                          && OutputStage.IsRingPresent()
+                                          && (OutputStage.GetMaterialWafer() != null)
+                                          && (OutputStage.GetMaterialWafer().Presence == Material.MaterialPresence.Exist);
+
+                    // [초기 구간 보호] OutStage 쪽에 "언로딩 대상"이 실제로 있을 때만 고려
+                    // - HasNextDie() 호출은 내부적으로 ProcessSatate를 건드리므로 피하고,
+                    //   최소한 Dies 존재 여부 정도만 확인 (초기 오작동 방지)
+                    bool outStageHasMap = false;
+                    try
+                    {
+                        var w = OutputStage?.GetMaterialWafer();
+                        outStageHasMap = (w != null && w.Dies != null && w.Dies.Count > 0);
+                    }
+                    catch { outStageHasMap = false; }
+
+                    bool shouldForce = inputWaferCompleted && inputDone && rotaryEmpty && odtEmpty && outStageHasBin && outStageHasMap;
+                    if (shouldForce)
+                    {
+                        if (_outStageForceCompletedLatched == false)
+                        {
+                            _outStageForceCompletedLatched = true;
+                            OutputStage.ForceCompleteAndAllowUnloadWhenBuffersEmpty(
+                                "Input done + no rotary/ODT die (early-return path, latched)");
+                        }
+                    }
+                    else
+                    {
+                        // 조건이 깨지면 래치 해제
+                        _outStageForceCompletedLatched = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "ForceCompleteCheck(EarlyReturn)", ex.Message);
+                }
+
+
+                if (useSocket)
                 {
                     if (IsHaveDie() == false && RequestInputDieTrDie == false)
                     {
@@ -1466,12 +1527,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 // 투입 완료되었으면 요청 플래그 내림
                 RequestInputDieTrDie = false;
-
-                if (IsStop)
-                {
-                    return 0;
-                }
-
                 Log.Write("kkkkkkRotary", "WaitInterlockSafe");
                 TaktStart("WaitInterlockSafe");
                 try
@@ -1504,6 +1559,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     TaktEnd("WaitInterlockSafe");
                 }
+                if (IsStop)
+                    return 0;
 
                 Log.Write("kkkkkkRotary", "Rotate");
                 TaktStart("Rotate");
@@ -1535,7 +1592,6 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-                //this.State = ProcessState.Stop;
                 this.OnStop();
                 return -1;
             }
@@ -1803,8 +1859,8 @@ namespace QMC.LCP_280.Process.Unit
                     try
                     {
                         Log.Write("kkkkkkRotary", "IndexUnloadAligner");
-                            TaktStart("UnloadAlign");
-                            var th = Thread.CurrentThread;
+                        TaktStart("UnloadAlign");
+                        var th = Thread.CurrentThread;
                         if (th.Name == null) th.Name = "RunAlignSocketOnce(UnloadAligner)";
                         try { return IndexUnloadAligner.RunAlignSocketOnce(); }
                         catch (Exception ex) { Log.Write(ex); return -1; }
@@ -1853,14 +1909,20 @@ namespace QMC.LCP_280.Process.Unit
 
                         // Unloader 위치에 Die 존재하는지 확인
                         MaterialDie unloadDie = null;
-                        try { unloadDie = GetUnloadSocketMaterial(); }
-                        catch (Exception ex) { Log.Write(ex); }
+                        try 
+                        { 
+                            unloadDie = GetUnloadSocketMaterial(); 
+                        }
+                        catch (Exception ex) 
+                        { Log.Write(ex); }
 
                         bool hasDie = unloadDie != null &&
                                       unloadDie.Presence == Material.MaterialPresence.Exist;
 
                         if (!hasDie)
+                        {
                             return 0;
+                        }
 
                         // [ADD] Bin1이 아니면 언로더 스킵 (Trash로 회전되어 배출됨)
                         if (!ShouldUnloadToOutput(unloadDie))
@@ -2447,8 +2509,5 @@ namespace QMC.LCP_280.Process.Unit
             // 6) UI에 현재 Load 인덱스 알림(선택)
             try { OnLoadIndexChanged(GetLoadIndexNo()); } catch { }
         }
-        #endregion
-
-
     }
 }

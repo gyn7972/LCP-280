@@ -270,6 +270,7 @@ namespace QMC.LCP_280.Process
 
 
 
+
         #region Ctor
         public PatternMatchingRunner(Camera camera, VisionImageViewer viewer, RunnerOptions options)
         {
@@ -1555,6 +1556,54 @@ namespace QMC.LCP_280.Process
             }
         }
         #endregion
+
+
+        public PatternMatchRunResult SearchWithTemporaryInspectRoi(
+                                    VisionImage externalImage,
+                                    Point inspectStart,
+                                    Point inspectEnd,
+                                    bool save = false)
+        {
+            // ROI 변경은 runner 내부 상태(_part)에 영향을 주므로 동기화 필요
+            lock (_sync)
+            {
+                Point oldStart = Point.Empty;
+                Point oldEnd = Point.Empty;
+
+                // 기존 ROI 백업
+                try
+                {
+                    oldStart = _part.GetInspectStartPoint();
+                    oldEnd = _part.GetInspectEndPoint();
+                }
+                catch { }
+
+                try
+                {
+                    // 임시 ROI 설정
+                    try
+                    {
+                        _part.SetInspectStartPoint(inspectStart);
+                        _part.SetInspectEndPoint(inspectEnd);
+                    }
+                    catch { }
+
+                    // 기존 Search 로직 재사용(외부 이미지 전달)
+                    return Search(externalImage, save);
+                }
+                finally
+                {
+                    // ROI 원복
+                    try
+                    {
+                        _part.SetInspectStartPoint(oldStart);
+                        _part.SetInspectEndPoint(oldEnd);
+                    }
+                    catch { }
+                }
+            }
+        }
+
 
         #region Internal Temp VisionPart
         private class TempVisionPart : MultiPatternMatchingVisionPart

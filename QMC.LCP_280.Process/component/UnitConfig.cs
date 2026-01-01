@@ -142,18 +142,44 @@ namespace QMC.LCP_280.Process.Component
         private void InvokeSave(object cfg)
         {
             var t = cfg.GetType();
+
+            // [FIX] BaseConfig.Save()가 public이 아닐 수 있으므로 NonPublic + FlattenHierarchy 포함
+            var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+
             // Saveconfig → Save
-            var mi = t.GetMethod("Saveconfig", BindingFlags.Public | BindingFlags.Instance)
-                  ?? t.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance);
+            var mi = t.GetMethod("Saveconfig", flags)
+                  ?? t.GetMethod("Save", flags);
+
             try
             {
                 if (mi != null && mi.GetParameters().Length == 0)
+                {
                     mi.Invoke(cfg, null);
+                }
+                else
+                {
+                    Log.Write(nameof(UnitConfig), nameof(InvokeSave),
+                        $"Save method not found. Type='{t.FullName}'");
+                }
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
+
+            //var t = cfg.GetType();
+            //// Saveconfig → Save
+            //var mi = t.GetMethod("Saveconfig", BindingFlags.Public | BindingFlags.Instance)
+            //      ?? t.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance);
+            //try
+            //{
+            //    if (mi != null && mi.GetParameters().Length == 0)
+            //        mi.Invoke(cfg, null);
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
         }
 
         private void InvokeLoad(object cfg)
@@ -197,7 +223,10 @@ namespace QMC.LCP_280.Process.Component
                 if (mi != null && mi.GetParameters().Length == (args?.Length ?? 0))
                     mi.Invoke(cfg, args);
             }
-            catch { }
+            catch (Exception ex) 
+            {
+                Log.Write(ex);
+            }
         }
 
         private void RebuildMapperAndView()

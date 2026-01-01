@@ -5,7 +5,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     partial class DieInputControl
     {
         private System.ComponentModel.IContainer components = null;
-        private QMC.Common.Controls.DisplayView displayView1;
+        private QMC.Common.Controls.DisplayView_DieInput displayView1;
 
         protected override void Dispose(bool disposing)
         {
@@ -22,7 +22,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             this.lblWaferIdValue = new System.Windows.Forms.Label();
             this.lblWaferIdTitle = new System.Windows.Forms.Label();
             this.lblDieCountTitle = new System.Windows.Forms.Label();
-            this.displayView1 = new QMC.Common.Controls.DisplayView();
+            this.displayView1 = new QMC.Common.Controls.DisplayView_DieInput();
             this.buttonOpen = new System.Windows.Forms.Button();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();

@@ -99,11 +99,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.grpSelectAxis.Controls.Add(this.selectAxisListBoxItemsView);
             this.grpSelectAxis.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpSelectAxis.Location = new System.Drawing.Point(0, 48);
+            this.grpSelectAxis.Location = new System.Drawing.Point(0, 58);
             this.grpSelectAxis.Margin = new System.Windows.Forms.Padding(0);
             this.grpSelectAxis.Name = "grpSelectAxis";
-            this.grpSelectAxis.Padding = new System.Windows.Forms.Padding(6, 6, 6, 6);
-            this.grpSelectAxis.Size = new System.Drawing.Size(306, 195);
+            this.grpSelectAxis.Padding = new System.Windows.Forms.Padding(7, 7, 7, 7);
+            this.grpSelectAxis.Size = new System.Drawing.Size(368, 235);
             this.grpSelectAxis.TabIndex = 1;
             this.grpSelectAxis.TabStop = false;
             this.grpSelectAxis.Text = "Select Axis";
@@ -120,13 +120,13 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.selectAxisListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(6, 24);
-            this.selectAxisListBoxItemsView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(7, 28);
+            this.selectAxisListBoxItemsView.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.selectAxisListBoxItemsView.Name = "selectAxisListBoxItemsView";
             this.selectAxisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.selectAxisListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.SelectedIndex = -1;
-            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(294, 165);
+            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(354, 200);
             this.selectAxisListBoxItemsView.TabIndex = 0;
             // 
             // lblPosition
@@ -138,10 +138,10 @@ namespace QMC.LCP_280.Process.Unit
             this.lblPosition.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblPosition.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
             this.lblPosition.ForeColor = System.Drawing.Color.Lime;
-            this.lblPosition.Location = new System.Drawing.Point(153, 2);
+            this.lblPosition.Location = new System.Drawing.Point(184, 2);
             this.lblPosition.Margin = new System.Windows.Forms.Padding(2);
             this.lblPosition.Name = "lblPosition";
-            this.lblPosition.Size = new System.Drawing.Size(147, 40);
+            this.lblPosition.Size = new System.Drawing.Size(178, 50);
             this.lblPosition.TabIndex = 0;
             this.lblPosition.Text = "000.000";
             this.lblPosition.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -156,7 +156,7 @@ namespace QMC.LCP_280.Process.Unit
             this.lbCurrentPosition.Location = new System.Drawing.Point(2, 2);
             this.lbCurrentPosition.Margin = new System.Windows.Forms.Padding(2);
             this.lbCurrentPosition.Name = "lbCurrentPosition";
-            this.lbCurrentPosition.Size = new System.Drawing.Size(147, 40);
+            this.lbCurrentPosition.Size = new System.Drawing.Size(178, 50);
             this.lbCurrentPosition.TabIndex = 1;
             this.lbCurrentPosition.Text = "Current Position (mm)";
             this.lbCurrentPosition.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -166,11 +166,11 @@ namespace QMC.LCP_280.Process.Unit
             this.grpMove.Controls.Add(this.rdoFine);
             this.grpMove.Controls.Add(this.rdoCoarse);
             this.grpMove.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpMove.Location = new System.Drawing.Point(0, 247);
-            this.grpMove.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
+            this.grpMove.Location = new System.Drawing.Point(0, 297);
+            this.grpMove.Margin = new System.Windows.Forms.Padding(0, 0, 0, 7);
             this.grpMove.Name = "grpMove";
-            this.grpMove.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
-            this.grpMove.Size = new System.Drawing.Size(310, 71);
+            this.grpMove.Padding = new System.Windows.Forms.Padding(10, 10, 10, 10);
+            this.grpMove.Size = new System.Drawing.Size(372, 85);
             this.grpMove.TabIndex = 0;
             this.grpMove.TabStop = false;
             this.grpMove.Text = "Move";
@@ -178,10 +178,10 @@ namespace QMC.LCP_280.Process.Unit
             // rdoFine
             // 
             this.rdoFine.AutoSize = true;
-            this.rdoFine.Location = new System.Drawing.Point(12, 30);
-            this.rdoFine.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rdoFine.Location = new System.Drawing.Point(14, 36);
+            this.rdoFine.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.rdoFine.Name = "rdoFine";
-            this.rdoFine.Size = new System.Drawing.Size(55, 19);
+            this.rdoFine.Size = new System.Drawing.Size(65, 22);
             this.rdoFine.TabIndex = 0;
             this.rdoFine.Text = "Fine";
             // 
@@ -189,10 +189,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.rdoCoarse.AutoSize = true;
             this.rdoCoarse.Checked = true;
-            this.rdoCoarse.Location = new System.Drawing.Point(78, 30);
-            this.rdoCoarse.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rdoCoarse.Location = new System.Drawing.Point(94, 36);
+            this.rdoCoarse.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.rdoCoarse.Name = "rdoCoarse";
-            this.rdoCoarse.Size = new System.Drawing.Size(75, 19);
+            this.rdoCoarse.Size = new System.Drawing.Size(92, 22);
             this.rdoCoarse.TabIndex = 1;
             this.rdoCoarse.TabStop = true;
             this.rdoCoarse.Text = "Coarse";
@@ -201,11 +201,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.groupBox1.Controls.Add(this.tlpCommandPosition);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox1.Location = new System.Drawing.Point(2, 326);
+            this.groupBox1.Location = new System.Drawing.Point(2, 391);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(306, 57);
+            this.groupBox1.Size = new System.Drawing.Size(368, 70);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Command Position (mm)";
@@ -218,13 +218,13 @@ namespace QMC.LCP_280.Process.Unit
             this.tlpCommandPosition.Controls.Add(this.btnCommandPositionMove, 1, 0);
             this.tlpCommandPosition.Controls.Add(this.nudCommandPosition, 0, 0);
             this.tlpCommandPosition.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpCommandPosition.Location = new System.Drawing.Point(2, 20);
-            this.tlpCommandPosition.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tlpCommandPosition.Location = new System.Drawing.Point(2, 23);
+            this.tlpCommandPosition.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.tlpCommandPosition.Name = "tlpCommandPosition";
             this.tlpCommandPosition.RowCount = 1;
             this.tlpCommandPosition.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpCommandPosition.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tlpCommandPosition.Size = new System.Drawing.Size(302, 35);
+            this.tlpCommandPosition.Size = new System.Drawing.Size(364, 45);
             this.tlpCommandPosition.TabIndex = 0;
             // 
             // btnCommandPositionMove
@@ -238,10 +238,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnCommandPositionMove.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnCommandPositionMove.ForeColor = System.Drawing.Color.Black;
             this.btnCommandPositionMove.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnCommandPositionMove.Location = new System.Drawing.Point(153, 2);
+            this.btnCommandPositionMove.Location = new System.Drawing.Point(184, 2);
             this.btnCommandPositionMove.Margin = new System.Windows.Forms.Padding(2);
             this.btnCommandPositionMove.Name = "btnCommandPositionMove";
-            this.btnCommandPositionMove.Size = new System.Drawing.Size(147, 31);
+            this.btnCommandPositionMove.Size = new System.Drawing.Size(178, 41);
             this.btnCommandPositionMove.TabIndex = 1;
             this.btnCommandPositionMove.TabStop = false;
             this.btnCommandPositionMove.Text = "Move";
@@ -251,8 +251,8 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.nudCommandPosition.DecimalPlaces = 3;
             this.nudCommandPosition.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.nudCommandPosition.Location = new System.Drawing.Point(4, 4);
-            this.nudCommandPosition.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.nudCommandPosition.Location = new System.Drawing.Point(5, 5);
+            this.nudCommandPosition.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.nudCommandPosition.Maximum = new decimal(new int[] {
             500,
             0,
@@ -260,7 +260,7 @@ namespace QMC.LCP_280.Process.Unit
             0});
             this.nudCommandPosition.Name = "nudCommandPosition";
             this.nudCommandPosition.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.nudCommandPosition.Size = new System.Drawing.Size(143, 25);
+            this.nudCommandPosition.Size = new System.Drawing.Size(172, 28);
             this.nudCommandPosition.TabIndex = 2;
             // 
             // tblJog
@@ -282,26 +282,26 @@ namespace QMC.LCP_280.Process.Unit
             this.tblJog.Controls.Add(this.btnNextIndex, 3, 3);
             this.tblJog.Controls.Add(this.btnPrevIndex, 1, 3);
             this.tblJog.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tblJog.Location = new System.Drawing.Point(0, 539);
+            this.tblJog.Location = new System.Drawing.Point(0, 648);
             this.tblJog.Margin = new System.Windows.Forms.Padding(0);
             this.tblJog.Name = "tblJog";
-            this.tblJog.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tblJog.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.tblJog.RowCount = 4;
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.Size = new System.Drawing.Size(310, 235);
+            this.tblJog.Size = new System.Drawing.Size(372, 281);
             this.tblJog.TabIndex = 2;
             // 
             // btnXPlus
             // 
             this.btnXPlus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnXPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnXPlus.Location = new System.Drawing.Point(231, 62);
+            this.btnXPlus.Location = new System.Drawing.Point(277, 74);
             this.btnXPlus.Margin = new System.Windows.Forms.Padding(2);
             this.btnXPlus.Name = "btnXPlus";
-            this.btnXPlus.Size = new System.Drawing.Size(73, 52);
+            this.btnXPlus.Size = new System.Drawing.Size(88, 63);
             this.btnXPlus.TabIndex = 6;
             this.btnXPlus.Text = "+X";
             // 
@@ -309,10 +309,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnStop.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStop.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStop.Location = new System.Drawing.Point(156, 62);
+            this.btnStop.Location = new System.Drawing.Point(187, 74);
             this.btnStop.Margin = new System.Windows.Forms.Padding(2);
             this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(71, 52);
+            this.btnStop.Size = new System.Drawing.Size(86, 63);
             this.btnStop.TabIndex = 5;
             this.btnStop.Text = "STOP";
             // 
@@ -320,10 +320,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnXMinus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnXMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnXMinus.Location = new System.Drawing.Point(81, 62);
+            this.btnXMinus.Location = new System.Drawing.Point(97, 74);
             this.btnXMinus.Margin = new System.Windows.Forms.Padding(2);
             this.btnXMinus.Name = "btnXMinus";
-            this.btnXMinus.Size = new System.Drawing.Size(71, 52);
+            this.btnXMinus.Size = new System.Drawing.Size(86, 63);
             this.btnXMinus.TabIndex = 4;
             this.btnXMinus.Text = "-X";
             // 
@@ -331,10 +331,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnZPlus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnZPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnZPlus.Location = new System.Drawing.Point(8, 8);
-            this.btnZPlus.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnZPlus.Location = new System.Drawing.Point(10, 10);
+            this.btnZPlus.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.btnZPlus.Name = "btnZPlus";
-            this.btnZPlus.Size = new System.Drawing.Size(67, 48);
+            this.btnZPlus.Size = new System.Drawing.Size(80, 57);
             this.btnZPlus.TabIndex = 3;
             this.btnZPlus.Text = "+Z";
             // 
@@ -342,10 +342,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnYPlus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnYPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnYPlus.Location = new System.Drawing.Point(156, 6);
+            this.btnYPlus.Location = new System.Drawing.Point(187, 7);
             this.btnYPlus.Margin = new System.Windows.Forms.Padding(2);
             this.btnYPlus.Name = "btnYPlus";
-            this.btnYPlus.Size = new System.Drawing.Size(71, 52);
+            this.btnYPlus.Size = new System.Drawing.Size(86, 63);
             this.btnYPlus.TabIndex = 1;
             this.btnYPlus.Text = "+Y";
             // 
@@ -353,10 +353,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnZMinus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnZMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnZMinus.Location = new System.Drawing.Point(6, 118);
+            this.btnZMinus.Location = new System.Drawing.Point(7, 141);
             this.btnZMinus.Margin = new System.Windows.Forms.Padding(2);
             this.btnZMinus.Name = "btnZMinus";
-            this.btnZMinus.Size = new System.Drawing.Size(71, 52);
+            this.btnZMinus.Size = new System.Drawing.Size(86, 63);
             this.btnZMinus.TabIndex = 7;
             this.btnZMinus.Text = "-Z";
             // 
@@ -364,10 +364,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnYMinus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnYMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnYMinus.Location = new System.Drawing.Point(156, 118);
+            this.btnYMinus.Location = new System.Drawing.Point(187, 141);
             this.btnYMinus.Margin = new System.Windows.Forms.Padding(2);
             this.btnYMinus.Name = "btnYMinus";
-            this.btnYMinus.Size = new System.Drawing.Size(71, 52);
+            this.btnYMinus.Size = new System.Drawing.Size(86, 63);
             this.btnYMinus.TabIndex = 8;
             this.btnYMinus.Text = "-Y";
             // 
@@ -375,10 +375,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnTMinus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnTMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTMinus.Location = new System.Drawing.Point(231, 6);
+            this.btnTMinus.Location = new System.Drawing.Point(277, 7);
             this.btnTMinus.Margin = new System.Windows.Forms.Padding(2);
             this.btnTMinus.Name = "btnTMinus";
-            this.btnTMinus.Size = new System.Drawing.Size(73, 52);
+            this.btnTMinus.Size = new System.Drawing.Size(88, 63);
             this.btnTMinus.TabIndex = 0;
             this.btnTMinus.Text = "CW";
             // 
@@ -386,10 +386,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnTPlus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnTPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTPlus.Location = new System.Drawing.Point(81, 6);
+            this.btnTPlus.Location = new System.Drawing.Point(97, 7);
             this.btnTPlus.Margin = new System.Windows.Forms.Padding(2);
             this.btnTPlus.Name = "btnTPlus";
-            this.btnTPlus.Size = new System.Drawing.Size(71, 52);
+            this.btnTPlus.Size = new System.Drawing.Size(86, 63);
             this.btnTPlus.TabIndex = 2;
             this.btnTPlus.Text = "CCW";
             // 
@@ -397,10 +397,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnNextIndex.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnNextIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnNextIndex.Location = new System.Drawing.Point(231, 174);
+            this.btnNextIndex.Location = new System.Drawing.Point(277, 208);
             this.btnNextIndex.Margin = new System.Windows.Forms.Padding(2);
             this.btnNextIndex.Name = "btnNextIndex";
-            this.btnNextIndex.Size = new System.Drawing.Size(73, 55);
+            this.btnNextIndex.Size = new System.Drawing.Size(88, 66);
             this.btnNextIndex.TabIndex = 10;
             this.btnNextIndex.Text = "Next Index";
             // 
@@ -408,10 +408,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.btnPrevIndex.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnPrevIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnPrevIndex.Location = new System.Drawing.Point(81, 174);
+            this.btnPrevIndex.Location = new System.Drawing.Point(97, 208);
             this.btnPrevIndex.Margin = new System.Windows.Forms.Padding(2);
             this.btnPrevIndex.Name = "btnPrevIndex";
-            this.btnPrevIndex.Size = new System.Drawing.Size(71, 55);
+            this.btnPrevIndex.Size = new System.Drawing.Size(86, 66);
             this.btnPrevIndex.TabIndex = 9;
             this.btnPrevIndex.Text = "Prev Index";
             // 
@@ -419,11 +419,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.grpMoveMode.Controls.Add(this.tableLayoutPanel1);
             this.grpMoveMode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpMoveMode.Location = new System.Drawing.Point(0, 385);
-            this.grpMoveMode.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
+            this.grpMoveMode.Location = new System.Drawing.Point(0, 463);
+            this.grpMoveMode.Margin = new System.Windows.Forms.Padding(0, 0, 0, 7);
             this.grpMoveMode.Name = "grpMoveMode";
             this.grpMoveMode.Padding = new System.Windows.Forms.Padding(2);
-            this.grpMoveMode.Size = new System.Drawing.Size(310, 148);
+            this.grpMoveMode.Size = new System.Drawing.Size(372, 178);
             this.grpMoveMode.TabIndex = 1;
             this.grpMoveMode.TabStop = false;
             this.grpMoveMode.Text = "Relative Position (mm)";
@@ -436,14 +436,14 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel2, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel4, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 23);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(306, 126);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(368, 153);
             this.tableLayoutPanel1.TabIndex = 5;
             // 
             // tableLayoutPanel3
@@ -460,12 +460,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel3.Controls.Add(this.btnStep10, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.btnStep1, 0, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 89);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 108);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(302, 35);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(364, 43);
             this.tableLayoutPanel3.TabIndex = 3;
             // 
             // btnStepClear
@@ -479,10 +479,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStepClear.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.btnStepClear.ForeColor = System.Drawing.Color.Black;
             this.btnStepClear.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStepClear.Location = new System.Drawing.Point(242, 2);
+            this.btnStepClear.Location = new System.Drawing.Point(290, 2);
             this.btnStepClear.Margin = new System.Windows.Forms.Padding(2);
             this.btnStepClear.Name = "btnStepClear";
-            this.btnStepClear.Size = new System.Drawing.Size(58, 31);
+            this.btnStepClear.Size = new System.Drawing.Size(72, 39);
             this.btnStepClear.TabIndex = 6;
             this.btnStepClear.TabStop = false;
             this.btnStepClear.Text = "0\'";
@@ -499,10 +499,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStep1000.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.btnStep1000.ForeColor = System.Drawing.Color.Black;
             this.btnStep1000.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStep1000.Location = new System.Drawing.Point(182, 2);
+            this.btnStep1000.Location = new System.Drawing.Point(218, 2);
             this.btnStep1000.Margin = new System.Windows.Forms.Padding(2);
             this.btnStep1000.Name = "btnStep1000";
-            this.btnStep1000.Size = new System.Drawing.Size(56, 31);
+            this.btnStep1000.Size = new System.Drawing.Size(68, 39);
             this.btnStep1000.TabIndex = 5;
             this.btnStep1000.TabStop = false;
             this.btnStep1000.Text = "0.001";
@@ -519,10 +519,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStep100.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.btnStep100.ForeColor = System.Drawing.Color.Black;
             this.btnStep100.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStep100.Location = new System.Drawing.Point(122, 2);
+            this.btnStep100.Location = new System.Drawing.Point(146, 2);
             this.btnStep100.Margin = new System.Windows.Forms.Padding(2);
             this.btnStep100.Name = "btnStep100";
-            this.btnStep100.Size = new System.Drawing.Size(56, 31);
+            this.btnStep100.Size = new System.Drawing.Size(68, 39);
             this.btnStep100.TabIndex = 4;
             this.btnStep100.TabStop = false;
             this.btnStep100.Text = "0.01";
@@ -539,10 +539,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStep10.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.btnStep10.ForeColor = System.Drawing.Color.Black;
             this.btnStep10.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStep10.Location = new System.Drawing.Point(62, 2);
+            this.btnStep10.Location = new System.Drawing.Point(74, 2);
             this.btnStep10.Margin = new System.Windows.Forms.Padding(2);
             this.btnStep10.Name = "btnStep10";
-            this.btnStep10.Size = new System.Drawing.Size(56, 31);
+            this.btnStep10.Size = new System.Drawing.Size(68, 39);
             this.btnStep10.TabIndex = 3;
             this.btnStep10.TabStop = false;
             this.btnStep10.Text = "0.1";
@@ -559,10 +559,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStep1.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.btnStep1.ForeColor = System.Drawing.Color.Black;
             this.btnStep1.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStep1.Location = new System.Drawing.Point(4, 4);
-            this.btnStep1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnStep1.Location = new System.Drawing.Point(5, 5);
+            this.btnStep1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.btnStep1.Name = "btnStep1";
-            this.btnStep1.Size = new System.Drawing.Size(52, 27);
+            this.btnStep1.Size = new System.Drawing.Size(62, 33);
             this.btnStep1.TabIndex = 2;
             this.btnStep1.TabStop = false;
             this.btnStep1.Text = "1";
@@ -582,17 +582,17 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(302, 46);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(364, 57);
             this.tableLayoutPanel2.TabIndex = 2;
             // 
             // rdoStep
             // 
             this.rdoStep.AutoSize = true;
             this.rdoStep.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.rdoStep.Location = new System.Drawing.Point(153, 2);
+            this.rdoStep.Location = new System.Drawing.Point(184, 2);
             this.rdoStep.Margin = new System.Windows.Forms.Padding(2);
             this.rdoStep.Name = "rdoStep";
-            this.rdoStep.Size = new System.Drawing.Size(116, 42);
+            this.rdoStep.Size = new System.Drawing.Size(141, 53);
             this.rdoStep.TabIndex = 0;
             this.rdoStep.TabStop = true;
             this.rdoStep.Text = "Step";
@@ -606,7 +606,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoContinuous.Location = new System.Drawing.Point(2, 2);
             this.rdoContinuous.Margin = new System.Windows.Forms.Padding(2);
             this.rdoContinuous.Name = "rdoContinuous";
-            this.rdoContinuous.Size = new System.Drawing.Size(147, 42);
+            this.rdoContinuous.Size = new System.Drawing.Size(178, 53);
             this.rdoContinuous.TabIndex = 0;
             this.rdoContinuous.TabStop = true;
             this.rdoContinuous.Text = "Continuous";
@@ -620,12 +620,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel4.Controls.Add(this.nudStep, 0, 0);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 52);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 63);
             this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 1;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(302, 33);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(364, 41);
             this.tableLayoutPanel4.TabIndex = 1;
             // 
             // nudStep
@@ -634,14 +634,14 @@ namespace QMC.LCP_280.Process.Unit
             this.nudStep.Dock = System.Windows.Forms.DockStyle.Fill;
             this.nudStep.Enabled = false;
             this.nudStep.Location = new System.Drawing.Point(0, 2);
-            this.nudStep.Margin = new System.Windows.Forms.Padding(0, 2, 6, 2);
+            this.nudStep.Margin = new System.Windows.Forms.Padding(0, 2, 7, 2);
             this.nudStep.Maximum = new decimal(new int[] {
             500,
             0,
             0,
             0});
             this.nudStep.Name = "nudStep";
-            this.nudStep.Size = new System.Drawing.Size(94, 25);
+            this.nudStep.Size = new System.Drawing.Size(114, 28);
             this.nudStep.TabIndex = 1;
             this.nudStep.Value = new decimal(new int[] {
             1000,
@@ -668,7 +668,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(310, 774);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(372, 929);
             this.tableLayoutPanel5.TabIndex = 1;
             // 
             // tableLayoutPanel6
@@ -684,7 +684,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel6.RowCount = 2;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(306, 243);
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(368, 293);
             this.tableLayoutPanel6.TabIndex = 0;
             // 
             // tableLayoutPanel7
@@ -700,17 +700,17 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
             this.tableLayoutPanel7.RowCount = 1;
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(302, 44);
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(364, 54);
             this.tableLayoutPanel7.TabIndex = 0;
             // 
             // JogControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.tableLayoutPanel5);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "JogControl";
-            this.Size = new System.Drawing.Size(310, 774);
+            this.Size = new System.Drawing.Size(372, 929);
             this.grpSelectAxis.ResumeLayout(false);
             this.grpMove.ResumeLayout(false);
             this.grpMove.PerformLayout();

@@ -127,8 +127,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -287,12 +285,15 @@ namespace QMC.LCP_280.Process.Unit
                     IndexOutCamera.SuspendedImageDisplay = false;
                 }
 
+                string strPath = string.Empty;
                 if (result.Success)
                 {
                     IsAlignResult = true;
                     dX = result.X;
                     dY = result.Y;
                     dAngle = result.R;
+
+                    img.Save(VisionImage.FileFilter.bmp);
                 }
                 else
                 {
@@ -300,6 +301,8 @@ namespace QMC.LCP_280.Process.Unit
                     dX = 0;
                     dY = 0;
                     dAngle = 0;
+
+                    img.Save(VisionImage.FileFilter.bmp);
                 }
 
                 PointD pt = GetPixelToMmScale(dX, dY);
@@ -319,6 +322,7 @@ namespace QMC.LCP_280.Process.Unit
             finally
             {
                 IsStatus_AlignDoneXY = true;
+                IndexOutCamera.SuspendedImageDisplay = false;
             }
             return nRet;
         }

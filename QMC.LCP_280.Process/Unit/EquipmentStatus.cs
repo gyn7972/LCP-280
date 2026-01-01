@@ -141,7 +141,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -695,48 +694,57 @@ namespace QMC.LCP_280.Process.Unit
             var eq = Equipment.Instance;
             var state = eq?.EqState ?? EquipmentState.Unknown;
 
-            // 1) 기본 패턴: EMG/에러/안전조건/운전상태
-            TowerLampPattern pattern;
-            if (snap.AnyEmg == false 
-                || state == EquipmentState.Error
-                || AlarmManager.Instance.IsAlarm)
+            try
             {
-                pattern = TowerLampPattern.Alarm;             // 빨강 + 버저 블링크
+                // 1) 기본 패턴: EMG/에러/안전조건/운전상태
+                TowerLampPattern pattern;
+                if (snap.AnyEmg == false
+                    || state == EquipmentState.Error
+                    || AlarmManager.Instance.IsAlarm)
+                {
+                    pattern = TowerLampPattern.Alarm;             // 빨강 + 버저 블링크
+                }
+                //셋업때만 막자.
+                //else if (snap.AllDoorClosed == false
+                //         || !snap.AllVacuumOk)
+                //{
+                //    pattern = TowerLampPattern.Warning;           // 노랑 블링크
+                //}
+                else if (state == EquipmentState.Stopped
+                        || state == EquipmentState.Stopping
+                        || state == EquipmentState.CycleStop)
+                {
+                    pattern = TowerLampPattern.Warning;           // 노랑 블링크
+                }
+                else if (state == EquipmentState.AutoRunning
+                        || state == EquipmentState.Starting)
+                {
+                    pattern = TowerLampPattern.Running;           // 초록 고정
+                }
+                else
+                    pattern = TowerLampPattern.Idle;              // 초록 고정(Idle 정의 유지)
+
+                // 2) 버튼 오버라이드(즉시 시각 피드백)
+                var startPressed = ReadInput("START_SW");
+                var stopPressed = ReadInput("STOP_SW");
+                var resetPressed = ReadInput("RESET_SW");
+
+                if (stopPressed)
+                    pattern = TowerLampPattern.Warning;           // STOP 누르면 노랑 블링크
+                else if (startPressed)
+                    pattern = TowerLampPattern.Running;           // START 누르면 초록 고정
+
+                // RESET은 버저 OFF만 담당(패턴은 위 기본 규칙 유지)
+                // if (resetPressed) { /* buzzer off는 ProcessPhysicalButtons에서 처리 */ }
+
+                ApplyTowerPattern(pattern);
             }
-            //셋업때만 막자.
-            //else if (snap.AllDoorClosed == false
-            //         || !snap.AllVacuumOk)
-            //{
-            //    pattern = TowerLampPattern.Warning;           // 노랑 블링크
-            //}
-            else if(state == EquipmentState.Stopped
-                    || state == EquipmentState.Stopping
-                    || state == EquipmentState.CycleStop)
+            catch (Exception ex) 
             {
-                pattern = TowerLampPattern.Warning;           // 노랑 블링크
+                Log.Write(ex);
             }
-            else if (state == EquipmentState.AutoRunning
-                    || state == EquipmentState.Starting)
-            {
-                pattern = TowerLampPattern.Running;           // 초록 고정
-            }
-            else
-                pattern = TowerLampPattern.Idle;              // 초록 고정(Idle 정의 유지)
 
-            // 2) 버튼 오버라이드(즉시 시각 피드백)
-            var startPressed = ReadInput("START_SW");
-            var stopPressed = ReadInput("STOP_SW");
-            var resetPressed = ReadInput("RESET_SW");
-
-            if (stopPressed)
-                pattern = TowerLampPattern.Warning;           // STOP 누르면 노랑 블링크
-            else if (startPressed)
-                pattern = TowerLampPattern.Running;           // START 누르면 초록 고정
-
-            // RESET은 버저 OFF만 담당(패턴은 위 기본 규칙 유지)
-            // if (resetPressed) { /* buzzer off는 ProcessPhysicalButtons에서 처리 */ }
-
-            ApplyTowerPattern(pattern);
+            
         }
 
         private void UpdatePatternRuntime(int nowTick)

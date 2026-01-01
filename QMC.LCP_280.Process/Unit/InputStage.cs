@@ -17,6 +17,7 @@ using QMC.LCP_280.Process.Work;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -26,10 +27,12 @@ using System.Windows.Forms;
 using System.Windows.Shapes;
 using static QMC.Common.Component.BaseComponent;
 using static QMC.Common.Material;
+using static QMC.LCP_280.Process.Component.MeasurementRecipe;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.PatternMatchingRunner;
 using static QMC.LCP_280.Process.Unit.InputCassetteLifter;
 using static System.Windows.Forms.AxHost;
+using Path = System.IO.Path;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -64,6 +67,11 @@ namespace QMC.LCP_280.Process.Unit
             eInputStageNoWafer,
             eInputStageAlignNotCompleted,
             eInputStageMapMatch,
+            eInputStageRingPresent,
+            eInputStageLiftUp,
+            eInputStageLiftDown,
+            eInputStageClampFWD,
+            eInputStageClampBWD,
         }
         private struct AngleStats
         {
@@ -183,6 +191,46 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageRingPresent;
+            alarm.Title = "Input Stage Ring Present Failed.";
+            alarm.Cause = "Input Stage에 제품 감지가 실패하였습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageLiftUp;
+            alarm.Title = "Input Stage Lift Up Failed.";
+            alarm.Cause = "Input Stage에 Lift Up 실패하였습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageLiftDown;
+            alarm.Title = "Input Stage Lift Down Failed.";
+            alarm.Cause = "Input Stage에 Lift Down 실패하였습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageClampFWD;
+            alarm.Title = "Input Stage Clamp FWD Failed.";
+            alarm.Cause = "Input Stage에 Clamp FWD 실패하였습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageClampBWD;
+            alarm.Title = "Input Stage Clamp BWD Failed.";
+            alarm.Cause = "Input Stage에 Clamp BWD 실패하였습니다. 다시 시도 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
 
@@ -680,18 +728,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return rc;
         }
-        //public bool InPosTeaching(TeachingPosition tp)
-        //{
-        //    if (tp == null)
-        //        return false;
-        //    return InPosTeaching(tp.Name);
-        //}
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
 
         public double GetTP(TeachingPosition tp, string axisName) => (tp == null || string.IsNullOrEmpty(axisName)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisName, out var v) ? v : 0.0);
         #endregion
@@ -1008,7 +1044,8 @@ namespace QMC.LCP_280.Process.Unit
             while (sw.ElapsedMilliseconds <= timeoutMs)
             {
                 bool ok = expectUp ? IsPlateUp() : IsPlateDown();
-                if (ok) return 0;
+                if (ok) 
+                    return 0;
                 Thread.Sleep(pollMs);
             }
 
@@ -1186,11 +1223,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
-            // 맵 상태 리셋 -> 여기서 리셋하면 안되지...
-            //ResetChipMappingState();
-
             base.OnStop();
             return ret;
         }
@@ -1235,11 +1267,28 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingWaferComplete", "Wafer detected -> Completing");
 
-                PlateUp();
-                ClampLiftUp();
-                ClampForward();
-                
-                // 센터 Teaching 이동
+                nRet = PlateUp();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "LoadingWaferComplete", "PlateUp Fail");
+                    return -1;
+                }
+
+                nRet = ClampLiftUp();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "LoadingWaferComplete", "ClampLiftUp Fail");
+                    return -1;
+                }
+
+                nRet = ClampForward();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "LoadingWaferComplete", "ClampForward Fail");
+                    return -1;
+                }
+
+                // 센터 Teaching Move
                 nRet = MoveToStageCenterPosition();
                 if (nRet != 0)
                 {
@@ -1264,6 +1313,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = AlignTPrepare(bFineSpeed);
             if (nRet != 0)
             {
+                // 내부에서 알람 발생.
                 Log.Write(UnitName, "T_Align", "Fail: Prepare");
                 return -1;
             }
@@ -1323,36 +1373,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
-
-
-
-        public bool UseUpdateOrderForPickup { get; set; } = false;
-        private void ReindexDiesSequential(MaterialWafer wafer)
-        {
-            if (wafer?.Dies == null) return;
-
-            lock (wafer.Dies)
-            {
-                for (int i = 0; i < wafer.Dies.Count; i++)
-                {
-                    var d = wafer.Dies[i];
-                    if (d == null) continue;
-
-                    d.Index = i;
-                    // MaterialDie.Name 사용 중이므로 존재 시 동일 규칙으로 부여
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(wafer.WaferId))
-                        {
-                            d.Name = $"{wafer.WaferId}_{i}";
-                        }
-                    }
-                    catch { /* Name 미존재 시 무시 */ }
-                }
-            }
-        }
-
 
         // 클래스 필드 영역에 추가
         private List<PointD> _simAllDiesPool = new List<PointD>();
@@ -1460,7 +1480,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             if (Config.IsSimulation == false
-                                && Config.IsDryRun == false)
+                && Config.IsDryRun == false)
             {
                 if (this.StageCamera.IsLiveOn)
                 {
@@ -1469,11 +1489,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
                 
-
             // 기본 인터락
             //if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
             if (IsStatus_TAlignDone == false)
             {
+                AxisX.EmgStop();
+                AxisY.EmgStop();
+                AxisT.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
                 Log.Write(UnitName, "PerformChipMapping", "Align not completed");
                 return -1;
@@ -1481,8 +1503,12 @@ namespace QMC.LCP_280.Process.Unit
 
             if (RunMode == UnitRunMode.Auto)
             {
-                if (!IsRingPresent())
+                if (IsRingPresent() == false)
                 {
+                    AxisX.EmgStop();
+                    AxisY.EmgStop();
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageRingPresent);
                     Log.Write(UnitName, "PerformChipMapping", "Wafer (Ring) not present");
                     return -1;
                 }
@@ -1529,13 +1555,16 @@ namespace QMC.LCP_280.Process.Unit
                     //Manual일때 Stop으로 인지하고 있다...
                     if (this.IsStop)
                     {
+                        Log.Write(UnitName, "ChipMap", "IsStop");
                         return 0;
                     }
 
-                    
                     nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
                     if (nRet != 0)
                     {
+                        AxisX.EmgStop();
+                        AxisY.EmgStop();
+                        AxisT.EmgStop();
                         Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
                         PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                         return -1;
@@ -1564,11 +1593,6 @@ namespace QMC.LCP_280.Process.Unit
                             return SearchDies(grabImage, ref chips, dx, dy);
                         });
                     }
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
-                        return -1;
-                    }
                 }
                 if (tImageProcess != null)
                 {
@@ -1595,8 +1619,9 @@ namespace QMC.LCP_280.Process.Unit
             if (ChipPitchXmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchXmm);
             if (ChipPitchYmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchYmm);
             if (pitchMin < double.MaxValue)
+            {
                 tol = Math.Min(tol, 0.49 * pitchMin);
-
+            }
             var consolidated = ConsolidateChipCenters(chips, tol);
 
             Log.Write(UnitName, "ChipMap",
@@ -1610,26 +1635,17 @@ namespace QMC.LCP_280.Process.Unit
             MaterialWafer wafer = GetMaterialWafer();
             if (wafer != null)
             {
-                if (UseUpdateOrderForPickup)
-                {
-                    ReindexDiesSequential(wafer); // 현재 리스트 순서대로 Index 재부여
-                }
-                else
-                {
-                    // 필요 시 기존 경로 옵션 기반 재정렬 사용
-                    ApplyDieOrderByPathSettings(wafer);
-                }
-
+                // 필요 시 기존 경로 옵션 기반 재정렬 사용
+                ApplyDieOrderByPathSettings(wafer);
                 // 여기에서 연속 인덱스로 정규화(0부터 시작; UI가 1-base를 원하면 startIndex=1)
                 NormalizeIndicesSequential(wafer, startIndex: 0, rename: true);
-
                 // 맵핑 직후, 설정한 경로 옵션대로 다이 순서 재정렬
                 //ApplyDieOrderByPathSettings(wafer);
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 // 재인덱싱 직후 UI에 확정본을 다시 전달
                 EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
             }
 
+            // 여기에서 기존에 X방향만 반전시키면 맞았는데...
             //여기에서 맵 매칭 Test 
             //string strFile = ""; //<- 파일경로
             //var AOIMap = new MaterialWafer();
@@ -1659,12 +1675,34 @@ namespace QMC.LCP_280.Process.Unit
                         string MapFilePath = recipe.MapFilePath;
                         if (bUse)
                         {
-                            //MapFilePath에서 파일을 가져와야 한다.
-                            //waf 파일 검색해서 가져와야 하는건가? 
-                            //바코드랑 1:1 파일 가져오는건가?
+                            // [CHANGE] 바코드(WaferId) 기반으로 recipe.MapFilePath에서 waf "다운로드(복사)" 후 로컬 MapFile 폴더 파일로 맵매칭
+                            //var wafer = GetMaterialWafer();
+                            if (wafer == null || string.IsNullOrWhiteSpace(wafer.WaferId))
+                            {
+                                Log.Write(UnitName, "MapMatch", "Wafer or WaferId empty -> cannot resolve map file");
+                                PostAlarm((int)AlarmKeys.eInputStageMapMatch);
+                                return -1;
+                            }
 
-                            //네트워크 경로에서 파일 받아와서 처리.
-                            strMapFile = "D:\\MapTest.waf";
+                            string waferId = wafer.WaferId.Trim();
+                            string sourceWaf = ResolveSourceWafPath(MapFilePath, waferId);
+
+                            string localWaf;
+                            string dlReason;
+                            int dl = DownloadWafToLocalMapFolder(sourceWaf, waferId, out localWaf, out dlReason);
+                            if (dl != 0 || string.IsNullOrWhiteSpace(localWaf) || !File.Exists(localWaf))
+                            {
+                                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputStageMapMatch);
+                                Log.Write(UnitName, "MapMatch", "Map file download failed: " + dlReason);
+                                return -1;
+                            }
+
+                            strMapFile = localWaf;
+                            Log.Write(UnitName, "MapMatch", $"Map file ready. Source='{sourceWaf}' -> Local='{strMapFile}'");
+
+                            //네트워크 경로에서 파일 받아와서 처리. //TEST 진행 시.
+                            //strMapFile = "D:\\MapTest.waf";
 
                             // 경로 유효성 검증 및 절대경로 보정
                             if (!string.IsNullOrWhiteSpace(strMapFile))
@@ -1690,7 +1728,7 @@ namespace QMC.LCP_280.Process.Unit
                             else
                             {
                                 // 3) 원본 맵 파일 읽기 (간단 선검증)
-                                var orgPreview = wafer.ReadFile(strMapFile, MaterialWafer.MapTyp.waf);
+                                var orgPreview = wafer.ReadFileOnline(strMapFile, MaterialWafer.MapTyp.waf);
                                 if (orgPreview == null || orgPreview.Count == 0)
                                 {
                                     PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
@@ -1699,47 +1737,153 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 else
                                 {
-                                    // 4) 매칭 수행
-                                    // 주의: Mapmatch는 wafer.Dies를 스캔 데이터로 사용하여 Offset을 적용
-                                    double bestScore = wafer.Mapmatch(strMapFile, MaterialWafer.MapTyp.waf);
-                                    bestScore *= 100;
-                                    // 5) 결과 로그
+                                    // 4) 매칭 수행 (최초 1회)
+                                    double bestScore = wafer.Mapmatch(strMapFile, MaterialWafer.MapTyp.waf) * 100.0;
+
                                     int orgCount = orgPreview.Count;
                                     int scanCount = wafer.Dies.Count;
                                     Log.Write(UnitName, "MapMatch",
                                         $"Done. Score={bestScore:F3} OrgCount={orgCount} ScanCount={scanCount} MapFile='{strMapFile}'");
 
-                                    //var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
-                                    double scoreThreshold = recipe.MapMatchLimitPercent;//  80.0; // 기본값
-                                    try
+                                    double scoreThreshold = recipe.WaferMatchLimitPercent;
+
+                                    // =========================================================
+                                    // [CHANGE] 수동 적용 후 재 Mapmatch 재시도 루프
+                                    //  - 점수 >= threshold 이면 바로 통과
+                                    //  - 점수 < threshold 이면 dlg:
+                                    //      - Stop => -1
+                                    //      - Continue(그냥 진행) => Yes (기존 동작 유지)
+                                    //      - Manual => ManualSettings 받아 적용 후 Mapmatch 재시도 => 다시 판정
+                                    // =========================================================
+                                    while (true)
                                     {
-                                        // 필요시 레시피에 MapScoreThreshold 같은 필드를 추가해 사용하세요.
-                                        // 없으면 기본값 유지
-                                        if (recipe != null && scoreThreshold > 0)
+                                        // 자동 통과
+                                        if (bestScore >= scoreThreshold)
+                                            break;
+
+                                        using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, strMapFile))
                                         {
-                                            // 예: 레시피 허용치(mm)를 점수 기준으로 환산하는 정책이 있다면 반영.
-                                            // 여기서는 단순히 기본값 유지.
+                                            var dr = dlg.ShowDialog();
+                                            if (dr != DialogResult.Yes)
+                                            {
+                                                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                                                Log.Write(UnitName, "MapMatch",
+                                                    $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
+                                                return -1;
+                                            }
+
+                                            // ManualSettings가 있으면 => 적용 후 재매칭
+                                            if (dlg.ManualSettings != null)
+                                            {
+                                                bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
+                                                if (!applied)
+                                                {
+                                                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                                                    Log.Write(UnitName, "MapMatch", "Manual settings apply failed -> abort");
+                                                    return -1;
+                                                }
+
+                                                // UI 한번 갱신(사용자 확인용/로그용)
+                                                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+                                                // 재매칭
+                                                if (!TryRematchAfterManual(wafer, strMapFile, out var retryScore))
+                                                {
+                                                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                                                    Log.Write(UnitName, "MapMatch", "Rematch failed after manual -> abort");
+                                                    return -1;
+                                                }
+
+                                                Log.Write(UnitName, "MapMatch",
+                                                    $"Rematch after manual. Score={retryScore:F2} Threshold={scoreThreshold:F2}");
+
+                                                bestScore = retryScore;
+                                                continue; // 다시 while로 올라가서 통과 여부 판단
+                                            }
+
+                                            // Manual이 아니라 그냥 Continue(Yes) 누른 경우: 점수 미달이어도 진행
+                                            Log.Write(UnitName, "MapMatch",
+                                                $"User chose CONTINUE without manual. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
+                                            break;
                                         }
                                     }
-                                    catch { /* ignore */ }
 
-                                    // 모달 Dlg을 띄워 사용자 선택을 대기
-                                    using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, strMapFile))
-                                    {
-                                        var dr = dlg.ShowDialog();
-                                        if (dr != DialogResult.Yes)
-                                        {
-                                            // 사용자 '중단' 선택 → 시퀀스 중단
-                                            // 필요시 알람도 함께
-                                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                                            Log.Write(UnitName, "MapMatch", $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
-                                            return -1;
-                                        }
-                                        Log.Write(UnitName, "MapMatch", $"User chose CONTINUE. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
-                                    }
-
-                                    // 6) 결과 반영 후 UI 업데이트 (오프셋 적용되어 MapX/MapY가 갱신됨)
+                                    // 최종 UI 업데이트 (오프셋/수동변환 반영)
                                     EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+                                    // 기존 적용 코드 (수정 전)
+                                    // 4) 매칭 수행
+                                    // 주의: Mapmatch는 wafer.Dies를 스캔 데이터로 사용하여 Offset을 적용
+                                    //double bestScore = wafer.Mapmatch(strMapFile, MaterialWafer.MapTyp.waf);
+                                    //bestScore *= 100;
+                                    //// 5) 결과 로그
+                                    //int orgCount = orgPreview.Count;
+                                    //int scanCount = wafer.Dies.Count;
+                                    //Log.Write(UnitName, "MapMatch",
+                                    //    $"Done. Score={bestScore:F3} OrgCount={orgCount} ScanCount={scanCount} MapFile='{strMapFile}'");
+
+                                    ////var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                                    //double scoreThreshold = recipe.WaferMatchLimitPercent;//  80.0; // 기본값
+                                    //try
+                                    //{
+                                    //    // 필요시 레시피에 MapScoreThreshold 같은 필드를 추가해 사용하세요.
+                                    //    // 없으면 기본값 유지
+                                    //    if (recipe != null && scoreThreshold > 0)
+                                    //    {
+                                    //        // 예: 레시피 허용치(mm)를 점수 기준으로 환산하는 정책이 있다면 반영.
+                                    //        // 여기서는 단순히 기본값 유지.
+                                    //    }
+                                    //}
+                                    //catch { /* ignore */ }
+
+                                    //// 모달 Dlg을 띄워 사용자 선택을 대기
+                                    //using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, strMapFile))
+                                    //{
+                                    //    var dr = dlg.ShowDialog();
+                                    //    if (dr != DialogResult.Yes)
+                                    //    {
+                                    //        // 사용자 '중단' 선택 → 시퀀스 중단
+                                    //        PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                                    //        Log.Write(UnitName, "MapMatch", $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
+                                    //        return -1;
+                                    //    }
+
+                                    //    // [ADD] 수동 맵매치 적용 경로
+                                    //    if (dlg.ManualSettings != null)
+                                    //    {
+                                    //        bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
+                                    //        Log.Write(UnitName, "MapMatch", applied
+                                    //            ? "Manual map match applied to wafer.Dies(MapX/MapY)"
+                                    //            : "Manual map match requested but apply failed");
+                                    //    }
+
+                                    //    Log.Write(UnitName, "MapMatch", $"User chose CONTINUE. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
+                                    //}
+
+                                    //// 6) 결과 반영 후 UI 업데이트
+                                    //EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // 맵핑 완료 후 User 확인 후 진행하자. 
+                            // Dlg로 진행 유/무 확인 받고 진행.
+                            if(Config.IsSimulation == false)
+                            {
+                                var ask = new MessageBoxYesNo();
+                                ask.TopMost = true;
+                                if (ask.ShowDialog("진행 유무 확인", $"맵핑 완료. 진행 하시겠습니까?") != DialogResult.Yes)
+                                {
+                                    OnStop();
+                                    ChipMappingDone = false;
+
+                                    var eq = Equipment.Instance;
+                                    var state = eq?.EqState ?? EquipmentState.Unknown;
+                                    eq.StopAllUnitsAsync();
+
+                                    Log.Write(UnitName, "TryShutdownIfAllCassettesEmpty", "모든 관련 Unit 정지 완료.");
+                                    return -1; // 이거 하면 알람 울리는디.. 훔..
                                 }
                             }
                         }
@@ -1756,9 +1900,121 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 여기가 '맵핑 완료' 시점: 반드시 true 설정
+            // 여기서 wafer 준비 최종 완료 설정.
+            wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
             ChipMappingDone = true;
             return nRet;
         }
+
+        // [ADD] Map 파일 로컬 저장 폴더 (프로세스 기준)
+        private static string GetLocalMapFileDir()
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MapFile");
+        }
+
+        // [ADD] recipe.MapFilePath + waferId 로 소스 waf 파일 경로 찾기
+        // - MapFilePath가 폴더면: {folder}\{waferId}.waf
+        // - MapFilePath에 와일드카드(*,?)가 있으면: 첫 매칭 파일 사용
+        // - MapFilePath가 파일이면: 그대로 사용 (단, 확장자/waferId 확인은 호출부에서)
+        private static string ResolveSourceWafPath(string mapFilePath, string waferId)
+        {
+            if (string.IsNullOrWhiteSpace(mapFilePath))
+                return null;
+
+            mapFilePath = mapFilePath.Trim();
+
+            // 와일드카드 패턴 지원 (예: \\server\share\waf\*.waf)
+            if (mapFilePath.IndexOfAny(new[] { '*', '?' }) >= 0)
+            {
+                string dir = Path.GetDirectoryName(mapFilePath);
+                string pattern = Path.GetFileName(mapFilePath);
+
+                if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+                    return null;
+
+                // waferId가 들어간 걸 우선 매칭 (가능하면)
+                var candidates = Directory.GetFiles(dir, pattern, SearchOption.TopDirectoryOnly);
+
+                // 우선순위 1) 파일명(확장자 제외)이 waferId와 정확히 일치
+                var exact = candidates.FirstOrDefault(f =>
+                    string.Equals(Path.GetFileNameWithoutExtension(f), waferId, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(exact))
+                    return exact;
+
+                // 우선순위 2) 파일명에 waferId 포함
+                var contains = candidates.FirstOrDefault(f =>
+                    Path.GetFileName(f).IndexOf(waferId, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (!string.IsNullOrEmpty(contains))
+                    return contains;
+
+                // 마지막) 그냥 첫 파일
+                return candidates.FirstOrDefault();
+            }
+
+            // 폴더 경로이면 waferId.waf로 조합
+            if (Directory.Exists(mapFilePath))
+            {
+                return Path.Combine(mapFilePath, waferId + ".waf");
+            }
+
+            // 파일 경로이면 그대로
+            if (File.Exists(mapFilePath))
+            {
+                return mapFilePath;
+            }
+
+            // 존재하지 않는 폴더/파일이면, "폴더로 가정"하고 조합 시도(UNC 지연 연결 대비)
+            // 예: \\server\share\mapfiles (Directory.Exists가 false로 떨어질 수 있음)
+            // -> 일단 waferId.waf 경로를 만들어 반환하고, 호출부에서 File.Exists로 최종 체크
+            return Path.Combine(mapFilePath, waferId + ".waf");
+        }
+
+        // [ADD] 소스 -> 로컬 MapFile 폴더로 복사(다운로드) 후 로컬 경로 반환
+        private static int DownloadWafToLocalMapFolder(string sourceWafPath, string waferId, out string localWafPath, out string reason)
+        {
+            localWafPath = null;
+            reason = null;
+
+            if (string.IsNullOrWhiteSpace(waferId))
+            {
+                reason = "WaferId empty";
+                return -1;
+            }
+
+            if (string.IsNullOrWhiteSpace(sourceWafPath))
+            {
+                reason = "Source path empty";
+                return -1;
+            }
+
+            if (!File.Exists(sourceWafPath))
+            {
+                reason = "Source waf not found: " + sourceWafPath;
+                return -1;
+            }
+
+            string localDir = GetLocalMapFileDir();
+            Directory.CreateDirectory(localDir);
+
+            localWafPath = System.IO.Path.Combine(localDir, waferId + ".waf");
+
+            // 동일 파일이면 스킵, 아니면 덮어쓰기
+            try
+            {
+                File.Copy(sourceWafPath, localWafPath, overwrite: true);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                reason = "Copy failed: " + ex.Message;
+                return -1;
+            }
+        }
+
+
+
+
+
 
         // 감지 결과를 이용해 원형 웨이퍼 전체 격자(있음/없음)를 MaterialWafer.Dies로 채움
         private void BuildWaferDiesFullGrid(List<PointD> detected)
@@ -1882,7 +2138,6 @@ namespace QMC.LCP_280.Process.Unit
        
         private void ResetChipMappingState()
         {
-
             InputDieTransfer.taskPrepareNextDie = null;
 
             // 맵핑 상태/커서/결과 초기화
@@ -2227,7 +2482,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            Log.Write(this, "Start LoadingWaferPrepare");
+            Log.Write(UnitName, "PrepareLoadingStage", "Start LoadingWaferPrepare");
 
             // 새 웨이퍼 준비 진입 → 맵 상태 리셋
             ResetChipMappingState();
@@ -2240,11 +2495,12 @@ namespace QMC.LCP_280.Process.Unit
                     MaterialWafer wafer = GetMaterialWafer();
                     if(wafer != null)
                     {
+                        Log.Write(UnitName, "PrepareLoadingStage", "Fail: wafer != null");
                         return -1;
                     }
                     if(wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
                     {
-                        Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
+                        Log.Write(UnitName, "PrepareLoadingStage", "Wafer already present -> Skip prepare");
                         return nRtn;
                     }
                 }
@@ -2303,6 +2559,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "MoveToStageUnloadPosition", "Fail: Ejector Pin Move Ready");
                 return -1;
             }
+
+
 
             if (IsInterlockWithFeederAndDieTransferOk() == false)
             {
@@ -2534,17 +2792,23 @@ namespace QMC.LCP_280.Process.Unit
             // 1) 인터락
             if (!IsRingPresent())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageRingPresent);
                 Log.Write(UnitName, "Align", "Fail: Ring(Wafer) not present");
                 return -1;
             }
             if (!IsClampLiftUp())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageLiftUp);
                 Log.Write(UnitName, "Align", "Fail: Clamp Lift not Up");
                 return -1;
             }
 
             if (!IsClampFwd())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageClampFWD);
                 Log.Write(UnitName, "Align", "Fail: Clamp not FWD");
                 return -1;
             }
@@ -2558,6 +2822,8 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MoveToStageCenterPosition();
             if (nRet != 0)
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                 Log.Write(UnitName, "Align", "Fail: Move Center");
                 return -1;
             }
@@ -2576,7 +2842,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-           
             return 0;
         }
         public int AlignTPrepare(bool bFineSpeed = false)
@@ -2647,7 +2912,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         private bool TryGetMarkCenterGlobalDirectionalCenter(bool useXAxis, double? refPerpMm,
-            double centerX, double centerY, out double gx, out double gy, out double score)
+    double centerX, double centerY, out double gx, out double gy, out double score)
         {
 
             gx = gy = score = 0.0;
@@ -2669,30 +2934,47 @@ namespace QMC.LCP_280.Process.Unit
                 if (rc != 0 || img == null)
                     return false;
 
-                var sr = PmRunner.Search(img);
-                //if (sr != null && sr.Success && sr.Matches != null && sr.Matches.Count > 0)
-                //{
-                //    int repIdx = 0;
-                //    int trainW = 0, trainH = 0;
-                //    try
-                //    {
-                //        var ti = PmRunner.Parameters?.TrainImages?
-                //            .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
-                //        if (ti != null)
-                //        {
-                //            trainW = ti.Header.Width;
-                //            trainH = ti.Header.Height;
-                //        }
-                //    }
-                //    catch { /* ignore */ }
-                //    OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH);
-                //    StageCamera.SuspendedImageDisplay = false;
-                //}
+
+                // TODO: 여기 값만 바꾸면 됨(이 함수에서만 적용되는 ROI)
+                const double LocalRoiWmm = 5.0;
+                const double LocalRoiHmm = 1.5;
+
+                // mm -> px (Scale은 mm/px로 쓰고 있으니 그대로 사용)
+                double mmPerPxX = Math.Abs(StageCamera.CameraConfig.Scale.X);
+                double mmPerPxY = Math.Abs(StageCamera.CameraConfig.Scale.Y);
+                if (mmPerPxX <= 0) mmPerPxX = PixelSizeXmm;
+                if (mmPerPxY <= 0) mmPerPxY = PixelSizeYmm;
+
+                int roiWpx = (int)Math.Round(LocalRoiWmm / mmPerPxX);
+                int roiHpx = (int)Math.Round(LocalRoiHmm / mmPerPxY);
+
+                // 이미지 센터 기준 ROI (필요하면 center 기준을 다른 좌표로 바꿔도 됨)
+                int imgW = img.Header.Width;
+                int imgH = img.Header.Height;
+                int cx = imgW / 2;
+                int cy = imgH / 2;
+
+                int halfW = Math.Max(1, roiWpx / 2);
+                int halfH = Math.Max(1, roiHpx / 2);
+
+                int sx0 = Math.Max(0, cx - halfW);
+                int sy0 = Math.Max(0, cy - halfH);
+                int ex0 = Math.Min(imgW - 1, cx + halfW);
+                int ey0 = Math.Min(imgH - 1, cy + halfH);
+
+                if (ex0 <= sx0) ex0 = Math.Min(imgW - 1, sx0 + 1);
+                if (ey0 <= sy0) ey0 = Math.Min(imgH - 1, sy0 + 1);
+
+                //var sr = PmRunner.Search(img);
+                var sr = PmRunner.SearchWithTemporaryInspectRoi(
+                                    img,
+                                    new System.Drawing.Point(sx0, sy0),
+                                    new System.Drawing.Point(ex0, ey0),
+                                    save: false);
 
                 if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0)
                     return false;
 
-              
                 // 현재 T축 회전각 (deg → rad)
                 double tDeg = AxisT?.GetPosition() ?? 0.0;
                 double tRad = tDeg * Math.PI / 180.0;
@@ -2837,69 +3119,14 @@ namespace QMC.LCP_280.Process.Unit
                     //OnRawMatchesFound(img, best, repIdx, trainW, trainH);
                     StageCamera.SuspendedImageDisplay = false;
                 }
+
+                StageCamera.SuspendedImageDisplay = false;
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-               
-                return false;
-            }
-        }
 
-        public bool TryGetImageCenterMark(out double gx, out double gy, out double score, double? maxCenterDistPx = null)
-        {
-            gx = gy = score = 0.0;
-            try
-            {
-                VisionImage img;
-                int rc = StageCamera.GrabSync(out img);
-                if (rc != 0 || img == null) return false;
-
-                var sr = PmRunner.Search(img);
-                if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0) return false;
-
-                double cxPix = StageCamera?.CameraConfig?.Resolution.Width / 2.0 ?? 0.0;
-                double cyPix = StageCamera?.CameraConfig?.Resolution.Height / 2.0 ?? 0.0;
-
-                var bestM = sr.Matches
-                    .OrderBy(m => (m.X - cxPix) * (m.X - cxPix) + (m.Y - cyPix) * (m.Y - cyPix))
-                    .First();
-
-                // 반경 제한(옵션)
-                if (maxCenterDistPx.HasValue)
-                {
-                    double d2 = (bestM.X - cxPix) * (bestM.X - cxPix) + (bestM.Y - cyPix) * (bestM.Y - cyPix);
-                    if (d2 > maxCenterDistPx.Value * maxCenterDistPx.Value)
-                        return false;
-                }
-
-                // 픽셀->mm 오프셋 후 글로벌(mm) 좌표 계산
-                double sx = AxisX?.GetPosition() ?? 0.0;
-                double sy = AxisY?.GetPosition() ?? 0.0;
-                var off = GetPixelToMmScale(bestM.X, bestM.Y);
-
-                gx = sx + off.X;
-                gy = sy + off.Y;
-                score = bestM.Score;
-
-                // Overlay: 대표 1개만
-                int trainW = 0, trainH = 0;
-                try
-                {
-                    var ti = PmRunner.Parameters?.TrainImages?
-                        .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
-                    if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
-                }
-                catch { /* ignore */ }
-
-                OnRawMatchesFound(img, new[] { bestM }, 0, trainW, trainH);
-                Log.Write(UnitName, "CenterPick", $"GX={gx:F4} GY={gy:F4} Score={score:F3}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
                 return false;
             }
         }
@@ -2907,18 +3134,49 @@ namespace QMC.LCP_280.Process.Unit
         //private bool TryGetMarkCenterGlobalDirectionalCenter(bool useXAxis, double? refPerpMm,
         //    double centerX, double centerY, out double gx, out double gy, out double score)
         //{
+
         //    gx = gy = score = 0.0;
         //    try
         //    {
         //        VisionImage img;
-        //        //StageCamera.StopLive();
+        //        if (Config.IsSimulation == false
+        //            && Config.IsDryRun == false)
+        //        {
+        //            if (this.StageCamera.IsLiveOn)
+        //            {
+        //                this.StageCamera.StopLive();
+        //                Thread.Sleep(100);
+        //            }
+        //        }
+
+        //        StageCamera.SuspendedImageDisplay = true;
         //        int rc = StageCamera.GrabSync(out img);
         //        if (rc != 0 || img == null)
         //            return false;
 
         //        var sr = PmRunner.Search(img);
+        //        //if (sr != null && sr.Success && sr.Matches != null && sr.Matches.Count > 0)
+        //        //{
+        //        //    int repIdx = 0;
+        //        //    int trainW = 0, trainH = 0;
+        //        //    try
+        //        //    {
+        //        //        var ti = PmRunner.Parameters?.TrainImages?
+        //        //            .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+        //        //        if (ti != null)
+        //        //        {
+        //        //            trainW = ti.Header.Width;
+        //        //            trainH = ti.Header.Height;
+        //        //        }
+        //        //    }
+        //        //    catch { /* ignore */ }
+        //        //    OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH);
+        //        //    StageCamera.SuspendedImageDisplay = false;
+        //        //}
+
         //        if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0)
         //            return false;
+
 
         //        // 현재 T축 회전각 (deg → rad)
         //        double tDeg = AxisT?.GetPosition() ?? 0.0;
@@ -3024,16 +3282,29 @@ namespace QMC.LCP_280.Process.Unit
         //            .ThenByDescending(c => c.M.Score)
         //            .First();
 
+        //        // 최종 선택: "이미지 중심에 가장 가까운" 후보 최우선
+        //        //var best = candidates
+        //        //    .OrderBy(c => c.CenterPixD2) // 1) 센터 거리(픽셀) 최우선
+        //        //    .ThenBy(c =>
+        //        //        refPerpMm.HasValue
+        //        //            ? Math.Abs((useXAxis ? c.GY : c.GX) - refPerpMm.Value) // 2) (있다면) 기준 라인 근접
+        //        //            : 0.0)
+        //        //    .ThenBy(c => c.PerpAbs)       // 3) 회전된 주축에 대한 수직 편차
+        //        //    .ThenByDescending(c => c.M.Score) // 4) 점수
+        //        //    .First();
+
+        //        double px = best.M.X;
+        //        double py = best.M.Y;
+
         //        gx = best.GX;
         //        gy = best.GY;
         //        score = best.M.Score;
+        //        Log.Write(UnitName, "DirectionalPick",
+        //            $"Select GX={gx:F4} GY={gy:F4} Score={score:F3} Perp={best.Perp:F4} Along={best.Along:F4} (T={tDeg:F3}deg useAxis={(useXAxis ? "X" : "Y")})");
 
-        //        // 여기만 변경: best 하나만 overlay로 전달
         //        if (sr != null && sr.Success && sr.Matches != null && sr.Matches.Count > 0)
         //        {
-        //            // 대표 인덱스 선택 로직(평균과 가장 가까운 점) 단순화
         //            int repIdx = 0;
-        //            // Train 이미지 크기 확보
         //            int trainW = 0, trainH = 0;
         //            try
         //            {
@@ -3046,13 +3317,13 @@ namespace QMC.LCP_280.Process.Unit
         //                }
         //            }
         //            catch { /* ignore */ }
-
-        //            OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH);
+        //            OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH, px, py);
+        //            //OnRawMatchesFound(img, sr.Matches, repIdx, trainW, trainH);
+        //            //OnRawMatchesFound(img, best, repIdx, trainW, trainH);
+        //            StageCamera.SuspendedImageDisplay = false;
         //        }
 
-        //        Log.Write(UnitName, "DirectionalPick",
-        //            $"Select GX={gx:F4} GY={gy:F4} Score={score:F3} Perp={best.Perp:F4} Along={best.Along:F4} (T={tDeg:F3}deg useAxis={(useXAxis ? "X" : "Y")})");
-
+        //        StageCamera.SuspendedImageDisplay = false;
         //        return true;
         //    }
         //    catch (Exception ex)
@@ -3062,6 +3333,64 @@ namespace QMC.LCP_280.Process.Unit
         //        return false;
         //    }
         //}
+
+        public bool TryGetImageCenterMark(out double gx, out double gy, out double score, double? maxCenterDistPx = null)
+        {
+            gx = gy = score = 0.0;
+            try
+            {
+                VisionImage img;
+                int rc = StageCamera.GrabSync(out img);
+                if (rc != 0 || img == null) return false;
+
+                var sr = PmRunner.Search(img);
+                if (!sr.Success || sr.Matches == null || sr.Matches.Count == 0) return false;
+
+                double cxPix = StageCamera?.CameraConfig?.Resolution.Width / 2.0 ?? 0.0;
+                double cyPix = StageCamera?.CameraConfig?.Resolution.Height / 2.0 ?? 0.0;
+
+                var bestM = sr.Matches
+                    .OrderBy(m => (m.X - cxPix) * (m.X - cxPix) + (m.Y - cyPix) * (m.Y - cyPix))
+                    .First();
+
+                // 반경 제한(옵션)
+                if (maxCenterDistPx.HasValue)
+                {
+                    double d2 = (bestM.X - cxPix) * (bestM.X - cxPix) + (bestM.Y - cyPix) * (bestM.Y - cyPix);
+                    if (d2 > maxCenterDistPx.Value * maxCenterDistPx.Value)
+                        return false;
+                }
+
+                // 픽셀->mm 오프셋 후 글로벌(mm) 좌표 계산
+                double sx = AxisX?.GetPosition() ?? 0.0;
+                double sy = AxisY?.GetPosition() ?? 0.0;
+                var off = GetPixelToMmScale(bestM.X, bestM.Y);
+
+                gx = sx + off.X;
+                gy = sy + off.Y;
+                score = bestM.Score;
+
+                // Overlay: 대표 1개만
+                int trainW = 0, trainH = 0;
+                try
+                {
+                    var ti = PmRunner.Parameters?.TrainImages?
+                        .FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                    if (ti != null) { trainW = ti.Header.Width; trainH = ti.Header.Height; }
+                }
+                catch { /* ignore */ }
+
+                OnRawMatchesFound(img, new[] { bestM }, 0, trainW, trainH);
+                Log.Write(UnitName, "CenterPick", $"GX={gx:F4} GY={gy:F4} Score={score:F3}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+
 
         // mm 단위 Tolerance (레시피 값) → deg 변환 (arc length ≈ R*θ, θ(rad)=s/R)
         private double ComputeResidualToleranceDegFromMm(double toleranceMm)
@@ -3265,7 +3594,6 @@ namespace QMC.LCP_280.Process.Unit
 
             double baseX = AxisX?.GetPosition() ?? 0.0;
             double baseY = AxisY?.GetPosition() ?? 0.0;
-
             //for(int iter = 0; iter < 5; iter ++)
             {
                
@@ -3282,7 +3610,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     ptFirst = new PointD(cx1, cy1);
                 }
-
 
                 bool bSecondbFind = FindCenterDieXMove(baseX, baseY, 1, nStep, bFineSpeed, out var cx2, out var cy2);
                 if(bSecondbFind == false)
@@ -3307,8 +3634,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-
-
+            Log.Write(UnitName, "DualPointAngle", "TryAcquireDualPointAngle fail");
             return false;
         }
 
@@ -3423,6 +3749,15 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "ThetaRefine",
                 $"Apply correction={correctionDeg:F4}deg (limited={limited:F4}) curT={cur:F4} -> target={target:F4}");
+
+            // WaferStageT : 0 ~ 12도 
+            // 이거 이상 움직이면 Limit으로 NG임.
+            if (target < -0.2 || target > 12) //Stage 소프트리밋 가져올까?
+            {
+                PostAlarm((int)AlarmKeys.eInputStageAlignNotDone);
+                Log.Write(UnitName, "T_Align", "Coarse move Limit");
+                return -1;
+            }
 
             int rc = AxisT.MoveAbs(target, isAuto, bFineSpeed);
             if (rc != 0) return rc;
@@ -3555,6 +3890,7 @@ namespace QMC.LCP_280.Process.Unit
                 IsStatus_TAlignDone = true;
                 return 0;
             }
+
             try
             {
                 PmRunner.LoadRecipe();
@@ -3564,10 +3900,10 @@ namespace QMC.LCP_280.Process.Unit
                     if (this.StageCamera.IsLiveOn)
                     {
                         this.StageCamera.StopLive();
-                        Thread.Sleep(200);
+                        Thread.Sleep(50);
                     }
                 }
-                Thread.Sleep(100);
+                Thread.Sleep(30);
 
                 // 1) 멀티 패턴 각도 집계
                 double coarseAngle = 0, coarseStd = 0;
@@ -3616,9 +3952,20 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "T_Align",
                         $"CoarseRep={coarseAngle:F5} Std={coarseStd:F5} Count={coarseCount} Gain={AngleApplyGain:F2} -> MoveT target={target:F5}");
 
+                    // WaferStageT : 0 ~ 12도 
+                    // 이거 이상 움직이면 Limit으로 NG임.
+                    if (target < -0.2 || target > 12) //Stage 소프트리밋 가져올까?
+                    {
+                        PostAlarm((int)AlarmKeys.eInputStageAlignNotDone);
+                        Log.Write(UnitName, "T_Align", "Coarse move Limit");
+                        return -1;
+                    }
+
                     IsStatus_LastFoundTRawAngle = coarseAngle;
                     nRet = AxisT.MoveAbs(target, RunMode == UnitRunMode.Auto, bFineSpeed);
-                    if (nRet != 0) return -1;
+                    if (nRet != 0) 
+                        return -1;
+
                     nRet = WaitUntil(() => InPos(AxisT, target), MoveTimeoutMs);
                     if (nRet != 0)
                     {
@@ -3632,10 +3979,17 @@ namespace QMC.LCP_280.Process.Unit
                 // 2) 듀얼 포인트 정밀 재보정 (수렴 로직)
                 if (EnableThetaDualPointRefine)
                 {
+                    MaxTRefineAttempts = 5; //  마스터 샘플때문에 우선 3번만 하고
+                                            // 파라미터로 값을 빼자. 
+                                            // 그리고 Y축 방향 얼라인 넣자. 
+                                            // 그리고 얼라인 제대로 보정 못했을때의... 조건.. 
+                                            // 이건 진짜.. 
+                                            // 이건 진짜.. 
                     int maxAttempts = Math.Max(1, MaxTRefineAttempts);
                     double lastResidual = double.MaxValue;
                     double waferDia = Equipment.Instance.EquipmentRecipe.CurrentRecipe.WaferDiameter;
-                    if (waferDia <= 0) waferDia = 100;
+                    if (waferDia <= 0) 
+                        waferDia = 100;
 
                     // 허용각 (Pitch 기반 이미 세팅된 값 사용)
                     double toleranceDeg = TRefineResidualToleranceDeg;
@@ -3644,6 +3998,15 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         bool ok = TryAcquireDualPointAngle(true, out var slopeX, bFineSpeed, attempt);
                         double residual = ok ? slopeX : double.NaN;
+
+                        if(ok == false)
+                        {
+                            Log.Write(UnitName, "ThetaRefine",
+                            $"Fail. - Attempt {attempt}: Residual={residual:F5}deg Tolerance={toleranceDeg:F5}");
+                            IsStatus_TAlignDone = false;
+                            nRet = -1;
+                            break;
+                        }
 
                         double ToleranceMm = Equipment.Instance.EquipmentRecipe.CurrentRecipe.ToleranceMm;
                         if(Math.Abs(slopeX)< ToleranceMm)
@@ -3668,124 +4031,15 @@ namespace QMC.LCP_280.Process.Unit
                         if (nRet != 0)
                         {
                             Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: move fail rc={nRet} -> abort");
+                            IsStatus_TAlignDone = false;
+                            nRet = -1;
                             break;
                         }
-                        
                     }
                 }
 
                 IsStatus_TAlignDone = true;
                 return nRet;
-
-                //기존코드
-                //VisionImage img = null;
-                //double angle = 0;
-                //bool isAuto = (RunMode == UnitRunMode.Auto);
-
-                //if (true)
-                //{
-                //    StageCamera.GrabSync(out img);
-                //    PmRunner.SearchTheta(img, out angle);
-                //    if (Math.Abs(angle) < 1e-9)
-                //    {
-                //        // 재시도 1회
-                //        StageCamera.GrabSync(out img);
-                //        PmRunner.SearchTheta(img, out angle);
-                //    }
-                //    if (angle == 0)
-                //    {
-                //        Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} NG");
-                //        nRet = -1;
-                //        return nRet;
-                //    }
-                //    double currentAngle = this.AxisT.GetPosition();
-                //    double dTarget = currentAngle + angle * AngleApplyGain;
-                //    Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4} target={dTarget:F4}");
-
-                //    IsStatus_LastFoundTRawAngle = angle;
-                //    this.AxisT.MoveAbs(dTarget, isAuto, bFineSpeed);
-                //    nRet = WaitUntil(() => InPos(this.AxisT, dTarget), MoveTimeoutMs);
-                //    if (nRet != 0)
-                //    {
-                //        PostAlarm((int)AlarmKeys.eInputStageAlignNotDone);
-                //        Log.Write(UnitName, "T_Align", "Coarse move timeout");
-                //        IsStatus_TAlignDone = true;
-                //        return nRet;
-                //    }
-                //}
-                //IsStatus_LastAppliedTAngle = angle * AngleApplyGain;
-
-                //Thread.Sleep(100);
-
-                //// 정밀 재보정
-                //EnableThetaDualPointRefine = true;
-                //if (EnableThetaDualPointRefine)
-                //{
-                //    // 필요 시 레시피 로드
-                //    if (!PmRunner.IsRecipeLoaded)
-                //    {
-                //        try 
-                //        { 
-                //            PmRunner.LoadRecipe(); 
-                //        } 
-                //        catch (Exception ex) 
-                //        { Log.Write(ex); }
-                //    }
-
-                //    MaxTRefineAttempts = 7;
-                //    for (int attempt = 1; attempt <= MaxTRefineAttempts; attempt++)
-                //    {
-                //        // 먼저 X축 기준 시도
-                //        bool okX = TryAcquireDualPointAngle(true, out var dualAngleX, bFineSpeed);
-                //        double usedAngle = 0.0;
-                //        bool usedXAxis = false;
-
-                //        if (okX)
-                //        {
-                //            usedAngle = dualAngleX;
-                //            usedXAxis = true;
-                //        }
-                //        else
-                //        {
-                //            // X축 실패 → Y축 폴백
-                //            bool okY = TryAcquireDualPointAngle(false, out var dualAngleY, bFineSpeed);
-                //            if (!okY)
-                //            {
-                //                Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Dual point acquisition failed (X,Y). Stop refine.");
-                //                break;
-                //            }
-                //            usedAngle = dualAngleY;
-                //            usedXAxis = false;
-                //        }
-
-                //        double residual = usedAngle; // 현재 잔류 기울기
-                //        Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: ResidualAngle={residual:F4}deg (Axis={(usedXAxis ? "X" : "Y")})");
-
-                //        //ToleranceMm
-                //        var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
-                //        TRefineResidualToleranceDeg = recipe.ToleranceMm;
-                //        if (Math.Abs(residual) == 0)
-                //        {
-                //            nRet = -1;
-                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Correction fail. Abort refine.");
-                //            return nRet;
-                //        }
-                //        if (Math.Abs(residual) <= TRefineResidualToleranceDeg)
-                //        {
-                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Within tolerance ({TRefineResidualToleranceDeg}deg). Done.");
-                //            break;
-                //        }
-
-                //        // 각도 보정 (잔류 기울기 반대 방향)
-                //        double correction = -residual * AngleApplyGain;
-                //        int rc = ApplyThetaCorrection(correction, isAuto, bFineSpeed);
-                //        if (rc != 0)
-                //        {
-                //            Log.Write(UnitName, "ThetaRefine", $"Attempt {attempt}: Correction move fail rc={rc}. Abort refine.");
-                //            break;
-                //        }
-                //    }
-                //}
             }
             catch (Exception ex)
             {
@@ -3992,8 +4246,13 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
+            else
+            {
+                Log.Write(UnitName, "SearchDies", "SearchDies Fail.");
+            }
             return ret;
         }
+
         private void UpdateChipInfo(List<PointD> chips)
         {
             try
@@ -4003,10 +4262,14 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     materialWafer.Dies.Clear();
                     materialWafer.MakeWaferInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
-                    var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
-                    foreach (var c in list)
+                    
+                    if(false)
                     {
-                        Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+                        var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+                        foreach (var c in list)
+                        {
+                            Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+                        }
                     }
                 }
             }
@@ -4216,7 +4479,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool ChipMappingDone { get; set; }
         private int _chipPickupCursor = 0;
         
-
         public class ChipMapEntry
         {
             public int Index;
@@ -4449,6 +4711,7 @@ namespace QMC.LCP_280.Process.Unit
                 var wafer = GetMaterialWafer();
                 if (wafer == null)
                     return null;
+
                 lock(wafer)
                 {
                     lock (wafer.Dies)
@@ -4569,6 +4832,7 @@ namespace QMC.LCP_280.Process.Unit
                     double dy = dpoY;
                     StageCamera.SuspendedImageDisplay = true;
                     StageCamera.GrabSync(out VisionImage grabImage);
+                    //grabImage.Save(VisionImage.FileFilter.bmp);
                     tImageProcess = Task.Factory.StartNew(() =>
                     {
                         Log.Write(UnitName, "RecheckDieAndAlign", "SearchDies");
@@ -4593,6 +4857,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
+                StageCamera.SuspendedImageDisplay = false;
                 return nRet;
             }
             catch (Exception ex)
@@ -4762,60 +5027,40 @@ namespace QMC.LCP_280.Process.Unit
 
 
 
-        // === 맵 순서 지정 옵션 ===
-        public enum PathStartCorner
+        // 클래스 필드 영역에 추가
+        private bool _pathBaseLocked;
+        private MapPathStartCorner _pathBaseCorner = MapPathStartCorner.BottomLeft;
+        private MapPathPrimaryAxis _pathBaseAxis = MapPathPrimaryAxis.XFirst;
+
+        private void LockPathBaseFromRecipeOnce()
         {
-            BottomLeft,
-            BottomRight,
-            TopLeft,
-            TopRight
+            if (_pathBaseLocked) return;
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            if (recipe == null) return;
+
+            _pathBaseCorner = recipe.WaferPathStartCorner;
+            _pathBaseAxis = recipe.WaferPathPrimaryAxis;
+            _pathBaseLocked = true;
         }
 
-        public enum PathPrimaryAxis
-        {
-            XFirst, // 행 우선(가로 먼저)
-            YFirst  // 열 우선(세로 먼저)
-        }
-
-        public enum PathTraversalMode
-        {
-            Raster,     // 래스터(매 줄/열 동일 방향)
-            Serpentine  // 지그재그(매 줄/열마다 방향 반전)
-        }
-
-        // 기본값: 좌하단 시작, X 먼저, 지그재그
-        public PathStartCorner MapStartCorner { get; set; } = PathStartCorner.TopRight;
-        public PathPrimaryAxis MapPrimaryAxis { get; set; } = PathPrimaryAxis.XFirst;
-        public PathTraversalMode MapTraversal { get; set; } = PathTraversalMode.Serpentine;
-
-        // 옵션에 따라 인덱스만 재부여(좌표/리스트 순서는 유지)
+        // 옵션에 Chip Loading 순서 변경. Index기준으로 정렬.
         private void ApplyDieOrderByPathSettings(MaterialWafer wafer)
         {
             try
             {
                 if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
 
+                // 최초 1회만 베이스 경로(코너/주축) 고정
+                LockPathBaseFromRecipeOnce();
+
                 lock (wafer.Dies)
                 {
-                    // 0) 셀 기준축(MapX/MapY) 구성: 정수 그리드로 간주(반올림 후 distinct)
-                    var xs = wafer.Dies
-                    .Where(d => d != null)
-                    .Select(d => (int)d.MapX)
-                    .Distinct()
-                    .OrderBy(v => v)
-                    .ToList();
+                    // 0) 셀 기준축(MapX/MapY) 구성
+                    var xs = wafer.Dies.Where(d => d != null).Select(d => (int)d.MapX).Distinct().OrderBy(v => v).ToList();
+                    var ys = wafer.Dies.Where(d => d != null).Select(d => (int)d.MapY).Distinct().OrderBy(v => v).ToList();
+                    if (xs.Count == 0 || ys.Count == 0) return;
 
-                    var ys = wafer.Dies
-                        .Where(d => d != null)
-                        .Select(d => (int)d.MapY)
-                        .Distinct()
-                        .OrderBy(v => v)
-                        .ToList();
-
-                    if (xs.Count == 0 || ys.Count == 0) 
-                        return;
-
-                    // 1) (ix,iy) -> bucket (동일 셀에 여러 개 있더라도 모두 포함)
+                    // 1) (ix,iy) -> bucket
                     var grid = new Dictionary<(int ix, int iy), List<MaterialDie>>();
                     foreach (var d in wafer.Dies.Where(d => d != null))
                     {
@@ -4834,15 +5079,49 @@ namespace QMC.LCP_280.Process.Unit
                         bucket.Add(d);
                     }
 
-                    // 2) 진행 방향(시작 코너) → 부호만 바꿔서 순회 방향 결정
-                    int xDir, yDir;
-                    switch (MapStartCorner)
+                    // 2) 회전/미러(표시/방향)만 적용
+                    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                    var mapRotate = recipe.WaferRotate;
+                    var mapMirror = recipe.WaferMirror;
+
+                    int nx = xs.Count;
+                    int ny = ys.Count;
+
+                    (int tx, int ty) ApplyRotation(int ix, int iy)
+                    {
+                        switch (mapRotate)
+                        {
+                            case MapRotateOption.CW90: return (ny - 1 - iy, ix);
+                            case MapRotateOption.CW180: return (nx - 1 - ix, ny - 1 - iy);
+                            case MapRotateOption.CW270: return (iy, nx - 1 - ix);
+                            default: return (ix, iy);
+                        }
+                    }
+                    (int tx, int ty) ApplyMirror(int ix, int iy)
+                    {
+                        switch (mapMirror)
+                        {
+                            case MapMirrorOption.X: return (nx - 1 - ix, iy);
+                            case MapMirrorOption.Y: return (ix, ny - 1 - iy);
+                            case MapMirrorOption.XY: return (nx - 1 - ix, ny - 1 - iy);
+                            default: return (ix, iy);
+                        }
+                    }
+                    (int tx, int ty) Transform(int ix, int iy)
+                    {
+                        var r = ApplyRotation(ix, iy);
+                        return ApplyMirror(r.tx, r.ty);
+                    }
+
+                    // 3) 베이스 StartCorner/PrimaryAxis로 순회 방향 “한 번만” 결정
+                    int xDir = 0, yDir = 0;
+                    switch (_pathBaseCorner)
                     {
                         default:
-                        case PathStartCorner.BottomLeft: xDir = +1; yDir = +1; break;
-                        case PathStartCorner.BottomRight: xDir = -1; yDir = +1; break;
-                        case PathStartCorner.TopLeft: xDir = +1; yDir = -1; break;
-                        case PathStartCorner.TopRight: xDir = -1; yDir = -1; break;
+                        case MapPathStartCorner.BottomLeft: xDir = +1; yDir = +1; break;
+                        case MapPathStartCorner.BottomRight: xDir = -1; yDir = +1; break;
+                        case MapPathStartCorner.TopLeft: xDir = +1; yDir = -1; break;
+                        case MapPathStartCorner.TopRight: xDir = -1; yDir = -1; break;
                     }
 
                     IEnumerable<int> RangeDir(int count, int dir)
@@ -4856,7 +5135,6 @@ namespace QMC.LCP_280.Process.Unit
                     var yLineF = RangeDir(ys.Count, yDir).ToList();
                     var yLineR = yLineF.AsEnumerable().Reverse().ToList();
 
-                    // 3) 옵션 경로 순서대로 모든 다이를 나열(버킷 내 tie-break는 안정적으로)
                     var ordered = new List<MaterialDie>(wafer.Dies.Count);
                     Action<IEnumerable<int>, IEnumerable<int>> addBy = (xSeq, ySeq) =>
                     {
@@ -4864,12 +5142,14 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             foreach (var ix in xSeq)
                             {
-                                if (!grid.TryGetValue((ix, iy), out var bucket) || bucket.Count == 0)
+                                // 조회 키에는 회전/미러만 반영
+                                var keyT = Transform(ix, iy);
+                                if (!grid.TryGetValue(keyT, out var bucket) || bucket.Count == 0)
                                     continue;
 
-                                // 같은 셀 내 다이 순서는 안정적으로(가까움 → Map → Center)
-                                var cx = xs[ix];
-                                var cy = ys[iy];
+                                // tie-break 안정화
+                                var cx = xs[Math.Max(0, Math.Min(xs.Count - 1, ix))];
+                                var cy = ys[Math.Max(0, Math.Min(ys.Count - 1, iy))];
                                 var sel = bucket
                                     .OrderBy(d => (d.CenterX - cx) * (d.CenterX - cx) + (d.CenterY - cy) * (d.CenterY - cy))
                                     .ThenBy(d => d.MapY)
@@ -4882,29 +5162,26 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     };
 
-                    if (MapPrimaryAxis == PathPrimaryAxis.XFirst)
+                    // 베이스 주축 기준으로 래스터/지그재그만 고정
+                    var traversal = recipe.WaferPathTraversalMode;
+                    if (_pathBaseAxis == MapPathPrimaryAxis.XFirst)
                     {
-                        // 행 우선(Y 바깥, X 안쪽) + 지그재그
                         for (int row = 0; row < ys.Count; row++)
                         {
-                            var xSeq = (MapTraversal == PathTraversalMode.Serpentine && (row % 2 == 1)) ? xLineR : xLineF;
+                            var xSeq = (traversal == MapPathTraversalMode.Serpentine && (row % 2 == 1)) ? xLineR : xLineF;
                             addBy(xSeq, new[] { yLineF[row] });
                         }
                     }
-                    else
+                    else // YFirst
                     {
-                        // 열 우선(X 바깥, Y 안쪽) + 지그재그
                         for (int col = 0; col < xs.Count; col++)
                         {
-                            var ySeq = (MapTraversal == PathTraversalMode.Serpentine && (col % 2 == 1)) ? yLineR : yLineF;
+                            var ySeq = (traversal == MapPathTraversalMode.Serpentine && (col % 2 == 1)) ? yLineR : yLineF;
                             addBy(new[] { xLineF[col] }, ySeq);
                         }
                     }
 
-                    // 4) 인덱스만 재부여(좌표/리스트 순서는 그대로)
-                    if (ordered.Count != wafer.Dies.Count)
-                        Log.Write(UnitName, "ChipMap", $"[WARN] Indexing size mismatch: before={wafer.Dies.Count} after={ordered.Count}");
-
+                    // 4) 인덱스 재부여
                     for (int i = 0; i < ordered.Count; i++)
                     {
                         ordered[i].Index = i;
@@ -4912,15 +5189,161 @@ namespace QMC.LCP_280.Process.Unit
                             ordered[i].Name = $"{wafer.WaferId}_{i}";
                     }
                 }
-
-                // wafer.Dies 순서는 유지합니다(= 좌표 배열은 그대로).
-                // GetNextDie()는 Index 오름차순을 사용하므로 옵션 경로대로 동작합니다.
             }
             catch (Exception ex)
             {
                 Log.Write(UnitName, "ApplyDieOrderByPathSettings", ex.Message);
             }
         }
+
+        //private void ApplyDieOrderByPathSettings(MaterialWafer wafer)
+        //{
+        //    try
+        //    {
+        //        if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
+
+        //        lock (wafer.Dies)
+        //        {
+        //            // 0) 셀 기준축(MapX/MapY) 구성: 정수 그리드로 간주(반올림 후 distinct)
+        //            var xs = wafer.Dies
+        //            .Where(d => d != null)
+        //            .Select(d => (int)d.MapX)
+        //            .Distinct()
+        //            .OrderBy(v => v)
+        //            .ToList();
+
+        //            var ys = wafer.Dies
+        //                .Where(d => d != null)
+        //                .Select(d => (int)d.MapY)
+        //                .Distinct()
+        //                .OrderBy(v => v)
+        //                .ToList();
+
+        //            if (xs.Count == 0 || ys.Count == 0) 
+        //                return;
+
+        //            // 1) (ix,iy) -> bucket (동일 셀에 여러 개 있더라도 모두 포함)
+        //            var grid = new Dictionary<(int ix, int iy), List<MaterialDie>>();
+        //            foreach (var d in wafer.Dies.Where(d => d != null))
+        //            {
+        //                int mx = (int)d.MapX;
+        //                int my = (int)d.MapY;
+        //                int ix = xs.IndexOf(mx);
+        //                int iy = ys.IndexOf(my);
+        //                if (ix < 0 || iy < 0) continue;
+
+        //                var key = (ix, iy);
+        //                if (!grid.TryGetValue(key, out var bucket))
+        //                {
+        //                    bucket = new List<MaterialDie>();
+        //                    grid[key] = bucket;
+        //                }
+        //                bucket.Add(d);
+        //            }
+
+        //            // 기본값: 좌하단 시작, X 먼저, 지그재그
+        //            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+        //            MapRotateOption mapRotate = MapRotateOption.None;
+        //            MapMirrorOption mapMirror = MapMirrorOption.None;
+
+
+
+
+        //            //public PathStartCorner MapStartCorner { get; set; } = PathStartCorner.TopRight;
+        //            //public PathPrimaryAxis MapPrimaryAxis { get; set; } = PathPrimaryAxis.XFirst;
+        //            //public PathTraversalMode MapTraversal { get; set; } = PathTraversalMode.Serpentine;
+        //            MapPathStartCorner MapStartCorner = recipe.WaferPathStartCorner;
+        //            MapPathPrimaryAxis MapPrimaryAxis = recipe.WaferPathPrimaryAxis;
+        //            MapPathTraversalMode MapTraversal = recipe.WaferPathTraversalMode;
+        //            // 2) 진행 방향(시작 코너) → 부호만 바꿔서 순회 방향 결정.
+        //            int xDir = 0, yDir = 0;
+        //            //실제 장비에서 TopRight로 하면 bottomRight가 되는디.
+        //            switch (MapStartCorner)
+        //            {
+        //                default:
+        //                case MapPathStartCorner.BottomLeft: xDir = +1; yDir = +1; break;
+        //                case MapPathStartCorner.BottomRight: xDir = -1; yDir = +1; break;
+        //                case MapPathStartCorner.TopLeft: xDir = +1; yDir = -1; break;
+        //                case MapPathStartCorner.TopRight: xDir = -1; yDir = -1; break;
+        //            }
+        //            IEnumerable<int> RangeDir(int count, int dir)
+        //            {
+        //                if (dir > 0) { for (int i = 0; i < count; i++) yield return i; }
+        //                else { for (int i = count - 1; i >= 0; i--) yield return i; }
+        //            }
+
+
+        //            var xLineF = RangeDir(xs.Count, xDir).ToList();
+        //            var xLineR = xLineF.AsEnumerable().Reverse().ToList();
+        //            var yLineF = RangeDir(ys.Count, yDir).ToList();
+        //            var yLineR = yLineF.AsEnumerable().Reverse().ToList();
+
+        //            // 3) 옵션 경로 순서대로 모든 다이를 나열(버킷 내 tie-break는 안정적으로)
+        //            var ordered = new List<MaterialDie>(wafer.Dies.Count);
+        //            Action<IEnumerable<int>, IEnumerable<int>> addBy = (xSeq, ySeq) =>
+        //            {
+        //                foreach (var iy in ySeq)
+        //                {
+        //                    foreach (var ix in xSeq)
+        //                    {
+        //                        if (!grid.TryGetValue((ix, iy), out var bucket) || bucket.Count == 0)
+        //                            continue;
+
+        //                        // 같은 셀 내 다이 순서는 안정적으로(가까움 → Map → Center)
+        //                        var cx = xs[ix];
+        //                        var cy = ys[iy];
+        //                        var sel = bucket
+        //                            .OrderBy(d => (d.CenterX - cx) * (d.CenterX - cx) + (d.CenterY - cy) * (d.CenterY - cy))
+        //                            .ThenBy(d => d.MapY)
+        //                            .ThenBy(d => d.MapX)
+        //                            .ThenBy(d => d.CenterY)
+        //                            .ThenBy(d => d.CenterX);
+
+        //                        foreach (var dd in sel) ordered.Add(dd);
+        //                    }
+        //                }
+        //            };
+
+        //            if (MapPrimaryAxis == MapPathPrimaryAxis.XFirst)
+        //            {
+        //                // 행 우선(Y 바깥, X 안쪽) + 지그재그
+        //                for (int row = 0; row < ys.Count; row++)
+        //                {
+        //                    var xSeq = (MapTraversal == MapPathTraversalMode.Serpentine && (row % 2 == 1)) ? xLineR : xLineF;
+        //                    addBy(xSeq, new[] { yLineF[row] });
+        //                }
+        //            }
+        //            else if (MapPrimaryAxis == MapPathPrimaryAxis.YFirst)
+        //            {
+        //                // 열 우선(X 바깥, Y 안쪽) + 지그재그
+        //                for (int col = 0; col < xs.Count; col++)
+        //                {
+        //                    var ySeq = (MapTraversal == MapPathTraversalMode.Serpentine && (col % 2 == 1)) ? yLineR : yLineF;
+        //                    addBy(new[] { xLineF[col] }, ySeq);
+        //                }
+        //            }
+
+        //            // 4) 인덱스만 재부여(좌표/리스트 순서는 그대로)
+        //            if (ordered.Count != wafer.Dies.Count)
+        //            {
+        //                Log.Write(UnitName, "ChipMap", $"[WARN] Indexing size mismatch: before={wafer.Dies.Count} after={ordered.Count}");
+        //            }
+
+        //            for (int i = 0; i < ordered.Count; i++)
+        //            {
+        //                ordered[i].Index = i;
+        //                if (string.IsNullOrEmpty(wafer.WaferId) == false)
+        //                {
+        //                    ordered[i].Name = $"{wafer.WaferId}_{i}";
+        //                }
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(UnitName, "ApplyDieOrderByPathSettings", ex.Message);
+        //    }
+        //}
 
         public bool IsWaferExchangeReady()
         {
@@ -5007,6 +5430,62 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             try { MarksFound?.Invoke(this, e); } catch { }
+        }
+
+        // [ADD] Manual MapMatch 설정을 현재 wafer.Dies(MapX/MapY)에 적용
+        private bool ApplyManualMapMatchToWafer(MaterialWafer wafer, FormMapMatchManual.ManualTransformSettings s)
+        {
+            if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0) return false;
+            if (s == null) return false;
+
+            try
+            {
+                lock (wafer.Dies)
+                {
+                    foreach (var d in wafer.Dies)
+                    {
+                        if (d == null) 
+                            continue;
+
+                        // Map 좌표(정수 grid)를 변환 대상으로 사용
+                        var src = new PointF((float)d.MapX, (float)d.MapY);
+                        var dst = FormMapMatchManual.Transform(src, s);
+
+                        // MapX/MapY는 프로젝트 내에서 int로 쓰는 흐름이 강함 (표시/Indexing/Mapmatch)
+                        d.MapX = (int)Math.Round(dst.X);
+                        d.MapY = (int)Math.Round(dst.Y);
+                    }
+                }
+
+                // 인덱스/이름 재정렬(선택): 현 코드 스타일에 맞춰 정규화 호출
+                NormalizeIndicesSequential(wafer, startIndex: 0, rename: true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ApplyManualMapMatchToWafer", $"Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        // [ADD] 현재 wafer.Dies 기준으로 Mapmatch를 재시도하고 score(%)를 반환
+        private bool TryRematchAfterManual(MaterialWafer wafer, string mapFile, out double scorePercent)
+        {
+            scorePercent = 0.0;
+            if (wafer == null) return false;
+            if (string.IsNullOrWhiteSpace(mapFile) || !File.Exists(mapFile)) return false;
+
+            try
+            {
+                double score = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf);
+                scorePercent = score * 100.0;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "TryRematchAfterManual", $"Exception: {ex.Message}");
+                return false;
+            }
         }
     }
 }

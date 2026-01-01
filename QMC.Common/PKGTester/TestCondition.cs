@@ -30,9 +30,15 @@ namespace QMC.Common.PKGTester
         public double MeasureLow { get; set; }
         public double MeasureHigh { get; set; }
 
-
         // User Define
         public string Expression { get; set; }
+
+        // Data Calibration
+        public bool UseTotalGain { get; set; }
+        public bool UseTotalOffset { get; set; }
+        public double TotalGain { get; set; }
+        public double TotalOffset { get; set; }
+        public string Unit { get; set; }
 
         // Data Calibration
         public bool[] UseGain { get; set; } = new bool[8];
@@ -40,7 +46,7 @@ namespace QMC.Common.PKGTester
         public double[] Gain { get; set; } = new double[8];
         public double[] Offset { get; set; } = new double[8];
 
-        public string Unit { get; set; }
+        
 
         #endregion
 
@@ -66,6 +72,14 @@ namespace QMC.Common.PKGTester
             MeasureHigh = 0;
 
             Expression = "";
+
+            // Total calibration defaults
+            UseTotalGain = false;
+            UseTotalOffset = false;
+            TotalGain = 1.0;
+            TotalOffset = 0.0;
+
+            Unit = "";
 
             for (int i = 0; i < 8; i++)
             {
@@ -193,6 +207,13 @@ namespace QMC.Common.PKGTester
                 case TestItemCategory.Electrical:
                 case TestItemCategory.Optical:
                     {
+                        // Total calibration first
+                        pc.Add("Calibration - Total");
+                        pc.Add("Use Total Gain", "", UseTotalGain);
+                        pc.Add("Use Total Offset", "", UseTotalOffset);
+                        pc.Add("Total Gain", "", TotalGain);
+                        pc.Add("Total Offset", "", TotalOffset);
+
                         pc.Add("Calibration - Use Gain");
                         for (int i = 0; i < UseGain.Length; i++)
                         {
@@ -287,6 +308,12 @@ namespace QMC.Common.PKGTester
                     case TestItemCategory.Electrical:
                     case TestItemCategory.Optical:
                         {
+                            // Total calibration
+                            UseTotalGain = pc.GetValue<bool>("Use Total Gain");
+                            UseTotalOffset = pc.GetValue<bool>("Use Total Offset");
+                            TotalGain = pc.GetValue<double>("Total Gain");
+                            TotalOffset = pc.GetValue<double>("Total Offset");
+
                             // Optical Item
                             for (int i = 0; i < 8; i++)
                             {
@@ -306,6 +333,7 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+
         public TestConditionItem Clone()
         {
             TestConditionItem clone = new TestConditionItem(this.Name);
@@ -340,8 +368,16 @@ namespace QMC.Common.PKGTester
             switch (Type)
             {
                 case TestItemType.VF:
-                    Unit = "mA";
-                    return "mA";
+                    {
+                        if (Name == "VF1" || Name == "VF5")
+                        {
+                            Unit = "uA";
+                            return "uA";
+                        }
+                        Unit = "mA";
+                        return "mA";
+                    }
+                    
                 case TestItemType.VR:
                     Unit = "uA";
                     return "uA";
@@ -367,8 +403,15 @@ namespace QMC.Common.PKGTester
             switch (Type)
             {
                 case TestItemType.VF:
-                    Unit = "mA";
-                    return "mA";
+                    {
+                        if (Name == "VF1" || Name == "VF5")
+                        {
+                            Unit = "uA";
+                            return "uA";
+                        }
+                        Unit = "mA";
+                        return "mA";
+                    }
                 case TestItemType.VR:
                     Unit = "uA";
                     return "uA";

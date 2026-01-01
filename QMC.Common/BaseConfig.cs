@@ -108,6 +108,14 @@ namespace QMC.Common
             {
                 OnSaving();
                 var path = GetFilePath();
+
+                // [ADD] 저장 경로/타입 로깅(문제 추적)
+                try
+                {
+                    Log.Write(GetType().Name, "Save", $"path='{path}'");
+                }
+                catch { }
+
                 SaveToFile(path);
                 return 0;
             }

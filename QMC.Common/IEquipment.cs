@@ -100,6 +100,7 @@ namespace QMC.Common
                 _instance = null;
 
                 //강제종료. Dispose에서 문제가 발생할 경우를 대비.
+                //Todo: 정상종료 안되면 하자.
                 Process.GetCurrentProcess().Kill();
             }
         }

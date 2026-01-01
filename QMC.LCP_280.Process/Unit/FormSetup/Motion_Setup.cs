@@ -40,6 +40,10 @@ namespace QMC.LCP_280.Process.Unit
         private System.Windows.Forms.Timer _axisPosTimer; // disambiguated
         private CancellationTokenSource _homeCts;
 
+        // 표시명 -> 실제 축 이름
+        private readonly Dictionary<string, string> _axisDisplayToAxisName
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         public Motion_Setup()
         {
             InitializeComponent();
@@ -84,23 +88,59 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                _axisDisplayToAxisName.Clear();
+
                 var axes = _axisManager?.GetAll();
                 if (axes == null || axes.Length == 0)
                 {
                     selectAxisListBoxItemsView?.SetItems("(No Axes)");
                     return;
                 }
-                var names = axes.Where(a => a != null)
-                                 .Select(a => a.Name)
-                                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-                                 .ToArray();
+
+                // 실제 등록된 축(장비에 존재하는 축)
+                var axisByName = axes
+                    .Where(a => a != null && !string.IsNullOrWhiteSpace(a.Name))
+                    .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
+                    .ToDictionary(a => a.Name, a => a, StringComparer.OrdinalIgnoreCase);
+
+                var displayList = new List<string>();
+
+                // 1) AxisNames.AllInOrder 순서대로 먼저 추가
+                foreach (var axisName in AxisNames.AllInOrder)
+                {
+                    if (!axisByName.ContainsKey(axisName))
+                        continue;
+
+                    var display = AxisNames.GetDisplayName(axisName);
+
+                    // 표시명 충돌 방지
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
+
+                // 2) AllInOrder에 없는 축은 뒤에 붙임(이름순)
+                var remaining = axisByName.Keys
+                    .Where(n => !AxisNames.AllInOrder.Any(o => o.Equals(n, StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var axisName in remaining)
+                {
+                    var display = AxisNames.GetDisplayName(axisName);
+                    if (_axisDisplayToAxisName.ContainsKey(display))
+                        display = display + " [" + axisName + "]";
+
+                    _axisDisplayToAxisName[display] = axisName;
+                    displayList.Add(display);
+                }
 
                 selectAxisListBoxItemsView.GroupName = "Select Axis";
-                selectAxisListBoxItemsView.SetItems(names);
-                if (names.Length > 0) selectAxisListBoxItemsView.SelectedIndex = 0;
+                selectAxisListBoxItemsView.SetItems(displayList.ToArray());
+                if (displayList.Count > 0) selectAxisListBoxItemsView.SelectedIndex = 0;
             }
-
             catch (Exception ex)
             {
                 Log.Write("MotionSetup", "BindAxisList", ex.ToString());
@@ -125,21 +165,27 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName)) return;
+                var displayName = selectAxisListBoxItemsView?.SelectedItemName;
+                if (string.IsNullOrWhiteSpace(displayName)) return;
 
-                _axis = _axisManager?.GetAll()?.FirstOrDefault(a => a.Name.Equals(axisName, StringComparison.OrdinalIgnoreCase));
+                string axisName;
+                if (!_axisDisplayToAxisName.TryGetValue(displayName, out axisName))
+                    axisName = displayName; // fallback
+
+                _axis = _axisManager?.GetAll()
+                    ?.FirstOrDefault(a => a.Name.Equals(axisName, StringComparison.OrdinalIgnoreCase));
+
                 if (_axis == null)
                 {
                     configurationListBoxItemsView?.SetProperties(null);
                     speedListBoxItemsView?.SetProperties(null);
-                    _setupMapper = null; _configMapper = null; return;
+                    _setupMapper = null;
+                    _configMapper = null;
+                    return;
                 }
 
-                // load persisted files
                 LoadAxisFiles(_axis);
 
-                // reflection mappers (자동 속성 스캔)
                 _setupMapper = new ConfigReflectionMapper(_axis.Setup);
                 _configMapper = new ConfigReflectionMapper(_axis.Config);
 
@@ -149,7 +195,7 @@ namespace QMC.LCP_280.Process.Unit
                 speedListBoxItemsView?.SetProperties(_configMapper.PropertyCollection);
 
                 BuildAndSetIOCollections(_axis);
-                btnHome.Enabled = true; // enable per-axis home
+                btnHome.Enabled = true;
             }
             catch (Exception ex)
             {
@@ -203,7 +249,9 @@ namespace QMC.LCP_280.Process.Unit
         #region IO collections
         private void BuildAndSetIOCollections(MotionAxis axis)
         {
-            if (axis == null) return;
+            if (axis == null)
+                return;
+
             var ioProperties = new PropertyCollection { ShowNoColumn = false };
             ioProperties.Add(new PropertyState("01", "Servo On", axis.Status.IO.ServoOn));
             ioProperties.Add(new PropertyState("02", "Alarm", axis.Status.IO.Alarm));
@@ -620,14 +668,5 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        private void gbAxisPositions_Enter(object sender, EventArgs e)
-        {
-
-        }
-
-        private void gbAxisProperty_Enter(object sender, EventArgs e)
-        {
-
-        }
     }
 }

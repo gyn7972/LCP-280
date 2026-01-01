@@ -27,6 +27,7 @@ namespace QMC.LCP_280.Process.Unit
         private Equipment _Equipment => Equipment.Instance;
         private IndexChipProbeController _unit;
         private IndexChipProbeControllerConfig _cfg;
+        private IndexChipProbeControllerRecipe TeachingRecipe => _cfg?.TeachingRecipe; // [ADD]
 
         private HardInputDef[] _hardInputs;
         private HardOutputDef[] _hardOutputs;
@@ -40,6 +41,8 @@ namespace QMC.LCP_280.Process.Unit
         private Timer _axisPosTimer; // reserved
         private Timer _ioTimer;      // reserved
 
+        private volatile bool _pendingTeachingRefresh;
+
         public IndexChipProbeControllerUnit_Config()
         {
             InitializeComponent();
@@ -50,6 +53,115 @@ namespace QMC.LCP_280.Process.Unit
             _designerSize = Size;
             InitializeUI();
             ResumeLayout(true);
+
+            // [ADD] Recipe 변경 이벤트 구독 (Teaching은 Recipe를 따라가야 함)
+            this.Shown += IndexChipProbeControllerUnit_Config_Shown;
+            this.FormClosed += IndexChipProbeControllerUnit_Config_FormClosed;
+
+            // [ADD] 보이게 되는 순간 누락된 갱신 처리
+            this.VisibleChanged += (s, e) =>
+            {
+                if (Visible && _pendingTeachingRefresh)
+                {
+                    _pendingTeachingRefresh = false;
+                    try { ReloadTeachingFromRecipeAndRefreshUi(); } catch { }
+                }
+            };
+            this.Activated += (s, e) =>
+            {
+                if (_pendingTeachingRefresh)
+                {
+                    _pendingTeachingRefresh = false;
+                    try { ReloadTeachingFromRecipeAndRefreshUi(); } catch { }
+                }
+            };
+        }
+
+        private void IndexChipProbeControllerUnit_Config_Shown(object sender, EventArgs e)
+        {
+            EquipmentRecipe.CurrentRecipeChanged -= EquipmentRecipe_CurrentRecipeChanged;
+            EquipmentRecipe.CurrentRecipeChanged += EquipmentRecipe_CurrentRecipeChanged;
+
+            // 현재 표시 시점에서도 한 번 동기화
+            try
+            {
+                ReloadTeachingFromRecipeAndRefreshUi();
+            }
+            catch { }
+        }
+
+        private void IndexChipProbeControllerUnit_Config_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            EquipmentRecipe.CurrentRecipeChanged -= EquipmentRecipe_CurrentRecipeChanged;
+        }
+        private void EquipmentRecipe_CurrentRecipeChanged(object sender, EquipmentRecipe.MeasurementRecipeChangedEventArgs e)
+        {
+            try
+            {
+                // 폼 핸들 없으면 표시 시점에 처리하도록 플래그만 세팅
+                if (!IsHandleCreated)
+                {
+                    _pendingTeachingRefresh = true;
+                    return;
+                }
+
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new Action(() => EquipmentRecipe_CurrentRecipeChanged(sender, e)));
+                    return;
+                }
+
+                // [CHG] Visible 체크로 이벤트를 버리지 말고, 안보이면 나중에 처리
+                if (!Visible)
+                {
+                    _pendingTeachingRefresh = true;
+                    return;
+                }
+
+                _cfg?.InvalidateTeachingRecipeCache();
+                ReloadTeachingFromRecipeAndRefreshUi();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+        private void ReloadTeachingFromRecipeAndRefreshUi()
+        {
+            if (_cfg == null)
+                return;
+
+            var recipe = TeachingRecipe;
+            if (recipe == null)
+                return;
+
+            // 레시피 전환 시 레시피를 직접 로드/바인딩 (파일 없으면 기본 생성 포함)
+            recipe.LoadAndBindAxes(Equipment.Instance.AxisManager);
+
+            // [FIX] 핵심: PositionTeachingControl 내부가 예전 recipe reference를 들고있을 수 있으므로 재주입
+            positionTeachingControl?.SetUnitData(_unit, _cfg, recipe);
+            positionTeachingControl?.RefreshPositionList();
+
+            // [ADD] Config 값도 UI에 다시 반영 (레시피 전환/티칭 로드 후 UI 갱신 누락 방지)
+            try
+            {
+                if (unitConfigControl != null)
+                {
+                    unitConfigControl.BindConfig(null);
+                    unitConfigControl.BindConfig(_cfg);
+                }
+            }
+            catch { }
+
+            // 확인용 로그(필요 시)
+            try
+            {
+                var mr = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                Log.Write(_UNIT_NAME, nameof(ReloadTeachingFromRecipeAndRefreshUi),
+                    $"MR.Name='{mr?.Name}', MR.TeachingRecipeName='{mr?.IndexChipProbeControllerTeachingRecipeName}', " +
+                    $"TeachingRecipe.Name='{recipe.Name}', TP.Count={(recipe.TeachingPositions?.Count ?? 0)}");
+            }
+            catch { }
         }
 
         private void InitializeUnit()
@@ -61,6 +173,10 @@ namespace QMC.LCP_280.Process.Unit
                     _unit = unit as IndexChipProbeController;
                     _cfg = _unit?.Config;
                 }
+
+                Log.Write(_UNIT_NAME, nameof(InitializeUnit),
+                        $"CfgLoaded? IndexOfProbe={_cfg?.IndexOfProbe}, ViewMode={_cfg?.ViewMode}, GripperMode={_cfg?.GripperMode}");
+
 
                 if (_unit == null)
                 {
@@ -105,10 +221,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (positionTeachingControl == null) return;
 
-            // 데이터 전달
-            positionTeachingControl.SetUnitData(_unit, _cfg);
+            positionTeachingControl.SetUnitData(_unit, _cfg, TeachingRecipe);
 
-            // 이벤트 연결
             positionTeachingControl.PositionSelected += OnPositionTeachingSelected;
             positionTeachingControl.SaveRequested += OnPositionTeachingSaveRequested;
             positionTeachingControl.MoveRequested += OnPositionTeachingMoveRequested;
@@ -140,11 +254,11 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 unitConfigControl.BindConfig(_cfg);
 
-                // 기본 선택 TeachingPosition 없을 때 첫 항목 표시
-                if (_cfg.TeachingPositions != null && _cfg.TeachingPositions.Count == 0)
+                // [CHG] 기본 Teaching 생성도 Recipe 기준
+                var recipe = TeachingRecipe;
+                if (recipe != null && (recipe.TeachingPositions == null || recipe.TeachingPositions.Count == 0))
                 {
-                    try { _cfg.InitializeDefaultTeachingPositions(); } catch { }
-                    //RefreshPositionList();
+                    try { recipe.InitializeDefaultTeachingPositions(save: true); } catch { }
                 }
             }
             catch (Exception ex)
@@ -167,19 +281,30 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_unit == null || e.Index < 0 || e.Index >= _unit.TeachingPositions.Count)
+                var eq = Equipment.Instance;
+                var mr = eq?.EquipmentRecipe?.CurrentRecipe;
+
+                var recipe = TeachingRecipe;
+                if (recipe == null)
+                    return;
+
+                Log.Write(_UNIT_NAME, nameof(OnPositionTeachingSaveRequested),
+                        $"MR.Name='{mr?.Name}', MR.TeachingRecipeName='{mr?.IndexChipProbeControllerTeachingRecipeName}', " +
+                        $"TeachingRecipe.Name='{recipe.Name}', TP.Count={(recipe.TeachingPositions?.Count ?? 0)}");
+
+                if (recipe.TeachingPositions == null || e.Index < 0 || e.Index >= recipe.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.",
                         "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var target = _unit.TeachingPositions[e.Index];
+                var target = recipe.TeachingPositions[e.Index];
+
                 var newAxisPositions = new Dictionary<string, double>(target.AxisPositions ?? new Dictionary<string, double>());
                 string newDescription = target.Description;
                 var newExtra = new Dictionary<string, object>(target.ExtraInfo ?? new Dictionary<string, object>());
 
-                // Property 파싱
                 foreach (var p in e.Properties)
                 {
                     if (p is StringProperty sp && string.Equals(p.Title, "Description", StringComparison.OrdinalIgnoreCase))
@@ -199,37 +324,21 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                // 저장
                 target.Description = newDescription;
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
 
-                _unit.Config.SetTeachingPosition(new TeachingPosition(
+                // [CHG] 저장은 Recipe에 직접(축 필터 포함)
+                recipe.UpsertFiltered(new TeachingPosition(
                     target.Name,
                     new Dictionary<string, double>(target.AxisPositions),
                     target.Description)
                 {
                     ExtraInfo = new Dictionary<string, object>(target.ExtraInfo)
-                });
+                }, save: true);
 
-                _unit.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-
-                var snapshot = _unit.Config.TeachingPositions != null
-                     ? new List<TeachingPosition>(_unit.Config.TeachingPositions)
-                     : new List<TeachingPosition>();
-
-                _unit.Config.TeachingPositions = snapshot.ToList();
-                if (_unit.TeachingPositions != null)
-                {
-                    _unit.TeachingPositions.Clear();
-                    foreach (var tp in snapshot)
-                    {
-                        _unit.TeachingPositions.Add(tp);
-                    }
-                }
-
-                // UI 갱신
-                positionTeachingControl.RefreshPositionList();
+                ReloadTeachingFromRecipeAndRefreshUi();
+                positionTeachingControl?.RefreshPositionList();
 
                 MessageBox.Show("변경된 Teaching Position이 저장되었습니다.",
                     "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -248,426 +357,35 @@ namespace QMC.LCP_280.Process.Unit
                 if (_unit == null)
                     return;
 
-                int nRet = 0;
-
-                int nIndex = 0;
-                string tpName = string.Empty;
-                var hasName = _cfg != null && _cfg.GetTeachingPositionName(e.Index, out tpName);
-
-                if (hasName)
+                int nRet = await Task.Run(() => _unit.MoveToTeachingPositionBySelectionIndex(e.Index, e.IsFine));
+                if (nRet != 0)
                 {
-                    IndexChipProbeControllerConfig.TeachingPositionName en;
-                    if (Enum.TryParse(tpName, out en))
-                    {
-                        switch (en)
-                        {
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index1_Up:
-                                nIndex = 0;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index1_Ready:
-                                nIndex = 0;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                            }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index2_Up:
-                                nIndex = 1;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index2_Ready:
-                                nIndex = 1;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index3_Up:
-                                nIndex = 2;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index3_Ready:
-                                nIndex = 2;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index4_Up:
-                                nIndex = 3;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index4_Ready:
-                                nIndex = 3;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index5_Up:
-                                nIndex = 4;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index5_Ready:
-                                nIndex = 4;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index6_Up:
-                                nIndex = 5;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index6_Ready:
-                                nIndex = 5;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index7_Up:
-                                nIndex = 6;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index7_Ready:
-                                nIndex = 6;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index8_Up:
-                                nIndex = 7;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Top_Index8_Ready:
-                                nIndex = 7;
-                                nRet = await Task.Run(() => _unit.MovePositionTopContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "TopContact_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index1_Up:
-                                nIndex = 0;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index1_Ready:
-                                nIndex = 0;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index2_Up:
-                                nIndex = 1;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index2_Ready:
-                                nIndex = 1;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index3_Up:
-                                nIndex = 2;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index3_Ready:
-                                nIndex = 2;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index4_Up:
-                                nIndex = 3;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index4_Ready:
-                                nIndex = 3;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index5_Up:
-                                nIndex = 4;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index5_Ready:
-                                nIndex = 4;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index6_Up:
-                                nIndex = 5;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index6_Ready:
-                                nIndex = 5;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index7_Up:
-                                nIndex = 6;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index7_Ready:
-                                nIndex = 6;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index8_Up:
-                                nIndex = 7;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Up(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Up 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.Bottom_Index8_Ready:
-                                nIndex = 7;
-                                nRet = await Task.Run(() => _unit.MovePositionBottomContact_Index_Ready(nIndex, e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "Bottom_Index_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone:
-                                nRet = await Task.Run(() => _unit.MovePositionSafetyZ(e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "SafetyZone 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready:
-                                nRet = await Task.Run(() => _unit.MovePositionSphereZReady(e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "SphereZ_Ready 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            case IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Down:
-                                nRet = await Task.Run(() => _unit.MovePositionSphereZDown(e.IsFine));
-                                if (nRet != 0)
-                                {
-                                    new MessageBoxOk().ShowDialog("Error.", "SphereZ_Down 이동 실패");
-                                    return;
-                                }
-                                break;
-
-                            default:
-                                nRet = -1; // Unknown position
-                                break;
-                        }
-                    }
+                    new MessageBoxOk().ShowDialog("Error.", "Teaching 위치 이동 실패");
+                    return;
                 }
 
+                new MessageBoxOk().ShowDialog("Infor.", "이동 완료");
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
+                new MessageBoxOk().ShowDialog("Error.", "예외 발생");
             }
-
-            new MessageBoxOk().ShowDialog("Infor.", "이동 완료");
-
-            //try
-            //{
-            //    if (_unit == null) return;
-
-            //    var task = _unit.MoveTeachingPositionOnceAsync(e.Index, e.IsFine);
-
-            //    using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
-            //    {
-            //        var dr = pf.ShowDialog(this);
-            //        if (dr == DialogResult.Cancel)
-            //        {
-            //            _unit.StopTeachingPositionOnce(e.Index);
-            //            return;
-            //        }
-            //    }
-
-            //    var result = await task;
-            //    var mb = new MessageBoxOk();
-            //    if (result == 0)
-            //    {
-            //        mb.ShowDialog("Information.", "Teaching Position 이동 완료");
-            //    }
-            //    else
-            //    {
-            //        mb.ShowDialog("Error.", "일부 축 이동 실패 또는 타임아웃");
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
         }
 
         private void OnPositionTeachingCurrentPosRequested(object sender, CurrentPosEventArgs e)
         {
             try
             {
-                if (_cfg?.TeachingPositions == null || e.Index < 0 || e.Index >= _cfg.TeachingPositions.Count)
+                var recipe = TeachingRecipe;
+                if (recipe?.TeachingPositions == null || e.Index < 0 || e.Index >= recipe.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.",
                         "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = _cfg.TeachingPositions[e.Index];
+                var tp = recipe.TeachingPositions[e.Index];
                 var updatedPositions = new Dictionary<string, double>();
 
                 foreach (var kv in tp.AxisPositions)
@@ -677,14 +395,10 @@ namespace QMC.LCP_280.Process.Unit
                     MotionAxis axis = null;
 
                     if (tp.Axes != null)
-                    {
                         tp.Axes.TryGetValue(axisKey, out axis);
-                    }
 
                     if (axis == null && _unit?.Axes != null && _unit.Axes.TryGetValue(axisKey, out var direct))
-                    {
                         axis = direct;
-                    }
 
                     if (axis == null && _unit?.Axes != null)
                     {
@@ -713,13 +427,12 @@ namespace QMC.LCP_280.Process.Unit
                 pc.Add(new StringProperty("Description", tp.Description ?? string.Empty));
 
                 foreach (var ap in updatedPositions)
-                {
                     pc.Add(new DoubleProperty(ap.Key + " Position (mm)", ap.Value));
-                }
 
-                foreach (var extra in tp.ExtraInfo)
+                if (tp.ExtraInfo != null)
                 {
-                    pc.Add(new StringProperty("Extra: " + extra.Key, extra.Value?.ToString() ?? string.Empty));
+                    foreach (var extra in tp.ExtraInfo)
+                        pc.Add(new StringProperty("Extra: " + extra.Key, extra.Value?.ToString() ?? string.Empty));
                 }
 
                 positionTeachingControl.UpdateEditorProperties(pc);

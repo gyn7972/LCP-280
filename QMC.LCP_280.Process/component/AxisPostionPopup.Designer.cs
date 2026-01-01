@@ -35,10 +35,11 @@
             this.listViewAxis.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listViewAxis.HideSelection = false;
             this.listViewAxis.Location = new System.Drawing.Point(0, 0);
+            this.listViewAxis.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.listViewAxis.MultiSelect = false;
             this.listViewAxis.Name = "listViewAxis";
             this.listViewAxis.OwnerDraw = true;
-            this.listViewAxis.Size = new System.Drawing.Size(304, 691);
+            this.listViewAxis.Size = new System.Drawing.Size(456, 1095);
             this.listViewAxis.TabIndex = 0;
             this.listViewAxis.UseCompatibleStateImageBehavior = false;
             this.listViewAxis.View = System.Windows.Forms.View.Details;
@@ -59,12 +60,13 @@
             // 
             // AxisPostionPopup
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(304, 691);
+            this.ClientSize = new System.Drawing.Size(456, 1095);
             this.Controls.Add(this.listViewAxis);
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.MaximizeBox = false;
             this.Name = "AxisPostionPopup";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

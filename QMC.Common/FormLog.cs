@@ -15,7 +15,7 @@ namespace QMC.Common
         private int _tabHeight = 32;
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
-        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Regular);
+        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Bold);
 
         // 호스트에서 유효 크기를 한 번이라도 전달받았는지
         private bool _hostSized;
@@ -321,7 +321,7 @@ namespace QMC.Common
             systemTab.BackColor = Color.White;
             Label systemLabel = new Label();
             systemLabel.Text = "No log Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add log forms.";
-            systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
+            systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Bold);
             systemLabel.TextAlign = ContentAlignment.MiddleCenter;
             systemLabel.Dock = DockStyle.Fill;
             systemLabel.BackColor = Color.White;

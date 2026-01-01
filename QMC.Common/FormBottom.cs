@@ -29,14 +29,6 @@ namespace QMC.Common
             MenuButtonClicked?.Invoke(type);
         }
 
-        private void AlignMenuControl()
-        {
-            // 좌측(0), 위아래 가운데 정렬
-            int x = 0;
-            int y = (this.ClientSize.Height - menuControl.Height) / 2;
-            menuControl.Location = new System.Drawing.Point(x, y);
-        }
-
         public void SetPanelSize(int width, int height)
         {
             this.Width = width;

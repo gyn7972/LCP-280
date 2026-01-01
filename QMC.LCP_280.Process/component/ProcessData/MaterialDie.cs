@@ -36,6 +36,9 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(0)] public double BinX { get; set; } = 0;
         [DefaultValue(0)] public double BinY { get; set; } = 0;
 
+        //Online 구분시 Rank Number
+        [DefaultValue(0)] public int PreRank { get; set; } = 0;
+
         // ===== Vision 위치 =====
         [DefaultValue(0.0)] public double CenterX { get; set; } = 0.0;
         [DefaultValue(0.0)] public double CenterY { get; set; } = 0.0;

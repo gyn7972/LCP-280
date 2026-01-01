@@ -129,7 +129,7 @@ namespace QMC.LCP_280.Process.Unit
                && Config.IsDryRun == false)
             {
                 // 자동 모드에서는 모니터 자동 시작
-                TryStartStrainGageMonitor();
+                //TryStartStrainGageMonitor();
             }
 
             return 0;
@@ -138,14 +138,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
-            if (Config.IsSimulation == false
-               && Config.IsDryRun == false)
-            {
-                // 정지 시 모니터 중지
-                TryStopStrainGageMonitor();
-            }
 
             base.OnStop();
             return ret;
@@ -190,13 +182,6 @@ namespace QMC.LCP_280.Process.Unit
             _boundAxes.Clear();
             foreach (var kv in Axes) _boundAxes.Add(kv.Value);
         }
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
         #region IO Helpers
@@ -243,7 +228,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 Log.Write("kkkkkkProb", "m1");
                 if (Config.IsSimulation == false
-                && Config.IsDryRun == false )
+                    && Config.IsDryRun == false )
                 {
                     if (!tester.CanMeasure())
                     {
@@ -275,6 +260,17 @@ namespace QMC.LCP_280.Process.Unit
                     die.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 }
 
+                if(this.RunUnitStatus != UnitStatus.AutoRunning)
+                {
+                    bRet &= AssignDataToMaterialObject();
+                    if (bRet != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
+                        Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
+                    }
+                }
+
+
                 // 3) Data Assign
                 //Task.Factory.StartNew(() =>
                 //{
@@ -283,14 +279,9 @@ namespace QMC.LCP_280.Process.Unit
                 //    {
                 //        PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
                 //        Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
-                        
                 //    }
                 //});
-                
-
                 // OutputStage로 옮김.
-
-
                 //                bRet &= SaveResultData();
                 //                if (bRet != 0)
                 //                {

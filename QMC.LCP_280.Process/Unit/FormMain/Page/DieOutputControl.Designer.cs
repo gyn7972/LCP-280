@@ -7,7 +7,7 @@
         private System.Windows.Forms.Label lblWaferIdValue;
         private System.Windows.Forms.Label lblDieCountTitle;
         private System.Windows.Forms.Label lblDieCountValue;
-        private Common.Controls.DisplayView_DieOutputControl displayView1;
+        private Common.Controls.DisplayView_DieOutput displayView1;
 
         protected override void Dispose(bool disposing)
         {
@@ -26,7 +26,7 @@
             this.lblDieCountValue = new System.Windows.Forms.Label();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.displayView1 = new QMC.Common.Controls.DisplayView_DieOutputControl();
+            this.displayView1 = new QMC.Common.Controls.DisplayView_DieOutput();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();

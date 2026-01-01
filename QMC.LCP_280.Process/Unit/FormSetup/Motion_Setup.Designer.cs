@@ -83,7 +83,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisProperty.TabIndex = 10;
             this.gbAxisProperty.TabStop = false;
             this.gbAxisProperty.Text = "Axis Property";
-            this.gbAxisProperty.Enter += new System.EventHandler(this.gbAxisProperty_Enter);
             // 
             // tableLayoutPanel1
             // 
@@ -181,7 +180,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisPositions.TabIndex = 13;
             this.gbAxisPositions.TabStop = false;
             this.gbAxisPositions.Text = "Axis Status";
-            this.gbAxisPositions.Enter += new System.EventHandler(this.gbAxisPositions_Enter);
             // 
             // tableLayoutPanel2
             // 

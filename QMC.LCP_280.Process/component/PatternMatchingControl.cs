@@ -640,7 +640,14 @@ namespace QMC.LCP_280.Process
                 SyncImageInfoToControls(cam);
 
                 _suspendAutoLoad = true;
-                try { LoadRecipeForCurrentCamera(); } finally { _suspendAutoLoad = false; }
+                try 
+                { 
+                    LoadRecipeForCurrentCamera(); 
+                } 
+                finally 
+                { 
+                    _suspendAutoLoad = false; 
+                }
 
                 // 아래 한 줄 추가: 현재 컨텍스트로 모든 UI 바인딩
                 BindUiToCurrentContext(cam);

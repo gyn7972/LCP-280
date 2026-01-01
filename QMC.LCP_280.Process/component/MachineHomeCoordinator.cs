@@ -25,18 +25,55 @@ namespace QMC.LCP_280.Process.Component
 
             var seq = new HomeSequence(mgr)
                 .AddParallelStepByAxisNames(
-                    "Eject Pin Z Axis", "Ejector Z Axis", "Left Pick Z Axis", "Left Place Z Axis", "Right Pick Z Axis",
-                    "Right Place Z Axis", "Index Z Axis", "Sphere Z Axis", "Probe Z Axis", "Probe Card Z Axis")
+                    AxisNames.EjectPinZ, 
+                    AxisNames.EjectorZ, 
+                    AxisNames.LeftPickZ, 
+                    AxisNames.LeftPlaceZ, 
+                    AxisNames.RightPickZ,
+                    AxisNames.RightPlaceZ, 
+                    AxisNames.IndexZ, 
+                    AxisNames.SphereZ, 
+                    AxisNames.ProbeZ, 
+                    AxisNames.ProbeCardZ,
+                    AxisNames.IndexPlaceZ,
+                    AxisNames.GripperX)
+
+                //.AddParallelStepByAxisNames(
+                //    AxisNames.LeftToolT,
+                //    AxisNames.RightToolT, 
+                //    AxisNames.ProbeCardY, 
+                //    AxisNames.AlignT)
+
+                //.AddParallelStepByAxisNames(
+                //    AxisNames.ProbeCardX, 
+                //    AxisNames.WaferFeederY, 
+                //    AxisNames.BinFeederY)
+
                 .AddParallelStepByAxisNames(
-                    "Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis")
+                    AxisNames.WaferFeederY,
+                    AxisNames.BinFeederY,
+                    AxisNames.ProbeCardY,
+                    AxisNames.AlignT)
+
                 .AddParallelStepByAxisNames(
-                    "Probe Card X Axis", "Wafer Feeder Y Axis", "Bin Feeder Y Axis")
+                    AxisNames.LeftToolT,
+                    AxisNames.RightToolT,
+                    AxisNames.ProbeCardX)
+
                 .AddParallelStepByAxisNames(
-                    "Index T Axis", "Wafer Stage Y Axis", "Bin Stage Y Axis", "Wafer Lifter Z Axis", "Bin Lifter Z Axis")
+                    AxisNames.IndexT, 
+                    AxisNames.WaferStageY, 
+                    AxisNames.BinStageY, 
+                    AxisNames.WaferLifterZ, 
+                    AxisNames.BinLifterZ)
+
                 .AddParallelStepByAxisNames(
-                    "Wafer Stage X Axis", "Bin Stage X Axis")
+                    AxisNames.WaferStageX, 
+                    AxisNames.BinStageX)
+
                 .AddParallelStepByAxisNames(
-                    "Wafer Stage T Axis", "Bin Stage T Axis");
+                    AxisNames.WaferStageT, 
+                    AxisNames.BinStageT);
 
             // 단계별 훅: 전역 인터락과 축 사전 체크만 유지 (축/유닛별 조건은 PreAxis로 이동)
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
@@ -72,12 +109,14 @@ namespace QMC.LCP_280.Process.Component
                 double dSafe0 = 0.0;
 
                 if (!axis.CheckHomeInterlocks(out var reason2))
+                {
                     return (false, reason2);
+                }
 
                 // 축 이름별 전처리/인터락
                 switch (axis.Name)
                 {
-                    case "Left Tool T Axis":
+                    case AxisNames.LeftToolT:
                         // 현재 위치가 양수이면 Fine 속도로 - 방향 조그 → HomeSensor 감지 시 1초 추가 진행 후 정지 → 홈 진행
                         try
                         {
@@ -138,7 +177,7 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Right Tool T Axis":
+                    case AxisNames.RightToolT:
                         // 안전 인터락: OutputStage Plate가 Down 상태여야 함
                         if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var uRt) && uRt is OutputStage outStage)
                         {
@@ -209,7 +248,7 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Wafer Feeder Y Axis":
+                    case AxisNames.WaferFeederY:
                         // 기존 PreStep의 Wafer Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
@@ -259,18 +298,29 @@ namespace QMC.LCP_280.Process.Component
                                 }    
                                 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!inFeeder.SetLift(true))
-                                    return (false, "Wafer Feeder Up Failure");
+
+                                if(inFeeder.Config.IsSimulation == false)
+                                {
+                                    if (!inFeeder.SetLift(true))
+                                    {
+
+                                        return (false, "Wafer Feeder Up Failure");
+                                    }
+                                }
 
                                 // Up 센서 확인
                                 until = DateTime.UtcNow.AddMilliseconds(1000);
                                 while (DateTime.UtcNow < until)
                                 {
-                                    if (inFeeder.IsFeederUp()) break;
+                                    if (inFeeder.IsFeederUp()) 
+                                        break;
+
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!inFeeder.IsFeederUp())
+                                {
                                     return (false, "Wafer Feeder Up Sensor Not Detected");
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -279,11 +329,13 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Bin Feeder Y Axis":
+                    case AxisNames.BinFeederY:
                         // 기존 PreStep의 Bin Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
-                            if (eq.Units != null && eq.Units.TryGetValue("OutputFeeder", out var uOut) && uOut is OutputFeeder outFeeder)
+                            if (eq.Units != null 
+                            && eq.Units.TryGetValue("OutputFeeder", out var uOut) 
+                            && uOut is OutputFeeder outFeeder)
                             {
                                 // Unclamp → 센서 확인
                                 outFeeder.SetClamp(false);
@@ -328,14 +380,21 @@ namespace QMC.LCP_280.Process.Component
                                 }
                                 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!outFeeder.SetLift(true))
-                                    return (false, "Bin Feeder Up Failure");
+                                if(outFeeder.Config.IsSimulation == false)
+                                {
+                                    if (!outFeeder.SetLift(true))
+                                    {
+                                        return (false, "Bin Feeder Up Failure");
+                                    }
+                                }
 
                                 // Up 센서 확인
                                 until2 = DateTime.UtcNow.AddMilliseconds(1000);
                                 while (DateTime.UtcNow < until2)
                                 {
-                                    if (outFeeder.IsFeederUp()) break;
+                                    if (outFeeder.IsFeederUp()) 
+                                        break;
+
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!outFeeder.IsFeederUp())
@@ -348,7 +407,7 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Wafer Lifter Z Axis":
+                    case AxisNames.WaferLifterZ:
                         // InputCassetteLifter: RING_JUT 체크
                         try
                         {
@@ -367,7 +426,7 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Bin Lifter Z Axis":
+                    case AxisNames.BinLifterZ:
                         // OutputCassetteLifter: RING_JUT 체크
                         try
                         {
@@ -387,7 +446,7 @@ namespace QMC.LCP_280.Process.Component
                         }
                         break;
 
-                    case "Index T Axis":
+                    case AxisNames.IndexT:
                         // SafeZone(입력 다이 트랜스퍼) 위치가 아닐 경우 Index T 홈 금지
                         try
                         {
@@ -437,7 +496,7 @@ namespace QMC.LCP_280.Process.Component
                                 {
                                     if (indexAligner.AxisIndexZ.GetPosition() != dSafe0)
                                     {
-                                        var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                                        var safeOut = nameof(IndexLoadAlignerRecipe.TeachingPositionName.SafetyZone);
                                         if (!indexAligner.InPosTeaching(safeOut))
                                             return (false, "OutputDieTransfer Not in Safety Zone");
                                     }
@@ -470,14 +529,14 @@ namespace QMC.LCP_280.Process.Component
                             {
                                 if (indexProbe.AxisProbeZ.GetPosition() != dSafe0)
                                 {
-                                    var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
+                                    var safeOut = nameof(IndexChipProbeControllerRecipe.TeachingPositionName.SafetyZone);
                                     if (!indexProbe.InPosTeaching(safeOut))
                                         return (false, "IndexChipProbeController Not in Safety Zone");
                                 }
 
                                 if (indexProbe.AxisProbeCardZ.GetPosition() != dSafe0)
                                 {
-                                    var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
+                                    var safeOut = nameof(IndexChipProbeControllerRecipe.TeachingPositionName.SafetyZone);
                                     if (!indexProbe.InPosTeaching(safeOut))
                                         return (false, "IndexChipProbeController Not in Safety Zone");
                                 }

@@ -425,7 +425,38 @@ namespace QMC.Common
             get { return this.m_Owner; }
             private set { this.m_Owner = value; }
         }
-        
+
+        /// <summary>
+        /// 외부에서 측정된 시작/종료 시간을 그대로 CycleTimer에 누적합니다.
+        /// (예: Place-to-Place takt 처럼 "이전 이벤트 시각 → 현재 이벤트 시각")
+        /// </summary>
+        public void Add(DateTime start, DateTime end)
+        {
+            try
+            {
+                // start/end 유효성 보정
+                if (start == DateTime.MinValue || end == DateTime.MinValue)
+                    return;
+                if (end < start)
+                    return;
+
+                var cycleTime = new CycleTime(start, end);
+
+                // 허용 범위 필터는 End()와 동일 룰 적용
+                if (this.AvailableRange.Minimum != this.AvailableRange.Maximum &&
+                    this.AvailableRange.Contains(cycleTime.Interval.TotalMilliseconds) == false)
+                    return;
+
+                // 기존 private AddCycleTime 사용(용량/이벤트/TotalElapsed 동일 적용)
+                AddCycleTime(cycleTime);
+                TotalElapsed += cycleTime.Interval;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
     }
     #endregion
 

@@ -332,7 +332,7 @@ namespace QMC.Common.PKGTester
             return ret;
         }
 
-        private int BuildCommandItem()
+        private int BuildCommandItem() //여기서 명령어 만들어 낸다.
         {
             try
             {

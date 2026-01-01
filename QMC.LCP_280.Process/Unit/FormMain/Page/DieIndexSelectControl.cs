@@ -444,6 +444,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // [ADD] Die 상태를 작은 배지로 표시 (우하단 원형)
         private void DrawDieBadge(Graphics g, RectangleF socketBounds, MaterialDie die, bool useSocket)
         {
+            if (die == null)
+                return;
             // 존재하지 않으면 배지 숨김
             if (die.Presence != Material.MaterialPresence.Exist)
                 return;

@@ -14,56 +14,67 @@ namespace QMC.LCP_280.Process
     public class EquipmentConfig : BaseConfig
     {
         #region Meta / Basic
-        [JsonProperty("EquipmentName")]
+        [JsonProperty("CurrentRecipeName")]
         [DefaultValue("LCP_RECIPE")]
         public string CurrentRecipeName { get; set; } = "LCP_RECIPE";
 
         [JsonIgnore]
-        [Category("EquipmentName"), DisplayName("EquipmentName")]
+        [Category("EquipmentName"), DisplayName("Equipment Name")]
         [DefaultValue("LCP-280")]
         public string EquipmentName { get; set; } = "LCP-280";
 
-        [Category("EquipmentId"), DisplayName("EquipmentId")]
+        [Category("EquipmentId"), DisplayName("Equipment Id")]
         [JsonProperty("EquipmentId")]
         [DefaultValue("EqpID")]
         public string EquipmentId { get; set; } = "EqpID";
 
         // IsDryRun/IsSimulation은 BaseConfig에 있거나(상속) EquipmentConfig에 있을 수 있습니다.
         // 상속된 경우도 직렬화 허용 목록에서 필터링해 저장되도록 처리합니다.
-
-        [Category("LogPath"), DisplayName("LogPath")]
+        [Category("Path"), DisplayName("Log Path")]
         [JsonProperty("LogPath")]
         public string LogPath { get; set; }
 
-        [Category("ResultPath"), DisplayName("ResultPath")]
+        [Category("Path"), DisplayName("Result Path")]
         [JsonProperty("ResultPath")]
         public string ResultPath { get; set; }
 
-        [Category("BinResultPath"), DisplayName("BinResultPath")]
-        [JsonProperty("BinResultPath")]
-        public string BinResultPath { get; set; }
+        [Category("Network"), DisplayName("Network Mode")]
+        [JsonProperty("NetworkMode")]
+        public int NetworkMode { get; set; }
 
-        [Category("PRDResultPath"), DisplayName("PRDResultPath")]
-        [JsonProperty("PRDResultPath")]
-        public string PRDResultPath { get; set; }
+        [Category("Path"), DisplayName("InspectionMap Path")]
+        [JsonProperty("InspectionMapPath")]
+        public string InspectionMapPath { get; set; }
 
-        [Category("SUMResultPath"), DisplayName("SUMResultPath")]
-        [JsonProperty("SUMResultPath")]
-        public string SUMResultPath { get; set; }
-
-        [Category("TXTResultPath"), DisplayName("TXTResultPath")]
+        [Category("Path"), DisplayName("TXTResult Path")]
         [JsonProperty("TXTResultPath")]
         public string TXTResultPath { get; set; }
 
-        [Category("WAFResultPath"), DisplayName("WAFResultPath")]
+        [Category("Path"), DisplayName("PRDResult Path")]
+        [JsonProperty("PRDResultPath")]
+        public string PRDResultPath { get; set; }
+
+        [Category("Path"), DisplayName("SUMResult Path")]
+        [JsonProperty("SUMResultPath")]
+        public string SUMResultPath { get; set; }
+
+        [Category("Path"), DisplayName("BinResult Path")]
+        [JsonProperty("BinResultPath")]
+        public string BinResultPath { get; set; }
+
+        [Category("Path"), DisplayName("WAFResult Path")]
         [JsonProperty("WAFResultPath")]
         public string WAFResultPath { get; set; }
 
-        [Category("ProductionInfoPath"), DisplayName("ProductionInfoPath")]
+        [Category("Path"), DisplayName("DBDataServer Path")]
+        [JsonProperty("DBDataServerPath")]
+        public string DBDataServerPath { get; set; }
+
+        [Category("Path"), DisplayName("ProductionInfo Path")]
         [JsonProperty("ProductionInfoPath")]
         public string ProductionInfoPath { get; set; }
 
-        [Category("MapMatchMode"), DisplayName("MapMatchMode")]
+        [Category("MapMatchMode"), DisplayName("MapMatch Mode")]
         [JsonProperty("MapMatchMode")]
         public bool MapMatchMode { get; set; } = false;
 
@@ -122,13 +133,19 @@ namespace QMC.LCP_280.Process
         protected override void OnSaving()
         {
             Validate();
+            //EquipmentName
+            //EquipmentId
+
             TryEnsureDirectory(LogPath);
             TryEnsureDirectory(ResultPath);
-            TryEnsureDirectory(BinResultPath);
+            //NetworkMode
+            TryEnsureDirectory(InspectionMapPath);
+            TryEnsureDirectory(TXTResultPath);
             TryEnsureDirectory(PRDResultPath);
             TryEnsureDirectory(SUMResultPath);
-            TryEnsureDirectory(TXTResultPath);
+            TryEnsureDirectory(BinResultPath);
             TryEnsureDirectory(WAFResultPath);
+            TryEnsureDirectory(DBDataServerPath);
             TryEnsureDirectorySafeForFile(ProductionInfoPath);
             //TryExpression(MapMatchMode);
         }
@@ -196,23 +213,48 @@ namespace QMC.LCP_280.Process
                     "IsSimulation",
                     nameof(EquipmentConfig.LogPath),
                     nameof(EquipmentConfig.ResultPath),
-                    nameof(EquipmentConfig.BinResultPath),
-                    nameof(EquipmentConfig.PRDResultPath),
-                    nameof(EquipmentConfig.SUMResultPath),
+                    nameof(EquipmentConfig.NetworkMode),
+                    nameof(EquipmentConfig.InspectionMapPath),
                     nameof(EquipmentConfig.TXTResultPath),
+                    nameof(EquipmentConfig.PRDResultPath),
+                     nameof(EquipmentConfig.SUMResultPath),
+                    nameof(EquipmentConfig.BinResultPath),
                     nameof(EquipmentConfig.WAFResultPath),
+                    nameof(EquipmentConfig.DBDataServerPath),
                     nameof(EquipmentConfig.ProductionInfoPath),
                     nameof(EquipmentConfig.MapMatchMode),
+
+                    // JsonProperty("EquipmentName")로 쓰고 있어서 혼동 방지 (PropertyName 기준 필터 대비)
+                    "EquipmentName",
+                    "EquipmentId",
+                    "LogPath",
+                    "ResultPath",
+                    "NetworkMode",
+                    "InspectionMapPath",
+                    "TXTResultPath",
+                    "PRDResultPath",
+                    "SUMResultPath",
+                    "BinResultPath",
+                    "WAFResultPath",
+                    "DBDataServerPath",
+                    "ProductionInfoPath",
+                    "MapMatchMode",
                 };
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
                 var props = base.CreateProperties(type, memberSerialization);
+
                 if (type == typeof(EquipmentConfig))
                 {
-                    // UnderlyingName 기준으로 필터
-                    props = props.Where(p => _allow.Contains(p.UnderlyingName)).ToList();
+                    // [FIX] UnderlyingName + PropertyName 둘 다 allow-list로 평가
+                    props = props
+                        .Where(p =>
+                            _allow.Contains(p.UnderlyingName) ||
+                            _allow.Contains(p.PropertyName))
+                        .ToList();
                 }
+
                 return props;
             }
         }

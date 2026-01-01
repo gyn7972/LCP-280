@@ -387,3 +387,427 @@ etc. -> 오늘 꼭 하자.
 	
 15. DiePickUp / DiePlaceDown 기능 구현 완료.
   -> 맵핑된 Data 없을때 현재 가운데 있는 제품으로 픽업 진행.
+  
+  
+  
+
+
+11/25(화) 
+
+1. Top 재현성 검증
+ ***1) T 보정 기능 개선 ( 불안정 )
+ -> Pitch 이동으로 X축 보상 적용 완료.
+ -> 마크 서치 시에 가운데 기준 1순위로 대표 마크 찾도록 마크 서치 알고리즘 개선 필요.
+ -> pitch 이동으로 Y축 보상도 적용할 수 있게 기능 개선 필요. g
+ 
+ 
+ ***2) Die Scan(맵핑) 기능 개선 ( 불안정 )
+ -> T 보정 안정화 후 1차 개선. 
+ -> Index 순서 적용 시 기능 개선으로 2차 개선.
+ -> Index Number 일정하게 적용되도록 기능 개선 필요. 
+ -> 맵 매치. k
+ 
+2. 시컨스 
+ 1) 인풋 웨이퍼 와 아웃풋 웨이퍼가 1:1 매칭으로 동작 되어야함. 
+ 2) 로딩 / 언로딩 ( 시작/정지 시 불안정 )
+  -> 언로딩 시컨스 개선으로 1차 개선.
+  -> 로딩/언로딩시에 알람 및 EMO를 제외한 모든 시컨스 완료 후에 
+     멈추도록 시컨스 개선.
+	 : 이렇게 했을때 문제 발생시에 대한 예외 로직 추가 필요.
+ 
+3. Index Unloader - Vision Align 기능 구현
+ 1) Vision Align 기능 구현 및 적용 완료. 
+  -> 
+
+4. M-Align - Vision Align 기능 구현
+ 1) M-Align 시에 Image Search 기능 구현 필요. -> 이미지 Grab 및 마크 서치 기능 완료.
+ 2) Search 후 실패 시에 Probe 검사 및 Unloader Align, Unloader Pass -> 쓰레기통에서 버림. 
+  -> 이와 관련된 Data 처리 필요. 
+  -> OutStage에 넘어갔을떄 die 정보가 순서대로 없을때 없는 정보는 Error 처리해야함.! -?g 
+
+
+5. 택업 개선 - 택타임 기능 구현
+ 1) 택타임 기능 구현 필요.
+ 2) 장비 구동하면서 개선 아이템 도출 필요. gg
+  
+
+6. OutputStage TCorrectionDialog 기능 구현 및 보상 Data 적용 완료.
+  popupDlg
+  1. T-보정 기능 구현 - 마크 4점 찾아서 T 회전변환 보정
+   - 1. 마크 1점에 대해서 -4~ +5도를 0.1도 만큼씩 이동
+   - 2. 0.1도씩 돌리면서 마크 서치 후 마크 서치한 Data를 기록. 
+     -> index, 각도, 이미지 좌표, 스테이지 좌표
+  2. outputStage 
+   - 이미지 그랩 및 서치 기능 구현
+   - 마크 찾고 스테이지 좌표로 변환 
+   - 저장.
+    -> indexUnloaderAlign 기능 그대로 가져와서 사용하면 될듯
+   - 시컨스 만들자. 
+     1. 인터락확인
+	 2. 마크1번 위치로 이동
+	 3. 각도 0.1도씩 Max ~ Min 이동하면서 마크 서치 후 Data 저장.
+	 4. 완료 -> 파일로 저장
+	 5. 마크 2번 동일 수행. -> 파일로 저장
+	 6. 마크 3번 동일 수행. -> 파일로 저장
+	 7. 마크 4번 동일 수행. -> 파일로 저장
+
+7. 생산 결과를 네트워크 폴더에 저장해야함.
+ 1) 기존 파일 참고해서 그대로 만들어서 기능 구현 필요. g
+	
+************ 중요.	
+7. 측정 Recipe -> 기존 설비와 동일하게 구현 요청. 동.일.하.게. XXXXXXXXXXXX
+
+8. Barcode 기능 개선 (UseAutoTrigger)
+ 1) Seq 진행 시 Barcode 연동 필요. 
+  -> Trigger Mode로 진행.
+  -> 못찾으면 앞/뒤로 움직이면서 Scan 동작 필요. g
+
+
+11/29(토)
+1.
+ ***2) Die Scan(맵핑) 기능 개선 ( 불안정 )
+ -> T 보정 안정화 후 1차 개선. 
+ -> Index 순서 적용 시 기능 개선으로 2차 개선.
+ --> Map Number 일정하게 나오도록 기능 개선 필요. k
+
+2. 컨택 아이템 기능 구현 필요. 
+ -> KF`, KF``
+ -> Data 1:1 단위 및 설정 등.
+3. 바코드 기능 - 시컨스 적용 Test 
+5. M-Align 튜닝. -> 프로브Z, 
+6. Bin Data 확인 필요
+7. Bottom 시컨스 검증. 
+4. 샘플 Data 제공 ->
+1. T축-보정 기능 구현 완료
+
+
+11/28(금)
+1. Index Unloader - Vision Align 기능 구현
+ - Vision Align 기능 구현 및 적용 완료.  
+ - Bin Stage : 배열 일정화 확보
+ 
+2. KELFS, KELDG 측정 항목 Test 진행 중.
+
+3. Tack-up 확보 중.
+ - Tack-Up 진행 시 시컨스 수정.
+ 
+11/29(토)
+1. Index M-Align - Vision Search 기능 구현
+ - Vision Search 기능 구현 및 적용 완료.  
+ - M-Align 모니터링 후 Die 검사, Unloader 시컨스 구현 중.
+ 
+2. KELFS, KELDG 측정 항목 확보.
+ - 측정 Test 및 모니터링 중.
+
+3. Tack-up 확보 중.
+ - Tack-Up 진행 시 시컨스 수정.
+ 
+4. Barcode 기능 개선
+ 1) Seq 진행 시 Barcode 못 찾으면 
+    모션 전/후진 하면서 재측정하도록 시컨스 개선.
+	
+
+11/30(일)
+
+1. 맵 매칭 기능 구현 및 검증.
+ --> 맵파일 읽어오는 기능 구현 필요. k 
+ --> 맵파일 읽어서 우리 장비 맵과 1:1 비교 k
+ -> 다운로드한 Die Map과 측정한 Die Map 1:1 비교?
+ --> Bin1번만 픽업해야함. ( Bin 구분해서 픽업하는 기능 필요 )
+ ---> Bin 별로 색깔 구분. ( OK, NG, 없는 경우 등) 
+ 
+2. 언어변경 기능구현
+
+
+
+3. GUI - 모니터링 기능 개선
+ -> 생산량 표기. (토탈, 오케이, 엔쥐, 백분율, UPH, Bin Number )
+ -> 생산 진행 현황 
+   - 현재꺼를 작게해서.. Probe 측정 Data를 모니터링? ( 따로 Dlg 처리? )
+   - Die 맵정보, 생산량, 카세트, Vision, 측정Data, 
+   
+ 
+4. GUI - Manual 기능 개선
+ -> Manual에서 시컨스 단위 동작 되도록 기능 구현. 
+   (미비항목 전부 추가 필요)
+   
+
+5. 생산 결과를 네트워크 폴더에 저장해야함.
+ 1) 기존 파일 참고해서 그대로 만들어서 기능 구현 필요.
+    기존파일이..
+
+	
+************ 중요.	
+6. 측정 Recipe -> 기존 설비와 동일하게 구현 요청. 동.일.하.게.
+
+1. EQP 화면
+ 1) 항목
+ 
+ - QMC장비명 : LPH-280
+ - 장비명 : 서울바이오에서 지정 장비명
+ - 결과Log폴더경로: bin, prd, sum, txt, waf
+ - 생산로그폴더경로: svn
+   
+   
+   
+11/30(일) 
+1. 생산결과및로그 경로 설정 기능 구현 완료
+2. 시컨스 - 버그 수정 ( 검사 정지시 재시작 기능 개선 )
+3. Vision View 기능 개선 
+4. 샘플 제작 ( 1 Index 검사 )
+5. 언어변경 기능구현중 ( 50% )
+6. Map Match 기능 구현 및 Test 중 (50%)
+
+12/1(월)
+1. Map Match 기능 구현 및 Test 중
+ 1) Map Match 사용 유/무 기능 구현 완료.
+ 2) Map Match 경로 설정 기능 구현 완료.
+ 3) Map Match 후 시컨스에서 진행 유/무 선택 기능 구현 완료.
+ 4) Map Match Test 자재 수령 완료.
+  : 장비에서 실제 Test 진행 예정. (Waftt Test 후)
+  
+2. 카세트 1:1 매칭시에 데이터 동시에 읽는 경우 문제 발생 
+ : 수정 완료.
+
+3. Vf3, VF1, WD Spec In.
+   watt Spec 3.0% -> 6.0%나와서 Fail.
+  : Spectrometer  - Integration Time(ms) : 7 -> 50 변경 
+    Test 진행 시 Watt Data는 괜찮지만 Intensity Data가 좋지않아
+   -> 10 으로 변경 Test. 
+
+4. 생산 시 사용하는 실 자재 바코드 Test.
+  : Test했던 바코드와 다른 문제인지 바코드 인식 안됨.
+  : 셋팅 및 테스트 예정. 
+  
+5. 초기화 유/무 확인 후 장비 구동하도록 기능 수정.
+6. 결과Data - Recipe 단위를 타 장비와 통일화 작업 예정.
+7. Recipe Item - min/max값 업로드 작업 완료.
+8. 파일에서 Bin파일명과 waferID 위치 변경 작업 완료.
+
+12/2(화)
+1. Vf3, VF1, WD Spec In.
+   watt Spec 3.0% -> 6.0%나와서 Fail.
+   
+  Test자재 350개 수량 Test - 1 Index ( Socket 1번 )
+  : Spectrometer  - Integration Time(ms) : 7 -> 50 변경 
+    Test 진행 시 Watt Data는 NG. 
+    Spectrometer  - Integration Time(ms) : 10 변경 
+    Test 진행 시 Watt Data는 NG.
+   
+    Spectrometer  - Filter: 1(100%) -> 2(10%) 변경.
+	Integration Time(ms) : 40 변경 ( ADC 값: 25000) 
+    Test 진행 시 Watt Data NG.
+	
+	Spectrometer  - Filter: 1(100%) -> 2(10%) 변경.
+	Integration Time(ms) : 30 변경 ( ADC 값: 20000) 
+    Test 진행 시 Watt Data NG.
+	
+	Spectrometer  - Filter: 1(100%) -> 2(10%) 변경.
+	Integration Time(ms) : 50 변경 ( ADC 값: 30000) 
+    Test 진행 시 Watt Data NG.
+	
+	Spectrometer  - Filter: 1(100%) 설정.
+	Integration Time(ms) : 5 변경, 2번 측정 
+    Test 진행 시 Watt Data NG.
+
+	Spectrometer  - Filter: 1(100%) 설정.
+	Integration Time(ms) : 7 변경, 2번 측정 
+    Test 진행 시 ADC 값 50,000 이상으로 Test X.
+	
+
+2. 결과Data - Recipe 단위를 타 장비와 통일화 작업 예정.
+  : Recipe 단위 - 기존 장비와 통일화 작업.
+  : TEST 진행 중.
+  
+3. Map Match 기능 구현 및 Test 중
+ 1) Map Match 사용 유/무 기능 구현 완료.
+ 2) Map Match 경로 설정 기능 구현 완료.
+ 3) Map Match 후 시컨스에서 진행 유/무 선택 기능 구현 완료.
+ 4) Map Match Test 자재 수령 완료.
+  : 설비에서 실제 매칭 Test 완료.
+
+  
+ 12/03(수)
+1. Vf3, VF1, WD Spec In.
+   watt Spec 3.0% -> 6.0%나와서 Fail.
+   
+   : Test 진행 중.
+   : 측정 파라미터 변경하면서 1Index 1Chip 반복성 Test 진행.
+   : 현재 조건: IntegrationTime(ms): 5, 4번 반복 할 경우
+     반복성 데이터 가장 좋음. 
+   : watt Spec In. Cul 완료.
+   
+2. Recipe - 타 장비와 단위 통일화 작업 완료.   
+3. 결과Data - Recipe 단위를 타 장비와 통일화 작업 완료.
+4. Network 경로 지정 기능 작업 완료. 
+
+
+5. 생산결과및로그 파일로 작성 후 네트워크 폴더에 업로드 기능 구현 작업 예정.
+ 1) 202510WaferTotalSummaryData.csv
+ 2) 202510WaferTotalOUT_DB.csv
+ -> 두 개 파일 형석 맞춰서 Data 업로드 필요. 
+ 
+
+6. 생산 시작 시 Seq. 
+ 1. AOI 프로빙을 통해 표면 NG 칩을 제거할 맵을 생성
+  -> NG칩을 제거?? 
+ 2. 프로빙으로 특성 측정.
+ 3. OK 칩 선별 1과 2 단계 유지. 
+ 
+
+
+12/04(목)
+1. Master Sample 1:1 Calibration 작업 중. 
+ 1) 1차 Watt NG.
+ 2) 2차 VF1 NG. 
+    -> VF1: 1mV -> 1uV로 수정.
+ 3) Data Spec In 완료.	
+ 4) 1차 Offset 적용 후 Run Test. ( 
+ 5) Final Offset 적용 후 Run Test.
+ 6) WATT NG.
+ 
+ 
+2. 바코드 리더기 Input/Output Setting 완료 ( Code39 사용 )
+
+3. Recipe 파일 -> *.ITF파일(기존장비 사용파일)과 1:1 작업은 장비에 맞는 파라미터 기준 선정 후 
+   *.ITF 파일과 맞춰서 동작되도록 작업 하는 것으로 공정엔지니어와 얘기함. 
+   현재 *.ITF 파일에 대하여 1:1 작업은 불가. 
+   
+4. 바코드 시컨스 진행 시 NG 발생 및 예외 처리 시컨스 수정 예정.
+
+5. 측정 시 Min max 값을 보고 장비 NG Alarm 발생.
+  * NG Alarm 발생 여부 선택 할 수 있도록 UI 및 기능 구현. (이미지 참고)
+    (Contact - Miss Setting)
+	
+6. 기존 장비 DB 존재 ( DB 정보 파악 필요 )
+
+7. 생산 및 양산 or Test 시 Unloader에서 180도 회전 안하도록 기능 수정 ( 옵션처리 필요 )
+   1:1로 Loading -> Unloading... 
+
+
+12/05(금)
+1. Master Sample 1:1 Calibration
+  - WATT NG 대응을 위한 Test 진행 중.
+  
+12/06(토)
+1. Master Sample 1:1 Calibration
+  : 2차 측정 -> WATT NG. 
+   -> WATT NG 대응을 위한 Test 진행 중.
+ 
+12/07(일)
+1. Master Sample 1:1 Calibration
+  : 2차 측정 -> WATT NG. 
+   -> WATT NG 대응을 위한 Test 진행 중.  
+
+12/08(월)
+1. Master Sample 1:1 Calibration
+  : 2차 측정 -> WATT NG. 
+   -> WATT NG 대응을 위한 Test 진행 중.  
+   
+2. ADC (MAX Count) Display 기능 구현 완료. 
+3. wafer, Bin - Index 순서에 따른 구동 방향 설정 기능 구현 완료.
+4. 공정Test - Manual 컨택 기능 구현 완료.
+5. Recipe - Offset 공통 등록 기능 구현 완료.
+
+12/09(화)
+1. Master Sample 1:1 Calibration
+  : 2차 측정 -> WATT NG. 
+   -> WATT NG 대응을 위한 Test 진행 중.
+   -> Script 수정 후 대응. - 결과 X.
+   -> Delay 적용 후 대응. -> 1, 2차 결과 OK 이지만... 공정엔지니어 Fail. 
+   -> 기존에 했던 방식대로 해서 Data 나오지 않음.
+   -> (7, 2, 1)
+   
+   -> MaxCount 15000 맞춰서 재 진행. ( 25, 2, 2 ) - X.
+   
+   -> WATT 반복성 0.2% 이하 조건으로 Test 진행 중. 
+      [ 적분구 높이 0.7mm Up, MaxCount(ADC) 33,000 조건으로 
+	    5, 5, 1 -> 조건으로 반복성 Test 시 0.15% ]
+   -> 재현성 Test 진행.
+   
+
+2. Script 수정 완료. (측정 방식 변경 등 )
+
+* Z축 서보 OFF 하고 측정. WATT 어떻게 되는지? 확인? 진동? 
+* 컨택 하지말고 측정. WATT 어떻게 되는지? 확인? 잡광일 수도 있음. ---.
+
+3. 1번 Data를 가지고 8번 Index에 Data 입력하는 기능 구현
+ 1) 칩 로딩 -> 1번 소켓 -> 2~8번 반복 이동 하면서 Data 측정.
+ 2) 8번 소켓에서 완료 후 칩 언로딩 후 Wafer에 다시 안착. 
+ 
+ - 5번 반복 수행. 
+ 
+ --> 다이얼로그 구현 필요. ( Offset 복사/붙여넣기 되도록 )
+ -> Index Cal 기능 구현 완료. 
+ 
+12/16(화)
+ 1. Top - Compare with Ref machine 진행 중. 
+  -> WATT 기준. 타 장비 측정 값 대비 2~4mW 낮게 측정되는 문제 발생 중.
+   : 현재 - 원인 불분명. 
+
+  -> WATT Data 256~260mW 기준인 Master Sample Data와 Cal 작업을 통하여 
+     Gain, Offset 적용 및 검증 완료. ( Cal Test OK )
+  -> But, 타 설비 WATT 270mW Die 소팅한 wafer를 검사 시 현재 자사 장비는 
+     WATT 268 ~ 269mW로 측정되고 있음. 
+  -> Cal 작업을 통하여 Data 통일화(Gain, Offset값 적용)를 완료 하였는데, 타 설비에서 측정한 
+     Wafer - Die의 WATT 값 차이점에 대하여 원인 불분명 중...
+  
+  -> ADC 값 30000 -> 15000 ( 타 설비 기준 ) 으로 설비 셋팅하여 Test 결과 : 변화 X.
+    : 적분구 높이 ( 현재 타 설비가 우리보다 낮게 셋팅되어 있음. [ 자사 설비 Pin Type 측정 설비로 
+	              타 설비와 동일한 높이 셋팅 불가 )
+	: Integration Time(ms) : 5, Filter : 1 - 변화 X.  ( ADC 약 30,000 )
+	: Integration Time(ms) : 50, Filter : 2 - 변화 X. ( ADC 약 30,000 )
+	: Integration Time(ms) : 23, Filter : 2 - 변화 X.  ( ADC 약 15,000 )
+	: Setting에 대한 부분 변경 Test 시 자사 설비 반복성, 재현성 OK.
+	: Cal Test OK. 
+	: 타 설비와의 WATT 차이 문제 발생. NG.
+	
+  -> Timming 증가 후 Ok.
+  -> VR -> VF -> WATT 측정 시 OK. 
+  -> Script 수정 후 Cal Test 진행. 
+  -> 
+	
+	
+	
+	
+	
+  -> Script 변경 Test : 변화 X.
+    : Scrpt 수정 후 VF3 Data 0.01~0.04 오차 발생으로 Script 원복 ( 12/16 )	
+	
+  -> WATT 측정 시 Timming 10 -> 50ms 증가 - OK.
+  -> VF3 전에 VR 측정 적용 시 - OK.  
+  -> CAS 측정 시에 Timming 문제 추정. 
+  
+  	 
+ 
+ 
+
+ 
+
+
+
+
+
+
+   
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+

@@ -281,7 +281,6 @@ namespace QMC.Common.Keithley
             {
                 KeithleySourcemeterChannel channel = Channels["smua"];
                 channel.ClearMeasureData();
-
                 if (Config.IsSimulation)
                 {
                     channel.SimulateBufferData();
@@ -295,12 +294,10 @@ namespace QMC.Common.Keithley
                         throw new Exception("Failed to run contact resistance commands.");
                 }
 
-                Log.Write("kkkkkkProb", "m3-1");
                 // measure
                 if (!channel.RunCommands())
                     throw new Exception("Failed to run measure commands.");
 
-                Log.Write("kkkkkkProb", "m3-2");
                 stopwatch.Restart();
 
                 while (!channel.WaitComplete())
@@ -311,11 +308,9 @@ namespace QMC.Common.Keithley
                     Thread.Sleep(10);
                 }
 
-                Log.Write("kkkkkkProb", "m3-3");
                 if (!channel.ReadBufferData())
                     throw new Exception("Failed to read buffer data.");
 
-                Log.Write("kkkkkkProb", "m3-4");
             }
             catch (Exception ex)
             {
@@ -359,6 +354,7 @@ namespace QMC.Common.Keithley
             results.Add(testItem.Name, new TestItemResult());
             return true;
         }
+
         public bool BuildTestCommands()
         {
             double dUnit = 1.0;
@@ -368,17 +364,12 @@ namespace QMC.Common.Keithley
                 channel.ClearCommands();
                 foreach (var item in testItems)
                 {
+                    dUnit = 1.0;
                     var command = new KeithleySourcemeterChannel.ChannelCommand();
                     switch (item.Type)
                     {
                         case TestItemType.VF:
                             {
-                                //VF1은 단뒤가 다른디.. 
-                                if(item.Name == "VF1") //VF1은 uA 인데.
-                                {
-
-                                }
-
                                 if (item.Unit == "A")
                                 {
                                     dUnit = dUnit * 1;
@@ -395,6 +386,17 @@ namespace QMC.Common.Keithley
                                 {
                                     dUnit = dUnit * 1;
                                 }
+
+                                //VF1은 단뒤가 다른디.. 
+                                if (item.Name == "VF1" || item.Name == "VF5") //VF1은 uA 인데.
+                                {
+                                    dUnit = dUnit / 1000 / 1000;
+                                }
+                                else
+                                {
+                                    dUnit = dUnit / 1000;
+                                }
+                                    
 
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
@@ -427,6 +429,9 @@ namespace QMC.Common.Keithley
                                     dUnit = dUnit * 1;
                                 }
 
+
+                                dUnit = dUnit / 1000 / 1000;
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
                                 command.SourceValue = (item.SourceValue * dUnit) * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
@@ -457,6 +462,8 @@ namespace QMC.Common.Keithley
                                     dUnit = dUnit * 1;
                                 }
 
+                                dUnit = dUnit / 1000 / 1000;
+
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
                                 command.SourceValue = (item.SourceValue * dUnit) * (Config.SourceInvert ? -1.0 : 1.0);
@@ -486,6 +493,8 @@ namespace QMC.Common.Keithley
                                 {
                                     dUnit = dUnit * 1;
                                 }
+
+                                dUnit = dUnit / 1000 / 1000;
 
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
@@ -528,7 +537,7 @@ namespace QMC.Common.Keithley
         }
         public bool GetResultProcess()
         {
-            double dUnit = 0.0;
+            double dUnit = 1.0;
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
@@ -551,6 +560,7 @@ namespace QMC.Common.Keithley
                     TestConditionItem item = testItems[i];
                     TestItemResult itemResult = results[item.Name];
 
+                    dUnit = 1.0;
                     double value = double.Parse(channel.BufferDatas[i]);
                     switch (testItems[i].Type)
                     {
@@ -604,6 +614,7 @@ namespace QMC.Common.Keithley
                                     itemResult.Unit = "A";
                                 }
 
+
                                 itemResult.RawData = Math.Abs(value * dUnit);
                                 itemResult.Value = Math.Abs(value * dUnit);
                             }
@@ -656,6 +667,10 @@ namespace QMC.Common.Keithley
                                     dUnit = dUnit * 1;
                                     itemResult.Unit = "V";
                                 }
+                                if (value < 0)
+                                {
+                                    value *= -1;
+                                }
                                 itemResult.RawData = Math.Abs(value * dUnit);
                                 itemResult.Value = Math.Abs(value * dUnit);
                             }
@@ -682,8 +697,12 @@ namespace QMC.Common.Keithley
                                     dUnit = dUnit * 1;
                                     itemResult.Unit = "A";
                                 }
-                                itemResult.RawData = value * dUnit;
-                                itemResult.Value = value * dUnit;
+                                if (value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value * dUnit);
+                                itemResult.Value = Math.Abs(value * dUnit);
                             }
                             break;
                         case TestItemType.KELDG:
@@ -708,8 +727,13 @@ namespace QMC.Common.Keithley
                                     dUnit = dUnit * 1;
                                     itemResult.Unit = "A";
                                 }
-                                itemResult.RawData = value * dUnit;
-                                itemResult.Value = value * dUnit;
+
+                                if(value < 0)
+                                {
+                                    value *= -1;
+                                }
+                                itemResult.RawData = Math.Abs(value * dUnit);
+                                itemResult.Value = Math.Abs(value * dUnit);
                             }
                             break;
                     }

@@ -76,7 +76,6 @@ namespace QMC.Common.Spectrometer
         private void UpdateSpectrumChart(CASSpectrometer spectrometer)
         {
             var series = chart.Series[0];
-
             if (spectrometer == null)
             {
                 series.Points.Clear();
@@ -84,8 +83,14 @@ namespace QMC.Common.Spectrometer
             }
 
             var spectrumData = spectrometer.Spectrum;
+            double Intensity = spectrumData.MaximumIntensity;
+            double ADC = spectrumData.ADC;
 
-            lbMaxIntensity.Text = $"Max Intensity = {spectrumData.MaximumIntensity:E3}";     
+            // 스펙트럼 강도 단위: dpidCalibrationUnit에서 읽어온 spectrometer 내부 필드 사용
+            // 예: "W/nm", "µW/nm", "A.U." 등
+            lbMaxIntensity.Text = $"Max Intensity = {Intensity:F5}";// [{spectrometer.CalibrationUnit}]";
+            //lbMaxIntensity.Text = $"Max Intensity = {Intensity:F5}";// [{spectrometer.DeviceInfo != null ? spectrometer.Config != null ? "" : "" : ""}{GetCalibrationUnit(spectrometer)}]";
+            lbADC.Text = $"MaxCount(ADC) = {ADC:F1}";
 
             var area = chart.ChartAreas[0];
             area.AxisX.Minimum = _chartMinX;

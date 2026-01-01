@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Equipment;
+using System.Diagnostics;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -37,16 +38,16 @@ namespace QMC.LCP_280.Process.Unit
         public sealed class DiePlacedEventArgs : EventArgs
         {
             public MaterialDie Die { get; }
-            public double BinX { get; }
-            public double BinY { get; }
+            public int MapX { get; }
+            public int MapY { get; }
 
             public DiePlacedEventArgs(MaterialDie die)
             {
                 Die = die;
                 if (die != null)
                 {
-                    BinX = die.BinX;
-                    BinY = die.BinY;
+                    MapX = die.MapX;
+                    MapY = die.MapY;
                 }
             }
         }
@@ -184,6 +185,149 @@ namespace QMC.LCP_280.Process.Unit
 
 
         MaterialDie _currentDie = null;
+
+
+        // ================== Takt Time(Die Place Interval) ==================
+        private readonly object _placeTaktLock = new object();
+        private DateTime _lastDiePlacedAt = DateTime.MinValue;
+
+        /// <summary>
+        /// "Bin Wafer에 die를 내려놓은 시점" 기준으로 다음 die를 내려놓을 때까지의 간격을 측정합니다.
+        /// (즉, Place-to-Place takt)
+        /// </summary>
+        public CycleTimer DiePlaceTaktTimer { get; } = new CycleTimer();
+
+        public sealed class DiePlaceTaktEventArgs : EventArgs
+        {
+            public int DieIndex { get; }
+            public DateTime PreviousPlacedAt { get; }
+            public DateTime CurrentPlacedAt { get; }
+            public TimeSpan Interval { get; }
+
+            public DiePlaceTaktEventArgs(int dieIndex, DateTime previous, DateTime current)
+            {
+                DieIndex = dieIndex;
+                PreviousPlacedAt = previous;
+                CurrentPlacedAt = current;
+                Interval = current - previous;
+            }
+        }
+
+        /// <summary>
+        /// 직전 Place → 이번 Place 간격이 측정되어 CycleTimer에 누적된 직후 발생합니다.
+        /// </summary>
+        public event EventHandler<DiePlaceTaktEventArgs> DiePlaceTaktMeasured;
+
+        /// <summary>측정 데이터 초기화(런 시작/레시피 변경 시 호출 권장)</summary>
+        public void ResetDiePlaceTakt()
+        {
+            lock (_placeTaktLock)
+            {
+                _lastDiePlacedAt = DateTime.MinValue;
+                DiePlaceTaktTimer.Clear();
+                DiePlaceTaktTimer.TotalElapsed = TimeSpan.Zero;
+            }
+        }
+
+        private void RecordDiePlaceTakt(MaterialDie die)
+        {
+            // PlaceDie는 die/wafer null 체크를 상위에서 하고 있으나, 안전하게 방어
+            if (die == null)
+                return;
+
+            DateTime now = DateTime.Now;
+            DateTime prev;
+
+            lock (_placeTaktLock)
+            {
+                prev = _lastDiePlacedAt;
+
+                // 첫 Place는 기준점만 잡고 종료
+                if (prev == DateTime.MinValue)
+                {
+                    _lastDiePlacedAt = now;
+                    return;
+                }
+
+                // [FIX] 정확한 prev→now를 CycleTimer에 누적
+                DiePlaceTaktTimer.Add(prev, now);
+
+                _lastDiePlacedAt = now;
+            }
+
+            // 정확한 interval은 prev/now로 계산해서 내보냄
+            var args = new DiePlaceTaktEventArgs(die.Index, prev, now);
+
+            Log.Write(UnitName, "DiePlaceTakt",
+                $"DieIndex={args.DieIndex}, IntervalMs={args.Interval.TotalMilliseconds:F1}, Prev={args.PreviousPlacedAt:HH:mm:ss.fff}, Now={args.CurrentPlacedAt:HH:mm:ss.fff}");
+
+            // [ADD] CSV 저장
+            try 
+            { 
+                AppendDiePlaceTaktCsv(args); 
+            } 
+            catch (Exception ex) 
+            { Log.Write(UnitName, "DiePlaceTaktCsv", ex.Message); }
+
+            try { DiePlaceTaktMeasured?.Invoke(this, args); } catch { }
+        }
+
+        private readonly object _taktCsvLock = new object();
+
+        private string GetDiePlaceTaktCsvPath(DateTime now)
+        {
+            string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log", "TaktTime");
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            return Path.Combine(dir, $"OutputStage_DiePlaceTakt_{now:yyyyMMdd}.csv");
+        }
+
+        private void AppendDiePlaceTaktCsv(DiePlaceTaktEventArgs args)
+        {
+            if (args == null)
+                return;
+
+            // 시뮬/드라이런이면 필요 없으면 여기서 return 처리 가능
+            // if (Config.IsSimulation || Config.IsDryRun) return;
+
+            var now = DateTime.Now;
+            string path = GetDiePlaceTaktCsvPath(now);
+
+            // 통계 스냅샷
+            double avgMs = DiePlaceTaktTimer.Average.TotalMilliseconds;
+            double minMs = DiePlaceTaktTimer.Minimum.TotalMilliseconds;
+            double maxMs = DiePlaceTaktTimer.Maximum.TotalMilliseconds;
+            int count = DiePlaceTaktTimer.CycleTimes?.Count ?? 0;
+
+            lock (_taktCsvLock)
+            {
+                bool exists = File.Exists(path);
+                using (var w = new StreamWriter(path, true, Encoding.UTF8))
+                {
+                    if (!exists)
+                    {
+                        w.WriteLine("Time,DieIndex,PrevTime,NowTime,IntervalMs,AvgMs,MinMs,MaxMs,Count");
+                    }
+
+                    w.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "{0},{1},{2},{3},{4:F1},{5:F1},{6:F1},{7:F1},{8}",
+                        now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.DieIndex,
+                        args.PreviousPlacedAt.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.CurrentPlacedAt.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+                        args.Interval.TotalMilliseconds,
+                        avgMs, minMs, maxMs, count));
+                }
+            }
+        }
+
+
+
+
+
+
+
         public OutputStage(OutputStageConfig config = null)
             : base(new OutputStageConfig())
         {
@@ -1108,8 +1252,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -1309,7 +1451,6 @@ namespace QMC.LCP_280.Process.Unit
                 if(v != null)
                 {
                     return v.Presence == Material.MaterialPresence.Exist;
-
                 }
                     //Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
                 return false;
@@ -1522,6 +1663,9 @@ namespace QMC.LCP_280.Process.Unit
             // 6) UI & 이벤트
             UpdateUI();
             OnDiePlaced(die);
+
+            // [NEW] Place-to-Place takt 측정 (DiePlaced 이벤트 이후/이전은 취향인데, "실제 Place 처리 완료" 기준으로는 여기 권장)
+            RecordDiePlaceTakt(die);
         }
         #endregion
 
@@ -1655,8 +1799,10 @@ namespace QMC.LCP_280.Process.Unit
                 double dStagePosT = AxisT?.GetPosition() ?? 0.0;
 
                 // 지정 Bin 위치로 XY 이동
-                binX = next.BinX;
-                binY = next.BinY;
+                //binX = next.BinX;
+                //binY = next.BinY;
+                binX = next.MapX;
+                binY = next.MapY;
                 var (tx, ty) = GetBinWorldPosition(binX, binY);
 
                 if (Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
@@ -1955,9 +2101,11 @@ namespace QMC.LCP_280.Process.Unit
         public void ResetForNewRun(bool moveToSafeReady = true, bool clearWafer = true, bool clearOffsets = true)
         {
             int nRet = 0;
+
+            ResetDiePlaceTakt();
+
             // 1) 런타임/시퀀스 플래그 초기화
             _currentDie = null;
-
             // 2) 비전 리소스 정리(선택)
             try
             {
@@ -2081,7 +2229,6 @@ namespace QMC.LCP_280.Process.Unit
                         dst.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
                         var list = new List<MaterialDie>(src.Dies.Count);
-
                         foreach (var s in src.Dies)
                         {
                             if (s == null) 
@@ -2971,6 +3118,95 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "LoadTCorrectionCsvAndApply",
                 $"성공: {path}, Marks={marks?.Count ?? 0}, Range={rangeDeg:F3}, Step={stepDeg:F3}, Rows={recs.Count}");
             return 0;
+        }
+
+       
+        private readonly object _reserveLock = new object();
+        public int ForceCompleteAndAllowUnload(string reason = null)
+        {
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null || wafer.Dies == null)
+                    return 0;
+
+                lock (_reserveLock)
+                {
+                    lock (wafer.Dies)
+                    {
+                        foreach (var d in wafer.Dies)
+                        {
+                            if (d == null) 
+                                continue;
+
+                            // 아직 정리되지 않은 항목은 전부 Rejected로 마킹
+                            if (d.State != DieProcessState.Placed && d.State != DieProcessState.Rejected)
+                            {
+                                d.State = DieProcessState.Rejected;
+
+                                // 여기 Presence는 프로젝트 내 의미가 섞여있는데,
+                                // 현재 코드 흐름(HasNextDie/TryReserveNextEmptyBin)이 Presence를 무시하므로
+                                // 기존 MarkCurrentReservedMissing과 동일하게 Exist로 맞춥니다.
+                                d.Presence = Material.MaterialPresence.Exist;
+                            }
+                        }
+
+
+                        //여기서 Completed 할 필요가 없지.
+                        // Completed 조건은.. Feeder에서 확인하면 되니깐.
+                        //wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                    }
+                }
+
+                UpdateUI();
+                Log.Write(UnitName, "ForceCompleteAndAllowUnload",
+                    $"Forced Completed. reason={reason ?? "null"}");
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ForceCompleteAndAllowUnload", ex.Message);
+                return -1;
+            }
+        }
+
+        private bool IsExternalDieBufferEmpty()
+        {
+            try
+            {
+                // Rotary(언로드 스테이션에 서 있는 소켓) 쪽 die 존재 여부
+                // 여기 조건 다시 생각해야함.
+                //var rotaryDie = RotaryUnit?.GetUnloadSocketMaterial();
+
+                // OutputDieTransfer가 현재 들고있는 die 존재 여부
+                var odtDie = OutputDieTransfer?.GetMaterial() as MaterialDie;
+
+                //return (rotaryDie == null) && (odtDie == null);
+                return (odtDie == null);
+            }
+            catch
+            {
+                // 안전하게: 판단 불가면 강제완료하지 않음
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// "입력 웨이퍼 종료" 같은 외부 종료 조건에서,
+        /// Rotary(언로드 소켓) + OutputDieTransfer 모두 die가 비어있을 때만
+        /// OutputStage 웨이퍼를 강제 Completed 처리하여 언로딩이 진행되도록 합니다.
+        /// </summary>
+        public int ForceCompleteAndAllowUnloadWhenBuffersEmpty(string reason = null)
+        {
+            if (!IsExternalDieBufferEmpty())
+            {
+                Log.Write(UnitName, "ForceCompleteAndAllowUnloadWhenBuffersEmpty",
+                    "Skipped: Rotary unload socket or OutputDieTransfer still has die.");
+                return 1; // 스킵(조건 미충족)
+            }
+
+            return ForceCompleteAndAllowUnload(reason);
         }
     }
 }

@@ -52,15 +52,18 @@
             this.btnResultClear = new QMC.Common.IndividualMenuButton();
             this.btnLastClear = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnProbeSafety = new QMC.Common.IndividualMenuButton();
+            this.cbProbeIndex = new System.Windows.Forms.ComboBox();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
             this.grpContactMode = new System.Windows.Forms.GroupBox();
             this.rbTop = new System.Windows.Forms.RadioButton();
             this.rbBottom = new System.Windows.Forms.RadioButton();
             this.lblProbeIndex = new System.Windows.Forms.Label();
-            this.cbProbeIndex = new System.Windows.Forms.ComboBox();
             this.btnProbeSeq = new QMC.Common.IndividualMenuButton();
-            this.btnProbeSafety = new QMC.Common.IndividualMenuButton();
+            this.btnTestMotionStart = new QMC.Common.IndividualMenuButton();
+            this.label1 = new System.Windows.Forms.Label();
+            this.btnTestMotionStop = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).BeginInit();
@@ -466,19 +469,66 @@
             this.tableLayoutPanel7.Controls.Add(this.grpContactMode, 0, 2);
             this.tableLayoutPanel7.Controls.Add(this.lblProbeIndex, 0, 3);
             this.tableLayoutPanel7.Controls.Add(this.btnProbeSeq, 0, 5);
+            this.tableLayoutPanel7.Controls.Add(this.label1, 0, 7);
+            this.tableLayoutPanel7.Controls.Add(this.btnTestMotionStart, 0, 8);
+            this.tableLayoutPanel7.Controls.Add(this.btnTestMotionStop, 0, 9);
             this.tableLayoutPanel7.Location = new System.Drawing.Point(1671, 4);
             this.tableLayoutPanel7.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 7;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 14.28571F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 6.886228F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5.389222F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13.47305F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 32.33533F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(200, 668);
+            this.tableLayoutPanel7.RowCount = 12;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.15739F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4.03071F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 3.838772F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7.677543F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7.773512F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 4.126679F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 6.142035F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 6.046065F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 26.96737F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(200, 1042);
             this.tableLayoutPanel7.TabIndex = 1;
+            // 
+            // btnProbeSafety
+            // 
+            this.btnProbeSafety.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSafety.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnProbeSafety.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProbeSafety.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSafety.CustomForeColor = System.Drawing.Color.Black;
+            this.btnProbeSafety.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProbeSafety.ForeColor = System.Drawing.Color.Black;
+            this.btnProbeSafety.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnProbeSafety.Location = new System.Drawing.Point(8, 429);
+            this.btnProbeSafety.Margin = new System.Windows.Forms.Padding(8);
+            this.btnProbeSafety.Name = "btnProbeSafety";
+            this.btnProbeSafety.Size = new System.Drawing.Size(184, 60);
+            this.btnProbeSafety.TabIndex = 19;
+            this.btnProbeSafety.TabStop = false;
+            this.btnProbeSafety.Text = "Safety Pos";
+            this.btnProbeSafety.UseVisualStyleBackColor = false;
+            this.btnProbeSafety.Click += new System.EventHandler(this.btnProbeSafety_Click);
+            // 
+            // cbProbeIndex
+            // 
+            this.cbProbeIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbProbeIndex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbProbeIndex.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"});
+            this.cbProbeIndex.Location = new System.Drawing.Point(3, 304);
+            this.cbProbeIndex.Name = "cbProbeIndex";
+            this.cbProbeIndex.Size = new System.Drawing.Size(194, 26);
+            this.cbProbeIndex.TabIndex = 17;
+            this.cbProbeIndex.SelectedIndexChanged += new System.EventHandler(this.cbProbeIndex_SelectedIndexChanged);
             // 
             // btnTestStop
             // 
@@ -491,10 +541,10 @@
             this.btnTestStop.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnTestStop.ForeColor = System.Drawing.Color.Black;
             this.btnTestStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnTestStop.Location = new System.Drawing.Point(8, 102);
+            this.btnTestStop.Location = new System.Drawing.Point(8, 95);
             this.btnTestStop.Margin = new System.Windows.Forms.Padding(8);
             this.btnTestStop.Name = "btnTestStop";
-            this.btnTestStop.Size = new System.Drawing.Size(184, 78);
+            this.btnTestStop.Size = new System.Drawing.Size(184, 71);
             this.btnTestStop.TabIndex = 2;
             this.btnTestStop.TabStop = false;
             this.btnTestStop.Text = "Test Stop";
@@ -515,7 +565,7 @@
             this.btnTestStart.Location = new System.Drawing.Point(8, 8);
             this.btnTestStart.Margin = new System.Windows.Forms.Padding(8);
             this.btnTestStart.Name = "btnTestStart";
-            this.btnTestStart.Size = new System.Drawing.Size(184, 78);
+            this.btnTestStart.Size = new System.Drawing.Size(184, 71);
             this.btnTestStart.TabIndex = 1;
             this.btnTestStart.TabStop = false;
             this.btnTestStart.Text = "Test Start";
@@ -528,9 +578,9 @@
             this.grpContactMode.Controls.Add(this.rbBottom);
             this.grpContactMode.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpContactMode.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.grpContactMode.Location = new System.Drawing.Point(3, 191);
+            this.grpContactMode.Location = new System.Drawing.Point(3, 177);
             this.grpContactMode.Name = "grpContactMode";
-            this.grpContactMode.Size = new System.Drawing.Size(194, 88);
+            this.grpContactMode.Size = new System.Drawing.Size(194, 79);
             this.grpContactMode.TabIndex = 15;
             this.grpContactMode.TabStop = false;
             this.grpContactMode.Text = "Contact Mode";
@@ -562,31 +612,12 @@
             this.lblProbeIndex.AutoSize = true;
             this.lblProbeIndex.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblProbeIndex.Font = new System.Drawing.Font("맑은 고딕", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lblProbeIndex.Location = new System.Drawing.Point(3, 282);
+            this.lblProbeIndex.Location = new System.Drawing.Point(3, 259);
             this.lblProbeIndex.Name = "lblProbeIndex";
-            this.lblProbeIndex.Size = new System.Drawing.Size(194, 45);
+            this.lblProbeIndex.Size = new System.Drawing.Size(194, 42);
             this.lblProbeIndex.TabIndex = 16;
             this.lblProbeIndex.Text = "Socket";
             this.lblProbeIndex.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // cbProbeIndex
-            // 
-            this.cbProbeIndex.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cbProbeIndex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbProbeIndex.Items.AddRange(new object[] {
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8"});
-            this.cbProbeIndex.Location = new System.Drawing.Point(3, 330);
-            this.cbProbeIndex.Name = "cbProbeIndex";
-            this.cbProbeIndex.Size = new System.Drawing.Size(194, 26);
-            this.cbProbeIndex.TabIndex = 17;
-            this.cbProbeIndex.SelectedIndexChanged += new System.EventHandler(this.cbProbeIndex_SelectedIndexChanged);
             // 
             // btnProbeSeq
             // 
@@ -595,10 +626,11 @@
             this.btnProbeSeq.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnProbeSeq.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnProbeSeq.CustomForeColor = System.Drawing.Color.Black;
+            this.btnProbeSeq.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.btnProbeSeq.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnProbeSeq.ForeColor = System.Drawing.Color.Black;
             this.btnProbeSeq.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnProbeSeq.Location = new System.Drawing.Point(8, 370);
+            this.btnProbeSeq.Location = new System.Drawing.Point(8, 353);
             this.btnProbeSeq.Margin = new System.Windows.Forms.Padding(8);
             this.btnProbeSeq.Name = "btnProbeSeq";
             this.btnProbeSeq.Size = new System.Drawing.Size(184, 60);
@@ -608,25 +640,57 @@
             this.btnProbeSeq.UseVisualStyleBackColor = false;
             this.btnProbeSeq.Click += new System.EventHandler(this.btnProbeSeq_Click);
             // 
-            // btnProbeSafety
+            // btnTestMotionStart
             // 
-            this.btnProbeSafety.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnProbeSafety.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnProbeSafety.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnProbeSafety.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnProbeSafety.CustomForeColor = System.Drawing.Color.Black;
-            this.btnProbeSafety.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnProbeSafety.ForeColor = System.Drawing.Color.Black;
-            this.btnProbeSafety.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnProbeSafety.Location = new System.Drawing.Point(8, 459);
-            this.btnProbeSafety.Margin = new System.Windows.Forms.Padding(8);
-            this.btnProbeSafety.Name = "btnProbeSafety";
-            this.btnProbeSafety.Size = new System.Drawing.Size(184, 60);
-            this.btnProbeSafety.TabIndex = 19;
-            this.btnProbeSafety.TabStop = false;
-            this.btnProbeSafety.Text = "Safety Pos";
-            this.btnProbeSafety.UseVisualStyleBackColor = false;
-            this.btnProbeSafety.Click += new System.EventHandler(this.btnProbeSafety_Click);
+            this.btnTestMotionStart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTestMotionStart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnTestMotionStart.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTestMotionStart.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTestMotionStart.CustomForeColor = System.Drawing.Color.Black;
+            this.btnTestMotionStart.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTestMotionStart.ForeColor = System.Drawing.Color.Black;
+            this.btnTestMotionStart.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnTestMotionStart.Location = new System.Drawing.Point(8, 553);
+            this.btnTestMotionStart.Margin = new System.Windows.Forms.Padding(8);
+            this.btnTestMotionStart.Name = "btnTestMotionStart";
+            this.btnTestMotionStart.Size = new System.Drawing.Size(184, 48);
+            this.btnTestMotionStart.TabIndex = 20;
+            this.btnTestMotionStart.TabStop = false;
+            this.btnTestMotionStart.Text = "Test Start";
+            this.btnTestMotionStart.UseVisualStyleBackColor = false;
+            this.btnTestMotionStart.Click += new System.EventHandler(this.btnTestMotionStart_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.label1.Font = new System.Drawing.Font("맑은 고딕", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Location = new System.Drawing.Point(3, 515);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(194, 30);
+            this.label1.TabIndex = 21;
+            this.label1.Text = "Motion+Measure";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnTestMotionStop
+            // 
+            this.btnTestMotionStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTestMotionStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnTestMotionStop.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTestMotionStop.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTestMotionStop.CustomForeColor = System.Drawing.Color.Black;
+            this.btnTestMotionStop.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTestMotionStop.ForeColor = System.Drawing.Color.Black;
+            this.btnTestMotionStop.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnTestMotionStop.Location = new System.Drawing.Point(8, 617);
+            this.btnTestMotionStop.Margin = new System.Windows.Forms.Padding(8);
+            this.btnTestMotionStop.Name = "btnTestMotionStop";
+            this.btnTestMotionStop.Size = new System.Drawing.Size(184, 47);
+            this.btnTestMotionStop.TabIndex = 22;
+            this.btnTestMotionStop.TabStop = false;
+            this.btnTestMotionStop.Text = "Test Stop";
+            this.btnTestMotionStop.UseVisualStyleBackColor = false;
+            this.btnTestMotionStop.Click += new System.EventHandler(this.btnTestMotionStop_Click);
             // 
             // CellTesterPage
             // 
@@ -695,5 +759,8 @@
         private System.Windows.Forms.ComboBox cbProbeIndex;
         private Common.IndividualMenuButton btnProbeSafety;
         private Common.IndividualMenuButton btnProbeSeq;
+        private Common.IndividualMenuButton btnTestMotionStart;
+        private System.Windows.Forms.Label label1;
+        private Common.IndividualMenuButton btnTestMotionStop;
     }
 }

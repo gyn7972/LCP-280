@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -79,6 +80,7 @@ namespace QMC.Common.Spectrometer
             public double[] Intensity { get; set; }
             public double MinimumIntensity { get; set; }
             public double MaximumIntensity { get; set; }
+            public double ADC {  get; set; }
             #endregion
 
             #region Methods
@@ -90,6 +92,7 @@ namespace QMC.Common.Spectrometer
                 Intensity = new double[0];
                 MinimumIntensity = 0;
                 MaximumIntensity = 0;
+                ADC = 0;
             }
             #endregion
         }
@@ -136,8 +139,8 @@ namespace QMC.Common.Spectrometer
         #region Field
         private int deviceId;
         private List<DensityFilter> densityFilterList = new List<DensityFilter>();
-        private MeasurementData result = new MeasurementData();
-        private SpectrumData spectrum = new SpectrumData();
+        public MeasurementData result = new MeasurementData();
+        public SpectrumData spectrum = new SpectrumData();
 
         private List<TestConditionItem> testItems = new List<TestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
@@ -280,8 +283,8 @@ namespace QMC.Common.Spectrometer
                     double value = 0;
                     switch (item.Type)
                     {
-                        case TestItemType.RadInt:
-                            value = result.RadInt * 1000;
+                        case TestItemType.RadInt: //A로 들어와서 *1000하면 mA
+                            value = result.RadInt * 1000;       // 단위에 맞춰서 뿌려야 하니깐.. // 여긴 우선 이렇게 해야되네...
                             itemResult.RawData = value;
                             itemResult.Value = value;
                             itemResult.Unit = result.RadIntUnit;
@@ -341,7 +344,7 @@ namespace QMC.Common.Spectrometer
                             itemResult.Value = value;
                             itemResult.Unit = ""; // 무차원
                             break;
-                        case TestItemType.LambdaDom:
+                        case TestItemType.LambdaDom:    // 단위에 맞춰서 뿌려야 하니깐.. // 여긴 걍하는디.
                             value = result.LambdaDom;
                             itemResult.RawData = value;
                             itemResult.Value = value;
@@ -637,9 +640,14 @@ namespace QMC.Common.Spectrometer
                 if (Config.UseHardwareTrigger)
                 {
                     SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
+                    //SetMeasurementParameter(CAS4DLL.mpidTriggerSource, 2);
                     SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                     SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
                     //PrepareMeasureAndTrigger();
+
+                    //add 2025-12-06
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerDelayTime, 5);// ms 
+
                     useHardwareTrigger = true;
                 }
                 else
@@ -692,7 +700,6 @@ namespace QMC.Common.Spectrometer
             {
                 // Error handling
                 deviceInfo.Clear();
-
                 Log.Write(this, ex.Message);
                 return false;
             }
@@ -713,13 +720,24 @@ namespace QMC.Common.Spectrometer
                 result.Clear();
                 spectrum.Clear();
 
+                // 20251206 수정. 
+                if (useHardwareTrigger)
+                {
+                    CheckCASErrorAndThrow(
+                    CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, IntPtr.Zero)
+                    );
+                }
+
+                OnMeasureCommandSended?.Invoke(this);
+
                 // SPC(2) Line ON ( SMU(3))
                 if (useHardwareTrigger)
                     OnDigitalOut(2);
 
                 //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
+                //Thread.Sleep(10);
+                //OnMeasureCommandSended?.Invoke(this);
 
-                OnMeasureCommandSended?.Invoke(this);
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
                 // SPC(2) Line OFF (Send Falling edge to SMU(3))
@@ -727,9 +745,16 @@ namespace QMC.Common.Spectrometer
                     OffDigitalOut(2);
 
                 // Data Process
-                GetMeasureData();
                 GetSpectrumData();
+                GetMeasureData();
                 OnMeasureCompleted?.Invoke(this);
+
+                // 검증 로그
+                //double delay = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidTriggerDelayTime);
+                //double acqTime = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidACQTime);
+                //double sigLevel = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidSignalLevel);
+                //Log.Write("CAS", "Trigger/Timing", $"Delay={delay}ms, ACQTime={acqTime}ms, SignalLevel={sigLevel}%");
+
                 return true;
             }
             catch (Exception ex)
@@ -789,12 +814,38 @@ namespace QMC.Common.Spectrometer
             CheckCASErrorAndThrow();
             result.PhotInt = photInt;
             result.PhotIntUnit = sb.ToString();
+            Log.Write("CAS", "PhotInt", $"Value={result.PhotInt}, " +
+                $"Unit={result.PhotIntUnit}, " +
+                $"Start={Config.ColormetricStart}, " +
+                $"Stop={Config.ColormetricStop}");
 
+            sb.Clear();
             double radInt = 0.0;
-            CAS4DLL.casGetRadInt(deviceId, out radInt, sb, sb.Capacity);
+            //CAS4DLL.casGetRadInt(deviceId, out radInt, sb, sb.Capacity);
+            //CheckCASErrorAndThrow();
+            //result.RadInt = radInt;
+            //result.RadIntUnit = sb.ToString();
+
+            //WATT Test
+            //result.RadInt = GetWatt(deviceId);
+            //result.RadIntUnit = sb.ToString();
+            //Log.Write("CAS", "result.RadInt", $"GetWatt: {result.RadInt}");
+
+
+            // 특정 대역의 WATT 구하기.
+            // WD값으로 산출 or 대역대 설정하는 파라미터 필요. 
+            //result.RadInt = GetWattRadInt(deviceId, 400, 500);
+            //Log.Write("CAS", "result.RadInt", $"400~500: {result.RadInt}");
+
+            //전체 영역 WATT
+            result.RadInt = GetWattRadInt(deviceId);
             CheckCASErrorAndThrow();
-            result.RadInt = radInt;
             result.RadIntUnit = sb.ToString();
+            Log.Write("CAS", "RadInt", $"Value={result.RadInt}, " +
+                $"Unit={result.RadIntUnit}, " +
+                $"Start={Config.ColormetricStart}, " +
+                $"Stop={Config.ColormetricStop}");
+
 
             // color coordinates
             double CIEX = 0.0, CIEY = 0.0, CIEZ = 0.0, CIEU = 0.0, CIEV1976 = 0.0, CIEV1960 = 0.0;
@@ -851,8 +902,17 @@ namespace QMC.Common.Spectrometer
             GetDeviceParameter(CAS4DLL.dpidDeadPixels, ref value);
             deadPixels = (int)Math.Round(value);
 
+            //GetDeviceParameter(CAS4DLL.dpidADCBits, ref value);
+            // Maximum ADC value
+            double dADC = value;
+            dADC = (int)CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidMaxADCValue);
+            
             spectrum.WaveLength = new double[visiblePixels];
             spectrum.Intensity = new double[visiblePixels];
+
+            // 최소/최대 초기값을 올바르게 설정
+            spectrum.MinimumIntensity = double.PositiveInfinity;
+            spectrum.MaximumIntensity = double.NegativeInfinity;
 
             for (int i = 0; i < spectrum.WaveLength.Length; i++)
             {
@@ -862,6 +922,8 @@ namespace QMC.Common.Spectrometer
 
                 spectrum.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
             }
+
+            spectrum.ADC = dADC;
         }
         #endregion
 
@@ -985,8 +1047,10 @@ namespace QMC.Common.Spectrometer
                 SetMeasurementParameter(CAS4DLL.mpidIntegrationTime, Config.IntegrationTime);
                 SetMeasurementParameter(CAS4DLL.mpidAverages, Config.Averages);
                 SetMeasurementParameter(CAS4DLL.mpidDensityFilter, Config.DensityFilter);
+
                 SetMeasurementParameter(CAS4DLL.mpidColormetricStart, Config.ColormetricStart);
                 SetMeasurementParameter(CAS4DLL.mpidColormetricStop, Config.ColormetricStop);
+
                 SetMeasurementParameter(CAS4DLL.mpidObserver, CAS4DLL.cieObserver1931);
                 SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                 return true;
@@ -1145,6 +1209,60 @@ namespace QMC.Common.Spectrometer
             return 0;
         }
         #endregion
+
+        double GetWatt(int device)
+        {
+            double watt = 0.0;
+            double dsum = 0.0;
+            for ( int j = 0; j < 10; j++)
+            {
+                int dead = (int)CAS4DLL.casGetDeviceParameter(device, CAS4DLL.dpidDeadPixels);
+                int visible = (int)CAS4DLL.casGetDeviceParameter(device, CAS4DLL.dpidVisiblePixels);
+                watt = 0.0;
+                for (int i = 0; i < visible - 1; i++)
+                {
+                    int idx1 = dead + i;
+                    int idx2 = dead + i + 1;
+
+                    double lambda1 = CAS4DLL.casGetXArray(device, idx1);
+                    double lambda2 = CAS4DLL.casGetXArray(device, idx2);
+                    double delta = lambda2 - lambda1; // 거의 1 nm
+
+                    if (lambda1 < 420 || lambda1 > 490)
+                        continue;
+
+                    double power = CAS4DLL.casGetData(device, idx1); // "calibration unit / nm"
+
+                    watt += power * delta;
+                    //Log.Write("CAS", "GetWatt", $"GetWatt calcul: {watt}");
+                }
+
+                dsum += watt;
+            }
+            watt = dsum / 10;
+
+            return watt;
+        }
+
+
+        public static double GetWattRadInt(int device)
+        {
+            // 전체 스펙트럼 사용 (0이면 full range)
+            //CAS4DLL.casSetMeasurementParameter(device, CAS4DLL.mpidColormetricStart, 0);
+            //CAS4DLL.casSetMeasurementParameter(device, CAS4DLL.mpidColormetricStop, 0);
+
+            //CAS4DLL.casSetMeasurementParameter(device, CAS4DLL.mpidColormetricStart, 400);
+            //CAS4DLL.casSetMeasurementParameter(device, CAS4DLL.mpidColormetricStop, 500);
+
+            //// 현재 스펙트럼으로 모든 컬러/라디오메트릭 값 계산
+            //CAS4DLL.casColorMetric(device);
+
+            var unitBuf = new StringBuilder(255);
+            double radInt;
+            CAS4DLL.casGetRadInt(device, out radInt, unitBuf, unitBuf.Capacity);
+            Log.Write("CAS", "RadIntUnit", unitBuf.ToString());
+            return radInt;
+        }
 
         #endregion
     }

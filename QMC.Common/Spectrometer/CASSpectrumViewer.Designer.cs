@@ -34,6 +34,7 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.lbMaxIntensity = new System.Windows.Forms.Label();
+            this.lbADC = new System.Windows.Forms.Label();
             this.gbSpectrum.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
@@ -45,9 +46,10 @@
             this.gbSpectrum.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbSpectrum.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbSpectrum.Location = new System.Drawing.Point(0, 0);
+            this.gbSpectrum.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.gbSpectrum.Name = "gbSpectrum";
-            this.gbSpectrum.Padding = new System.Windows.Forms.Padding(10);
-            this.gbSpectrum.Size = new System.Drawing.Size(400, 250);
+            this.gbSpectrum.Padding = new System.Windows.Forms.Padding(14, 15, 14, 15);
+            this.gbSpectrum.Size = new System.Drawing.Size(571, 375);
             this.gbSpectrum.TabIndex = 1;
             this.gbSpectrum.TabStop = false;
             this.gbSpectrum.Text = "Spectrum";
@@ -56,15 +58,18 @@
             // 
             this.tableLayoutPanel1.ColumnCount = 1;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Controls.Add(this.chart, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.lbADC, 0, 1);
             this.tableLayoutPanel1.Controls.Add(this.lbMaxIntensity, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.chart, 0, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(10, 28);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(14, 41);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(380, 212);
+            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10.34483F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 12.85266F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 76.80251F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(543, 319);
             this.tableLayoutPanel1.TabIndex = 1;
             // 
             // chart
@@ -73,8 +78,9 @@
             chartArea1.AxisY.LabelStyle.Enabled = false;
             chartArea1.Name = "ChartArea1";
             this.chart.ChartAreas.Add(chartArea1);
-            this.chart.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chart.Location = new System.Drawing.Point(3, 23);
+            this.chart.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.chart.Location = new System.Drawing.Point(4, 84);
+            this.chart.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chart.Name = "chart";
             series1.BorderWidth = 2;
             series1.ChartArea = "ChartArea1";
@@ -82,25 +88,39 @@
             series1.Color = System.Drawing.Color.Blue;
             series1.Name = "Spectrum";
             this.chart.Series.Add(series1);
-            this.chart.Size = new System.Drawing.Size(374, 186);
+            this.chart.Size = new System.Drawing.Size(535, 231);
             this.chart.TabIndex = 1;
             // 
             // lbMaxIntensity
             // 
-            this.lbMaxIntensity.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbMaxIntensity.Location = new System.Drawing.Point(3, 0);
+            this.lbMaxIntensity.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbMaxIntensity.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbMaxIntensity.Location = new System.Drawing.Point(4, 0);
+            this.lbMaxIntensity.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lbMaxIntensity.Name = "lbMaxIntensity";
-            this.lbMaxIntensity.Size = new System.Drawing.Size(374, 20);
+            this.lbMaxIntensity.Size = new System.Drawing.Size(535, 33);
             this.lbMaxIntensity.TabIndex = 2;
             this.lbMaxIntensity.Text = "Maximum Intensity = 0";
             // 
+            // lbADC
+            // 
+            this.lbADC.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lbADC.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbADC.Location = new System.Drawing.Point(4, 44);
+            this.lbADC.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lbADC.Name = "lbADC";
+            this.lbADC.Size = new System.Drawing.Size(535, 30);
+            this.lbADC.TabIndex = 3;
+            this.lbADC.Text = "MAX Count(ADC) = 0";
+            // 
             // CASSpectrumViewer
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.gbSpectrum);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "CASSpectrumViewer";
-            this.Size = new System.Drawing.Size(400, 250);
+            this.Size = new System.Drawing.Size(571, 375);
             this.gbSpectrum.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
@@ -113,5 +133,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart;
         private System.Windows.Forms.Label lbMaxIntensity;
+        private System.Windows.Forms.Label lbADC;
     }
 }

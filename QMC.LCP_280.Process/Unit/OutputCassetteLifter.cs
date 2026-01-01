@@ -8,6 +8,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -187,7 +188,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    barcode = "NotUseBarcode";
+                    barcode = "UnUse";
                     result = 0;
                 }
 
@@ -240,13 +241,6 @@ namespace QMC.LCP_280.Process.Unit
                 ax.MoveAbs(target, IsAuto, isFine);
                 //ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
         #endregion
 
         #region Teaching Helpers
@@ -492,8 +486,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
-
             base.OnStop();
             return ret;
         }
@@ -677,16 +669,26 @@ namespace QMC.LCP_280.Process.Unit
                     double dDelta = Math.Abs(dPos - dStartPos);
                     int slot = (int)(Math.Abs(dDelta) / base.Config.SlotPitch);
                     double dRange = dDelta - slot * base.Config.SlotPitch;
-                    double dSpec = 0.2;
+
+                    // 시뮬/드라이런에서는 필터 우회 → 항상 인정
                     bool bIsIn = false;
-                    if (dRange > base.Config.SlotPitch * dSpec && dRange < base.Config.SlotPitch * (1 - dSpec))
+                    if (Config.IsSimulation || Config.IsDryRun)
                     {
                         bIsIn = true;
                     }
-                    Log.Write(UnitName, "ScanWafer", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString()
+                    else
+                    {
+                        // 실기는 기존 중앙 60% 윈도우 유지
+                        double dSpec = 0.2;
+                        bIsIn = dRange > base.Config.SlotPitch * dSpec &&
+                                dRange < base.Config.SlotPitch * (1 - dSpec);
+                    }
+
+                    Log.Write(UnitName, "ScanBin", "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString()
                         + " delta = " + dDelta.ToString()
                         + " dRange = " + dRange.ToString()
                         );
+
                     if (slot >= 0 && slot < material.Slots.Count && bIsIn)
                     {
                         MaterialWafer Bin = material.Slots[slot];
@@ -1168,5 +1170,139 @@ namespace QMC.LCP_280.Process.Unit
         {
             OnUpdateUICassette(GetMaterialCassette(), async);
         }
+
+        #region Barcode Events
+        public event EventHandler<BarcodeDataEventArgs> BarcodeReceived;
+
+        private readonly object _barcodeLock = new object();
+        private string _latestBarcode;
+        private DateTime _latestBarcodeTime;
+        private readonly ConcurrentQueue<string> _barcodeQueue = new ConcurrentQueue<string>();
+
+        protected virtual void OnBarcodeReceived(BarcodeDataEventArgs e)
+        {
+            var handler = BarcodeReceived;
+            if (handler == null) return;
+            try { handler(this, e); }
+            catch (Exception ex) { Log.Write(UnitName, $"[OnBarcodeReceived] {ex.Message}"); }
+        }
+
+        // 최신 바코드(유효시간) 조회
+        public bool TryGetLatestBarcode(out string barcode, int maxAgeMs = 5000)
+        {
+            lock (_barcodeLock)
+            {
+                if (!string.IsNullOrEmpty(_latestBarcode))
+                {
+                    if (maxAgeMs <= 0 || (DateTime.Now - _latestBarcodeTime).TotalMilliseconds <= maxAgeMs)
+                    {
+                        barcode = _latestBarcode;
+                        return true;
+                    }
+                }
+            }
+            barcode = string.Empty;
+            return false;
+        }
+
+        // 트리거 모드 지원 유틸
+        public bool IsTriggerModeConfigured()
+        {
+            try
+            {
+                return BarcoderReader != null && BarcoderReader.IsTriggerModeConfigured();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        public int EnsureTriggerOn()
+        {
+            try
+            {
+                if (BarcoderReader == null) return -1;
+                return BarcoderReader.EnsureTriggerOn();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        public int EnsureTriggerOff()
+        {
+            try
+            {
+                if (BarcoderReader == null) return 0;
+                return BarcoderReader.EnsureTriggerOff();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+        #endregion
+
+        #region Barcode events/buffer for trigger mode
+        public void ClearBarcodeBuffer()
+        {
+            try
+            {
+                BarcoderReader?.ClearBarcodeBuffer();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ClearBarcodeBuffer", ex.Message);
+            }
+
+            //while (_barcodeQueue.TryDequeue(out _)) { }
+        }
+
+        public int WaitBarcode(out string barcode, int timeoutMs = 1000, int pollMs = 50)
+        {
+            barcode = string.Empty;
+            try
+            {
+                if (BarcoderReader == null) return -1;
+                return BarcoderReader.WaitBarcode(out barcode, timeoutMs, pollMs);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "WaitBarcode", ex.Message);
+                return -1;
+            }
+        }
+
+        private void BarcoderReader_BarcodeDataReceived(object sender, BarcodeDataEventArgs e)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    Log.Write(UnitName, "Barcoder", $"Received: {e.Data}");
+                    OnBarcodeReceived(e);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"[BarcodeDataReceived] {ex.Message}");
+            }
+        }
+
+        private void BarcoderReader_ErrorOccurred(object sender, string error)
+        {
+            Log.Write(UnitName, "Barcoder", $"Error: {error}");
+        }
+
+        private void BarcoderReader_StatusChanged(object sender, string status)
+        {
+            Log.Write(UnitName, "Barcoder", status);
+        }
+        #endregion
     }
 }

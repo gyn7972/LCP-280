@@ -167,7 +167,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Unit
         Rotary Rotary { get; set; }
         OutputStage OutputStage { get; set; }
-
+        OutputFeeder OutputFeeder { get; set; }
         #endregion
 
         #region Axis Helpers
@@ -311,6 +311,7 @@ namespace QMC.LCP_280.Process.Unit
             base.OnBindUnit();
             Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
             OutputStage = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage;
+            OutputFeeder = Equipment.Instance.GetUnit(UnitKeys.OutputFeeder) as OutputFeeder;
         }
 
         public int GetUnloaderIndexNo()
@@ -651,7 +652,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // Teaching 이름 확인
             string tpName;
-            if (!TryGetPickupTeachingName(nIndex, out tpName))
+            if (TryGetPickupTeachingName(nIndex, out tpName) == false)
             {
                 return -1;
             }
@@ -721,7 +722,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // Teaching 이름 확인
             string tpName;
-            if (!TryGetPickupTeachingName(nIndex, out tpName))
+            if (TryGetPickupTeachingName(nIndex, out tpName) == false)
             {
                 return -1;
             }
@@ -774,7 +775,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             // Teaching 이름 확인
             string tpName;
-            if (!TryGetPickupTeachingName(nIndex, out tpName))
+            if (TryGetPickupTeachingName(nIndex, out tpName) == false)
             {
                 return -1;
             }
@@ -1479,65 +1480,69 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindIoDomains()
         {
-            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+            var eq = Equipment.Instance; 
+            var unit = eq?.UnitIO; 
+            
+            if (unit == null) 
+                return;
 
             // Vacuum 별칭으로 조회만
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac1", out _vacuum[0]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac1", out _vacuum[0]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVac1");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac2", out _vacuum[1]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac2", out _vacuum[1]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVac2");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac3", out _vacuum[2]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac3", out _vacuum[2]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVac3");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac4", out _vacuum[3]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVac4", out _vacuum[3]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVac4");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow1", out _blow[0]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow1", out _blow[0]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferBlow1");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow2", out _blow[1]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow2", out _blow[1]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferBlow2");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow3", out _blow[2]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow3", out _blow[2]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferBlow3");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow4", out _blow[3]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferBlow4", out _blow[3]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferBlow4");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent1", out _vent[0]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent1", out _vent[0]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVent1");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent2", out _vent[1]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent2", out _vent[1]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVent2");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent3", out _vent[2]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent3", out _vent[2]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVent3");
             }
 
-            if (!IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent4", out _vent[3]))
+            if (IoAutoBindings.Vacuums.TryGetValue("OutputDieTransferVent4", out _vent[3]) == false)
             {
                 Log.Write(UnitName, "BindIoDomains", "Vacuums not found: OutputDieTransferVent4");
             }
@@ -1695,7 +1700,6 @@ namespace QMC.LCP_280.Process.Unit
             _pickUpdoneEvent.Reset();
 
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -1705,10 +1709,11 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRtn = 0;
-
+                bool noDieOutputStaga = false;
                 MaterialWafer wafer = OutputStage.GetMaterialWafer();
                 if (wafer == null || wafer.Presence != Material.MaterialPresence.Exist)
                 {
+                    //noDieOutputStaga = OutputStage.HasNextDie();
                     return 0;
                 }
 
@@ -1734,6 +1739,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 int nRet = 0;
                 bool bRet = false;
+                bool noDieOutputStaga = false;
                 try
                 {
                     if (Rotary != null && this.Rotary.IsIndexMoving())
@@ -1744,12 +1750,13 @@ namespace QMC.LCP_280.Process.Unit
                     MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
                     if (DieIndex == null || DieIndex.Presence != Material.MaterialPresence.Exist)
                     {
+                        noDieOutputStaga = OutputStage.HasNextDie();
                         return 0;
                     }
 
                     bool vac = false;
                     int nIndex = GetUnloaderIndexNo();
-                    int nArmindex = GetPlaceArmIndex();
+                    int nArmIndex = GetPlaceArmIndex();
 
                     Log.Write(UnitName, "OnRunWork", "OnRunWork Start");
                     var DeiOutTr = this.GetMaterial() as MaterialDie;
@@ -1861,15 +1868,16 @@ namespace QMC.LCP_280.Process.Unit
                         //버큠 형성이 안되었으면 안가져다 놓으면 된다. 
                         //if (this.IsVacuumOK(nArmindex))
                         //int vac = WaitVacuumStateOrAlarm(nArmindex, true, 500, 5);
-                        vac = this.IsVacuumOK(nArmindex);
+                        vac = this.IsVacuumOK(nArmIndex);
                         if (vac == true)
                         {
+                            Rotary.MoveMaterialToOutputDieTransfer();
                             DieIndex.State = DieProcessState.Picked;
                             DieIndex.ProcessSatate = Material.MaterialProcessSatate.Processing;
                             DieIndex.Presence = Material.MaterialPresence.Exist;
+
                             
-                            Rotary.MoveMaterialToOutputDieTransfer();
-                            if(taskOutStageMoveToNextDIe != null)
+                            if (taskOutStageMoveToNextDIe != null)
                             {
                                 taskOutStageMoveToNextDIe.Wait();
                             }
@@ -1883,6 +1891,7 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             // 픽 실패 시 현재 예약 슬롯을 Rejected 처리해 다음 슬롯으로 진행할 수 있게 함
                             OutputStage?.MarkCurrentReservedMissing();
+                            //Rotary.MoveMaterialToOutputDieTransfer();
                             DieIndex.State = DieProcessState.Rejected;
                             if (taskOutStageMoveToNextDIe != null)
                             {
@@ -1890,8 +1899,33 @@ namespace QMC.LCP_280.Process.Unit
                             }
                             SetPickupDoneEvent();
 
+                            //여기서 Ready? 위치로 가서 제품 버려야 겠다.
+                            //제품을 가지고 있다고 착각한다. 
+                            nRet = MovePositionReady();
+                            if (nRet != 0)
+                            {
+                                AxisOutputPickZ?.EmgStop();
+                                AxisOutputToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+                                Log.Write(UnitName, "[OnRunWork] MovePositionReady failed");
+                                return -1;
+                            }
+
+                            this.SetVacuum(nArmIndex, false);
+                            this.SetBlow(nArmIndex, true);
+
+                            Thread.Sleep(100);
+
+                            this.SetBlow(nArmIndex, false);
+                            this.SetVacuum(nArmIndex, true);
+
                             _lastPickSucceeded = true;
                             Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} marked Presence=Exist");
+
+                            //정보를 버리고 ==
+                            this.SetMaterial(null);
+                            State = ProcessState.None;
+
                             return 0;
                         }
                     }
@@ -1899,7 +1933,7 @@ namespace QMC.LCP_280.Process.Unit
                     //if (MaterialDie != null
                     //    && MaterialDie.State == DieProcessState.Picked
                     //    && MaterialDie.Presence == Material.MaterialPresence.Exist)
-                    vac = this.IsVacuumOK(nArmindex);
+                    vac = this.IsVacuumOK(nArmIndex);
                     if (DeiOutTr != null && vac)
                     {
                         Log.Write(UnitName, "OnRunWork", "Complete ->");
@@ -2095,6 +2129,11 @@ namespace QMC.LCP_280.Process.Unit
             int nArmindex = 0;
             nIndex = GetUnloaderIndexNo();
             nArmindex = GetPlaceArmIndex();
+            double tPos = 0, zPos = 0;
+            try { tPos = AxisOutputToolT?.GetPosition() ?? 0; } catch { }
+            try { zPos = AxisOutputPickZ?.GetPosition() ?? 0; } catch { }
+            Log.Write(UnitName, $"[PickDown] idx={nIndex}, arm={nArmindex}, ToolT={tPos:F3}, PickZ={zPos:F3}");
+
             this.SetVacuum(nArmindex, true);
             // 1) ToolT 위치 확인.
             if (IsPositionPickUpToolT() == false)
@@ -2123,12 +2162,6 @@ namespace QMC.LCP_280.Process.Unit
 
             Rotary.SetVacuum(nIndex, false);
             Thread.Sleep(1);
-            {
-                //Rotary.SetVent(nIndex, true);
-                //Thread.Sleep(1);
-                //Rotary.SetVent(nIndex, false);
-                //Thread.Sleep(1);
-            }
             Rotary.SetBlow(nIndex, true);
             Thread.Sleep(50);   //대기 <- 설정 파라미터로 필요? //100 > 50
 
@@ -2143,10 +2176,9 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = ChipPickUp;
             }
 
-            int nArmindex = 0;
-            int nIndex = 0;
-            nArmindex = GetPlaceArmIndex();
-            nIndex = GetUnloaderIndexNo();
+            int nArmindex = GetPlaceArmIndex();
+            int nIndex = GetUnloaderIndexNo();
+            Log.Write(UnitName, $"[PickUp] idx={nIndex}, arm={nArmindex}");
 
             Rotary.SetVacuum(nIndex, false);
             Thread.Sleep(1);
@@ -2195,6 +2227,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[RotaryVacuumOff] Vacuum Timeout");
                 return -1;
             }
+
+            Thread.Sleep(50);
 
             // OutputDieTransferVacuumOn 확인.
             // 여기서도 버큠 형성이 안됨. 우석 막자.
@@ -2261,7 +2295,7 @@ namespace QMC.LCP_280.Process.Unit
                 SetVent(armIndex, false);
 
                 SetBlow(armIndex, true);
-                Thread.Sleep(50);
+                Thread.Sleep(100);
 
                 nRet = MovePositionSafetyPlaceZ(bFindSpeed);
                 //nRet = MovePositionSafetyZ(bFindSpeed);
@@ -2448,6 +2482,5 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
         }
-
     }
 }
