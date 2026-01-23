@@ -1,0 +1,621 @@
+﻿using QMC.Common;
+using QMC.Common.UI;
+using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
+using System;
+using System.Drawing;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace QMC.LCP_280.Process.Unit.FormWork
+{
+    [FormOrder(4)]
+    /// <summary>
+    /// WaferBin Working Form
+    /// - TeachingPositionControl: OutputFeeder, OutputCassetteLifter
+    /// - DIO 제어:
+    ///    OutputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
+    ///    OutputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
+    /// </summary>
+    public partial class Bin_Menual : Form
+    {
+        private const string WORK_NAME = "WaferBin";
+        private Equipment Equipment => Equipment.Instance;
+
+        private OutputStage OutputStage { get; set; }
+        private OutputFeeder OutputFeeder { get; set; }
+        private OutputCassetteLifter OutputCassetteLifter { get; set; }
+
+        private bool _initialized;          // 실제 UI 바인딩 완료 여부 (텍스트/핸들)
+        private bool _preloadRequested;     // PreloadUI 호출 여부(1회)
+        private bool _deferredInitDone;     // 무거운 바인딩 지연 수행 여부
+
+        private DateTime _lastMarkDrawUtc = DateTime.MinValue;
+        private TimeSpan _markDrawMinInterval = TimeSpan.FromMilliseconds(120); // 과도한 갱신 억제
+
+
+        // T-보정 다이얼로그 인스턴스 유지 (모달리스)
+        private TCorrectionDialog _tCorrectionDlg;
+        private PatternMatchingRunner _patternRunner; // 프로젝트에서 Runner를 주입할 경우 사용
+
+
+        public Bin_Menual() : this(
+            TryGetUnit<OutputStage>("OutputStage"),
+            TryGetUnit<OutputFeeder>("OutputFeeder"),
+            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
+        {
+        }
+
+        public Bin_Menual(OutputStage outputStage, OutputFeeder ringTransfer, OutputCassetteLifter cassetteLifter)
+        {
+            InitializeComponent();
+            OutputStage = outputStage;
+            OutputFeeder = ringTransfer;
+            OutputCassetteLifter = cassetteLifter;
+
+            Load += WaferBin_Working_Load;
+            FormClosing += WaferBin_Working_FormClosing;
+
+            _OutputWaferCameraviewer.LightControlRequested += LightControlRequested;
+
+            waferMapView_OutputWafer.SetMaterialCassette(OutputCassetteLifter.GetMaterialCassette());
+        }
+
+        public void PreloadUI()
+        {
+            if (IsDisposed || Disposing) return;
+            if (_preloadRequested) return;
+            _preloadRequested = true;
+            EnsureInitialized();
+            var handle = Handle; // 강제 핸들 생성
+        }
+
+        private void WaferBin_Working_Load(object sender, EventArgs e)
+        {
+            EnsureInitialized();
+        }
+
+        private static T TryGetUnit<T>(string unitName) where T : class
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
+                    return u as T;
+            }
+            catch { }
+            return null;
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_initialized) return;
+            _initialized = true;
+            try
+            {
+                Text = $"{WORK_NAME} Working";
+                // 무거운 바인딩은 지연 수행
+                BeginInvoke(new Action(StartDeferredInit));
+            }
+            catch (Exception ex)
+            {
+                try { Controls.Add(new Label { Dock = DockStyle.Fill, Text = $"Init 실패: {ex.Message}", ForeColor = System.Drawing.Color.Red, TextAlign = System.Drawing.ContentAlignment.MiddleCenter }); } catch { }
+            }
+        }
+
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            // 아주 짧은 지연으로 첫 Paint 후 실행되도록 유도
+            await Task.Delay(30);
+            if (IsDisposed || Disposing) return;
+            try
+            {
+                BindTeachingPositions();
+                BindDioControls();
+                BindCamera();
+
+                InitSequences();
+                SubscribeInputStageMarkEvents();
+            }
+            catch { }
+        }
+
+        #region Teaching
+        private void BindTeachingPositions()
+        {
+            try
+            {
+                if (teachingPositionControl == null) return;
+                teachingPositionControl.ClearUnits();
+
+                if (OutputCassetteLifter != null)
+                {
+                    teachingPositionControl.RegisterUnit(
+                        "OutputCassetteLifter",
+                        OutputCassetteLifter,
+                        () => OutputCassetteLifter.Config?.TeachingPositions,
+                        (name, vel) => OutputCassetteLifter.MoveToTeachingPosition(name, false),
+                        tp => OutputCassetteLifter.Config?.SetTeachingPosition(tp),
+                        autoReload: false);
+                }
+
+                if (OutputFeeder != null)
+                {
+                    teachingPositionControl.RegisterUnit(
+                        "OutputFeeder",
+                        OutputFeeder,
+                        () => OutputFeeder.Config?.TeachingPositions,
+                        (name, vel) => OutputFeeder.MoveToTeachingPosition(name, false),
+                        tp => OutputFeeder.Config?.SetTeachingPosition(tp),
+                        autoReload: false);
+                }
+
+                if (OutputStage != null)
+                {
+                    teachingPositionControl.RegisterUnit(
+                        "OutputStage",
+                        OutputStage,
+                        () => OutputStage.Config?.TeachingPositions,
+                        (name, vel) => OutputStage.MoveToTeachingPosition(name, false),
+                        tp => OutputStage.Config?.SetTeachingPosition(tp),
+                        autoReload: false);
+                }
+
+                teachingPositionControl.SetUnitAbbreviation("OutputCassetteLifter", "Cassette", reload: false);
+                teachingPositionControl.SetUnitAbbreviation("OutputFeeder", "Feeder", reload: false);
+                teachingPositionControl.SetUnitAbbreviation("OutputStage", "Stage", reload: false);
+
+                teachingPositionControl.SetSaveCancelVisible(false, false);
+                teachingPositionControl.RefreshData();
+            }
+            catch { }
+        }
+        #endregion
+
+        #region DIO
+        private void BindDioControls()
+        {
+            try
+            {
+                if (dioControl == null) return;
+                dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
+
+                if (OutputCassetteLifter != null)
+                {
+                    dioControl.BindDIOInput(() => false, "---- OutputCassetteLifter ----", "Cassette");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent0(), "Cassette Present 0", "Cassette_Cass0");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent1(), "Cassette Present 1", "Cassette_Cass1");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsAnyCassettePresent(), "Cassette Any", "Cassette_CassAny");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsBinProtrusionDetectionSensor(), "Ring Jut", "Cassette_RingJut");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.MappingSensor(), "Mapping Sensor", "Cassette_Mapping");
+                }
+
+                if (OutputFeeder != null)
+                {
+                    dioControl.BindDIOInput(() => false, "---- OutputFeeder ----", "Feeder");
+                    StrongBindOutputFeeder();
+                }
+
+                dioControl.BindDIOInput(() => false, "---- OutputStage ----", "Stage");
+                StrongBindOutputStage();
+
+                dioControl.RebuildLists();
+            }
+            catch { }
+        }
+
+        private void StrongBindOutputFeeder()
+        {
+            if (OutputFeeder == null || dioControl == null) return;
+            try
+            {
+                // Sensors
+                dioControl.BindDIOInput(() => OutputFeeder.IsFeederUp(), "Feeder UP Sns", "Feeder_Up");
+                dioControl.BindDIOInput(() => OutputFeeder.IsFeederDown(), "Feeder DOWN Sns", "Feeder_Down");
+                dioControl.BindDIOInput(() => OutputFeeder.IsUnClamped(), "Feeder UNCLAMP Sns", "Feeder_Unclamp");
+                dioControl.BindDIOInput(() => OutputFeeder.IsRingPresent(), "Feeder RING Sns", "Feeder_Ring");
+                dioControl.BindDIOInput(() => OutputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "Feeder_Overload");
+
+                // Feeder Up/Down (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Up/Down",
+                    extend: () => OutputFeeder.SetLift(true),
+                    retract: () => OutputFeeder.SetLift(false),
+                    isExtended: () => OutputFeeder.IsFeederUpValveOn(),
+                    isRetracted: () => OutputFeeder.IsFeederDownValveOn(),
+                    displayKey: "FeederUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
+
+                // Feeder Clamp/Unclamp (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Clamp/Unclamp",
+                    extend: () => OutputFeeder.SetClamp(true),
+                    retract: () => OutputFeeder.SetClamp(false), 
+                    isExtended: () => OutputFeeder.IsFeederClampValveOn(),
+                    isRetracted: () => OutputFeeder.IsFeederUnclampValveOn(),
+                    displayKey: "FeederClamp",
+                    showSensors: false,
+                    extendedName: "CLAMP",
+                    retractedName: "UNCLAMP"
+                );
+            }
+            catch { }
+        }
+
+        private void StrongBindOutputStage()
+        {
+            if (OutputStage == null || dioControl == null) return;
+            try
+            {
+                // ===== Sensors =====
+                dioControl.BindDIOInput(() => OutputStage.IsVacuumOn(), "Vacuum OK(Sns)", "StageVacOk");
+                dioControl.BindDIOInput(() => OutputStage.IsPlateUp(), "Plate UP Sns", "StagePlateUp");
+                dioControl.BindDIOInput(() => OutputStage.IsPlateDown(), "Plate DOWN Sns", "StagePlateDn");
+                dioControl.BindDIOInput(() => OutputStage.IsClampLiftDown(), "ClampLift DOWN Sns", "StageLiftDn");
+                dioControl.BindDIOInput(() => OutputStage.IsClampFwd(), "Clamp FWD Sns", "StageClampFwd");
+                dioControl.BindDIOInput(() => OutputStage.Ring0(), "Ring Sns 0", "StageRing0");
+                dioControl.BindDIOInput(() => OutputStage.Ring1(), "Ring Sns 1", "StageRing1");
+                dioControl.BindDIOInput(() => OutputStage.IsRingPresent(), "Ring Any", "StageRingAny");
+
+                // Vacuum: 도메인/상태 함수로 표준화 (출력은 입력과 무관하게 동작)
+                dioControl.BindVacuum(
+                    label: "Vacuum",
+                    on: () => OutputStage.SetVacuum(true),
+                    off: () => OutputStage.SetVacuum(false),
+                    isOk: () => OutputStage.IsVacuumOn(),
+                    isOnState: () => OutputStage.IsVacuumValveOn(),
+                    displayKey: "StageVacValve",
+                    showOkSensor: false // 위에서 OK 센서 이미 표시
+                );
+
+                // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
+                dioControl.BindCylinder(
+                    label: "PlateUpDn",
+                    extend: () => OutputStage.SetClampPlate(true),
+                    retract: () => OutputStage.SetClampPlate(false),
+                    isExtended: () => OutputStage.IsPlateUp(),
+                    isRetracted: () => OutputStage.IsPlateDown(),
+                    displayKey: "StagePlateUpDn",
+                    showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
+                );
+
+                // ClampLift Up/Down
+                dioControl.BindCylinder(
+                    label: "ClampLift",
+                    extend: () => OutputStage.SetClampLift(true),
+                    retract: () => OutputStage.SetClampLift(false),
+                    // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
+                    isExtended: () => OutputStage.IsClampLiftUp(),
+                    isRetracted: () => OutputStage.IsClampLiftDown(),
+                    displayKey: "StageClampUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
+
+                // Clamp FWD/BWD
+                dioControl.BindCylinder(
+                    label: "ClampFB",
+                    extend: () => OutputStage.SetClampFB(true),
+                    retract: () => OutputStage.SetClampFB(false),
+                    // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
+                    isExtended: () => OutputStage.IsClampFwd(),
+                    isRetracted: null,
+                    displayKey: "StageClampFB",
+                    showSensors: false,
+                    extendedName: "FWD",
+                    retractedName: "BWD"
+                );
+            }
+            catch { }
+        } 
+        #endregion
+
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                if (_OutputWaferCameraviewer != null && OutputStage?.OutStageCamera != null)
+                {
+                    if (_OutputWaferCameraviewer.Camera != OutputStage.OutStageCamera)
+                        _OutputWaferCameraviewer.Camera = OutputStage.OutStageCamera;
+                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
+                    try { _OutputWaferCameraviewer.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Sequences (Placeholder)
+        private void InitSequences()
+        {
+            try
+            {
+                // 시퀀스 초기화
+                OutputCassetteLifter = TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter");
+                OutputFeeder = TryGetUnit<OutputFeeder>("OutputFeeder");
+                OutputStage = TryGetUnit<OutputStage>("OutputStage");
+
+                if (OutputCassetteLifter != null)
+                {
+                    manualSequenceControlOutputCassette.ParentUnit = OutputCassetteLifter;
+                }
+
+                if (OutputFeeder != null)
+                {
+                    //manualSequenceControlInputWafer.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlOutputFeeder.ParentUnit = OutputFeeder;
+                }
+
+                if (OutputStage != null)
+                {
+                    manualSequenceControlOutputBinStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+        #endregion
+
+        private void WaferBin_Working_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try
+            {
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
+        }
+
+        // 마크 이벤트 구독 / 해제 메서드 추가
+        private void SubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (OutputStage != null)
+                {
+                    // 중복 방지 위해 먼저 제거
+                    OutputStage.MarksFound -= OutputStage_MarksFound;
+                    OutputStage.MarksFound += OutputStage_MarksFound;
+                }
+            }
+            catch { }
+        }
+
+        private void UnsubscribeInputStageMarkEvents()
+        {
+            try
+            {
+                if (OutputStage != null)
+                    OutputStage.MarksFound -= OutputStage_MarksFound;
+            }
+            catch { }
+        }
+
+        // 이벤트 핸들러 구현
+        private void OutputStage_MarksFound(object sender, PatternMarksFoundEventArgs e)
+        {
+            // 스로틀
+            var now = DateTime.UtcNow;
+            if (now - _lastMarkDrawUtc < _markDrawMinInterval)
+                return;
+            _lastMarkDrawUtc = now;
+
+            if (_OutputWaferCameraviewer == null || _OutputWaferCameraviewer.IsDisposed)
+                return;
+
+            // Hub로만 오버레이 적용
+            Action apply = () =>
+            {
+                VisionRunnerHub.ApplyMarksFoundOverlays(
+                    _OutputWaferCameraviewer,
+                    e,
+                    new VisionRunnerHub.MarksOverlayOptions
+                    {
+                        UseXAxisRoi = true,                 // InputWafer는 X축 ROI
+                        ShowTextInfo = true,
+                        TextLocation = new Point(10, 50),   // 위쪽 잘림 방지
+
+                        // 가능하면 Recipe ROI 제공(없으면 Hub가 CenterROI fallback)
+                        RecipeInspectRoiProvider = () =>
+                        {
+                            try
+                            {
+                                if (OutputStage?.PmRunner != null)
+                                {
+                                    var s = OutputStage.PmRunner._Roi.InspectStart;
+                                    var ed = OutputStage.PmRunner._Roi.InspectEnd;
+                                    if (!(s.IsEmpty && ed.IsEmpty))
+                                        return (s, ed);
+                                }
+                            }
+                            catch { }
+                            return null;
+                        }
+                    });
+            };
+
+            if (_OutputWaferCameraviewer.InvokeRequired) _OutputWaferCameraviewer.BeginInvoke(apply);
+            else apply();
+        }
+
+        private void btnMapping_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (OutputCassetteLifter == null)
+                {
+                    MessageBox.Show("InputCassetteLifter 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Wafer 감지 수행.
+                var v = OutputCassetteLifter.ScanBinAsync();
+                ProgressForm progressForm = new ProgressForm("Cassette Mapping", "Scanning......", v);
+                progressForm.ShowDialog(this);
+
+                int nRet = v.Result;
+
+                if (nRet != 0)
+                {
+                    Log.Write("InputWafer_Working", "", $"Wafer 감지 실패. 오류 코드: {nRet}", "오류");
+                    return;
+                }
+                // scan 후 재설정.
+                var materialCassette = OutputCassetteLifter.GetMaterialCassette();
+                if (materialCassette == null)
+                {
+                    MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                waferMapView_OutputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_OutputWafer.Refresh();
+
+                MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LightControlRequested(object sender, EventArgs e)
+        {
+            Form _lightControlPopup = null;
+
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(467, 286);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            popupForm.Owner = null;
+
+            SimpleLightControl lightControl = new SimpleLightControl();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            _lightControlPopup = popupForm;
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
+            popupForm.Show();
+            this.Activate();
+        }
+
+        private void ButtonMapChange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var inputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
+                if (OutputStage == null || inputStage == null)
+                {
+                    MessageBox.Show("Stage 단위가 준비되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 예: 180도 회전(상하반전)만 적용하여 동일 패턴 맞추기
+                bool rotate180 = true;
+                bool swapXY = false;
+                bool mirrorX = false;
+                bool mirrorY = false;
+
+                int rc = OutputStage.CloneDieMapFromInputStage(inputStage,
+                                                               rotate180: rotate180,
+                                                               swapXY: swapXY,
+                                                               mirrorX: mirrorX,
+                                                               mirrorY: mirrorY);
+                if (rc == -1)
+                {
+                    MessageBox.Show("InputStage 맵이 비어 있습니다.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                if (rc == -2)
+                {
+                    MessageBox.Show("이미 배치된 다이가 있어 맵 복사를 할 수 없습니다.", "경고",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                MessageBox.Show("맵 복사 완료 (InputStage → OutputStage)", "정보",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("맵 복사 중 오류: " + ex.Message, "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnTCorrection_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 필수 의존성 확인
+                if (OutputStage == null)
+                {
+                    MessageBox.Show("OutputStage가 준비되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 이미 열려 있으면 활성화해서 앞으로 가져오기
+                if (_tCorrectionDlg != null && !_tCorrectionDlg.IsDisposed)
+                {
+                    if (_tCorrectionDlg.WindowState == FormWindowState.Minimized)
+                        _tCorrectionDlg.WindowState = FormWindowState.Normal;
+
+                    _tCorrectionDlg.Activate();
+                    _tCorrectionDlg.BringToFront();
+                    return;
+                }
+
+                // PatternMatchingRunner 준비 (프로젝트 사양에 맞게 획득/주입)
+                // 예: 장비의 Runner를 가져오거나 필요 시 null 전달
+                // _patternRunner = Equipment.Instance?.PmRunner ?? _patternRunner;
+                var runner = _patternRunner; // 없으면 null로 전달
+
+                // 새 인스턴스 생성 (모달리스)
+                _tCorrectionDlg = new QMC.LCP_280.Process.Component.TCorrectionDialog(OutputStage, runner)
+                {
+                    StartPosition = FormStartPosition.Manual
+                };
+
+                // 현재 폼 근처에 표시
+                var pt = this.Location;
+                _tCorrectionDlg.Location = new System.Drawing.Point(pt.X + 30, pt.Y + 30);
+
+                // 닫히면 참조 해제
+                _tCorrectionDlg.FormClosed += (s, ev) => { _tCorrectionDlg = null; };
+
+                // 모달리스 표시
+                _tCorrectionDlg.Show(this);
+                _tCorrectionDlg.BringToFront();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("T-보정 Dlg 열기 중 오류: " + ex.Message, "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+}

@@ -21,8 +21,17 @@ namespace QMC.Common
         private Panel scrollPanel;
         private GroupBox groupBox;
 
-        protected Font _textBoxFont = new Font("맑은 고딕", 10f);
+        protected Font _textBoxFont = new Font("맑은 고딕", 10f, FontStyle.Bold);
         private HorizontalAlignment _textBoxTextAlign = HorizontalAlignment.Left;
+
+        // [ADD] 특정 Title을 "Position Display" 스타일로 표시하기 위한 설정
+        private HashSet<string> _displayStyleTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // [ADD] Display 스타일(= lblPosition 룩) 옵션
+        private Font _displayFont = new Font("Consolas", 20f, FontStyle.Bold);
+        private ContentAlignment _displayTextAlign = ContentAlignment.MiddleCenter;
+        private Color _displayBackColor = Color.Black;
+        private Color _displayForeColor = Color.Lime;
 
         private const int MinVisibleRows = 3;
         private const int MaxVisibleRows = 15;
@@ -67,7 +76,7 @@ namespace QMC.Common
 
         [Category("Appearance")]
         [Description("텍스트박스의 폰트")]
-        [DefaultValue(typeof(Font), "맑은 고딕, 9pt")]
+        [DefaultValue(typeof(Font), "맑은 고딕, 10pt")]
         public Font TextBoxFont
         {
             get => _textBoxFont;
@@ -81,6 +90,40 @@ namespace QMC.Common
         {
             get => _textBoxTextAlign;
             set { if (_textBoxTextAlign != value) { _textBoxTextAlign = value; RefreshProperties(); } }
+        }
+
+        // ★ [ADD] Display용 행 높이 (큰 폰트 표시 보장)
+        private int _displayRowHeight = 44;
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("Display 스타일(큰 글씨) 행 높이(px)")]
+        [DefaultValue(44)]
+        public int DisplayRowHeight
+        {
+            get => _displayRowHeight;
+            set
+            {
+                _displayRowHeight = Math.Max(22, value);
+                RefreshProperties();
+            }
+        }
+
+        // ★ [ADD] Display 스타일 타이틀 라벨(좌측 축명)도 같이 꾸밀지
+        private bool _displayStyleAffectsTitleLabel = true;
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("Display 스타일이 Title(Label)에도 적용될지 여부")]
+        [DefaultValue(true)]
+        public bool DisplayStyleAffectsTitleLabel
+        {
+            get => _displayStyleAffectsTitleLabel;
+            set
+            {
+                _displayStyleAffectsTitleLabel = value;
+                ApplyReadOnlyStateToEditors();
+            }
         }
 
         private List<Tuple<TextBox, PropertyBase>> _textBoxPropertyMap = new List<Tuple<TextBox, PropertyBase>>();
@@ -723,38 +766,130 @@ namespace QMC.Common
             ApplyReadOnlyStateToEditors();
         }
 
-        // [NEW] 내부 에디터들에 읽기전용 상태 반영
+        private HorizontalAlignment ToHorizontalAlignment(ContentAlignment ca)
+        {
+            switch (ca)
+            {
+                case ContentAlignment.TopLeft:
+                case ContentAlignment.MiddleLeft:
+                case ContentAlignment.BottomLeft:
+                    return HorizontalAlignment.Left;
+
+                case ContentAlignment.TopRight:
+                case ContentAlignment.MiddleRight:
+                case ContentAlignment.BottomRight:
+                    return HorizontalAlignment.Right;
+
+                default:
+                    return HorizontalAlignment.Center;
+            }
+        }
+        // ★ [ADD] ContentAlignment -> Label TextAlign
+        private ContentAlignment ToLabelAlignment(ContentAlignment ca)
+        {
+            // Label은 ContentAlignment를 그대로 사용 가능
+            return ca;
+        }
+
+        // ★ [MOD] Display 스타일이 "값(TextBox)" 뿐 아니라 "축명(Label)"에도 적용되고,
+        //         Display 행은 RowHeight도 크게 잡아주도록 보강
         private void ApplyReadOnlyStateToEditors()
         {
             try
             {
-                foreach (var row in _rows)
+                for (int i = 0; i < _rows.Count; i++)
                 {
+                    var row = _rows[i];
+
                     bool ro = _readOnlyTitles.Contains(row.Title);
+                    bool display = _displayStyleTitles.Contains(row.Title);
+
+                    // (1) RowHeight 보정 (Display인 경우만)
+                    try
+                    {
+                        if (tableLayoutPanel != null && tableLayoutPanel.RowStyles != null && i < tableLayoutPanel.RowStyles.Count)
+                        {
+                            var rs = tableLayoutPanel.RowStyles[i];
+                            if (display)
+                            {
+                                rs.SizeType = SizeType.Absolute;
+                                rs.Height = _displayRowHeight;
+                            }
+                            else
+                            {
+                                // 기존 기본 높이로 복귀: 현재 폰트 기준
+                                int normal = TextRenderer.MeasureText("A", _textBoxFont).Height + 8;
+                                rs.SizeType = SizeType.Absolute;
+                                rs.Height = normal;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    // (2) TitleLabel 스타일도 적용 (축명까지 Display로 보이게)
+                    try
+                    {
+                        if (_displayStyleAffectsTitleLabel && row.TitleLabel != null)
+                        {
+                            if (display)
+                            {
+                                row.TitleLabel.Font = _displayFont;                 // 큰 폰트
+                                row.TitleLabel.BackColor = _displayBackColor;       // 검정
+                                row.TitleLabel.ForeColor = _displayForeColor;       // 라임
+                                row.TitleLabel.TextAlign = ToLabelAlignment(_displayTextAlign);
+                            }
+                            else
+                            {
+                                row.TitleLabel.Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Regular);
+                                row.TitleLabel.BackColor = Color.White;
+                                row.TitleLabel.ForeColor = Color.Black;
+                                row.TitleLabel.TextAlign = ContentAlignment.MiddleLeft;
+                            }
+                        }
+                    }
+                    catch { }
+
                     var editor = row.Editor;
 
-                    // 기본 Enable/Disable
-                    editor.Enabled = !ro;
-
-                    // 타입별 추가 잠금 처리
+                    // ---- TextBox 직접 ----
                     if (editor is TextBox tb)
                     {
                         tb.ReadOnly = ro;
                         tb.TabStop = !ro;
-                        if (ro)
+                        tb.Enabled = !ro;
+
+                        if (display)
                         {
-                            tb.ForeColor = Color.LimeGreen;
-                            tb.BackColor = Color.Black;
+                            tb.Font = _displayFont;
+                            tb.BackColor = _displayBackColor;
+                            tb.ForeColor = _displayForeColor;
+                            tb.TextAlign = ToHorizontalAlignment(_displayTextAlign);
+                            tb.Multiline = true;
+                            tb.BorderStyle = BorderStyle.FixedSingle;
                         }
                         else
                         {
-                            tb.ForeColor = Color.Black;
-                            tb.BackColor = Color.White;
+                            tb.Font = _textBoxFont;
+                            tb.TextAlign = _textBoxTextAlign;
+                            tb.Multiline = false;
+
+                            if (ro)
+                            {
+                                tb.ForeColor = Color.LimeGreen;
+                                tb.BackColor = Color.Black;
+                            }
+                            else
+                            {
+                                tb.ForeColor = Color.Black;
+                                tb.BackColor = Color.White;
+                            }
                         }
+                        continue;
                     }
-                    else if (editor is Panel pnl)
+
+                    // ---- Panel ----
+                    if (editor is Panel pnl)
                     {
-                        // 패널 내부 TextBox/ComboBox/Button 모두 반영
                         foreach (Control c in pnl.Controls)
                         {
                             if (c is TextBox innerTb)
@@ -762,6 +897,33 @@ namespace QMC.Common
                                 innerTb.ReadOnly = ro;
                                 innerTb.TabStop = !ro;
                                 innerTb.Enabled = !ro;
+
+                                if (display)
+                                {
+                                    innerTb.Font = _displayFont;
+                                    innerTb.BackColor = _displayBackColor;
+                                    innerTb.ForeColor = _displayForeColor;
+                                    innerTb.TextAlign = ToHorizontalAlignment(_displayTextAlign);
+                                    innerTb.Multiline = true;
+                                    innerTb.BorderStyle = BorderStyle.FixedSingle;
+                                }
+                                else
+                                {
+                                    innerTb.Font = _textBoxFont;
+                                    innerTb.TextAlign = _textBoxTextAlign;
+                                    innerTb.Multiline = false;
+
+                                    if (ro)
+                                    {
+                                        innerTb.ForeColor = Color.LimeGreen;
+                                        innerTb.BackColor = Color.Black;
+                                    }
+                                    else
+                                    {
+                                        innerTb.ForeColor = Color.Black;
+                                        innerTb.BackColor = Color.White;
+                                    }
+                                }
                             }
                             else if (c is ComboBox cb)
                             {
@@ -771,32 +933,56 @@ namespace QMC.Common
                             else if (c is Button btn)
                             {
                                 btn.Enabled = !ro;
-                                btn.Visible = !ro ? btn.Visible : btn.Visible; // 필요시 숨김으로 바꿀 수 있음
                             }
                             else
                             {
                                 c.Enabled = !ro;
                             }
                         }
+                        continue;
                     }
-                    else if (editor is ComboBox cb)
+
+                    // ---- 기타 ----
+                    if (editor is ComboBox cb2)
                     {
-                        cb.Enabled = !ro;
-                        cb.DropDownStyle = ComboBoxStyle.DropDownList;
+                        cb2.Enabled = !ro;
+                        cb2.DropDownStyle = ComboBoxStyle.DropDownList;
                     }
                     else if (editor is CheckBox chk)
                     {
                         chk.Enabled = !ro;
                     }
-                    // 기타 에디터 타입은 Enabled로 충분
+                    else
+                    {
+                        editor.Enabled = !ro;
+                    }
                 }
 
+                tableLayoutPanel?.PerformLayout();
+                scrollPanel?.PerformLayout();
                 Invalidate();
             }
             catch
             {
-                // 안전하게 무시
+                // ignore
             }
+        }
+
+        // [ADD] 특정 Title들을 "Display 전용(라벨 룩)"으로 표시
+        public void SetDisplayStyleTitles(params string[] titles)
+        {
+            _displayStyleTitles = new HashSet<string>(titles ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            ApplyReadOnlyStateToEditors();
+        }
+
+        // [ADD] Display 스타일 커스터마이즈(필요 시)
+        public void SetDisplayStyle(Font font, Color backColor, Color foreColor, ContentAlignment align)
+        {
+            if (font != null) _displayFont = font;
+            _displayBackColor = backColor;
+            _displayForeColor = foreColor;
+            _displayTextAlign = align;
+            ApplyReadOnlyStateToEditors();
         }
     }
 }

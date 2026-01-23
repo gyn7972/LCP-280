@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,7 +50,9 @@ namespace QMC.Common.LightController
                 }
             }
         }
-        public string Descript { get; set; }
+
+        [DefaultValue("")]
+        public string Descript { get; set; } = "";
         #endregion
 
         #region Constructor
@@ -106,7 +109,7 @@ namespace QMC.Common.LightController
             // Value
             pc.Add("On", "", On);
             pc.Add("Volume", "", Volume);
-            pc.Add("Descript", "", Descript);
+            pc.Add("Descript", "", Descript ?? "");
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)

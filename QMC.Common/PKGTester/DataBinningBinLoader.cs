@@ -7,19 +7,6 @@ using QMC.Common.PKGTester;
 
 public static class DataBinningBinLoader
 {
-    /// <summary>
-    /// TSE_BIN_NEW_FORMAT_V1 텍스트 포맷 BIN 파일을 로드하여
-    /// ExcelBinningModel로 변환한다.
-    /// 
-    /// 구조:
-    ///   - 여러 줄 헤더 (TSE_BIN_NEW_FORMAT_V1, Date, Time, ...)
-    ///   - 중간에 0 초기화 영역 (0,0,0,0,...)
-    ///   - Spec Header 1: ,,,,,,KELFS,KELDG,VR1,VF3,...
-    ///   - Spec Header 2: No,BIN,Sub,Name,OP,NG,CH1,CH1,...
-    ///   - ApplyValue Row: ,,,ApplyValue,,,50.00 uA,50.00 uA,10.00 uA,...
-    ///   - Spec Data Rows: 1,1,,SV700-HA-A-01,,,,,0~99,2.9~3.1,...
-    ///   - 이후 Macadams 영역은 무시.
-    /// </summary>
     public static ExcelBinningModel LoadBIN(string binFile)
     {
         if (!File.Exists(binFile))
@@ -30,7 +17,6 @@ public static class DataBinningBinLoader
 
         try
         {
-            // 인코딩은 기본(보통 ANSI/UTF-8)으로 충분
             lines = File.ReadAllLines(binFile);
         }
         catch (Exception ex)
@@ -42,87 +28,85 @@ public static class DataBinningBinLoader
         if (lines.Length == 0)
             return model;
 
-        // 1) Spec Header 1 (KELFS, KELDG, VR1...) 라인 찾기
-        int specHeaderIndex = -1;
+        // 1) Spec Header2("No,BIN") 찾기
+        int header2Index = -1;
         for (int i = 0; i < lines.Length; i++)
         {
-            if (string.IsNullOrWhiteSpace(lines[i])) continue;
-            // KELFS 키워드 포함되는 줄
-            if (lines[i].IndexOf("KELFS", StringComparison.OrdinalIgnoreCase) >= 0)
+            var line = lines[i];
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("No,BIN", StringComparison.OrdinalIgnoreCase))
             {
-                specHeaderIndex = i;
+                header2Index = i;
                 break;
             }
         }
 
-        if (specHeaderIndex < 0)
-        {
-            // Spec 영역 없음
+        int header1Index = header2Index - 1;
+        if (header2Index < 0 || header1Index < 0)
             return model;
+
+        int applyValueIndex = header2Index + 1;
+        if (applyValueIndex >= lines.Length)
+            return model;
+
+        string[] header1 = SplitCsvLine(lines[header1Index]);
+        string[] header2 = SplitCsvLine(lines[header2Index]);
+        string[] applyRow = SplitCsvLine(lines[applyValueIndex]);
+
+        // 2) Header2 기반 고정 컬럼 매핑
+        var fixedIndex = BuildHeaderIndexMap(header2);
+
+        int idxNo = GetIndexOrDefault(fixedIndex, "No", 0);
+        int idxBin = GetIndexOrDefault(fixedIndex, "BIN", 1);
+        int idxSub = GetIndexOrDefault(fixedIndex, "Sub", -1);
+        int idxName = GetIndexOrDefault(fixedIndex, "Name", -1);
+        int idxOp = GetIndexOrDefault(fixedIndex, "OP", -1);
+        int idxNg = GetIndexOrDefault(fixedIndex, "NG", -1);
+
+        model.HasSubColumn = (idxSub >= 0);
+
+        // 3) 아이템 시작 위치(보통 CH1 시작)
+        int itemStartIndex = FindFirstIndex(header2, "CH1");
+        if (itemStartIndex < 0)
+        {
+            itemStartIndex = (idxNg >= 0 ? idxNg + 1 :
+                              idxOp >= 0 ? idxOp + 1 :
+                              idxName >= 0 ? idxName + 1 : 0);
         }
 
-        // -----------------------------
-        // 헤더 1: Item Key 라인
-        // -----------------------------
-        string[] header1 = SplitCsvLine(lines[specHeaderIndex]);
-        var itemColumnIndices = new List<int>();
-
+        // 4) 아이템 키/유닛 수집 (Header1 + ApplyValue는 itemStartIndex 이후 컬럼을 사용)
         model.ItemKeys.Clear();
         model.ItemDisplayNames.Clear();
         model.ItemUnits.Clear();
 
-        for (int c = 0; c < header1.Length; c++)
+        var itemColumnIndices = new List<int>();
+
+        for (int c = itemStartIndex; c < header1.Length; c++)
         {
-            string name = header1[c].Trim();
-            if (string.IsNullOrEmpty(name))
+            string key = (header1[c] ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(key))
                 continue;
 
-            // 예: KELFS, KELDG, VR1...
-            model.ItemKeys.Add(name);
-            model.ItemDisplayNames.Add(name);
+            model.ItemKeys.Add(key);
+            model.ItemDisplayNames.Add(key);
             itemColumnIndices.Add(c);
-        }
 
-        // -----------------------------
-        // 헤더 2: No,BIN,Sub,Name,OP,NG,CH1,CH1,...
-        // (실제 파싱에는 크게 필요 없으므로 스킵)
-        // -----------------------------
-        int header2Index = specHeaderIndex + 1;
-        if (header2Index >= lines.Length)
-            return model;
-
-        //string[] header2 = SplitCsvLine(lines[header2Index]);
-
-        // -----------------------------
-        // ApplyValue / Unit 줄
-        // ,,,ApplyValue,,,50.00 uA,50.00 uA,10.00 uA,...
-        // -----------------------------
-        int applyValueIndex = specHeaderIndex + 2;
-        if (applyValueIndex >= lines.Length)
-            return model;
-
-        string[] applyRow = SplitCsvLine(lines[applyValueIndex]);
-
-        // ItemUnits 채우기
-        foreach (int colIdx in itemColumnIndices)
-        {
-            string unit = colIdx < applyRow.Length ? applyRow[colIdx].Trim() : string.Empty;
+            string unit = c < applyRow.Length ? (applyRow[c] ?? string.Empty).Trim() : string.Empty;
             model.ItemUnits.Add(unit);
         }
 
-        // -----------------------------
-        // Spec Data Rows
-        // -----------------------------
-        int dataRowIndex = specHeaderIndex + 3;
+        // 5) 데이터 로우 파싱
+        int dataRowIndex = applyValueIndex + 1;
 
         for (int i = dataRowIndex; i < lines.Length; i++)
         {
             string line = lines[i];
-
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Macadams 이후는 Spec과 무관
             if (line.TrimStart().StartsWith("Macadams", StringComparison.OrdinalIgnoreCase))
                 break;
 
@@ -130,13 +114,12 @@ public static class DataBinningBinLoader
             if (cols.Length == 0)
                 continue;
 
-            // No,BIN,Sub,Name,OP,NG,...
-            string noStr = GetCol(cols, 0);
-            string binStr = GetCol(cols, 1);
-            string subStr = GetCol(cols, 2);
-            string nameStr = GetCol(cols, 3);
-            string opStr = GetCol(cols, 4);
-            string ngStr = GetCol(cols, 5);
+            string noStr = GetCol(cols, idxNo);
+            string binStr = GetCol(cols, idxBin);
+            string subStr = (idxSub >= 0) ? GetCol(cols, idxSub) : "";
+            string nameStr = (idxName >= 0) ? GetCol(cols, idxName) : "";
+            string opStr = (idxOp >= 0) ? GetCol(cols, idxOp) : "";
+            string ngStr = (idxNg >= 0) ? GetCol(cols, idxNg) : "";
 
             if (string.IsNullOrEmpty(noStr) &&
                 string.IsNullOrEmpty(binStr) &&
@@ -153,24 +136,24 @@ public static class DataBinningBinLoader
             if (int.TryParse(binStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int nBin))
                 binItem.Bin = nBin;
 
-            if (int.TryParse(subStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int nSub))
+            if (idxSub >= 0 && int.TryParse(subStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int nSub))
                 binItem.Sub = nSub;
+            else
+                binItem.Sub = 0;
 
             binItem.Name = nameStr;
             binItem.Op = opStr;
             binItem.Ng = ngStr;
 
-            // 각 Item Range 파싱
             for (int k = 0; k < model.ItemKeys.Count; k++)
             {
                 string key = model.ItemKeys[k];
                 int colIdx = itemColumnIndices[k];
 
-                string raw = colIdx < cols.Length ? cols[colIdx].Trim() : string.Empty;
+                string raw = colIdx < cols.Length ? (cols[colIdx] ?? string.Empty).Trim() : string.Empty;
 
                 if (string.IsNullOrEmpty(raw))
                 {
-                    // 값 비어있으면 Ignore
                     if (!binItem.Items.ContainsKey(key))
                         binItem.Items[key] = new BinningRange(key) { Ignore = true };
                     continue;
@@ -187,7 +170,6 @@ public static class DataBinningBinLoader
                 }
                 else
                 {
-                    // 파싱 실패 → Ignore
                     binItem.Items[key] = new BinningRange(key) { Ignore = true };
                 }
             }
@@ -196,6 +178,87 @@ public static class DataBinningBinLoader
         }
 
         return model;
+    }
+
+    private static Dictionary<string, int> BuildHeaderIndexMap(string[] header2)
+    {
+        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        if (header2 == null)
+            return map;
+
+        for (int i = 0; i < header2.Length; i++)
+        {
+            var name = (header2[i] ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(name))
+                continue;
+
+            if (!map.ContainsKey(name))
+                map.Add(name, i);
+        }
+
+        return map;
+    }
+
+    private static int GetIndexOrDefault(Dictionary<string, int> map, string key, int defaultValue)
+    {
+        if (map == null)
+            return defaultValue;
+
+        int idx;
+        return map.TryGetValue(key, out idx) ? idx : defaultValue;
+    }
+
+    private static int FindFirstIndex(string[] cols, string token)
+    {
+        if (cols == null)
+            return -1;
+
+        for (int i = 0; i < cols.Length; i++)
+        {
+            var s = (cols[i] ?? string.Empty).Trim();
+            if (s.Equals(token, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        return -1;
+    }
+
+    // ===========================================================
+    // 헬퍼 함수들
+    // ===========================================================
+    private static string[] SplitCsvLine(string line)
+    {
+        return (line ?? string.Empty).Split(',');
+    }
+
+    private static string GetCol(string[] cols, int index)
+    {
+        if (cols == null || index < 0 || index >= cols.Length)
+            return string.Empty;
+        return cols[index]?.Trim() ?? string.Empty;
+    }
+
+    private static bool TryParseRange(string s, out double min, out double max)
+    {
+        min = max = 0;
+
+        if (string.IsNullOrWhiteSpace(s))
+            return false;
+
+        var parts = s.Split('~');
+        if (parts.Length != 2)
+            return false;
+
+        if (!double.TryParse(parts[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out min) &&
+            !double.TryParse(parts[0].Trim(), out min))
+            return false;
+
+        if (!double.TryParse(parts[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out max) &&
+            !double.TryParse(parts[1].Trim(), out max))
+            return false;
+
+        return true;
     }
 
     /// <summary>
@@ -312,41 +375,6 @@ public static class DataBinningBinLoader
         }
     }
 
-    // ===========================================================
-    // 헬퍼 함수들
-    // ===========================================================
-    private static string[] SplitCsvLine(string line)
-    {
-        // 단순 CSV (따옴표 없는 구조)라 , 기준 split만으로 충분.
-        return (line ?? string.Empty).Split(',');
-    }
-
-    private static string GetCol(string[] cols, int index)
-    {
-        if (cols == null || index < 0 || index >= cols.Length)
-            return string.Empty;
-        return cols[index]?.Trim() ?? string.Empty;
-    }
-
-    private static bool TryParseRange(string s, out double min, out double max)
-    {
-        min = max = 0;
-
-        if (string.IsNullOrWhiteSpace(s))
-            return false;
-
-        var parts = s.Split('~');
-        if (parts.Length != 2)
-            return false;
-
-        if (!double.TryParse(parts[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out min) &&
-            !double.TryParse(parts[0].Trim(), out min))
-            return false;
-
-        if (!double.TryParse(parts[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out max) &&
-            !double.TryParse(parts[1].Trim(), out max))
-            return false;
-
-        return true;
-    }
+    
+    
 }

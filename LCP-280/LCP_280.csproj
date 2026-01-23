@@ -4,14 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{232C1EAB-2B0B-46B5-8C6B-7FD38143F8FC}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>LCP_280</RootNamespace>
-    <AssemblyName>LCP_280</AssemblyName>
+    <ProjectGuid>{30BAB886-9728-47E2-948F-770DB66715BE}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>QMC.LCP_280.Process</RootNamespace>
+    <AssemblyName>LCP-280</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>게시\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -24,7 +25,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -36,7 +36,8 @@
     <OutputPath>D:\LCP-280\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>5</WarningLevel>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -47,14 +48,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\ARM64\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>5</WarningLevel>
     <DebugType>full</DebugType>
     <PlatformTarget>ARM64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
@@ -68,12 +65,12 @@
     <PlatformTarget>ARM64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\LCP-280\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>5</WarningLevel>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
@@ -87,12 +84,12 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x86\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\LCP-280\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>5</WarningLevel>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <LangVersion>7.3</LangVersion>
@@ -106,6 +103,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -114,8 +112,12 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -125,18 +127,719 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form1.cs">
+    <Compile Include="Component\AutoRunController.cs" />
+    <Compile Include="Component\AxisNames.cs" />
+    <Compile Include="CassetteData.cs" />
+    <Compile Include="CassetteDataConfig.cs" />
+    <Compile Include="CassetteMapView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CassetteMapView.Designer.cs">
+      <DependentUpon>CassetteMapView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\EquipmentGemBridge.cs" />
+    <Compile Include="Component\FormDlg\AxisPostionPopup.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="Component\FormDlg\AxisPostionPopup.Designer.cs">
+      <DependentUpon>AxisPostionPopup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormDlg\DieScanMapControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\DieScanMapControl.Designer.cs">
+      <DependentUpon>DieScanMapControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\DIOControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\DIOControl.Designer.cs">
+      <DependentUpon>DIOControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\DisplayView_DieScanMap.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\DisplayView_DieScanMap.Designer.cs">
+      <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\FormInputWaferID.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\FormInputWaferID.Designer.cs">
+      <DependentUpon>FormInputWaferID.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\FormMapMatchManual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\FormMapMatchManual.Designer.cs">
+      <DependentUpon>FormMapMatchManual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\WaferTotalSummaryViewerController.cs" />
+    <Compile Include="Component\FormDlg\WaferTotalSummaryViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\WaferTotalSummaryViewerForm.Designer.cs">
+      <DependentUpon>WaferTotalSummaryViewerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\Gem_SecsMsgDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\Gem_SecsMsgDialog.Designer.cs">
+      <DependentUpon>Gem_SecsMsgDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\HomeHooks.cs" />
+    <Compile Include="Component\FormDlg\IndexCalibrationDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\IndexCalibrationDialog.Designer.cs">
+      <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\InterlockManager.cs" />
+    <Compile Include="Component\MachineHomeCoordinator.cs" />
+    <Compile Include="Component\ManualSeqReproTestRunner.cs" />
+    <Compile Include="Component\FormDlg\ManualSequenceControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\ManualSequenceControl.Designer.cs">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\JogControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\JogControl.Designer.cs">
+      <DependentUpon>JogControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\MapMatchDecisionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\MapMatchDecisionDialog.Designer.cs">
+      <DependentUpon>MapMatchDecisionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\MeasurementResultForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\MeasurementResultForm.Designer.cs">
+      <DependentUpon>MeasurementResultForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\EquipmentSummaryContext.cs" />
+    <Compile Include="Component\ProcessData\ResultWriterManager.cs" />
+    <Compile Include="Component\FormDlg\WaferMapView.designer.cs">
+      <DependentUpon>WaferMapView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\WaferSelectMapView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\WaferSelectMapView.Designer.cs">
+      <DependentUpon>WaferSelectMapView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\WaferMapGenerator.cs" />
+    <Compile Include="Component\Recipe\MeasurementKey.cs" />
+    <Compile Include="Component\FormDlg\PatternMatchingControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\PatternMatchingControl.Designer.cs">
+      <DependentUpon>PatternMatchingControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\PatternMatchingRecipeStore.cs" />
+    <Compile Include="Component\PatternMatchingRunner.cs" />
+    <Compile Include="Component\FormDlg\ProcessDataManual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\ProcessDataManual.Designer.cs">
+      <DependentUpon>ProcessDataManual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\MaterialCassette.cs" />
+    <Compile Include="Component\ProcessData\MaterialDie.cs" />
+    <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
+    <Compile Include="Component\ProcessData\WaferManager.cs" />
+    <Compile Include="Component\ProcessData\WaferSummary.cs" />
+    <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
+    <Compile Include="Component\Recipe\RecipeManager.cs" />
+    <Compile Include="Component\FormDlg\TaktMonitorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\TaktMonitorDialog.Designer.cs">
+      <DependentUpon>TaktMonitorDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\TCorrectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\TCorrectionDialog.Designer.cs">
+      <DependentUpon>TCorrectionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Equipment.cs" />
+    <Compile Include="EquipmentSequence.cs" />
+    <Compile Include="Form\FormDlg\FormWaferSlotEdit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\Page\MoveToPositionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\Page\MoveToPositionControl.Designer.cs">
+      <DependentUpon>MoveToPositionControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\MaterialWafer.cs" />
+    <Compile Include="Component\FormDlg\UnitConfig.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\UnitConfig.Designer.cs">
+      <DependentUpon>UnitConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\VisionRunnerHub.cs" />
+    <Compile Include="EquipmentConfig.cs" />
+    <Compile Include="Form\FormSetup\Gem_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Gem_Setup.Designer.cs">
+      <DependentUpon>Gem_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LanguageManager.cs" />
+    <Compile Include="LanguageManager.PropertyOrder.cs" />
+    <Compile Include="LanguageManagerExtensions.cs" />
+    <Compile Include="LanguageSetupForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\DigitalIOControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\DigitalIOControl.Designer.cs">
+      <DependentUpon>DigitalIOControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\PositionTeachingControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\PositionTeachingControl.Designer.cs">
+      <DependentUpon>PositionTeachingControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormLog\Alarm_Log.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormLog\Alarm_Log.Designer.cs">
+      <DependentUpon>Alarm_Log.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormLog\TotalLog_Log.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormLog\TotalLog_Log.Designer.cs">
+      <DependentUpon>TotalLog_Log.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieInputControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieInputControl.Designer.cs">
+      <DependentUpon>DieInputControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieOutputControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieOutputControl.Designer.cs">
+      <DependentUpon>DieOutputControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieInput.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieInput.Designer.cs">
+      <DependentUpon>DisplayView_DieInput.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieIndexSelectControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieIndexSelectControl.Designer.cs">
+      <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieOutput.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_DieOutput.Designer.cs">
+      <DependentUpon>DisplayView_DieOutput.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_InputWaferCarrierControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_InputWaferCarrierControl.Designer.cs">
+      <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_OutputWaferCarrierControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DisplayView_OutputWaferCarrierControl.Designer.cs">
+      <DependentUpon>DisplayView_OutputWaferCarrierControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\InputWaferCarrierControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\InputWaferCarrierControl.Designer.cs">
+      <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\SimpleLightControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\SimpleLightControl.Designer.cs">
+      <DependentUpon>SimpleLightControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MapFileOpenControl.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MapFileOpenControl.Designer.cs">
+      <DependentUpon>MapFileOpenControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MeasurementControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MeasurementControl.Designer.cs">
+      <DependentUpon>MeasurementControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MessageBoxDieStatusSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\MessageBoxDieStatusSelect.Designer.cs">
+      <DependentUpon>MessageBoxDieStatusSelect.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\OutputWaferCarrierControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\OutputWaferCarrierControl.Designer.cs">
+      <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\SequenceAutoControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\SequenceAutoControl.Designer.cs">
+      <DependentUpon>SequenceAutoControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\SequenceManualControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\SequenceManualControl.Designer.cs">
+      <DependentUpon>SequenceManualControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Sequence_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EquipmentManagers.cs" />
+    <Compile Include="EquipmentRecipe.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="Form\FormMain\Sequence_Main.Designer.cs">
+      <DependentUpon>Sequence_Main.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TestGyn.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TestGyn.Designer.cs">
+      <DependentUpon>TestGyn.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\CommonUnitConfig.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\Page\CommonUnitConfig.Designer.cs">
+      <DependentUpon>CommonUnitConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\EquipmentStatus.cs" />
+    <Compile Include="Component\FormDlg\Form_AxisJogPopup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\Form_AxisJogPopup.Designer.cs">
+      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Monitoring_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Monitoring_Main.Designer.cs">
+      <DependentUpon>Monitoring_Main.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Operator_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Operator_Main.Designer.cs">
+      <DependentUpon>Operator_Main.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\DesignModeHelper.cs" />
+    <Compile Include="Form\FormRecipe\Page\RankSetPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\RankSetPage.Designer.cs">
+      <DependentUpon>RankSetPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Barcoder_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Barcoder_Setup.Designer.cs">
+      <DependentUpon>Barcoder_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Equipment_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Equipment_Setup.Designer.cs">
+      <DependentUpon>Equipment_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\BarcoderControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\BarcoderControl.Designer.cs">
+      <DependentUpon>BarcoderControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\LightControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\LightControl.Designer.cs">
+      <DependentUpon>LightControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\SourcemeterPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\SourcemeterPage.Designer.cs">
+      <DependentUpon>SourcemeterPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\SpectrometerPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\SpectrometerPage.Designer.cs">
+      <DependentUpon>SpectrometerPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Main_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Main_Recipe.Designer.cs">
+      <DependentUpon>Main_Recipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Vision_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Vision_Recipe.Designer.cs">
+      <DependentUpon>Vision_Recipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputStageUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputStageUnit_Config.Designer.cs">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\StrainGagePage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\StrainGagePage.Designer.cs">
+      <DependentUpon>StrainGagePage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\VisionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Page\VisionControl.Designer.cs">
+      <DependentUpon>VisionControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMenual\UnloadArm_Menual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\UnloadArm_Menual.Designer.cs">
+      <DependentUpon>UnloadArm_Menual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMenual\Index_Menual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\Index_Menual.Designer.cs">
+      <DependentUpon>Index_Menual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\CellTesterPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\CellTesterPage.Designer.cs">
+      <DependentUpon>CellTesterPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\TestConditionSetPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Page\TestConditionSetPage.Designer.cs">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMenual\Bin_Menual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\Bin_Menual.Designer.cs">
+      <DependentUpon>Bin_Menual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMenual\Wafer_Menual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\Wafer_Menual.Designer.cs">
+      <DependentUpon>Wafer_Menual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\Helper\TeachingPositionMapHelper.cs" />
+    <Compile Include="Unit\IndexChipProbeController.cs" />
+    <Compile Include="Unit\IndexChipProbeControllerConfig.cs" />
+    <Compile Include="Unit\IndexChipProbeControllerRecipe.cs" />
+    <Compile Include="Unit\IndexChipProber.cs" />
+    <Compile Include="Unit\IndexChipProberConfig.cs" />
+    <Compile Include="Unit\IndexLoadAligner.cs" />
+    <Compile Include="Unit\IndexLoadAlignerConfig.cs" />
+    <Compile Include="Unit\IndexLoadAlignerRecipe.cs" />
+    <Compile Include="Unit\IndexUnloadAligner.cs" />
+    <Compile Include="Unit\IndexUnloadAlignerConfig.cs" />
+    <Compile Include="Form\FormMenual\LoadArm_Menual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormMenual\LoadArm_Menual.Designer.cs">
+      <DependentUpon>LoadArm_Menual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\InputDieTransferRecipe.cs" />
+    <Compile Include="Unit\InputFeederConfig.cs" />
+    <Compile Include="Unit\InputFeeder.cs" />
+    <Compile Include="Unit\InputCassetteLifterConfig.cs" />
+    <Compile Include="Unit\InputCassetteLifter.cs" />
+    <Compile Include="Form\FormSetup\Cylinder_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Cylinder_Setup.Designer.cs">
+      <DependentUpon>Cylinder_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\DigitalIO_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\DigitalIO_Setup.Designer.cs">
+      <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputStageEjectorUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputStageEjectorUnit_Config.Designer.cs">
+      <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputFeederUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputFeederUnit_Config.Designer.cs">
+      <DependentUpon>OutputFeederUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputDieTransferUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputDieTransferUnit_Config.Designer.cs">
+      <DependentUpon>OutputDieTransferUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputCassetteLifterUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputCassetteLifterUnit_Config.Designer.cs">
+      <DependentUpon>OutputCassetteLifterUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexUnloadAlignerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexUnloadAlignerUnit_Config.Designer.cs">
+      <DependentUpon>IndexUnloadAlignerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexLoadAlignerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexLoadAlignerUnit_Config.Designer.cs">
+      <DependentUpon>IndexLoadAlignerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexChipProberUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexChipProberUnit_Config.Designer.cs">
+      <DependentUpon>IndexChipProberUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexChipProbeControllerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\IndexChipProbeControllerUnit_Config.Designer.cs">
+      <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputFeederUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputFeederUnit_Config.Designer.cs">
+      <DependentUpon>InputFeederUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\RotaryUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\RotaryUnit_Config.Designer.cs">
+      <DependentUpon>RotaryUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputStageUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\OutputStageUnit_Config.Designer.cs">
+      <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputDieTransferUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputDieTransferUnit_Config.Designer.cs">
+      <DependentUpon>InputDieTransferUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\InputDieTransfer.cs" />
+    <Compile Include="Unit\InputDieTransferConfig.cs" />
+    <Compile Include="Unit\InputStage.cs" />
+    <Compile Include="Unit\InputStageConfig.cs" />
+    <Compile Include="Unit\InputStageEjector.cs" />
+    <Compile Include="Unit\InputStageEjectorConfig.cs" />
+    <Compile Include="Form\FormSetup\Instrument_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Instrument_Setup.Designer.cs">
+      <DependentUpon>Instrument_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Motion_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Motion_Setup.Designer.cs">
+      <DependentUpon>Motion_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputCassetteLifterUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormConfig\InputCassetteLifterUnit_Config.Designer.cs">
+      <DependentUpon>InputCassetteLifterUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\OutputCassetteLifter.cs" />
+    <Compile Include="Unit\OutputCassetteLifterConfig.cs" />
+    <Compile Include="Unit\OutputDieTransfer.cs" />
+    <Compile Include="Unit\OutputDieTransferConfig.cs" />
+    <Compile Include="Unit\OutputDieTransferRecipe.cs" />
+    <Compile Include="Unit\OutputFeeder.cs" />
+    <Compile Include="Unit\OutputFeederConfig.cs" />
+    <Compile Include="Unit\OutputStage.cs" />
+    <Compile Include="Unit\OutputStageConfig.cs" />
+    <Compile Include="Unit\Rotary.cs" />
+    <Compile Include="Unit\RotaryConfig.cs" />
+    <Compile Include="Form\FormRecipe\Measurement_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormRecipe\Measurement_Recipe.Designer.cs">
+      <DependentUpon>Measurement_Recipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormSetup\Vision_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form\FormSetup\Vision_Setup.Designer.cs">
+      <DependentUpon>Vision_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieIndexSelectControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Form\FormMain\Page\DieIndexSelectControl.Designer.cs">
+      <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\UiUpdateWaferArgs.cs" />
+    <Compile Include="WaferData.cs" />
+    <Compile Include="WaferDataConfig.cs" />
+    <Compile Include="WaferMapItem.cs" />
+    <Compile Include="Component\FormDlg\WaferMapView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Work\ChipLoading.cs" />
+    <Compile Include="Work\ChipUnloading.cs" />
+    <Compile Include="Work\Process.cs" />
+    <Compile Include="Work\InputWafer.cs" />
+    <Compile Include="Work\WaferBin.cs" />
+    <EmbeddedResource Include="Component\FormDlg\AxisPostionPopup.resx">
+      <DependentUpon>AxisPostionPopup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\DieScanMapControl.resx">
+      <DependentUpon>DieScanMapControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\DIOControl.resx">
+      <DependentUpon>DIOControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\DisplayView_DieScanMap.resx">
+      <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\FormInputWaferID.resx">
+      <DependentUpon>FormInputWaferID.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\FormMapMatchManual.resx">
+      <DependentUpon>FormMapMatchManual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\IndexCalibrationDialog.resx">
+      <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\ManualSequenceControl.resx">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\JogControl.resx">
+      <DependentUpon>JogControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\MapMatchDecisionDialog.resx">
+      <DependentUpon>MapMatchDecisionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\MeasurementResultForm.resx">
+      <DependentUpon>MeasurementResultForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\PatternMatchingControl.resx">
+      <DependentUpon>PatternMatchingControl.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\WaferMapView.resx">
+      <DependentUpon>WaferMapView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\WaferSelectMapView.resx">
+      <DependentUpon>WaferSelectMapView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\TCorrectionDialog.resx">
+      <DependentUpon>TCorrectionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\Gem_SecsMsgDialog.resx">
+      <DependentUpon>Gem_SecsMsgDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\Page\MoveToPositionControl.resx">
+      <DependentUpon>MoveToPositionControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\UnitConfig.resx">
+      <DependentUpon>UnitConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\Page\DigitalIOControl.resx">
+      <DependentUpon>DigitalIOControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\Page\PositionTeachingControl.resx">
+      <DependentUpon>PositionTeachingControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormLog\Alarm_Log.resx">
+      <DependentUpon>Alarm_Log.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormLog\TotalLog_Log.resx">
+      <DependentUpon>TotalLog_Log.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DieInputControl.resx">
+      <DependentUpon>DieInputControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DieIndexSelectControl.resx">
+      <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DieOutputControl.resx">
+      <DependentUpon>DieOutputControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DisplayView_DieInput.resx">
+      <DependentUpon>DisplayView_DieInput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DisplayView_DieIndexSelectControl.resx">
+      <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DisplayView_DieOutput.resx">
+      <DependentUpon>DisplayView_DieOutput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\DisplayView_InputWaferCarrierControl.resx">
+      <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\InputWaferCarrierControl.resx">
+      <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\SimpleLightControl.resx">
+      <DependentUpon>SimpleLightControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\MapFileOpenControl.resx">
+      <DependentUpon>MapFileOpenControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\MeasurementControl.resx">
+      <DependentUpon>MeasurementControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Gem_Setup.resx">
+      <DependentUpon>Gem_Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -148,6 +851,154 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Form\FormMain\Page\MessageBoxDieStatusSelect.resx">
+      <DependentUpon>MessageBoxDieStatusSelect.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\OutputWaferCarrierControl.resx">
+      <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\SequenceAutoControl.resx">
+      <DependentUpon>SequenceAutoControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Page\SequenceManualControl.resx">
+      <DependentUpon>SequenceManualControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Sequence_Main.resx">
+      <DependentUpon>Sequence_Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TestGyn.resx">
+      <DependentUpon>TestGyn.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\Page\CommonUnitConfig.resx">
+      <DependentUpon>CommonUnitConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Monitoring_Main.resx">
+      <DependentUpon>Monitoring_Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMain\Operator_Main.resx">
+      <DependentUpon>Operator_Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Main_Recipe.resx">
+      <DependentUpon>Main_Recipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\InputStageUnit_Config.resx">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Page\CellTesterPage.resx">
+      <DependentUpon>CellTesterPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Page\RankSetPage.resx">
+      <DependentUpon>RankSetPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Page\TestConditionSetPage.resx">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Vision_Recipe.resx">
+      <DependentUpon>Vision_Recipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Barcoder_Setup.resx">
+      <DependentUpon>Barcoder_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Cylinder_Setup.resx">
+      <DependentUpon>Cylinder_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\DigitalIO_Setup.resx">
+      <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\Form_AxisJogPopup.resx">
+      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Equipment_Setup.resx">
+      <DependentUpon>Equipment_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\BarcoderControl.resx">
+      <DependentUpon>BarcoderControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\LightControl.resx">
+      <DependentUpon>LightControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\SourcemeterPage.resx">
+      <DependentUpon>SourcemeterPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\SpectrometerPage.resx">
+      <DependentUpon>SpectrometerPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\StrainGagePage.resx">
+      <DependentUpon>StrainGagePage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Page\VisionControl.resx">
+      <DependentUpon>VisionControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\UnloadArm_Menual.resx">
+      <DependentUpon>UnloadArm_Menual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\LoadArm_Menual.resx">
+      <DependentUpon>LoadArm_Menual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\InputStageEjectorUnit_Config.resx">
+      <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\OutputFeederUnit_Config.resx">
+      <DependentUpon>OutputFeederUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\OutputDieTransferUnit_Config.resx">
+      <DependentUpon>OutputDieTransferUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\OutputCassetteLifterUnit_Config.resx">
+      <DependentUpon>OutputCassetteLifterUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\IndexUnloadAlignerUnit_Config.resx">
+      <DependentUpon>IndexUnloadAlignerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\IndexLoadAlignerUnit_Config.resx">
+      <DependentUpon>IndexLoadAlignerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\IndexChipProberUnit_Config.resx">
+      <DependentUpon>IndexChipProberUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\IndexChipProbeControllerUnit_Config.resx">
+      <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\InputFeederUnit_Config.resx">
+      <DependentUpon>InputFeederUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\RotaryUnit_Config.resx">
+      <DependentUpon>RotaryUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\OutputStageUnit_Config.resx">
+      <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\InputDieTransferUnit_Config.resx">
+      <DependentUpon>InputDieTransferUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Instrument_Setup.resx">
+      <DependentUpon>Instrument_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Motion_Setup.resx">
+      <DependentUpon>Motion_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormConfig\InputCassetteLifterUnit_Config.resx">
+      <DependentUpon>InputCassetteLifterUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormRecipe\Measurement_Recipe.resx">
+      <DependentUpon>Measurement_Recipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormSetup\Vision_Setup.resx">
+      <DependentUpon>Vision_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\Index_Menual.resx">
+      <DependentUpon>Index_Menual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\Bin_Menual.resx">
+      <DependentUpon>Bin_Menual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form\FormMenual\Wafer_Menual.resx">
+      <DependentUpon>Wafer_Menual.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include=".editorconfig" />
+    <None Include="LanguageManagerAlarmUpdate.md" />
+    <None Include="LanguageManagerGuide.md" />
+    <None Include="LanguageManagerQuickStart.md" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -175,8 +1026,18 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Component\" />
-    <Folder Include="Unit\" />
+    <ProjectReference Include="..\QMC.Common\QMC.Common.csproj">
+      <Project>{457920bd-bbae-447e-8ab0-a03f4722275c}</Project>
+      <Name>QMC.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\JogPanel_ico.ico" />
+    <Content Include="Resources\JogPanel.png" />
+    <None Include="Resources\megaphone_80px.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

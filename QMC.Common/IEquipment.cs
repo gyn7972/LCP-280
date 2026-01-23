@@ -4,6 +4,7 @@ using QMC.Common.DIO;
 using QMC.Common.IO;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.Common
@@ -31,14 +32,16 @@ namespace QMC.Common
     {
         EquipmentState EqState { get; set; }
 
-        System.Threading.Tasks.Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = false);
+        System.Threading.Tasks.Task<bool> SequenceStopAllAsync(CancellationToken ct);
 
         System.Threading.Tasks.Task<bool> TerminateAllUnitsAsync();
-        System.Threading.Tasks.Task<bool> StopUnitAsync(string unitName);
-
+        System.Threading.Tasks.Task SequenceStopAsync(string unitName, CancellationToken ct);
+        //SequenceStopAsync(unitName, CancellationToken.None);
         // 최소 공개 API만 신중히 추가:
         DioScanService DioScan { get; }
         DIOUnit UnitIO { get; }
+
+
 
         // 인터페이스에서는 구현 없이 선언만(C# 7.3 호환)
         string ICurrentRecipe { get; set; }
@@ -60,30 +63,15 @@ namespace QMC.Common
             return eq != null;
         }
 
-        //public bool m_bBuzzerOff = false;
-
-        // C# 7.3 호환: 글로벌 접근 편의를 위한 정적 프록시
-        public static string CurrentRecipe
-        {
-            get
-            {
-                if (_instance == null) 
-                    return null;
-                return _instance.ICurrentRecipe;
-            }
-            set
-            {
-                if (_instance != null)
-                    _instance.ICurrentRecipe = value;
-            }
-        }
-
         public static void ShutdownAndDisposeSafely(int stopTimeoutMs = 8000)
         {
-            if (_instance == null) return;
+            if (_instance == null) 
+                return;
+
             try
             {
-                var stopTask = _instance.StopAllUnitsAsync();
+                //var stopTask = _instance.StopAllUnitsAsync();
+                var stopTask = _instance.SequenceStopAllAsync(CancellationToken.None);
                 var terminateTask = _instance.TerminateAllUnitsAsync();
                 if (!stopTask.Wait(stopTimeoutMs))
                 {

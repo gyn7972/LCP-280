@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -22,6 +23,9 @@ namespace QMC.Common.Alarm
             }
         }
         #endregion
+
+        // [ADD] 신규 알람이 "리스트에 추가된 순간"을 외부로 알림 (중복 추가는 발생 안 함)
+        public event Action<AlarmInfo> AlarmAdded;
 
         private AlarmCollection m_Alarms;
         public AlarmCollection Alarms 
@@ -56,6 +60,8 @@ namespace QMC.Common.Alarm
 
         public void ShowAlarm(AlarmInfo alarm)
         {
+            bool added = false;
+
             lock (_lock)
             {
                 // 1. 알람 리스트에 안전하게 추가
@@ -63,11 +69,18 @@ namespace QMC.Common.Alarm
                 if (m_Alarms.Where(a=>a.Code == alarm.Code).Count() ==0)
                 {
                     m_Alarms.Add(alarm);
+                    added = true;
                 }
                 else
                 {
                     return;
                 }
+            }
+
+            // [ADD] Summary 같은 외부 집계는 Common 밖에서 처리하도록 이벤트로 방출
+            if (added)
+            {
+                try { AlarmAdded?.Invoke(alarm); } catch { }
             }
 
             // 2. PostAlarm 이벤트 (UI 스레드에서 실행)
@@ -77,16 +90,6 @@ namespace QMC.Common.Alarm
                 {
                     // UI 폼이 없이 알람 발생.
                     PostAlarm?.Invoke(alarm);
-
-                    //var eq = EquipmentLocator.Instance;
-                    //eq.EqState = EquipmentState.Error;
-                    //var state = eq?.EqState ?? EquipmentState.Unknown;
-
-                    //Test임.
-                    //var mb = new MessageBoxOk();
-                    //mb.Text = "알람 발생";
-                    //mb.Message = $"[{alarm.Grade}] {alarm.Title}\n{alarm.Cause}";
-                    //mb.ShowDialog(); // UI 스레드에서 실행
                 }
                 else
                 {
@@ -138,7 +141,6 @@ namespace QMC.Common.Alarm
             // PostAlarm 호출은 필요 시 추가 가능
         }
 
-
         private void CheckAlarmGrade(string strGrade)
         {
             switch (strGrade)
@@ -158,12 +160,14 @@ namespace QMC.Common.Alarm
 
         private void CycleStop()
         {
-            EquipmentLocator.Instance.StopAllUnitsAsync();
+            //EquipmentLocator.Instance.StopAllUnitsAsync();
+            EquipmentLocator.Instance.SequenceStopAllAsync(CancellationToken.None);
         }
 
         private void Stop()
         {
-            EquipmentLocator.Instance.StopAllUnitsAsync();
+            //EquipmentLocator.Instance.StopAllUnitsAsync();
+            EquipmentLocator.Instance.SequenceStopAllAsync(CancellationToken.None);
         }
 
         public void ClearAllAlarms()

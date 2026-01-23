@@ -183,8 +183,8 @@ namespace QMC.Common
                 {
                     if (!AccountManager.HasParameterAccessPermission())
                     {
-                        MessageBox.Show("Maintenance 이상의 권한이 필요합니다.", "권한 없음",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Error", "Maintenance 이상의 권한이 필요합니다.");
                         return;
                     }
                 }
@@ -192,7 +192,7 @@ namespace QMC.Common
                 if (menuButtons == MenuButtonType.Exit)
                 {
                     var ask = new MessageBoxYesNo();
-                    if (ask.ShowDialog("확인", "Exit?") != DialogResult.Yes)
+                    if (ask.ShowDialog("Info", "Exit?") != DialogResult.Yes)
                         return;
 
                     Application.Exit();

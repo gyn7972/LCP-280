@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace LCP_280.Properties {
+namespace QMC.LCP_280.Process.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

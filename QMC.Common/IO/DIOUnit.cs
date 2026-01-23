@@ -61,7 +61,8 @@ namespace QMC.Common.IO
                                                        int inputCountPerModule, int outputCountPerModule,
                                                        string model)
         {
-            if (File.Exists(filePath)) return Load(filePath);
+            if (File.Exists(filePath)) 
+                return Load(filePath);
 
             var u = new DIOUnit();
             u.UnitName = unitName;

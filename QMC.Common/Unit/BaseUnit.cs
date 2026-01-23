@@ -228,19 +228,6 @@ namespace QMC.Common.Unit
             }
         }
 
-        //public List<TeachingPosition> TeachingPositions
-        //{
-        //    get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
-        //    private set
-        //    {
-        //        if (Config == null)
-        //        {
-        //            return;
-        //        }
-        //        Config.TeachingPositions = value ?? new List<TeachingPosition>();
-        //    }
-        //}
-
         protected BaseUnit(string unitName)
         {
             UnitName = unitName;
@@ -311,6 +298,8 @@ namespace QMC.Common.Unit
                     }
                 }
 
+                //Main화면의 정지가 동작되도록 하자.
+                //Equipment에 알람발생 변수 만들고...
                 AlarmManager.Instance.ShowAlarm(alarm);
             }
             catch (Exception ex)
@@ -932,8 +921,23 @@ namespace QMC.Common.Unit
         }
         public virtual bool InPosTeaching(string positionName)
         {
-            var tp = Config.GetTeachingPosition(positionName);
+            // [CHG] Recipe 우선(TeachingPositions는 내부에서 Recipe/Config fallback 처리됨)
+            //       기존 Config.GetTeachingPosition() 직접조회는 Recipe 기반 유닛에서 값 불일치 발생
+            TeachingPosition tp = null;
+            try
+            {
+                var list = TeachingPositions;
+                if (list != null)
+                    tp = list.FirstOrDefault(p => p != null &&
+                        string.Equals(p.Name, positionName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { /* ignore */ }
+
+            // fallback: 기존 동작 유지 (혹시 TeachingPositions 경로가 깨진 경우)
             if (tp == null)
+                tp = Config?.GetTeachingPosition(positionName);
+
+            if (tp == null || tp.AxisPositions == null)
                 return false;
 
             foreach (var kv in tp.AxisPositions)
@@ -946,11 +950,27 @@ namespace QMC.Common.Unit
             }
             return true;
         }
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+
         public virtual double GetTP(string tpName, string axisName)
         {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) 
+            // [CHG] Recipe 우선(TeachingPositions는 내부에서 Recipe/Config fallback 처리됨)
+            TeachingPosition tp = null;
+            try
+            {
+                var list = TeachingPositions;
+                if (list != null)
+                    tp = list.FirstOrDefault(p => p != null &&
+                        string.Equals(p.Name, tpName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { /* ignore */ }
+
+            // fallback: 기존 동작 유지
+            if (tp == null)
+                tp = Config?.GetTeachingPosition(tpName);
+
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v))
                 return v;
 
             return 0.0;

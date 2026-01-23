@@ -63,7 +63,6 @@ namespace QMC.Common.PKGTester
         private static readonly Random _rand = new Random();
         // Simulation 시 GoodBin 배정 확률 (0~1)
         public double SimulationGoodProbability { get; set; } = 0.75;
-
         #endregion
 
         #region Properties

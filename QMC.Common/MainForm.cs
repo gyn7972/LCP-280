@@ -242,7 +242,8 @@ namespace QMC.Common
                 {
                     if (EquipmentLocator.TryGet(out var eq))
                     {
-                        var stopTask = eq.StopAllUnitsAsync();
+                        //var stopTask = eq.StopAllUnitsAsync();
+                        var stopTask = eq.SequenceStopAllAsync(CancellationToken.None);
                         var finished = await Task.WhenAny(stopTask, Task.Delay(8000));
                         if (finished != stopTask)
                             Console.WriteLine("StopAllUnitsAsync timeout - force disposing");

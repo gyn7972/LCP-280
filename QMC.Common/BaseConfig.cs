@@ -36,11 +36,8 @@ namespace QMC.Common
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // =====
         // TeachingPosition 관련 유틸
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
-
-
 
         // ===== (추가) 전역 DryRun 관리 =====
         private static readonly object _instancesLock = new object();

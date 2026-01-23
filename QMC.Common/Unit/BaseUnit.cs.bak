@@ -131,9 +131,6 @@ namespace QMC.Common.Unit
                 var eq = EquipmentLocator.Instance as IEquipment;
                 //eq.TryGet(out var eq);
                 eq?.SetAndRaiseUnitState(this.UnitName, value);
-
-                //EquipmentLocator.Instance.TryGet(out var eq);
-                //eq?.SetAndRaiseUnitState(this.UnitName, value);
             }
         }
         
@@ -148,20 +145,101 @@ namespace QMC.Common.Unit
         public CancellationTokenSource CalcelToken { get;  set; }
         // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
+
         public List<TeachingPosition> TeachingPositions
         {
-            get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
+            get
+            {
+                // 1) Recipe(예: Config.TeachingRecipe.TeachingPositions) 우선
+                try
+                {
+                    if (Config != null)
+                    {
+                        // Config.TeachingRecipe 또는 Config.Recipe 같은 이름을 우선 탐색
+                        var cfgType = Config.GetType();
+
+                        // 우선순위 후보: TeachingRecipe, Recipe
+                        var recipeProp =
+                            cfgType.GetProperty("TeachingRecipe",
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                            ?? cfgType.GetProperty("Recipe",
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                        var recipeObj = recipeProp?.GetValue(Config, null);
+                        if (recipeObj != null)
+                        {
+                            var tpProp = recipeObj.GetType().GetProperty("TeachingPositions",
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                            var recipeTps = tpProp?.GetValue(recipeObj, null) as List<TeachingPosition>;
+                            if (recipeTps != null)
+                                return recipeTps;
+                        }
+                    }
+                }
+                catch
+                {
+                    // fallback로 진행
+                }
+
+                // 2) fallback: 기존 Config.TeachingPositions
+                return Config != null
+                    ? (Config.TeachingPositions ?? new List<TeachingPosition>())
+                    : new List<TeachingPosition>();
+            }
+
             private set
             {
                 if (Config == null)
-                {
-                    // Initialize Config if possible or ignore safely
-                    // If Config cannot be created here, just noop to avoid NRE
                     return;
+
+                var newList = value ?? new List<TeachingPosition>();
+
+                // 1) Recipe가 있으면 Recipe에 저장 시도
+                try
+                {
+                    var cfgType = Config.GetType();
+                    var recipeProp =
+                        cfgType.GetProperty("TeachingRecipe",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                        ?? cfgType.GetProperty("Recipe",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                    var recipeObj = recipeProp?.GetValue(Config, null);
+                    if (recipeObj != null)
+                    {
+                        var tpProp = recipeObj.GetType().GetProperty("TeachingPositions",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+
+                        if (tpProp != null && tpProp.CanWrite)
+                        {
+                            tpProp.SetValue(recipeObj, newList, null);
+                            return;
+                        }
+                    }
                 }
-                Config.TeachingPositions = value ?? new List<TeachingPosition>();
+                catch
+                {
+                    // recipe 저장 실패 시 Config로 fallback
+                }
+
+                // 2) fallback: 기존 Config.TeachingPositions에 저장
+                Config.TeachingPositions = newList;
             }
         }
+
+        //public List<TeachingPosition> TeachingPositions
+        //{
+        //    get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
+        //    private set
+        //    {
+        //        if (Config == null)
+        //        {
+        //            return;
+        //        }
+        //        Config.TeachingPositions = value ?? new List<TeachingPosition>();
+        //    }
+        //}
 
         protected BaseUnit(string unitName)
         {
@@ -352,7 +430,6 @@ namespace QMC.Common.Unit
 
             SetRunMode(UnitRunMode.Manual);
             this.RunUnitStatus = UnitStatus.Stopped;
-            //this.State = ProcessState.Stop;         // <-이걸 여기서 하면 안되는거지. RunUnitStatus만 보고 멈춰야지.
             
             return 0;
         }
@@ -814,7 +891,7 @@ namespace QMC.Common.Unit
         protected virtual int TeachingInposStableSampleCount => 5;         // 안정 샘플 횟수
         protected virtual int TeachingInposSampleDelayMs => 2;             // 샘플 간 간격(ms)
                                                                            // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
-        protected bool InPosTeachingAxis(MotionAxis ax, double target)
+        public bool InPosTeachingAxis(MotionAxis ax, double target)
         {
             if (ax == null) return true;
 
@@ -853,10 +930,27 @@ namespace QMC.Common.Unit
                 return false;
             return InPosTeaching(tp.Name);
         }
-        public bool InPosTeaching(string positionName)
+
+
+        public virtual bool InPosTeaching(string positionName)
         {
-            var tp = Config.GetTeachingPosition(positionName);
+            // [CHG] Recipe 우선(TeachingPositions는 내부에서 Recipe/Config fallback 처리됨)
+            //       기존 Config.GetTeachingPosition() 직접조회는 Recipe 기반 유닛에서 값 불일치 발생
+            TeachingPosition tp = null;
+            try
+            {
+                var list = TeachingPositions;
+                if (list != null)
+                    tp = list.FirstOrDefault(p => p != null &&
+                        string.Equals(p.Name, positionName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { /* ignore */ }
+
+            // fallback: 기존 동작 유지 (혹시 TeachingPositions 경로가 깨진 경우)
             if (tp == null)
+                tp = Config?.GetTeachingPosition(positionName);
+
+            if (tp == null || tp.AxisPositions == null)
                 return false;
 
             foreach (var kv in tp.AxisPositions)
@@ -869,11 +963,27 @@ namespace QMC.Common.Unit
             }
             return true;
         }
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
+
+        public virtual double GetTP(string tpName, string axisName)
         {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) 
+            // [CHG] Recipe 우선(TeachingPositions는 내부에서 Recipe/Config fallback 처리됨)
+            TeachingPosition tp = null;
+            try
+            {
+                var list = TeachingPositions;
+                if (list != null)
+                    tp = list.FirstOrDefault(p => p != null &&
+                        string.Equals(p.Name, tpName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { /* ignore */ }
+
+            // fallback: 기존 동작 유지
+            if (tp == null)
+                tp = Config?.GetTeachingPosition(tpName);
+
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v))
                 return v;
 
             return 0.0;

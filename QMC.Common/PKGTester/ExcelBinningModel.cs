@@ -51,12 +51,20 @@ namespace QMC.Common.PKGTester
         /// <summary>BIN 행 목록</summary>
         public List<ExcelBinItem> Bins { get; } = new List<ExcelBinItem>();
 
+        /// <summary>
+        /// Spec Header 2에 Sub 컬럼이 존재하는지 여부.
+        /// - 구 포맷: true (No,BIN,Sub,Name,OP,NG,...)
+        /// - 신 포맷: false (No,BIN,Name,OP,NG,...)
+        /// </summary>
+        public bool HasSubColumn { get; set; } = true;
+
         public void Clear()
         {
             ItemKeys.Clear();
             ItemDisplayNames.Clear();
             ItemUnits.Clear();
             Bins.Clear();
+            HasSubColumn = true;
         }
     }
 }

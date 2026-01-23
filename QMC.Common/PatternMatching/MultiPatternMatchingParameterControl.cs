@@ -109,8 +109,10 @@ namespace QMC.Common
 
         public void UpdateParameters()
         {
-            if (_designMode) return;
-            if (Parameters == null) return;
+            if (_designMode) 
+                return;
+            if (Parameters == null) 
+                return;
 
             this.UseMaskImage = Parameters.UseMaskImage;
             this.checkBoxDupCheck.Checked = Parameters.DuplicateChecked;

@@ -1,0 +1,1441 @@
+﻿using QMC.Common;
+using QMC.Common.Controls;
+using QMC.Common.Motions;
+using QMC.Common.UI;
+using QMC.Common.Unit;
+using QMC.Common.Vision;
+using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static QMC.Common.FormMain;
+using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
+using static QMC.LCP_280.Process.Unit.InputStage;
+
+namespace QMC.LCP_280.Process.Unit.FormMain
+{
+    [FormOrder(2)]
+    public partial class Operator_Main : Form, ITabActivationAware
+    {
+        private Equipment _Equipment;
+
+        // Units
+        private InputCassetteLifter InputCassetteLifter { get; set; }
+        private InputFeeder InputFeeder { get; set; }
+        private InputStage InputStage { get; set; }
+        private InputDieTransfer InputDieTransfer { get; set; }
+        private Rotary Rotary { get; set; }
+        private IndexLoadAligner IndexLoadAligner { get; set; }
+        private IndexChipProbeController IndexChipProbeController { get; set; }
+        private IndexChipProber IndexChipProber { get; set; }
+        private IndexUnloadAligner IndexUnloadAligner { get; set; }
+        private OutputDieTransfer OutputDieTransfer { get; set; }
+        private OutputStage OutputStage { get; set; }
+        private OutputFeeder OutputFeeder{ get; set; }
+        private OutputCassetteLifter OutputCassetteLifter { get; set; }
+        private InputStageEjector InputStageEjector { get; set; }
+        // State
+        private bool _initialized;
+        private bool _preloadRequested;
+        private bool _deferredInitDone;
+        private bool _isLayoutEditMode;
+
+        // Auto Sequence 상태
+        private bool _autoReady = false;
+        private bool _autoStarting = false;
+
+        // 기존 Form 내부 상태 HashSet은 더 이상 “진짜 상태”가 아니므로 제거/최소화
+        // UI 토글 처리를 위해서만 유지(권장: Equipment Snapshot 기반으로 UI 갱신)
+        private readonly HashSet<string> _uiReady = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _uiStart = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _uiReset = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // [ADD] sequenceName 별 동시 실행 방지 게이트(Ready/Start/Stop 모두 동일 시퀀스는 1개만 수행)
+        private readonly object _seqOpGateLock = new object();
+        private readonly HashSet<string> _seqOpsInFlight = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly System.Windows.Forms.Timer _seqUiTimer = new System.Windows.Forms.Timer();
+        private EventHandler _seqUiChangedHandler;
+        private static readonly string[] _seqOrder = { "Wafer", "LoadArm", "Index", "UnloadArm", "Bin" };
+
+        // Jog Popup
+        private Form_AxisJogPopup _jogPopup = null;
+        private AxisPostionPopup _axisPosPopup = null;
+
+        public Operator_Main() : this(
+            TryGetUnit<InputFeeder>(Equipment.UnitKeys.InputFeeder),
+            TryGetUnit<InputDieTransfer>(Equipment.UnitKeys.InputDieTransfer),
+            TryGetUnit<Rotary>(Equipment.UnitKeys.Rotary),
+            TryGetUnit<OutputDieTransfer>(Equipment.UnitKeys.OutputDieTransfer),
+            TryGetUnit<OutputFeeder>(Equipment.UnitKeys.OutputFeeder),
+            TryGetUnit<InputStage>(Equipment.UnitKeys.InputStage),
+            TryGetUnit<IndexUnloadAligner>(Equipment.UnitKeys.IndexUnloadAligner),
+            TryGetUnit<OutputStage>(Equipment.UnitKeys.OutputStage),
+            TryGetUnit<InputCassetteLifter>(Equipment.UnitKeys.InputCassetteLifter),
+            TryGetUnit<IndexLoadAligner>(Equipment.UnitKeys.IndexLoadAligner),
+            TryGetUnit<IndexChipProbeController>(Equipment.UnitKeys.IndexChipProbeController),
+            TryGetUnit<OutputCassetteLifter>(Equipment.UnitKeys.OutputCassetteLifter),
+            TryGetUnit<InputStageEjector>(Equipment.UnitKeys.InputStageEjector),
+            TryGetUnit<IndexChipProber>(Equipment.UnitKeys.IndexChipProber))
+        {
+        }
+
+        public Operator_Main(InputFeeder inputFeeder, InputDieTransfer inputDieTransfer, Rotary rotary,
+                            OutputDieTransfer outputDieTransfer, OutputFeeder outputFeeder,
+                            InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage,
+                            InputCassetteLifter inputCassetteLifter, IndexLoadAligner indexLoadAligner,
+                            IndexChipProbeController indexChipProbeController, OutputCassetteLifter outputCassetteLifter,
+                            InputStageEjector inputStageEjector, IndexChipProber indexChipProber)
+        {
+            InitializeComponent();
+
+            _Equipment = Equipment.Instance;
+            if (_Equipment != null)
+            {
+                _Equipment.StateChanged += Eq_StateChanged_ForOperator;
+                _Equipment.UnitStateChanged += Eq_UnitStateChanged_ForOperator;
+            }
+
+            InputFeeder = inputFeeder;
+            InputDieTransfer = inputDieTransfer;
+            Rotary = rotary;
+            OutputDieTransfer = outputDieTransfer;
+            OutputFeeder = outputFeeder;
+            InputStage = inputStage;
+            IndexUnloadAligner = indexUnloadAligner;
+            OutputStage = outputStage;
+
+            InputCassetteLifter = inputCassetteLifter;
+            IndexLoadAligner = indexLoadAligner;
+            IndexChipProbeController = indexChipProbeController;
+            OutputCassetteLifter = outputCassetteLifter;
+
+            InputStageEjector = inputStageEjector;
+            IndexChipProber = indexChipProber;
+
+            Load += Vision_Manual_Load;
+
+            sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
+
+            InputWaferCamera.LightControlRequested += LightControlRequested;
+            IndexOutputCamera.LightControlRequested += LightControlRequested;
+            OutputWaferCamera.LightControlRequested += LightControlRequested;
+            IndexMAlignCamera.LightControlRequested += LightControlRequested;
+
+            if (InputStage != null)
+            {
+                InputStage.MarksFound -= OnMarksFound;
+                InputStage.MarksFound += OnMarksFound;
+            }
+
+            if(IndexUnloadAligner != null)
+            {
+                IndexUnloadAligner.MarksFound -= OnMarksFound;
+                IndexUnloadAligner.MarksFound += OnMarksFound;
+            }
+
+            if(IndexLoadAligner != null)
+            {
+                IndexLoadAligner.MarksFound -= OnMarksFound;
+                IndexLoadAligner.MarksFound += OnMarksFound;
+            }
+
+            // [ADD] Equipment snapshot 기반으로 Manual 버튼 상태 동기화(Ready/Start/Stop 표시 포함)
+            try
+            {
+                _seqUiChangedHandler = (s, e) =>
+                {
+                    if (IsDisposed || Disposing) return;
+                    if (InvokeRequired) BeginInvoke(new Action(RefreshManualSequenceButtonsFromEquipment));
+                    else RefreshManualSequenceButtonsFromEquipment();
+                };
+
+                _Equipment.SequenceUiStateChanged += _seqUiChangedHandler;
+
+                _seqUiTimer.Interval = 200;
+                _seqUiTimer.Tick += (s, e) => RefreshManualSequenceButtonsFromEquipment();
+                _seqUiTimer.Start();
+            }
+            catch { }
+
+        }
+
+        #region Form Cleanup
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                _seqUiTimer.Stop();
+                if (_Equipment != null && _seqUiChangedHandler != null)
+                    _Equipment.SequenceUiStateChanged -= _seqUiChangedHandler;
+            }
+            catch { }
+
+            if (sequenceManualControl != null)
+                sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
+
+            if (InputStage != null)
+                InputStage.MarksFound -= OnMarksFound;
+
+            if (IndexUnloadAligner != null)
+                IndexUnloadAligner.MarksFound -= OnMarksFound;
+
+            try
+            {
+                if (_Equipment != null)
+                {
+                    _Equipment.StateChanged -= Eq_StateChanged_ForOperator;
+                    _Equipment.UnitStateChanged -= Eq_UnitStateChanged_ForOperator;
+                }
+            }
+            catch { }
+
+            base.OnFormClosing(e);
+        }
+        #endregion
+
+        // ===== Form Activation/Visibility Hooks =====
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            // 탭 전환 등으로 폼이 숨겨지면 카메라 정지, 보이면 재개
+            try
+            {
+                if (this.Visible == false) 
+                    PauseCameras();
+                else 
+                    ResumeCameras();
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            // 폼 활성화 시 재개
+            try { 
+                ResumeCameras(); 
+            } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            // 폼 비활성화 시 정지
+            try { 
+                PauseCameras(); 
+            } catch { }
+        }
+
+        public void OnActivatedInTab()
+        {
+            ResumeCameras();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCameras();
+        }
+
+
+
+        private static T TryGetUnit<T>(string unitName) where T : class
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
+                    return u as T;
+            }
+            catch { }
+            return null;
+        }
+
+        #region UI 초기화
+        public void PreloadUI()
+        {
+            if (IsDisposed || Disposing) return;
+            if (_preloadRequested) return;
+            _preloadRequested = true;
+            EnsureInitialized();
+            var handle = Handle;
+        }
+        private void Vision_Manual_Load(object sender, EventArgs e) => EnsureInitialized();
+        private void EnsureInitialized()
+        {
+            if (_initialized) return;
+            _initialized = true;
+
+            try
+            {
+                BeginInvoke(new Action(StartDeferredInit));
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Controls.Add(new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Text = $"Init 실패: {ex.Message}",
+                        ForeColor = Color.Red,
+                        TextAlign = ContentAlignment.MiddleCenter
+                    });
+                }
+                catch { }
+            }
+        }
+
+        private void OnMarksFound(object sender, PatternMarksFoundEventArgs e)
+        {
+            VisionImageViewer viewer = null;
+            bool useXAxisRoi = true;
+
+            if (sender == (object)InputStage)
+            {
+                viewer = InputWaferCamera;
+                useXAxisRoi = true;
+            }
+            else if (sender == (object)IndexUnloadAligner)
+            {
+                viewer = IndexOutputCamera;
+                useXAxisRoi = true;
+            }
+            else if (sender == (object)IndexLoadAligner)
+            {
+                viewer = IndexMAlignCamera;
+                useXAxisRoi = true;
+            }
+
+            if (viewer == null || viewer.IsDisposed)
+                return;
+
+            // Hub로만 오버레이 적용
+            VisionRunnerHub.ApplyMarksFoundOverlays(
+                viewer,
+                e,
+                new VisionRunnerHub.MarksOverlayOptions
+                {
+                    UseXAxisRoi = useXAxisRoi,
+
+                    // (권장) 텍스트 위치/멀티라인 때문에 조금 아래로
+                    TextLocation = new Point(10, 50),
+                    ShowTextInfo = true,
+
+                    // ROI 제공: 가능하면 유닛별 Recipe ROI를 넘김 (없으면 Hub가 CenterROI fallback)
+                    RecipeInspectRoiProvider = () => TryGetInspectRoiFromUnit(sender)
+                });
+        }
+
+        private (Point start, Point end)? TryGetInspectRoiFromUnit(object sender)
+        {
+            try
+            {
+                // 1) InputStage는 이미 접근 가능
+                if (sender == (object)InputStage && InputStage?.PmRunner != null)
+                {
+                    var s = InputStage.PmRunner._Roi.InspectStart;
+                    var e = InputStage.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
+                }
+
+                // 2) IndexUnloadAligner / IndexLoadAligner는 reflection fallback
+                if (sender == (object)IndexUnloadAligner && IndexUnloadAligner != null)
+                {
+                    var s = IndexUnloadAligner.PmRunner._Roi.InspectStart;
+                    var e = IndexUnloadAligner.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
+
+                    //if (TryGetRunnerInspectRoiViaReflection(IndexUnloadAligner, out var s, out var e))
+                    //    return (s, e);
+                }
+
+                if (sender == (object)IndexLoadAligner && IndexLoadAligner != null)
+                {
+                    var s = IndexLoadAligner.PmRunner._Roi.InspectStart;
+                    var e = IndexLoadAligner.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
+
+                    //if (TryGetRunnerInspectRoiViaReflection(IndexLoadAligner, out var s, out var e))
+                    //    return (s, e);
+                }
+            }
+            catch { }
+
+            return null; // Hub가 CenterROI fallback 사용
+        }
+
+        // [ADD] IndexUnloadAligner/IndexLoadAligner에 Runner/ROI 접근자가 없을 수 있어서 reflection로 읽음
+        private bool TryGetRunnerInspectRoiViaReflection(object unit, out Point start, out Point end)
+        {
+            start = Point.Empty;
+            end = Point.Empty;
+            if (unit == null) return false;
+
+            try
+            {
+                // unit.PmRunner 또는 unit._pmRunner 같은 프로퍼티/필드 탐색
+                var t = unit.GetType();
+                object runner = null;
+
+                var p = t.GetProperty("PmRunner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                if (p != null) runner = p.GetValue(unit, null);
+
+                if (runner == null)
+                {
+                    var f = t.GetField("_pmRunner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (f != null) runner = f.GetValue(unit);
+                }
+                if (runner == null) return false;
+
+                // runner._Roi.InspectStart/InspectEnd 탐색
+                var rt = runner.GetType();
+                var roiField = rt.GetField("_Roi", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                if (roiField == null) return false;
+
+                var roi = roiField.GetValue(runner);
+                if (roi == null) return false;
+
+                var roiType = roi.GetType();
+                var ps = roiType.GetProperty("InspectStart");
+                var pe = roiType.GetProperty("InspectEnd");
+                if (ps == null || pe == null) return false;
+
+                start = (Point)ps.GetValue(roi, null);
+                end = (Point)pe.GetValue(roi, null);
+
+                return !(start.IsEmpty && end.IsEmpty);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            await Task.Delay(30);
+            if (IsDisposed || Disposing) return;
+            try { BindCamera(); } catch { }
+        }
+        #endregion
+
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                if (InputWaferCamera != null && InputStage?.StageCamera != null)
+                {
+                    if (InputWaferCamera.Camera != InputStage.StageCamera)
+                        InputWaferCamera.Camera = InputStage.StageCamera;
+                    try { InputStage.StageCamera.StartLive(); } catch { }
+                    try { InputWaferCamera.StartUpdateTask(); } catch { }
+                }
+                if (IndexOutputCamera != null && IndexUnloadAligner?.IndexOutCamera != null)
+                {
+                    if (IndexOutputCamera.Camera != IndexUnloadAligner.IndexOutCamera)
+                        IndexOutputCamera.Camera = IndexUnloadAligner.IndexOutCamera;
+                    try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
+                    try { IndexOutputCamera.StartUpdateTask(); } catch { }
+                }
+                if (OutputWaferCamera != null && OutputStage?.OutStageCamera != null)
+                {
+                    if (OutputWaferCamera.Camera != OutputStage.OutStageCamera)
+                        OutputWaferCamera.Camera = OutputStage.OutStageCamera;
+                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
+                    try { OutputWaferCamera.StartUpdateTask(); } catch { }
+                }
+                //IndexMAlignCamera
+                if (IndexMAlignCamera != null && IndexLoadAligner?.IndexAlignerCam != null)
+                {
+                    if (IndexMAlignCamera.Camera != IndexLoadAligner.IndexAlignerCam)
+                        IndexMAlignCamera.Camera = IndexLoadAligner.IndexAlignerCam;
+                    try { IndexLoadAligner.IndexAlignerCam.StartLive(); } catch { }
+                    try { IndexMAlignCamera.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+        }
+        #endregion
+
+        // 장비 상태 반영
+        private void Eq_StateChanged_ForOperator(object sender, EquipmentStateChangedEventArgs e)
+        {
+            if (IsDisposed || Disposing) 
+                return;
+            if (InvokeRequired) 
+            { 
+                BeginInvoke(new Action<object, EquipmentStateChangedEventArgs>(Eq_StateChanged_ForOperator), sender, e); 
+                return; 
+            }
+
+            ApplyOperatorEquipmentState(e.NewState);
+        }
+
+        private void ApplyOperatorEquipmentState(EquipmentState state)
+        {
+            // Auto 버튼들 (sequenceAutoControl 내부 API 가정)
+            bool canReady = state == EquipmentState.Stopped || state == EquipmentState.Ready;
+            bool canStart = state == EquipmentState.AutoRunning || state == EquipmentState.Ready;
+            bool canStop = state == EquipmentState.AutoRunning || state == EquipmentState.Starting;
+
+            if (state == EquipmentState.Error)
+            {
+                //sequenceAutoControl.SetAllEnabled(false);
+                //sequenceManualControl.SetAllEnabled(false);
+            }
+            else
+            {
+                // Manual 컨트롤은 Running 중에도 Ready/Start 토글 제한 정책에 맞게
+                //sequenceAutoControl.SetAllEnabled(true);
+                //sequenceManualControl.SetAllEnabled(true);
+            }
+        }
+
+        // Unit 상태 반영 (필요 시 단일 유닛 수동 제어 UI 갱신 – 확장 여지)
+        private void Eq_UnitStateChanged_ForOperator(object sender, UnitStateChangedEventArgs e)
+        {
+            if (IsDisposed || Disposing) return;
+            if (InvokeRequired) { BeginInvoke(new Action<object, UnitStateChangedEventArgs>(Eq_UnitStateChanged_ForOperator), sender, e); return; }
+
+            // 예: Manual 버튼 깜빡임/비활성 처리 필요시 여기에 추가
+            // sequenceManualControl.OnSequenceStateChanged(new SequenceStateChangedEventArgs { ... });
+        }
+
+        private void LightControlRequested(object sender, EventArgs e)
+        {
+            Form _lightControlPopup = null;
+
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(467, 286);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            popupForm.Owner = null;
+
+            SimpleLightControl lightControl = new SimpleLightControl();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            _lightControlPopup = popupForm;
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
+            popupForm.Show();
+            this.Activate();
+        }
+
+        #region Manual Sequence 처리
+        private void OnManualSequenceButtonRequested(object sender, SequenceEventArgs e)
+        {
+            Log.Write("Operator_Main", $"Manual Sequence {e.SequenceName} {e.Action} 요청");
+
+            if (e.Action == "Ready")
+                HandleReadyAction(e.SequenceName);
+            else if (e.Action == "Start")
+                HandleStartAction(e.SequenceName);
+            else if (e.Action == "Reset")
+                HandleResetAction(e.SequenceName);
+        }
+
+        private async void HandleReadyAction(string sequenceName)
+        {
+            // Ready는 "켜기만" 유지: 이미 Ready면 아무 것도 하지 않음
+            if (_uiReady.Contains(sequenceName))
+                return;
+
+            // 동일 sequenceName 동시 실행 방지
+            if (!TryEnterSeqOp(sequenceName))
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Info.", "해당 시퀀스 작업이 이미 진행 중입니다.");
+                return;
+            }
+
+            try
+            {
+                // Start 중이면 금지(동시에 실행 금지) - 동일 sequenceName만 체크
+                if (_uiStart.Contains(sequenceName))
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Info.", "해당 시퀀스가 진행 중입니다.");
+                    return;
+                }
+
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog($"Manual {sequenceName}",
+                    $"Manual {sequenceName} Ready 하시겠습니까?") != DialogResult.Yes)
+                {
+                    return;
+                }
+
+                var ct = CancellationToken.None;
+
+                bool ok = await Equipment.Instance.SequenceReadyAsync(sequenceName, ct).ConfigureAwait(true);
+                if (!ok)
+                {
+                    MessageBox.Show($"{sequenceName} Ready 실패(동시 실행 중이거나 Ready 실패)", "Ready Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+                    return;
+                }
+
+                _uiReady.Add(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Ready", true, false);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+                MessageBox.Show($"{sequenceName} Ready 예외: {ex.Message}", "Ready Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                ExitSeqOp(sequenceName);
+            }
+        }
+
+        private async void HandleStartAction(string sequenceName)
+        {
+            // 동일 sequenceName 동시 실행 방지
+            if (!TryEnterSeqOp(sequenceName))
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Info.", "해당 시퀀스 작업이 이미 진행 중입니다.");
+                return;
+            }
+
+            try
+            {
+                var ask = new MessageBoxYesNo();
+
+                // Start ON → OFF (Stop)
+                if (_uiStart.Contains(sequenceName))
+                {
+                    if (ask.ShowDialog($"Manual {sequenceName}", "Stop 하시겠습니까?") != DialogResult.Yes)
+                        return;
+
+                    try
+                    {
+                        await Equipment.Instance.SequenceStopAsync(sequenceName, CancellationToken.None).ConfigureAwait(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+
+                    _uiStart.Remove(sequenceName);
+                    NotifySequenceStateChanged(sequenceName, "Start", false, true);
+                    return;
+                }
+
+                // Start OFF → ON
+                if (ask.ShowDialog($"Manual {sequenceName}", "Start 하시겠습니까?") != DialogResult.Yes)
+                    return;
+
+                bool ok = await Equipment.Instance.SequenceStartAsync(sequenceName, CancellationToken.None).ConfigureAwait(true);
+                if (!ok)
+                {
+                    NotifySequenceStateChanged(sequenceName, "Start", false, true);
+                    MessageBox.Show($"{sequenceName} Start 실패(동시 실행 중이거나 Start 실패)", "Start Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Start 성공 시 Ready 표시(UI)는 내려도 되고(기존 유지), 안 내려도 되지만
+                // 현재 UI는 Ready/Start 텍스트/색이 별도로 있으니 기존대로 Ready OFF 처리 유지
+                _uiReady.Remove(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+
+                _uiStart.Add(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Start", true, true);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                NotifySequenceStateChanged(sequenceName, "Start", false, true);
+                MessageBox.Show($"{sequenceName} Start 예외: {ex.Message}", "Start Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                ExitSeqOp(sequenceName);
+            }
+        }
+
+        private async void HandleResetAction(string sequenceName)
+        {
+            // Reset은 "토글/Stop" 개념이 아니라 1회성 동작으로 처리하는 것이 안전함.
+            // (현재 UI는 Start만 Start/Stop 텍스트 토글을 지원하고, Reset은 토글 UI가 아님)
+            if (!TryEnterSeqOp(sequenceName))
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Info.", "해당 시퀀스 작업이 이미 진행 중입니다.");
+                return;
+            }
+
+            try
+            {
+                // 실행 중이면 Reset 금지(필요 정책에 따라 Stop 후 Reset으로 바꿀 수 있음)
+                if (_uiStart.Contains(sequenceName))
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Info.", "해당 시퀀스가 진행 중입니다. Stop 후 Reset 하세요.");
+                    return;
+                }
+
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog($"Manual {sequenceName}", "Reset 하시겠습니까?") != DialogResult.Yes)
+                    return;
+
+                // UI: Reset 요청 직후 표시(Reset 버튼이 있으면 램프처럼 잠깐 켜짐)
+                _uiReset.Add(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Reset", true, updateText: false);
+
+                bool ok = await Equipment.Instance
+                    .SequenceResetAsync(sequenceName, CancellationToken.None)
+                    .ConfigureAwait(true);
+
+                if (!ok)
+                {
+                    MessageBox.Show($"{sequenceName} Reset 실패(Ready 실패)", "Reset Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Reset 후 UI 상태 정리: Ready/Start/Reset 모두 OFF로 정리(정책에 맞게 조정 가능)
+                _uiReady.Remove(sequenceName);
+                _uiStart.Remove(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Ready", false, updateText: false);
+                NotifySequenceStateChanged(sequenceName, "Start", false, updateText: true);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show($"{sequenceName} Reset 예외: {ex.Message}", "Reset Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // Reset 버튼 램프는 잠깐만 유지(토글 아님)
+                _uiReset.Remove(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Reset", false, updateText: false);
+
+                ExitSeqOp(sequenceName);
+            }
+        }
+
+        private void NotifySequenceStateChanged(string sequenceName, string action, bool isActive, bool updateText)
+        {
+            sequenceManualControl.OnSequenceStateChanged(new SequenceStateChangedEventArgs
+            {
+                SequenceName = sequenceName,
+                Action = action,
+                IsActive = isActive,
+                UpdateText = updateText
+            });
+        }
+
+        private bool TryEnterSeqOp(string sequenceName)
+        {
+            if (string.IsNullOrWhiteSpace(sequenceName))
+                return false;
+
+            lock (_seqOpGateLock)
+            {
+                if (_seqOpsInFlight.Contains(sequenceName))
+                    return false;
+
+                _seqOpsInFlight.Add(sequenceName);
+                return true;
+            }
+        }
+
+        private void ExitSeqOp(string sequenceName)
+        {
+            if (string.IsNullOrWhiteSpace(sequenceName))
+                return;
+
+            lock (_seqOpGateLock)
+            {
+                _seqOpsInFlight.Remove(sequenceName);
+            }
+        }
+
+
+
+
+
+
+        #region 비즈니스 로직
+        private CancellationTokenSource _readyCts;
+        private bool _readyBusy;
+        #endregion
+
+        // Jog Popup
+        private void btn_Jog_Click(object sender, EventArgs e)
+        {
+            ShowOrRestoreJogPopup(this);
+            ShowOrRestoreAxisPosPopup(this);
+        }
+        private void ShowOrRestoreJogPopup(IWin32Window owner)
+        {
+            if (_jogPopup == null || _jogPopup.IsDisposed)
+            {
+                _jogPopup = new Form_AxisJogPopup
+                {
+                    StartPosition = FormStartPosition.CenterParent,
+                    ShowInTaskbar = true
+                };
+                _jogPopup.StartPosition = FormStartPosition.CenterScreen;
+                _jogPopup.Owner = null;
+                _jogPopup.Load += (s, e) =>
+                {
+                    TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
+                };
+                _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
+                _jogPopup.FormClosing += (s, ev) =>
+                {
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _jogPopup.Hide();
+                    }
+                };
+            }
+            if (!_jogPopup.Visible)
+                _jogPopup.Show();
+            if (_jogPopup.WindowState == FormWindowState.Minimized)
+                _jogPopup.WindowState = FormWindowState.Normal;
+            _jogPopup.BringToFront();
+            _jogPopup.TopMost = true;
+            _jogPopup.Activate();
+        }
+        private void ShowOrRestoreAxisPosPopup(IWin32Window owner)
+        {
+            if (_axisPosPopup == null || _axisPosPopup.IsDisposed)
+            {
+                _axisPosPopup = new AxisPostionPopup
+                {
+                    StartPosition = FormStartPosition.CenterParent,
+                    ShowInTaskbar = true
+                };
+                _axisPosPopup.StartPosition = FormStartPosition.CenterScreen;
+                _axisPosPopup.Owner = null;
+                _axisPosPopup.Load += (s, e) =>
+                {
+                    TaskbarHelper.SetAppId(_axisPosPopup.Handle, "MyApp.AxisPosition");
+                };
+                _axisPosPopup.FormClosed += (s, _) => { _axisPosPopup = null; };
+                _axisPosPopup.FormClosing += (s, ev) =>
+                {
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _axisPosPopup.Hide();
+                    }
+                };
+            }
+            if (!_axisPosPopup.Visible)
+                _axisPosPopup.Show();
+            if (_axisPosPopup.WindowState == FormWindowState.Minimized)
+                _axisPosPopup.WindowState = FormWindowState.Normal;
+            _axisPosPopup.BringToFront();
+            _axisPosPopup.TopMost = true;
+            _axisPosPopup.Activate();
+        }
+        private CancellationTokenSource _homeCts;
+
+        // === HomeAll: Helpers ===
+        private bool ConfirmHome()
+        {
+            var ask = new MessageBoxYesNo();
+            return ask.ShowDialog("확인", "축 홈을 진행하시겠습니까?") == DialogResult.Yes;
+        }
+
+        private CancellationToken PrepareNewHomeToken()
+        {
+            _homeCts?.Cancel();
+            _homeCts?.Dispose();
+            _homeCts = new CancellationTokenSource();
+            return _homeCts.Token;
+        }
+
+        private bool TryServoOnAllAxes()
+        {
+            var axes = _Equipment.AxisManager?.GetAll();
+            if (axes == null || axes.Length == 0)
+            {
+                MessageBox.Show("등록된 축이 없습니다.");
+                return false;
+            }
+
+            foreach (var ax in axes)
+            {
+                try { ax.ClearAlarm(); } catch { }
+                try { ax.Servo(true); } catch { }
+            }
+            return true;
+        }
+
+        private async Task<int> RunHomeSequenceWithDialogAsync(CancellationToken token)
+        {
+            HomeProgressForm dlg = null;
+            try
+            {
+                var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(_Equipment);
+
+                dlg = new HomeProgressForm();
+                dlg.InitializeProgress("Machine Home", seq.TotalSteps);
+
+                seq.OnProgress(p =>
+                {
+                    dlg.SafeUpdate(p);
+                });
+
+                dlg.CancelRequested += () =>
+                {
+                    try { _homeCts.Cancel(); } catch { }
+                    try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+
+                dlg.ForceStopRequested += () =>
+                {
+                    try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+
+                var runTask = seq.RunAsync(token);
+
+                dlg.Show(this);
+                dlg.BringToFront();
+
+                // 취소/완료 중 먼저 끝난 것 대기
+                var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
+                if (completed != runTask)
+                {
+                    // 취소됨: 2초 유예 후 여전히 미완료면 더 기다리지 않고 종료
+                    var grace = await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
+                    if (grace != runTask)
+                    {
+                        dlg.SafeUpdate(new OperationProgress
+                        {
+                            OperationId = "HOME",
+                            Title = "Home",
+                            StepIndex = seq.TotalSteps - 1,
+                            TotalSteps = seq.TotalSteps,
+                            IsCompleted = true,
+                            IsCanceled = true,
+                            IsAborted = true,
+                            Message = "Canceled"
+                        });
+                        throw new OperationCanceledException();
+                    }
+                }
+
+                var results = await runTask.ConfigureAwait(true);
+                dlg.SafeUpdate(new OperationProgress
+                {
+                    OperationId = "HOME",
+                    Title = "Home",
+                    StepIndex = seq.TotalSteps - 1,
+                    TotalSteps = seq.TotalSteps,
+                    IsCompleted = true,
+                    IsCanceled = token.IsCancellationRequested,
+                    IsAborted = seq.Aborted,
+                    Message = seq.AbortReason
+                });
+
+                int success = results.Count(r => r.Success);
+                int notStarted = results.Count(r => !r.Started);
+                int fail = results.Count - success - notStarted;
+
+                string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+
+                if (fail > 0 || notStarted > 0)
+                {
+                    var detailList = new List<string>();
+                    foreach (var r in results)
+                    {
+                        string status;
+                        if (r.Success)
+                        {
+                            status = "OK";
+                        }
+                        else if (r.Started)
+                        {
+                            status = (r.Error != null && r.Error.Message != null)
+                                ? r.Error.Message
+                                : "rc=" + r.ReturnCode;
+                        }
+                        else
+                        {
+                            status = "NOT STARTED (" + r.FailReason + ")";
+                        }
+                        detailList.Add("- " + r.AxisName + ": " + status);
+                    }
+                    var detail = string.Join("\r\n", detailList);
+                    msg += "\r\n\r\n" + detail;
+                }
+
+                // 결과 표시(요약)
+                //MessageBox.Show(msg, "Home");
+
+                // 반환: 모두 성공(미시작/실패 없음) 시 0, 아니면 -1
+                return (fail == 0 && notStarted == 0 && !seq.Aborted) ? 0 : -1;
+            }
+            finally
+            {
+                try { dlg?.Close(); dlg?.Dispose(); } catch { }
+            }
+        }
+
+        private async Task<int> RunRotaryInitializeAfterHomeAsync(CancellationToken token)
+        {
+            Task<int> t = Rotary.RunManualFunction(Rotary.InitializeAfterHome);
+            if (t == null) 
+                return 0; // 실행할 작업 없음 → OK 취급
+
+            var form = new ProgressForm("Manual Running", nameof(Rotary.InitializeAfterHome), t, this.Rotary);
+            try
+            {
+                form.ShowDialog();
+
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    this.Rotary.CancelSequence();
+                    MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                if (t.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                // 정상 완료 → rc 확인
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"Rotary InitializeAfterHome 실패(rc={rc})", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                return 0;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Rotary InitializeAfterHome 예외 발생: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        private async Task<int> MoveUnitsToReadyAsync(CancellationToken token)
+        {
+            string failureSummary = null;
+
+            var t = Task.Run(async () =>
+            {
+                try
+                {
+                    // 1) InputDieTransfer + OutputDieTransfer (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputDieTransfer != null)
+                        {
+                            tasks.Add(Task.Run(() => InputDieTransfer.EnsureReady(), token));
+                            names.Add("InputDieTransfer");
+                        }
+                        if (OutputDieTransfer != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputDieTransfer.EnsureReady(), token));
+                            names.Add("OutputDieTransfer");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1; // 첫 실패 시 즉시 NG
+                                }
+                            }
+                        }
+                    }
+
+                    // 2) Rotary (단독)
+                    if (Rotary != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "Rotary(ExecuteUnitActionReady)";
+                            return -1;
+                        }
+                    }
+
+                    // 3) InputStageEjector (단독, CheckReady)
+                    if (InputStageEjector != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var rc = await Task.Run(() => InputStageEjector.CheckReady(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "InputStageEjector(CheckReady)";
+                            return -1;
+                        }
+                    }
+
+                    // 4) InputFeeder + OutputFeeder (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputFeeder != null)
+                        {
+                            tasks.Add(Task.Run(() => InputFeeder.EnsureReady(), token));
+                            names.Add("InputFeeder");
+                        }
+                        if (OutputFeeder != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputFeeder.EnsureReady(), token));
+                            names.Add("OutputFeeder");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1;
+                                }
+                            }
+                        }
+                    }
+
+                    // 5) InputStage + OutputStage (동시)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var tasks = new List<Task<int>>();
+                        var names = new List<string>();
+
+                        if (InputStage != null)
+                        {
+                            tasks.Add(Task.Run(() => InputStage.MoveToStageReadyPosition(), token));
+                            names.Add("InputStage");
+                        }
+                        if (OutputStage != null)
+                        {
+                            tasks.Add(Task.Run(() => OutputStage.MoveToStageReadyPosition(), token));
+                            names.Add("OutputStage");
+                        }
+
+                        if (tasks.Count > 0)
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            for (int i = 0; i < results.Length; i++)
+                            {
+                                if (results[i] != 0)
+                                {
+                                    failureSummary = names[i];
+                                    return -1;
+                                }
+                            }
+                        }
+                    }
+
+                    return 0; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    failureSummary = "Ready 이동 중 예외";
+                    return -1;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "MoveUnitsToReady", t, token);
+            try
+            {
+                form.ShowDialog();
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    // 사용자가 Stop을 눌렀을 가능성 → 상위 토큰 취소 시도(있으면)
+                    try { _homeCts?.Cancel(); } catch { }
+                    return -1;
+                }
+
+                if (t.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Ready 이동 중 예외!", t.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                if (t.IsCanceled)
+                {
+                    Log.Write("Operator_Main", "MoveUnitsToReady 취소됨");
+                    return -1;
+                    //throw new OperationCanceledException();
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show("Ready 이동 실패: " + (failureSummary ?? string.Empty),
+                        "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                    return -1;
+                }
+                return rc;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Ready 이동 처리 중 예외: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        // === HomeAll: Entrypoint ===
+        private async void btnHomeAll_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var mb = new MessageBoxOk();
+
+                // [ADD] 장비(보드/축 목록) 초기화가 안 됐으면 Home 자체도 불가
+                if (_Equipment == null || !_Equipment.IsEquipmentInitialized)
+                {
+                    mb.TopMost = true;
+                    mb.ShowDialog("초기화 필요", "장비 초기화(InitializeEquipment) 후에 Home이 가능");
+                    mb.TopMost = false;
+                    return;
+                }
+
+                // 1) 사용자 확인
+                if (!ConfirmHome()) 
+                    return;
+
+                // 2) 취소 토큰 준비
+                var token = PrepareNewHomeToken();
+
+                _Equipment.ResetAxisHomed();
+
+                // 3) 축 알람 초기화 및 서보 ON
+                if (!TryServoOnAllAxes()) 
+                    return;
+
+                // 4) 홈 시퀀스 실행(다이얼로그 포함)
+                var rcHome = await RunHomeSequenceWithDialogAsync(token).ConfigureAwait(true);
+                if (rcHome != 0)
+                {
+                    mb.TopMost = true;
+                    mb.ShowDialog("초기화 실패", "Home 실패 또는 미완료");
+                    mb.TopMost = false;
+                    return;
+                }
+
+                // 6) 전 유닛 Ready 이동 → int 반환
+                var rcReady = await MoveUnitsToReadyAsync(token).ConfigureAwait(true);
+                if (rcReady != 0)
+                {
+                    mb.TopMost = true;
+                    mb.ShowDialog("초기화 실패", "일부 유닛 Ready 이동 실패");
+                    mb.TopMost = false;
+                    return;
+                }
+
+                // 5) Rotary InitializeAfterHome → int 반환
+                var rcRot = await RunRotaryInitializeAfterHomeAsync(token).ConfigureAwait(true);
+                if (rcRot != 0)
+                {
+                    mb.TopMost = true;
+                    mb.ShowDialog("초기화 실패", "Index 초기화 실패");
+                    mb.TopMost = false;
+                    return;
+                }
+
+                // [ADD] 여기까지 오면 "축 Home + 후처리" 성공으로 간주
+                Thread.Sleep(500);
+                _Equipment.MarkAxisHomed();
+                
+                // 7) 결과 표시
+                mb.TopMost = true;
+                mb.ShowDialog("초기화 성공", "초기화 완료");
+                mb.TopMost = false;
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Home 취소됨");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Home 오류: " + ex.Message);
+            }
+        }
+
+        private MeasurementResultForm _measurementResultForm;
+        private void BtnMeasurementResult_Click(object sender, EventArgs e)
+        {
+            if (_measurementResultForm == null || _measurementResultForm.IsDisposed)
+                _measurementResultForm = new MeasurementResultForm();
+
+            if (!_measurementResultForm.Visible)
+                _measurementResultForm.Show();
+            else
+                _measurementResultForm.BringToFront();
+
+            _measurementResultForm.Focus();
+            _measurementResultForm.TopMost = true;
+            _measurementResultForm.TopMost = false; // 잠깐 TopMost로 올렸다가 해제 (앞으로 Bring)
+        }
+
+        // ===== Camera Pause/Resume Helpers =====
+        private void PauseCameras()
+        {
+            try
+            {
+                // 공통 처리 함수
+                void PauseViewer(VisionImageViewer viewer)
+                {
+                    if (viewer == null || viewer.IsDisposed) return;
+                    try { viewer.SuspendDisplay(); } catch { }
+                    var cam = viewer.Camera;
+                    if (cam != null)
+                    {
+                        // UI 비활성화 동안 이미지 업데이트 중지
+                        try { cam.SuspendedImageDisplay = true; } catch { }
+                        try { cam.StopLive(); } catch { }
+                    }
+                    // 필요 시 업데이트 태스크도 중단 (StartUpdateTask가 있는 경우 대응)
+                    try
+                    {
+                        var stopMethod = viewer.GetType().GetMethod("StopUpdateTask");
+                        stopMethod?.Invoke(viewer, null);
+                    }
+                    catch { }
+                }
+
+                PauseViewer(InputWaferCamera);
+                PauseViewer(IndexOutputCamera);
+                PauseViewer(OutputWaferCamera);
+                PauseViewer(IndexMAlignCamera);
+            }
+            catch { }
+        }
+
+        private void ResumeCameras()
+        {
+            try
+            {
+                // 공통 처리 함수
+                void ResumeViewer(VisionImageViewer viewer)
+                {
+                    if (viewer == null || viewer.IsDisposed) return;
+                    var cam = viewer.Camera;
+                    if (cam != null)
+                    {
+                        try { cam.SuspendedImageDisplay = false; } catch { }
+                        //try { cam.StartLive(); } catch { }
+                    }
+                    // 뷰어 업데이트 재개
+                    try { viewer.ResumeDisplay(); } catch { }
+                    try
+                    {
+                        var startMethod = viewer.GetType().GetMethod("StartUpdateTask");
+                        startMethod?.Invoke(viewer, null);
+                    }
+                    catch { }
+                }
+
+                ResumeViewer(InputWaferCamera);
+                ResumeViewer(IndexOutputCamera);
+                ResumeViewer(OutputWaferCamera);
+                ResumeViewer(IndexMAlignCamera);
+            }
+            catch { }
+        }
+
+        private void RefreshManualSequenceButtonsFromEquipment()
+        {
+            if (IsDisposed || Disposing) return;
+            if (sequenceManualControl == null) return;
+
+            var snap = _Equipment?.GetSequenceUiSnapshot();
+            if (snap == null) return;
+
+            var ready = new HashSet<string>(snap.Ready ?? new string[0], StringComparer.OrdinalIgnoreCase);
+            var running = new HashSet<string>(snap.Running ?? new string[0], StringComparer.OrdinalIgnoreCase);
+
+            foreach (var seq in _seqOrder)
+            {
+                bool isReady = ready.Contains(seq);
+                bool isRunning = running.Contains(seq);
+
+                // Ready 버튼 표시
+                NotifySequenceStateChanged(seq, "Ready", isReady, updateText: false);
+
+                // Start 버튼 표시: Running=true면 UI에서 Stop 상태(토글 ON)로 보이도록
+                // SequenceManualControl이 updateText=true일 때 Start/Stop 텍스트 토글한다고 가정(현재 코드 사용 방식)
+                NotifySequenceStateChanged(seq, "Start", isRunning, updateText: true);
+
+                // [SYNC] 기존 로컬 캐시도 스냅샷으로 맞춰서, 클릭 토글과 표시가 엇갈리지 않게 함
+                if (isReady) _uiReady.Add(seq); else _uiReady.Remove(seq);
+                if (isRunning) _uiStart.Add(seq); else _uiStart.Remove(seq);
+            }
+        }
+
+
+        #endregion
+    }
+}

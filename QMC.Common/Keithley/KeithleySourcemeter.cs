@@ -407,7 +407,6 @@ namespace QMC.Common.Keithley
                                 command.MeasureTime = item.MeasureTime;
                                 command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
-
                             }
                             break;
                         case TestItemType.VR: //uA
@@ -428,7 +427,6 @@ namespace QMC.Common.Keithley
                                 {
                                     dUnit = dUnit * 1;
                                 }
-
 
                                 dUnit = dUnit / 1000 / 1000;
 

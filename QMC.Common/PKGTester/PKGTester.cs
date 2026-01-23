@@ -360,7 +360,9 @@ namespace QMC.Common.PKGTester
                                     isOpticalSource = true;
                             }
                             if (!sourcemeter.AddTestItem(item, isOpticalSource))
+                            {
                                 throw new Exception("Failed to add test item to sourcemeter.");
+                            }
                             break;
                         case TestItemCategory.Optical:
                             if (!spectrometer.AddTestItem(item))

@@ -48,7 +48,9 @@ namespace QMC.Common
                 if (assemblyToSearch == null)
                 {
                     // QMC.LCP_280.Process 어셈블리에서 검색
-                    var processAssembly = System.Reflection.Assembly.LoadFrom("QMC.LCP_280.Process.exe");
+                    //var processAssembly = System.Reflection.Assembly.LoadFrom("QMC.LCP_280.Process.exe");
+                    var processAssembly = System.Reflection.Assembly.LoadFrom("LCP-280.exe");
+
                     if (processAssembly != null)
                         assemblyToSearch = processAssembly;
                     else
