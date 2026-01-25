@@ -2228,6 +2228,7 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, $"[PickDown] idx={nIndex}, arm={nArmindex}, ToolT={tPos:F3}, PickZ={zPos:F3}");
 
             this.SetVacuum(nArmindex, true);
+
             // 1) ToolT 위치 확인.
             if (IsPositionPickUpToolT() == false)
             {
@@ -2268,33 +2269,45 @@ namespace QMC.LCP_280.Process.Unit
             int nIndex = GetUnloaderIndexNo();
             Log.Write(UnitName, $"[PickUp] idx={nIndex}, arm={nArmindex}");
 
+            if (Rotary.SetVacuum(nIndex, false) == false)
+            {
+                if (!Config.IsSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
+                    return -1;
+                }
+            }
+            Thread.Sleep(1);
+
             if (Rotary.SetVent(nIndex, true) == false)
             {
                 if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
-                    Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
                     return -1;
                 }
             }
-            Thread.Sleep(5);
+            Thread.Sleep(1);
 
             if (Rotary.SetVent(nIndex, false) == false)
             {
                 if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
-                    Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
                     return -1;
                 }
             }
+            Thread.Sleep(1);
 
             if (Rotary.SetBlow(nIndex, true) == false)
             {
                 if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
-                    Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
+                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
                     return -1;
                 }
             }
@@ -2303,7 +2316,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionSafetyZ(bFineSpeed);
             if (nRet != 0)
             {
-                Log.Write(UnitName, "[ChipPickUp] MovePositionSafetyZ failed");
+                Log.Write(UnitName, "[ChipPickUp]", "MovePositionSafetyZ failed");
                 return -1;
             }
 
@@ -2312,12 +2325,13 @@ namespace QMC.LCP_280.Process.Unit
                 if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
-                    Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
+                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
                     return -1;
                 }   
             }
 
             Rotary.SetVacuum(nIndex, false);
+            Thread.Sleep(5);
 
             // 아래 구문은 우선 확인하지 않음.
             //Rotary Vacuum Off 확인.
@@ -2381,7 +2395,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
 
                 // Release
-                if(!SetVacuum(armIndex, false))
+                if(SetVacuum(armIndex, false) == false)
                 {
                     if(!Config.IsSimulation && !Config.IsDryRun)
                     {

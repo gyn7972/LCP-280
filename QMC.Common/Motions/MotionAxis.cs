@@ -688,14 +688,7 @@ namespace QMC.Common.Motions
                         Log.Write("KKKKK", "End First _ " + dRemainPos.ToString());
                         return 0;
                     }
-                        //bool b1 = Status.State.InpositionDone;
-                        //bool b2 = Status.State.Inposition;
-                        //bool b3 = Status.State.Done;
-                        //if (b1 && b2 && b3)
-                        //{
-                        //    return 0;
-                        //}
-                        Thread.Sleep(2);
+                    Thread.Sleep(2);
                 }
             }
             else

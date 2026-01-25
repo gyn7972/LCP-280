@@ -1454,17 +1454,17 @@ namespace QMC.LCP_280.Process.Unit
                             return 0;
 
                         // [ADD] 웨이퍼 종료 시점 업로드
-                        try
-                        {
-                            var Bin = OutputStage.GetMaterial() as MaterialWafer;
-                            string IDBinForUpload = Bin.WaferId;
-                            if (!string.IsNullOrWhiteSpace(IDBinForUpload))
-                                Equipment.Instance.ResultWriterManager.FlushWaferResultToNetwork(IDBinForUpload);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                        }
+                        //try
+                        //{
+                        //    var Bin = OutputStage.GetMaterial() as MaterialWafer;
+                        //    string IDBinForUpload = Bin.WaferId;
+                        //    if (!string.IsNullOrWhiteSpace(IDBinForUpload))
+                        //        Equipment.Instance.ResultWriterManager.FlushWaferResultToNetwork(IDBinForUpload);
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    Log.Write(ex);
+                        //}
 
                         if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
                         if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }

@@ -515,6 +515,9 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnPickScan_Click(object sender, EventArgs e)
         {
+            //Auto / Manual 에 따라 구분 필요.
+            return;
+
             _scanMapFilePath = string.Empty;
             EnsureScanMapLoaded(promptFileIfMissing: true);
 
@@ -527,6 +530,9 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnPickDownload_Click(object sender, EventArgs e)
         {
+            //Auto / Manual 에 따라 구분 필요.
+            return;
+
             _downloadedMapFilePath = string.Empty;
             EnsureDownloadedMapLoaded(promptFileIfMissing: true);
 
@@ -721,11 +727,13 @@ namespace QMC.LCP_280.Process.Component
         // [ADD] Pairs -> Dx/Dy 자동 추정 및 nud 반영
         private void RecomputeDxDyFromPairsAndUpdateUi()
         {
-            if (_suppressAutoCalc) return;
+            if (_suppressAutoCalc) 
+                return;
 
             try
             {
-                if (_pairs == null || _pairs.Count <= 0) return;
+                if (_pairs == null || _pairs.Count <= 0) 
+                    return;
 
                 int r = ParseRotate(cbRotate);
                 bool mx = chkMirrorX.Checked;
@@ -746,7 +754,8 @@ namespace QMC.LCP_280.Process.Component
                     n++;
                 }
 
-                if (n <= 0) return;
+                if (n <= 0) 
+                    return;
 
                 double dx = sumDx / n;
                 double dy = sumDy / n;
@@ -801,87 +810,89 @@ namespace QMC.LCP_280.Process.Component
 
         // 이하 EnsureDownloadedMapLoaded / EnsureScanMapLoaded 는 기존 그대로…
         // (파일 로드 파트는 이번 수정의 본질과 무관)
-        private bool EnsureDownloadedMapLoaded(bool promptFileIfMissing)
-        {
-            // 1) 경로 없으면 파일 선택
-            if (string.IsNullOrWhiteSpace(_downloadedMapFilePath) || !File.Exists(_downloadedMapFilePath))
-            {
-                if (!promptFileIfMissing)
-                    return false;
+        
+        //기존코드
+        //private bool EnsureDownloadedMapLoaded(bool promptFileIfMissing)
+        //{
+        //    // 1) 경로 없으면 파일 선택
+        //    if (string.IsNullOrWhiteSpace(_downloadedMapFilePath) || !File.Exists(_downloadedMapFilePath))
+        //    {
+        //        if (!promptFileIfMissing)
+        //            return false;
 
-                using (var ofd = new OpenFileDialog())
-                {
-                    ofd.Title = "Map File 선택";
-                    ofd.Filter = "Wafer Map (*.waf)|*.waf|All Files (*.*)|*.*";
-                    ofd.CheckFileExists = true;
-                    ofd.CheckPathExists = true;
-                    ofd.Multiselect = false;
+        //        using (var ofd = new OpenFileDialog())
+        //        {
+        //            ofd.Title = "Map File 선택";
+        //            ofd.Filter = "Wafer Map (*.waf)|*.waf|All Files (*.*)|*.*";
+        //            ofd.CheckFileExists = true;
+        //            ofd.CheckPathExists = true;
+        //            ofd.Multiselect = false;
 
-                    // 마지막 경로 힌트
-                    try
-                    {
-                        var hintDir = Path.GetDirectoryName(_downloadedMapFilePath);
-                        if (!string.IsNullOrWhiteSpace(hintDir) && Directory.Exists(hintDir))
-                            ofd.InitialDirectory = hintDir;
-                    }
-                    catch { }
+        //            // 마지막 경로 힌트
+        //            try
+        //            {
+        //                var hintDir = Path.GetDirectoryName(_downloadedMapFilePath);
+        //                if (!string.IsNullOrWhiteSpace(hintDir) && Directory.Exists(hintDir))
+        //                    ofd.InitialDirectory = hintDir;
+        //            }
+        //            catch { }
 
-                    if (ofd.ShowDialog(this) != DialogResult.OK)
-                        return false;
+        //            if (ofd.ShowDialog(this) != DialogResult.OK)
+        //                return false;
 
-                    _downloadedMapFilePath = ofd.FileName;
-                }
-            }
+        //            _downloadedMapFilePath = ofd.FileName;
+        //        }
+        //    }
 
-            // 2) 이미 같은 파일을 로드했고 캐시가 있으면 재사용
-            if (_downloadedMapPoints != null
-                && _downloadedMapPoints.Count > 0
-                && string.Equals(_downloadedMapLoadedFromPath, _downloadedMapFilePath, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
+        //    // 2) 이미 같은 파일을 로드했고 캐시가 있으면 재사용
+        //    if (_downloadedMapPoints != null
+        //        && _downloadedMapPoints.Count > 0
+        //        && string.Equals(_downloadedMapLoadedFromPath, _downloadedMapFilePath, StringComparison.OrdinalIgnoreCase))
+        //    {
+        //        return true;
+        //    }
 
-            // 3) PerformChipMapping 처럼 ReadFile로 파싱 후 보관
-            try
-            {
-                var wafer = new MaterialWafer();
-                var diesOrg = wafer.ReadFileOnline(_downloadedMapFilePath, MaterialWafer.MapTyp.waf);
+        //    // 3) PerformChipMapping 처럼 ReadFile로 파싱 후 보관
+        //    try
+        //    {
+        //        var wafer = new MaterialWafer();
+        //        var diesOrg = wafer.ReadFileOnline(_downloadedMapFilePath, MaterialWafer.MapTyp.waf);
 
-                if (diesOrg == null || diesOrg.Count == 0)
-                {
-                    MessageBox.Show(
-                        "Map 파일을 읽었지만 데이터가 비어있습니다.\r\n" + _downloadedMapFilePath,
-                        "Map File",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+        //        if (diesOrg == null || diesOrg.Count == 0)
+        //        {
+        //            MessageBox.Show(
+        //                "Map 파일을 읽었지만 데이터가 비어있습니다.\r\n" + _downloadedMapFilePath,
+        //                "Map File",
+        //                MessageBoxButtons.OK,
+        //                MessageBoxIcon.Information);
 
-                    _downloadedDies = null;
-                    _downloadedMapPoints = null;
-                    _downloadedMapLoadedFromPath = null;
-                    return false;
-                }
+        //            _downloadedDies = null;
+        //            _downloadedMapPoints = null;
+        //            _downloadedMapLoadedFromPath = null;
+        //            return false;
+        //        }
 
-                _downloadedDies = diesOrg;
-                _downloadedMapPoints = diesOrg.Select(d => new Point(d.MapX, d.MapY)).ToList();
+        //        _downloadedDies = diesOrg;
+        //        _downloadedMapPoints = diesOrg.Select(d => new Point(d.MapX, d.MapY)).ToList();
 
-                _downloadedMapLoadedFromPath = _downloadedMapFilePath;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "다운로드 Map 파일 로드 실패: " + ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+        //        _downloadedMapLoadedFromPath = _downloadedMapFilePath;
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show(
+        //            "다운로드 Map 파일 로드 실패: " + ex.Message,
+        //            "Error",
+        //            MessageBoxButtons.OK,
+        //            MessageBoxIcon.Error);
 
-                _downloadedMapFilePath = string.Empty;
-                _downloadedDies = null;
-                _downloadedMapPoints = null;
-                _downloadedMapLoadedFromPath = null;
-                return false;
-            }
-        }
+        //        _downloadedMapFilePath = string.Empty;
+        //        _downloadedDies = null;
+        //        _downloadedMapPoints = null;
+        //        _downloadedMapLoadedFromPath = null;
+        //        return false;
+        //    }
+        //}
 
         private bool EnsureScanMapLoaded(bool promptFileIfMissing)
         {
@@ -1337,6 +1348,150 @@ namespace QMC.LCP_280.Process.Component
                 viewDownload?.SetDieListOverlay(_downloadedDies, _targetWafer.Dies);
             }
             catch { }
+        }
+
+        public void SetDownloadedMapFromWaferDies(MaterialWafer wafer, string infoText = "WAFER(DIES)")
+        {
+            try
+            {
+                if (wafer?.Dies == null || wafer.Dies.Count <= 0)
+                {
+                    _downloadedDies = null;
+                    _downloadedMapPoints = null;
+                    _downloadedMapFilePath = string.Empty;
+                    _downloadedMapLoadedFromPath = null;
+                    return;
+                }
+
+                // 다운로드 맵 파일이 없는 상황이므로, wafer.Dies를 "원본맵"처럼 복제해서 사용
+                // (ApplyTransformToTargetWaferAndCopyPreRank()는 downloadedDies의 (MapX,MapY)->PreRank 맵을 쓰므로)
+                // PreRank는 없으면 0으로 유지해도 됨.
+                var src = wafer.Dies.Where(d => d != null && d.Presence == MaterialPresence.Exist).ToList();
+
+                var copy = new List<MaterialDie>(src.Count);
+                for (int i = 0; i < src.Count; i++)
+                {
+                    var d = src[i];
+                    copy.Add(new MaterialDie
+                    {
+                        Index = d.Index,
+                        Name = infoText,
+                        MapX = d.MapX,
+                        MapY = d.MapY,
+                        PreRank = d.PreRank,
+                        Presence = MaterialPresence.Exist,
+                        State = DieProcessState.Mapped
+                    });
+                }
+
+                _downloadedDies = copy;
+                _downloadedMapPoints = copy.Select(d => new Point(d.MapX, d.MapY)).ToList();
+
+                // "캐시 키" 비슷하게 문자열을 채워둠(중복 로드 방지)
+                _downloadedMapFilePath = string.Empty;
+                _downloadedMapLoadedFromPath = infoText;
+
+                // 화면 즉시 갱신
+                try { LoadDownloadedMapToView(); } catch { }
+            }
+            catch
+            {
+                _downloadedDies = null;
+                _downloadedMapPoints = null;
+                _downloadedMapFilePath = string.Empty;
+                _downloadedMapLoadedFromPath = null;
+            }
+        }
+
+        private bool EnsureDownloadedMapLoaded(bool promptFileIfMissing)
+        {
+            // [ADD] mapFile이 없는 경우(혹은 SetDownloadedMapFromWaferDies로 이미 주입된 경우)
+            // _downloadedDies/_downloadedMapPoints가 있으면 파일 로드 없이 성공 처리
+            if (_downloadedMapPoints != null && _downloadedMapPoints.Count > 0 &&
+                _downloadedDies != null && _downloadedDies.Count > 0)
+            {
+                return true;
+            }
+
+            // ===== 기존 코드 그대로 =====
+            // 1) 경로 없으면 파일 선택
+            if (string.IsNullOrWhiteSpace(_downloadedMapFilePath) || !File.Exists(_downloadedMapFilePath))
+            {
+                if (!promptFileIfMissing)
+                    return false;
+
+                using (var ofd = new OpenFileDialog())
+                {
+                    ofd.Title = "Map File 선택";
+                    ofd.Filter = "Wafer Map (*.waf)|*.waf|All Files (*.*)|*.*";
+                    ofd.CheckFileExists = true;
+                    ofd.CheckPathExists = true;
+                    ofd.Multiselect = false;
+
+                    // 마지막 경로 힌트
+                    try
+                    {
+                        var hintDir = Path.GetDirectoryName(_downloadedMapFilePath);
+                        if (!string.IsNullOrWhiteSpace(hintDir) && Directory.Exists(hintDir))
+                            ofd.InitialDirectory = hintDir;
+                    }
+                    catch { }
+
+                    if (ofd.ShowDialog(this) != DialogResult.OK)
+                        return false;
+
+                    _downloadedMapFilePath = ofd.FileName;
+                }
+            }
+
+            // 2) 이미 같은 파일을 로드했고 캐시가 있으면 재사용
+            if (_downloadedMapPoints != null
+                && _downloadedMapPoints.Count > 0
+                && string.Equals(_downloadedMapLoadedFromPath, _downloadedMapFilePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 3) PerformChipMapping 처럼 ReadFile로 파싱 후 보관
+            try
+            {
+                var wafer = new MaterialWafer();
+                var diesOrg = wafer.ReadFileOnline(_downloadedMapFilePath, MaterialWafer.MapTyp.waf);
+
+                if (diesOrg == null || diesOrg.Count == 0)
+                {
+                    MessageBox.Show(
+                        "Map 파일을 읽었지만 데이터가 비어있습니다.\r\n" + _downloadedMapFilePath,
+                        "Map File",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+
+                    _downloadedDies = null;
+                    _downloadedMapPoints = null;
+                    _downloadedMapLoadedFromPath = null;
+                    return false;
+                }
+
+                _downloadedDies = diesOrg;
+                _downloadedMapPoints = diesOrg.Select(d => new Point(d.MapX, d.MapY)).ToList();
+
+                _downloadedMapLoadedFromPath = _downloadedMapFilePath;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "다운로드 Map 파일 로드 실패: " + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                _downloadedMapFilePath = string.Empty;
+                _downloadedDies = null;
+                _downloadedMapPoints = null;
+                _downloadedMapLoadedFromPath = null;
+                return false;
+            }
         }
 
     }

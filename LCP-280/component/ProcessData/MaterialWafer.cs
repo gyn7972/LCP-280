@@ -1080,6 +1080,8 @@ namespace QMC.LCP_280.Process.Component
                 if (chipPitchXmm <= 0 || chipPitchYmm <= 0)
                     throw new ArgumentOutOfRangeException("Chip pitch must be > 0");
 
+                //여기서 raw Data : Log로 저장.
+
                 // (중복 제거는 InputStage에서 이미 수행한다고 가정하되, 안전하게 한 번 더 가능)
                 // 여기서는 이미 Consolidate된 centers가 들어온다고 보고 그대로 사용.
                 var rawPoints = new List<(double x, double y)>(centers.Count);

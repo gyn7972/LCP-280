@@ -1713,6 +1713,9 @@ namespace QMC.LCP_280.Process.Unit
                this.RunUnitStatus == UnitStatus.CycleStop ||
                this.RunUnitStatus == UnitStatus.ManualRunning)
                 {
+                    //정지하면 Stage Vacuum Off하자.
+                    InputStageVaccumOff();
+
                     this.State = ProcessState.Stop;
                     return 0;
                 }
@@ -2102,6 +2105,8 @@ namespace QMC.LCP_280.Process.Unit
 
                         this.SetBlow(nArmIndex, false);
                         this.SetVacuum(nArmIndex, true);
+
+                        InputStageVaccumOff();
 
                         nRet = CommitNotPickedDie();
                         this.SetMaterial(null);

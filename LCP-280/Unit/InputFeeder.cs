@@ -1983,6 +1983,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
         public int PrepareLoadingStage(bool isFine = false)
         {
             int nRet = 0;

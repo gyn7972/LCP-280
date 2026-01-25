@@ -1328,18 +1328,18 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            //if (Rotary.IsIndexMoving())
-            //{
-            //    AxisProbeZ?.EmgStop();
-            //    AxisProbeCardX?.EmgStop();
-            //    AxisProbeCardY?.EmgStop();
-            //    AxisProbeCardZ?.EmgStop();
-            //    AxisSphereZ?.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eRotaryNotSafety);
-            //    Log.Write(UnitName, "IsMoveInterLockProbeZGripperIndexUp", "Fail: Rotary.IsIndexMoving()");
-            //    nRet = -1;
-            //    return nRet;
-            //}
+            if (Rotary.IsIndexMoving())
+            {
+                AxisProbeZ?.EmgStop();
+                AxisProbeCardX?.EmgStop();
+                AxisProbeCardY?.EmgStop();
+                AxisProbeCardZ?.EmgStop();
+                AxisSphereZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafety);
+                Log.Write(UnitName, "IsMoveInterLockProbeZGripperIndexUp", "Fail: Rotary.IsIndexMoving()");
+                nRet = -1;
+                return nRet;
+            }
 
             // [ADD] ProbeCardZ <-> ProbeZ 거리 인터락 (ProbeZ 이동 중 지속 감시)
             if (!CheckDistanceInterlockAndStopIfViolation(nameof(IsMoveInterLockProbeZGripperIndexUp)))
@@ -2127,7 +2127,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     if (IsSphereForward() == false)
                     {
-                        
                         //if (SetSphereFB(true))
                         {
                             SetSphereFB(true);

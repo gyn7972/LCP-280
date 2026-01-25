@@ -817,47 +817,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return -1;
 
-            //if (timeoutMs <= 0)
-            //{
-            //    // Setup 없으면 기본 20000
-            //    timeoutMs = (AxisIndexT.Setup != null && AxisIndexT.Setup.MoveTimeoutMs > 0)
-            //        ? AxisIndexT.Setup.MoveTimeoutMs
-            //        : 20000;
-            //}
-
-            //// 각도 허용오차(축 설정 우선, 없으면 기본 0.05°)
-            //double tolDeg = (AxisIndexT.Config != null && AxisIndexT.Config.InposTolerance > 0)
-            //              ? AxisIndexT.Config.InposTolerance
-            //              : 0.05;
-
-            //// 8분할(45°) 기준
-            //int count = GetIndexCount();     // 8
-            //double step = 360.0 / count;     // 45.0
-
-            //// 안정 샘플(정지 + 앵커 근접) 2회
-            //int stableSamples = 2;
-            //int stable = 0;
-
-            //Thread.Sleep(1);
-            //var start = DateTime.Now;
-            //pollMs = 3;
-            //while (true)
-            //{
-            //    if ((DateTime.Now - start).TotalMilliseconds > timeoutMs)
-            //    {
-            //        Log.Write(UnitName, $"Index Move Timeout (>{timeoutMs} ms)");
-            //        return -1;
-            //    }
-            //    if (AxisIndexT.WaitMoveDone(-1) == 0)
-            //    {
-            //        //Log.Write(UnitName, "MoveAxisWithSafety",
-            //        //    $"WaitMoveDone Timeout axis={AxisIndexT.Name}");
-
-            //        Thread.Sleep(5); //임의로 50만 줘보자.
-            //        return 0;
-            //    }
-            //    Thread.Sleep(pollMs);
-            //}
         }
 
         private readonly object _lock = new object();
@@ -867,70 +826,46 @@ namespace QMC.LCP_280.Process.Unit
             var ax = AxisIndexT;
             if (ax == null) return false;
 
-            //lock (_lock)
+            lock (_lock)
             {
+                // 1) 1차: 드라이버 상태
+                bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+                if (!driverMoving)
+                    return false;
+
+                // 2) 드라이버가 moving이라도, "인덱스 위치에 충분히 근접"하면 정지로 간주(상태 지연 보정)
+                double stepDeg = 360.0 / GetIndexCount(); // 45
+                double tolDeg = ax.Config?.InposTolerance ?? 0.05;
+
+                // 현재 각도(deg). (단위는 질문에서 맞다고 했으니 그대로 사용)
+                double curDeg = ax.GetPosition() * 1000.0;
+
+                // 0~step 구간 잔여
+                double remain = curDeg % stepDeg;
+                if (remain < 0) remain += stepDeg;
+
+                // 가장 가까운 인덱스까지의 오차 (0 근처 OR step 근처 모두 허용)
+                double err = Math.Min(remain, stepDeg - remain);
+
+                // err이 tolerance 이하면 "실질적으로 멈춤"으로 판단
+                if (err <= tolDeg)
+                    return false;
+
+                return true;
+
                 // 1) 드라이버 상태 기반 1차 판정
                 //bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-                //bool driverMoving = ax.Status.State.InpositionDone;
-                //bool driverMoving = ax.Status.State.InpositionDone;
-                bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-                //driverMoving = !driverMoving;
-                if(driverMoving)
-                {
-                    double dCurPos = this.AxisIndexT. GetPosition() * 1000;
-                    double dRemainPos = dCurPos % 45;
-                    if (dRemainPos > (45 - this.AxisIndexT.Config.InposTolerance))
-                    {
-                        return false;
-                    }
-                }
-                return driverMoving;
-
-                // 2) 위치 변화 기반 2차 판정(내부 튜닝값 사용)
-                const int samples = 3;         // 샘플 개수
-                const int intervalMs = 5;      // 샘플 간격(ms)
-                double tol = (ax.Config != null && ax.Config.InposTolerance > 0) ? ax.Config.InposTolerance : 0.01;
-                double threshold = tol * 1.0;  // 위치 변화량 임계값(기본: InposTolerance * 2)
-
-                double prev = double.NaN;
-                double maxDelta = 0.0;
-
-                for (int i = 0; i < samples; i++)
-                {
-                    double pos;
-                    try
-                    {
-                        //pos = ax.GetPosition(); // deg 단위
-                        pos = ax.Status.PV.ActualPosition;
-                    }
-                    catch
-                    {
-                        // 위치 읽기 실패 시 드라이버 Moving 값으로 보수적 판단
-                        return driverMoving;
-                    }
-
-                    // 각도 래핑(0~360)
-                    pos = NormalizeAngle(pos);
-
-                    if (!double.IsNaN(prev))
-                    {
-                        double diff = Math.Abs(pos - prev);
-                        if (diff > 180.0) diff = 360.0 - diff; // 원형 최소 차이
-                        if (diff > maxDelta) maxDelta = diff;
-                    }
-
-                    prev = pos;
-
-                    if (i < samples - 1)
-                        Thread.Sleep(intervalMs);
-                }
-
-                bool positionChanging = maxDelta > threshold;
-
-                // 최종: 드라이버 Moving OR 위치 변화 감지 → 이동 중으로 간주
-                return driverMoving || positionChanging;
+                //if (driverMoving)
+                //{
+                //    double dCurPos = this.AxisIndexT.GetPosition() * 1000;
+                //    double dRemainPos = dCurPos % 45;
+                //    if (dRemainPos > (45 - this.AxisIndexT.Config.InposTolerance))
+                //    {
+                //        return false;
+                //    }
+                //}
+                //return driverMoving;
             }
-            
         }
         #endregion
 

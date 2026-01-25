@@ -16,6 +16,7 @@ namespace QMC.LCP_280.Process.Component
         Inspected,  // 검사 완료
         Rejected,   // 불량
         Placed,     // 언로더 배치 완료
+        Skip,
         //Error,       // 오류
         //Error_load,
         //Error_MAlign,
@@ -52,6 +53,7 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(DieProcessState.None)] public DieProcessState State { get; set; } = DieProcessState.None;
         [DefaultValue(true)] public bool IsPass { get; set; } = true;
         [DefaultValue("")] public string RejectReason { get; set; } = "";
+        [DefaultValue("")] public string SkipReason { get; set; } = "";
 
         [DefaultValue(0)] public int Rank { get; set; } = 0;
         [DefaultValue("-")] public string RankName { get; set; } = "-";
@@ -86,6 +88,13 @@ namespace QMC.LCP_280.Process.Component
             IsPass = false;
             RejectReason = reason;
             State = DieProcessState.Rejected;
+        }
+
+        public void SetSkip(string reason)
+        {
+            IsPass = true;
+            SkipReason = reason;
+            State = DieProcessState.Skip;
         }
     }
 }

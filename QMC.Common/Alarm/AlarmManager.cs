@@ -60,66 +60,86 @@ namespace QMC.Common.Alarm
 
         public void ShowAlarm(AlarmInfo alarm)
         {
+            if (alarm == null)
+                return;
+
+            // [TEMP] 중복 원인 추적용 (문제 해결 후 제거 권장)
+            try
+            {
+                Log.Write("AlarmManager", $"ShowAlarm Code={alarm.Code} Source={alarm.Source} Time={alarm.GeneratedTime:HH:mm:ss.fff}\n{Environment.StackTrace}");
+            }
+            catch { }
+
             bool added = false;
 
             lock (_lock)
             {
-                // 1. 알람 리스트에 안전하게 추가
                 CheckAlarmGrade(alarm.Grade);
-                if (m_Alarms.Where(a=>a.Code == alarm.Code).Count() ==0)
-                {
-                    m_Alarms.Add(alarm);
-                    added = true;
-                }
-                else
-                {
+
+                if (m_Alarms.Any(a => a.Code == alarm.Code))
                     return;
-                }
+
+                m_Alarms.Add(alarm);
+                added = true;
             }
 
-            // [ADD] Summary 같은 외부 집계는 Common 밖에서 처리하도록 이벤트로 방출
             if (added)
             {
                 try { AlarmAdded?.Invoke(alarm); } catch { }
+                try { PostAlarm?.Invoke(alarm); } catch { }
             }
-
-            // 2. PostAlarm 이벤트 (UI 스레드에서 실행)
-            if (PostAlarm != null)
-            {
-                if(true)
-                {
-                    // UI 폼이 없이 알람 발생.
-                    PostAlarm?.Invoke(alarm);
-                }
-                else
-                {
-                    if (Application.OpenForms.Count > 0)
-                    {
-                        var form = Application.OpenForms[0];
-                        if (form.InvokeRequired)
-                        {
-                            form.BeginInvoke(new Action(() => PostAlarm?.Invoke(alarm)));
-                        }
-                        else
-                        {
-                            PostAlarm?.Invoke(alarm);
-                        }
-                    }
-                    else
-                    {
-                        // UI 폼이 없으면 그냥 호출 (예: 콘솔 앱)
-                        PostAlarm?.Invoke(alarm);
-                    }
-                }
-            }
-
-            // 4. 마지막 알람 메세지를 Title bar 에 보이게
-            //m_Alarms.Add(alarm);
-            //if (PostAlarm != null)
-            //{
-            //    PostAlarm(alarm);
-            //}
         }
+
+        //public void ShowAlarm(AlarmInfo alarm)
+        //{
+        //    if (alarm == null)
+        //        return;
+
+        //    // [FIX] 호출 시점에 항상 시간 갱신(재발생/재로그용)
+        //    alarm.GeneratedTime = DateTime.Now;
+
+        //    bool added = false;
+        //    bool updatedExisting = false;
+
+        //    lock (_lock)
+        //    {
+        //        CheckAlarmGrade(alarm.Grade);
+
+        //        // Code 기준으로 기존 알람 검색
+        //        var exist = m_Alarms.FirstOrDefault(a => a.Code == alarm.Code);
+        //        if (exist == null)
+        //        {
+        //            m_Alarms.Add(alarm);
+        //            added = true;
+        //        }
+        //        else
+        //        {
+        //            // [FIX] Clear 없이도 "재발생/재로그"가 필요하면 기존 객체 갱신
+        //            // (UI는 Binding된 객체값이 바뀌면 갱신 가능. 필요하면 RefreshAlarmView로 처리)
+        //            exist.Title = alarm.Title;
+        //            exist.Cause = alarm.Cause;
+        //            exist.Grade = alarm.Grade;
+        //            exist.Source = alarm.Source;
+        //            exist.GeneratedTime = alarm.GeneratedTime;
+
+        //            updatedExisting = true;
+        //        }
+        //    }
+
+        //    // [ADD] 신규 추가 또는 기존 갱신 둘 다 외부에 알림
+        //    if (added)
+        //    {
+        //        try { AlarmAdded?.Invoke(alarm); } catch { }
+        //    }
+        //    else if (updatedExisting)
+        //    {
+        //        // 기존 코드에는 "갱신"용 이벤트가 없어서 PostAlarm을 재사용 (History/그리드 갱신 트리거)
+        //        // 필요하면 AlarmUpdated 이벤트를 별도로 만드는 게 더 깔끔함
+        //    }
+
+        //    // [FIX] History/UI가 다시 찍히게 하려면 updatedExisting도 이벤트를 날려야 함
+        //    try { PostAlarm?.Invoke(alarm); } catch { }
+        //}
 
         /// <summary>
         /// 지정한 알람을 리스트에서 제거하고 알림을 갱신합니다.

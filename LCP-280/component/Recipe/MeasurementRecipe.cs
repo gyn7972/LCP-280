@@ -40,10 +40,26 @@ namespace QMC.LCP_280.Process.Component
         public string BinningSpecSheetFile { get; set; } = string.Empty;
 
         // 2. VisionParameters (비전 파라미터) 참조
-        [Category("AlignXAxis"), DisplayName("Align XAxis Mode")]
+        //ToleranceMm
+        [Category("TAlgin"), DisplayName("ToleranceMm (mm)")]
+        [DefaultValue(0.1)]
+        [JsonProperty("ToleranceMm")]
+        public double ToleranceMm { get; set; } = 0.1;
+
+        [Category("TAlgin"), DisplayName("Align XAxis Mode")]
         //[DefaultValue(true)]
         [JsonProperty("AlignAxisX")]
         public bool AlignAxisX { get; set; } = true;
+
+        [Category("TAlgin"), DisplayName("Align Repeat Count")]
+        //[DefaultValue(true)]
+        [JsonProperty("AlignRepeatCount")]
+        public int AlignRepeatCount { get; set; } = 5;
+
+        [Category("TAlgin"), DisplayName("Align Repeat Distance")]
+        //[DefaultValue(true)]
+        [JsonProperty("AlignRepeatDistance")]
+        public int AlignRepeatDistance { get; set; } = 2;
 
         //[JsonIgnore]
         //[Category("Vision"), DisplayName("Use Vision Recipe")]
@@ -120,6 +136,11 @@ namespace QMC.LCP_280.Process.Component
         [JsonProperty("WaferPathTraversalMode")]
         public MapPathTraversalMode WaferPathTraversalMode { get; set; } = MapPathTraversalMode.Raster;
 
+        // 2. VisionParameters (비전 파라미터) 참조
+        [Category("Wafer Map"), DisplayName("Die Skip Line")]
+        //[DefaultValue(true)]
+        [JsonProperty("DieSkipLine")]
+        public int DieSkipLine { get; set; } = 0;
 
         // 3. BinMap(빈 맵) 정보(빈 직경, 칩 크기, 행/열 개수 등)
         // ===== Bin Map =====
@@ -186,12 +207,6 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(false)]
         [JsonProperty("ContectTop")]
         public bool ContectTop { get; set; } = false;
-
-        //ToleranceMm
-        [Category("AlginT"), DisplayName("ToleranceMm (mm)")]
-        [DefaultValue(0.1)]
-        [JsonProperty("ToleranceMm")]
-        public double ToleranceMm { get; set; } = 0.1;
 
         // ===== Measurement Keys =====
         public List<MeasurementKey> Keys { get; set; } = new List<MeasurementKey>();

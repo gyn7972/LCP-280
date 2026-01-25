@@ -276,30 +276,27 @@ namespace QMC.Common.Unit
                 this.State = ProcessState.Error;
                 this.RunUnitStatus = UnitStatus.Error;
 
-                AlarmInfo alarm = GetAlarm(alarmCode);
-                alarm.GeneratedTime = DateTime.Now;
+                // [FIX] 템플릿 객체 직접 수정 금지: 복사본 생성
+                var template = GetAlarm(alarmCode);
 
+                var alarm = new AlarmInfo
+                {
+                    Code = template.Code,
+                    Title = template.Title,
+                    Cause = template.Cause,
+                    Source = template.Source,
+                    Grade = template.Grade,
+                    StateImage = template.StateImage,
+                    GeneratedTime = DateTime.Now
+                };
+
+                // 활성 알람 중복 방지(기존 정책 유지)
                 if (AlarmManager.Instance.Alarms.Any(a => a.Code == alarm.Code))
                     return alarmCode;
 
                 Log.Write("AlarmPost", $"[ALARM] Code:{alarmCode} Grade:{alarm.Grade} Cause:{alarm.Cause}");
 
-                string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
-                string logFile = Path.Combine(logFolder, $"AlarmLog_{DateTime.Now:yyyyMMdd}.csv");
-                Directory.CreateDirectory(logFolder);
-
-                lock (_alarmLogLock)
-                {
-                    using (var fs = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-                    using (var writer = new StreamWriter(fs, new UTF8Encoding(true)))
-                    {
-                        string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{alarm.Code}";
-                        writer.WriteLine(logLine);
-                    }
-                }
-
-                //Main화면의 정지가 동작되도록 하자.
-                //Equipment에 알람발생 변수 만들고...
+                // [CHG] CSV 기록은 HistoryManager 단일 지점에서만 수행한다.
                 AlarmManager.Instance.ShowAlarm(alarm);
             }
             catch (Exception ex)
@@ -308,7 +305,6 @@ namespace QMC.Common.Unit
             }
             return alarmCode;
         }
-
 
 
         private Material m_currentMaterial;

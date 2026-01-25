@@ -65,23 +65,46 @@ namespace QMC.Common.History
         {
             try
             {
+                // [FIX] 파일 단일 소스 정책:
+                // 실시간 이벤트에서 currentAlarms에 직접 Insert하면,
+                // 이미 파일에 기록된 데이터(LoadAlarmsByDate 결과)와 중복되어 2건으로 보일 수 있음.
+                // 따라서 해당 날짜면 "다시 로드"만 수행한다.
                 if (chkEnableDateFilter.Checked && history.Info.GeneratedTime.Date == currentDate.Date)
                 {
-                    currentAlarms.Insert(0, history);
-                    UpdateStatistics();
-                    ApplyFilters();
+                    HistoryManager.Instance.ClearCacheByDate(currentDate.Date);
+                    LoadAlarmsByDate(currentDate.Date);
                 }
                 else
                 {
+                    // 다른 날짜면 날짜 목록만 최신화
                     HistoryManager.Instance.ClearCacheByDate(history.Info.GeneratedTime.Date);
                     LoadRecentAlarmDates();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Write(ex);
             }
-            
+
+            //try
+            //{
+            //    if (chkEnableDateFilter.Checked && history.Info.GeneratedTime.Date == currentDate.Date)
+            //    {
+            //        currentAlarms.Insert(0, history);
+            //        UpdateStatistics();
+            //        ApplyFilters();
+            //    }
+            //    else
+            //    {
+            //        HistoryManager.Instance.ClearCacheByDate(history.Info.GeneratedTime.Date);
+            //        LoadRecentAlarmDates();
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+
         }
 
         private void LoadAlarmsByDate(DateTime date)
