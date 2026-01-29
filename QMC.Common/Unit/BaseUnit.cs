@@ -40,13 +40,13 @@ namespace QMC.Common.Unit
         public enum UnitStatus
         {
             Error = -1,
+            Unknown = 0,
             Stopped = 0,
             Starting,
             AutoRunning,
             ManualRunning,
             Stopping,
-            CycleStop,
-            Unknown
+            CycleStop
         }
 
         public enum UnitRunMode

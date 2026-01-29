@@ -1284,12 +1284,172 @@ namespace QMC.LCP_280.Process.Unit
             _unloadStep = failed;
         }
 
+
+        public int RunUnloadWaferFlowStep(bool isFine)
+        {
+            int nRet = 0;
+
+            switch (_unloadStep)
+            {
+                case UnloadFlowStep.Step01:
+
+                    try
+                    {
+                        var ctx = Equipment.Instance.SummaryContext;
+                        ctx.GetCurrentSummaryOrNull()?.StartUnload();
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+
+                    nRet = WaferUnloading_Step01(true);
+                    if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step01);
+                    goto case UnloadFlowStep.Step02;
+
+                case UnloadFlowStep.Step02:
+                    nRet = WaferUnloading_Step02(true);
+                    if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return nRet; }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return 0; }
+
+                    if (_unloadTargetSlot < 0)
+                        _unloadTargetSlot = ComputeUnloadTargetSlot();
+
+                    if (_unloadTargetSlot < 0)
+                    {
+                        AxisInputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid);
+                        this.State = ProcessState.Error;
+                        Log.Write(UnitName, "OnRunWork", "Unload target slot invalid");
+                        return -1;
+                    }
+
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step02);
+                    goto case UnloadFlowStep.Step03;
+
+                case UnloadFlowStep.Step03:
+                    // 카세트 슬롯으로 이동 후 Feeder -> Cassette 배출
+                    nRet = InputCassetteLifterUnit.MoveToSlot(_unloadTargetSlot, true);
+                    if (nRet != 0)
+                    {
+                        AxisInputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload);
+                        this.State = ProcessState.Error;
+                        MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
+                        return nRet;
+                    }
+
+                    nRet = WaferUnloading_Step03(true);
+                    if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return nRet; }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return 0; }
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step03);
+
+                    try
+                    {
+                        var ctx = Equipment.Instance.SummaryContext;
+                        ctx.GetCurrentSummaryOrNull()?.StopUnload();
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+                    break;
+
+                case UnloadFlowStep.Completed:
+                default:
+                    break;
+            }
+
+            return nRet;
+        }
+
+        public int RunLoadWaferFlowStep(out bool didLoad, bool isFine)
+        {
+            int nRet = 0;
+            didLoad = false;
+
+            switch (_loadStep)
+            {
+                case LoadFlowStep.Step01:
+
+                    try
+                    {
+                        // machineName은 일단 고정 (추후 EquipmentConfig에서 가져오도록 개선 가능)
+                        var ctx = Equipment.Instance.SummaryContext;
+                        ctx.Begin("--", "--", machineName: "VA1VPRO16");
+
+                        ctx.GetCurrentSummaryOrNull()?.StartLoad();
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+
+                    didLoad = true;
+                    // Scan은 여기서만 1회 수행 (중복 제거)
+                    if (_nextDoScanAndLoad)
+                    {
+                        nRet = InputCassetteLifterUnit.ScanWafer();
+                        if (nRet != 0)
+                        {
+                            MarkLoadStepOnFailure(LoadFlowStep.Step01);
+                            return nRet;
+                        }
+                        if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return 0; }
+                    }
+
+                    // 스캔 후에도 진행 wafer 없으면 Load 종료
+                    if (InputCassetteLifterUnit?.IsHaveMoreProcessWafer() != true)
+                    {
+                        _loadStep = LoadFlowStep.Completed;
+                        break;
+                    }
+
+                    nRet = WaferLoadingStep1(true);
+                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return nRet; }
+                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return 0; }
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step01);
+                    goto case LoadFlowStep.Step02;
+
+                case LoadFlowStep.Step02:
+                    didLoad = true;
+                    nRet = WaferLoadingStep2(true);
+                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return nRet; }
+                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return 0; }
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step02);
+                    goto case LoadFlowStep.Step03;
+
+                case LoadFlowStep.Step03:
+                    didLoad = true;
+                    nRet = WaferLoadingStep3(true);
+                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return nRet; }
+                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return 0; }
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step03);
+
+                    goto case LoadFlowStep.Step04;
+
+                case LoadFlowStep.Step04:
+                    didLoad = true;
+                    nRet = WaferLoadingStep4(true);
+                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return nRet; }
+                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return 0; }
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step04);
+                    break;
+
+                case LoadFlowStep.Completed:
+                default:
+                    break;
+            }
+
+            _loadStep = LoadFlowStep.Completed;
+            return nRet;
+        }
+
+
         #region Lifecycle
         public override int OnRun()
         {
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.Error ||
+                this.RunUnitStatus == UnitStatus.CycleStop ||
                 this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
@@ -1468,81 +1628,16 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
-                switch (_unloadStep)
+                nRet = RunUnloadWaferFlowStep(true);
+
+                if (_unloadStep == UnloadFlowStep.Completed)
                 {
-                    case UnloadFlowStep.Step01:
-
-                        try
-                        {
-                            var ctx = Equipment.Instance.SummaryContext;
-                            ctx.GetCurrentSummaryOrNull()?.StartUnload();
-                        }
-                        catch (Exception ex)
-                        { Log.Write(ex); }
-
-                        nRet = WaferUnloading_Step01(true);
-                        if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step01);
-                        goto case UnloadFlowStep.Step02;
-
-                    case UnloadFlowStep.Step02:
-                        nRet = WaferUnloading_Step02(true);
-                        if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return nRet; }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return 0; }
-
-                        if (_unloadTargetSlot < 0)
-                            _unloadTargetSlot = ComputeUnloadTargetSlot();
-
-                        if (_unloadTargetSlot < 0)
-                        {
-                            AxisInputFeederY.EmgStop();
-                            PostAlarm((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid);
-                            this.State = ProcessState.Error;
-                            Log.Write(UnitName, "OnRunWork", "Unload target slot invalid");
-                            return -1;
-                        }
-
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step02);
-                        goto case UnloadFlowStep.Step03;
-
-                    case UnloadFlowStep.Step03:
-                        // 카세트 슬롯으로 이동 후 Feeder -> Cassette 배출
-                        nRet = InputCassetteLifterUnit.MoveToSlot(_unloadTargetSlot, true);
-                        if (nRet != 0)
-                        {
-                            AxisInputFeederY.EmgStop();
-                            PostAlarm((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload);
-                            this.State = ProcessState.Error;
-                            MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
-                            return nRet;
-                        }
-
-                        nRet = WaferUnloading_Step03(true);
-                        if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return nRet; }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return 0; }
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step03);
-
-                        try
-                        {
-                            var ctx = Equipment.Instance.SummaryContext;
-                            ctx.GetCurrentSummaryOrNull()?.StopUnload();
-                        }
-                        catch (Exception ex)
-                        { Log.Write(ex); }
-                        break;
-
-                    case UnloadFlowStep.Completed:
-                    default:
-                        break;
+                    _unloadTargetSlot = -1;
+                    NeedUnloadFirst = false;
+                    this.State = ProcessState.Complete;
                 }
 
-                _unloadStep = UnloadFlowStep.Completed;
-                _unloadTargetSlot = -1;
-                NeedUnloadFirst = false;
-
-                this.State = ProcessState.Complete;
-                return 0;
+                return nRet;
             }
 
             // ===== Load 플로우 (항상 FSM로 진입) =====
@@ -1552,86 +1647,24 @@ namespace QMC.LCP_280.Process.Unit
                 _loadStep = DetermineNextLoadStep();
             }
 
-            switch (_loadStep)
+            nRet = RunLoadWaferFlowStep(out didLoad, true);
+
+            if ((nRet != 0)
+                 || (_loadStep != LoadFlowStep.Completed))
             {
-                case LoadFlowStep.Step01:
-
-                    try
-                    {
-                        // machineName은 일단 고정 (추후 EquipmentConfig에서 가져오도록 개선 가능)
-                        var ctx = Equipment.Instance.SummaryContext;
-                        ctx.Begin("--", "--",machineName: "VA1VPRO16");
-
-                        ctx.GetCurrentSummaryOrNull()?.StartLoad();
-                    }
-                    catch (Exception ex)
-                    { Log.Write(ex); }
-
-                    didLoad = true;
-                    // Scan은 여기서만 1회 수행 (중복 제거)
-                    if (_nextDoScanAndLoad)
-                    {
-                        nRet = InputCassetteLifterUnit.ScanWafer();
-                        if (nRet != 0) 
-                        { 
-                            MarkLoadStepOnFailure(LoadFlowStep.Step01);
-                            return nRet; 
-                        }
-                        if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return 0; }
-                    }
-
-                    // 스캔 후에도 진행 wafer 없으면 Load 종료
-                    if (InputCassetteLifterUnit?.IsHaveMoreProcessWafer() != true)
-                    {
-                        _loadStep = LoadFlowStep.Completed;
-                        break;
-                    }
-
-                    nRet = WaferLoadingStep1(true);
-                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return nRet; }
-                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return 0; }
-                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step01);
-                    goto case LoadFlowStep.Step02;
-
-                case LoadFlowStep.Step02:
-                    didLoad = true;
-                    nRet = WaferLoadingStep2(true);
-                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return nRet; }
-                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return 0; }
-                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step02);
-                    goto case LoadFlowStep.Step03;
-
-                case LoadFlowStep.Step03:
-                    didLoad = true;
-                    nRet = WaferLoadingStep3(true);
-                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return nRet; }
-                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return 0; }
-                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step03);
-
-                    goto case LoadFlowStep.Step04;
-
-                case LoadFlowStep.Step04:
-                    didLoad = true;
-                    nRet = WaferLoadingStep4(true);
-                    if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return nRet; }
-                    if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return 0; }
-                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step04);
-                    break;
-
-                case LoadFlowStep.Completed:
-                default:
-                    break;
+                Log.Write(UnitName, "OnRunWork", "Load flow not completed, continue work.");
+                return nRet;
             }
-            _loadStep = LoadFlowStep.Completed;
 
             // [FIX] 로드 수행 없으면 위치 복귀(Ready 이동) 자체를 하지 않음
             if (didLoad == false)
             {
                 this.State = ProcessState.Complete;
+                Log.Write(UnitName, "OnRunWork", "No wafer to load.");
                 return 0;
             }
 
-            // 3) 아무 것도 할 웨이퍼가 없으면 대기 안전 위치로
+            // 3) 아무 것도 할 웨이퍼가 없으면 대기 안전 위치로.
             if (IsPositionReady() == false)
             {
                 if(InputStageUnit.IsPositionWaferLoading() == false
@@ -1641,6 +1674,36 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                     Log.Write(UnitName, "OnRunWork", "Fail - IsPositionWaferLoading() == false");
                     return nRet;
+                }
+
+                // wafer 가지고 있는지 유/무 판단 필요.
+                bool hasWafer = HasWaferOnFeeder();
+                // Ready로 복귀할 때, 현재 로직은 "Unclamp 상태"를 요구함.
+                // 그런데 웨이퍼를 잡고 있는 상태(클램프 가능성)라면 Ready 복귀 자체가 위험/불가할 수 있음.
+                if (hasWafer == true)
+                {
+                    // 1) 클램프가 닫혀 있으면(=웨이퍼를 잡고 있을 가능성) Ready 이동 금지
+                    //    -> 여기서 무조건 Unclamp 해버리면 웨이퍼 낙하 가능하니, 정책을 확실히 해야 함.
+                    //    안전 우선: 알람/에러로 보내고 사용자가 "언로드" 버튼을 누르게 유도.
+                    if (IsSafeToMoveReady() == false)
+                    {
+                        AxisInputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                        Log.Write(UnitName, "OnRunWork",
+                            "Blocked MoveToReady: Feeder has wafer and is not unclamped. Run unload flow first.");
+                        return -1;
+                    }
+
+                    // 2) (선택) 웨이퍼는 있는데 Unclamp 상태로 판단되는 경우(데이터/센서 불일치 가능)
+                    //    -> 이 경우도 위험하므로 막는 방향 권장
+                    if (!(Config.IsSimulation || Config.IsDryRun))
+                    {
+                        // 센서 OFF + 객체만 남은 케이스 등을 포함해 강하게 막고 싶으면 아래로 처리
+                        // AxisInputFeederY.EmgStop();
+                        // PostAlarm((int)AlarmKeys.Alarm_WaferSensorDataMismatch);
+                        // Log.Write(UnitName, "OnRunWork", "Blocked MoveToReady: wafer data/sensor mismatch");
+                        // return -1;
+                    }
                 }
 
                 nRet = MovePositionReady();
@@ -1678,6 +1741,58 @@ namespace QMC.LCP_280.Process.Unit
             this.State = ProcessState.Ready;
             return ret;
         }
+
+        // Feeder가 wafer를 "잡고 있다/보유 중"인지 판단
+        // - 실기: RingPresent 센서 + (클램프 상태/객체) 조합
+        // - 시뮬/드라이런: Material 객체 기준이 더 신뢰됨
+        private bool HasWaferOnFeeder()
+        {
+            try
+            {
+                // 시뮬/드라이런이면 센서보다 Material이 기준
+                if (Config.IsSimulation || Config.IsDryRun)
+                    return (GetMaterial() is MaterialWafer);
+
+                bool sensor = false;
+                try { sensor = IsRingPresent(); } catch { sensor = false; }
+
+                bool obj = (GetMaterial() is MaterialWafer);
+
+                // 센서가 ON이면 우선 wafer 있다고 판단
+                if (sensor) return true;
+
+                // 센서 OFF인데 객체가 있으면 데이터만 남은 상태일 수 있으니 "보유"로 간주(안전 우선)
+                if (obj) return true;
+
+                return false;
+            }
+            catch
+            {
+                // 예외 시 안전측: 있다고 간주하면 이동을 막는 방향이 안전함
+                return true;
+            }
+        }
+
+        // Ready 이동이 가능한 "안전 상태"인지 판단
+        // 현재 코드 기준: Ready로 갈 때 UnClamp 상태를 요구하므로 그 조건을 명확히 둠
+        private bool IsSafeToMoveReady()
+        {
+            try
+            {
+                // 시뮬/드라이런이면 UnClamp 체크가 의미 약함
+                if (Config.IsSimulation || Config.IsDryRun)
+                    return true;
+
+                // MovePositionReady() 내부가 IsUnClamped()를 강제하므로 여기서도 동일 조건 사용
+                return IsUnClamped();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
 
         public int WaferLoadingStep1(bool isFine = false)
         {

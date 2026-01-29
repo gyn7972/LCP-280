@@ -120,24 +120,93 @@ namespace QMC.LCP_280.Process.Component
         {
             if (recipeType == null) throw new ArgumentNullException(nameof(recipeType));
             if (!typeof(QMC.Common.BaseRecipe).IsAssignableFrom(recipeType)) return false;
+
             try
             {
                 var r = (QMC.Common.BaseRecipe)Activator.CreateInstance(recipeType);
                 r.Name = name;
-                var path = r.GetFilePath();
+
+                var path = r.GetFilePath(); // e.g. ...\Recipes\MeasurementRecipe\BottomTest.json
+                bool deletedAny = false;
+
+                // 1) json 삭제
                 if (File.Exists(path))
                 {
                     File.Delete(path);
-                    var bak = path + ".bak";
-                    if (File.Exists(bak))
-                    {
-                        try { File.Delete(bak); } catch { }
-                    }
-                    return true;
+                    deletedAny = true;
                 }
+
+                // 2) bak 삭제
+                var bak = path + ".bak";
+                if (File.Exists(bak))
+                {
+                    try { File.Delete(bak); deletedAny = true; } catch { }
+                }
+
+                // 3) (추가) 레시피 폴더 삭제: ...\Recipes\MeasurementRecipe\BottomTest\
+                try
+                {
+                    string recipesFolderDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recipes");
+                    var srcPath = Path.Combine(recipesFolderDir, name);
+
+                    var recipeTypeFolder = Path.GetDirectoryName(srcPath); // ...\Recipes\MeasurementRecipe
+                    var recipeFolder = Path.Combine(recipeTypeFolder, name);
+
+                    if (Directory.Exists(recipeFolder))
+                    {
+                        Directory.Delete(recipeFolder, recursive: true);
+                        deletedAny = true;
+                    }
+                }
+                catch { }
+
+                //// 4) (추가) PatternMatching 폴더도 같이 삭제하고 싶다면
+                ////    ...\Recipes\PatternMatching\BottomTest\
+                //try
+                //{
+                //    // Recipes 루트 추정: ...\Recipes\MeasurementRecipe -> ...\Recipes
+                //    var recipeTypeFolder = Path.GetDirectoryName(path);
+                //    var recipesRoot = Directory.GetParent(recipeTypeFolder)?.FullName;
+
+                //    if (!string.IsNullOrEmpty(recipesRoot))
+                //    {
+                //        var patternFolder = Path.Combine(recipesRoot, "PatternMatching", name);
+                //        if (Directory.Exists(patternFolder))
+                //        {
+                //            Directory.Delete(patternFolder, recursive: true);
+                //            deletedAny = true;
+                //        }
+                //    }
+                //}
+                //catch { }
+
+                return deletedAny;
             }
-            catch { }
-            return false;
+            catch
+            {
+                return false;
+            }
+
+            //if (recipeType == null) throw new ArgumentNullException(nameof(recipeType));
+            //if (!typeof(QMC.Common.BaseRecipe).IsAssignableFrom(recipeType)) return false;
+            //try
+            //{
+            //    var r = (QMC.Common.BaseRecipe)Activator.CreateInstance(recipeType);
+            //    r.Name = name;
+            //    var path = r.GetFilePath();
+            //    if (File.Exists(path))
+            //    {
+            //        File.Delete(path);
+            //        var bak = path + ".bak";
+            //        if (File.Exists(bak))
+            //        {
+            //            try { File.Delete(bak); } catch { }
+            //        }
+            //        return true;
+            //    }
+            //}
+            //catch { }
+            //return false;
         }
     }
 }

@@ -1521,6 +1521,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.Error ||
                this.RunUnitStatus == UnitStatus.CycleStop ||
                this.RunUnitStatus == UnitStatus.ManualRunning)
             {
@@ -1827,6 +1828,7 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
+        int nMaxRetry = 0;
         private int RefineThetaWithDualPointAxis(bool useXAxis, bool bFineSpeed)
         {
             //사이즈를 벗어나서 마크를 못찾으면? 그건 어떻게 하지?
@@ -1854,15 +1856,45 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (Math.Abs(residualDeg) <= toleranceDeg)
+                if (attempt == maxAttempts)
                 {
-                    if (attempt == maxAttempts)
+                    if (Math.Abs(residualDeg) <= toleranceDeg)
                     {
-                        Log.Write(UnitName, "ThetaRefine",
-                        $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
-                        return 0;
+                        if (attempt == maxAttempts)
+                        {
+                            Log.Write(UnitName, "ThetaRefine",
+                            $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                            return 0;
+                        }
+                    }
+                    else
+                    {
+                        if (maxAttempts == nMaxRetry)
+                        {
+                            if (Math.Abs(residualDeg) <= toleranceDeg)
+                            {
+                                Log.Write(UnitName, "ThetaRefine",
+                                $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                                return 0;
+                            }
+                        }
+                        else
+                        {
+                            maxAttempts = maxAttempts + 3;
+                            nMaxRetry = maxAttempts;
+                        }
                     }
                 }
+
+                //if (Math.Abs(residualDeg) <= toleranceDeg)
+                //{
+                //    if (attempt == maxAttempts)
+                //    {
+                //        Log.Write(UnitName, "ThetaRefine",
+                //        $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                //        return 0;
+                //    }
+                //}
 
                 // residual을 0으로 만들기 위한 보정
                 // ApplyThetaCorrection 내부에서 AngleMaxApplyDeg 제한/누적적용/리밋체크를 함
@@ -2323,7 +2355,7 @@ namespace QMC.LCP_280.Process.Unit
                         rawOut.Clear();
                         bool loadedFromFile = false;
 
-                        SimUseRawChipFile = false;
+                        SimUseRawChipFile = true;
                         if (SimUseRawChipFile)
                         {
                             if (string.IsNullOrWhiteSpace(SimRawChipFilePath))
@@ -2488,15 +2520,16 @@ namespace QMC.LCP_280.Process.Unit
         private int AskContinueWhenMapMatchDisabled(MaterialWafer wafer)
         {
             // [ADD] 외곽 N줄 스킵(Reject 처리)
-            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
-            if (recipe != null)
-            {
-                OuterBorderSkipRows = recipe.DieSkipLine;
-            }
-            ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+            //var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            //if (recipe != null)
+            //{
+            //    OuterBorderSkipRows = recipe.DieSkipLine;
+            //}
+            //ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
             // [ADD] Skip die 제거 (복구 불가)
             //RemoveSkippedDiesFromWafer("MapMatchDisabled_RemoveSkippedDies");
 
+            // 외곽 N줄 스킵(Reject 처리) 내부에서 함.
             return RunMapMatchAndDecide(wafer, mapFile: null);
 
             // 기존: 맵핑 완료 후 사용자 확인
@@ -2789,8 +2822,8 @@ namespace QMC.LCP_280.Process.Unit
                 if (bestScore >= scoreThreshold)
                     return 0;
 
-                bool manualApplied = false;
-                FormMapMatchManual.ManualTransformSettings appliedSettings = null;
+                //bool manualApplied = false;
+                //FormMapMatchManual.ManualTransformSettings appliedSettings = null;
 
                 using (var dlg = new FormMapMatchManual())
                 {
@@ -2806,18 +2839,20 @@ namespace QMC.LCP_280.Process.Unit
                         // Camera 바인딩(필요 시)
                         dlg.BindEquipmentInStageCamera();
 
-                        dlg.ManualMatchApplied += (s, e) =>
-                        {
-                            manualApplied = true;
-                            appliedSettings = e?.Settings;
-                            try { dlg.DialogResult = DialogResult.OK; } catch { }
-                            try { dlg.Close(); } catch { }
-                        };
+                        //dlg.ManualMatchApplied += (s, e) =>
+                        //{
+                        //    manualApplied = true;
+                        //    appliedSettings = e?.Settings;
+                        //    try { dlg.DialogResult = DialogResult.OK; } catch { }
+                        //    try { dlg.Close(); } catch { }
+                        //};
 
                         var dr = dlg.ShowDialog();
 
                         // 1) 사용자가 창을 그냥 닫았거나 Cancel이면 중단
-                        if (dr != DialogResult.OK || !manualApplied)
+                        //if (dr != DialogResult.OK || !manualApplied)
+                        // OK 버튼으로 닫힌 경우에만 확정 진행
+                        if (dr != DialogResult.OK)
                         {
                             PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
                             Log.Write(UnitName, "MapMatch",
@@ -2873,14 +2908,14 @@ namespace QMC.LCP_280.Process.Unit
 
                         dlg.ManualMatchApplied += (s, e) =>
                         {
-                            manualApplied = true;
-                            try { dlg.DialogResult = DialogResult.OK; } catch { }
-                            try { dlg.Close(); } catch { }
+                            //manualApplied = true;
+                            //try { dlg.DialogResult = DialogResult.OK; } catch { }
+                            //try { dlg.Close(); } catch { }
                         };
 
                         var dr = dlg.ShowDialog();
 
-                        if (dr != DialogResult.OK || !manualApplied)
+                        if (dr != DialogResult.OK )//|| !manualApplied)
                         {
                             PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
                             Log.Write(UnitName, "MapMatch", "User cancelled manual map match. (NoMapFile)");

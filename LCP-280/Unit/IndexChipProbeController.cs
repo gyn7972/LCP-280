@@ -1746,6 +1746,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.Error ||
                this.RunUnitStatus == UnitStatus.CycleStop ||
                this.RunUnitStatus == UnitStatus.ManualRunning)
             {
@@ -1854,27 +1855,30 @@ namespace QMC.LCP_280.Process.Unit
                 // [ADD] Simulation/DryRun: BinType을 랜덤으로 강제 세팅해서 NG/Retry 테스트
                 if ((Config.IsSimulation || Config.IsDryRun) && die != null)
                 {
-                    try
+                    if(false)
                     {
-                        // 확률 클램프
-                        double p = SimulationGoodProbability;
-                        if (p < 0.0) p = 0.0;
-                        if (p > 1.0) p = 1.0;
-
-                        bool isGood;
-                        lock (_simRandLock)
+                        try
                         {
-                            isGood = _simRand.NextDouble() < p;
+                            // 확률 클램프
+                            double p = SimulationGoodProbability;
+                            if (p < 0.0) p = 0.0;
+                            if (p > 1.0) p = 1.0;
+
+                            bool isGood;
+                            lock (_simRandLock)
+                            {
+                                isGood = _simRand.NextDouble() < p;
+                            }
+
+                            die.TesterResult.BinningResult.BinType = isGood ? BinningType.GoodBin : BinningType.NgBin;
+
+                            Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+                                $"[SIM] Forced BinType={die.TesterResult.BinningResult.BinType} pGood={p:0.###} attempt={attempt + 1}/{maxRetry + 1}");
                         }
-
-                        die.TesterResult.BinningResult.BinType = isGood ? BinningType.GoodBin : BinningType.NgBin;
-
-                        Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
-                            $"[SIM] Forced BinType={die.TesterResult.BinningResult.BinType} pGood={p:0.###} attempt={attempt + 1}/{maxRetry + 1}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Write(UnitName, nameof(MeasureChipWithNgRetry), $"[SIM] Failed to force BinType: {ex.Message}");
+                        catch (Exception ex)
+                        {
+                            Log.Write(UnitName, nameof(MeasureChipWithNgRetry), $"[SIM] Failed to force BinType: {ex.Message}");
+                        }
                     }
                 }
 

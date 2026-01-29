@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using QMC.Common;
 using QMC.Common.PKGTester;
 using QMC.LCP_280.Process.Unit.FormWork.Repro;
 
@@ -335,6 +336,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 UpdateButtons(); // 혹시 버튼 상태가 어긋나 있으면 즉시 동기화
                 return;
             }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("INFO.", $"Index Cal을 시작하시겠습니까?") != DialogResult.Yes)
+            {
+                return;
+            }
+
 
             // 1) UI 입력 반영
             _targetCycleCount = ParseCountOrDefault();
@@ -759,6 +767,134 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 UpdateCopyAndSpecColors();
             }
             catch { /* UI 업데이트는 최대한 실패 무시 */ }
+        }
+
+
+
+        private void btnOffsetSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("INFO.", $"Offset을 저장하시겠습니까?") != DialogResult.Yes)
+                {
+                    return;
+                }
+
+                var eq = Equipment.Instance;
+                var recipe = eq?.EquipmentRecipe?.CurrentRecipe;
+                if (recipe == null)
+                {
+                    MessageBox.Show("현재 레시피가 없습니다.");
+                    return;
+                }
+
+                var filePath = recipe.TestConditionSetFile;
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                {
+                    MessageBox.Show("TestConditionSet 파일 경로가 유효하지 않습니다.\n" + filePath);
+                    return;
+                }
+
+                // 1) TestConditionSet 로드
+                var set = new QMC.Common.PKGTester.TestConditionSet();
+                if (set.LoadFromFile(filePath) != 0)
+                {
+                    MessageBox.Show("TestConditionSet 로드 실패:\n" + filePath);
+                    return;
+                }
+
+                // 2) dgvOffset -> item 오프셋 반영
+                //    행: 0 VF, 1 Watt, 2 WD/WP, 3 TOV
+                ApplyOffsetRow(set, rowIndex: 0, itemAliases: new[] { "VF3", "VF" }, preferType: null);
+                ApplyOffsetRow(set, rowIndex: 1, itemAliases: new[] { "WATT", "Watt", "Power", "Pwr" }, preferType: null);
+                ApplyOffsetRow(set, rowIndex: 2, itemAliases: new[] { "WD", "WP", "WD/WP", "WD_WP", "WdWp", "WDWP" }, preferType: null);
+                ApplyOffsetRow(set, rowIndex: 3, itemAliases: new[] { "VF1", "VF5", "TOV", "OverVoltage", "TestOV" }, preferType: null);
+
+                // 3) 저장
+                if (set.SaveToFile(filePath) != 0)
+                {
+                    MessageBox.Show("TestConditionSet 저장 실패:\n" + filePath);
+                    return;
+                }
+
+                // 4) 런타임 즉시 반영(권장)
+                try
+                {
+                    eq.Tester?.LoadTestConditionSet(filePath);
+                }
+                catch { /* 런타임 반영 실패는 저장 성공과 별개로 취급 */ }
+
+                // 5) 레시피도 Save(경로 자체는 바뀌지 않지만, 기존 패턴에 맞춰 동기화)
+                try
+                {
+                    recipe.Save();
+                }
+                catch { }
+
+                MessageBox.Show("Offset이 레시피(TestConditionSet)에 적용되고 저장되었습니다.\n" + Path.GetFileName(filePath));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Offset 저장 실패: " + ex.Message);
+            }
+        }
+
+        private void ApplyOffsetRow(QMC.Common.PKGTester.TestConditionSet set, int rowIndex, string[] itemAliases, QMC.Common.PKGTester.TestItemType? preferType)
+        {
+            if (set == null) return;
+            if (rowIndex < 0 || rowIndex >= dgvOffset.Rows.Count) return;
+
+            // 대상 아이템 찾기(이름 우선, 없으면 Type로 fallback 가능하도록 확장 여지)
+            var item = FindConditionItem(set, itemAliases, preferType);
+            if (item == null)
+                return;
+
+            // Index1..8 = columns 1..8 (0은 "Item")
+            // 내부 배열은 0..7
+            for (int idx = 1; idx <= 8; idx++)
+            {
+                double v = ParseCell(dgvOffset.Rows[rowIndex].Cells[idx]);
+                if (double.IsNaN(v))
+                    v = 0; // 비어있으면 0으로 처리(보수적으로)
+
+                int arr = idx - 1;
+                item.Offset[arr] = v;
+                item.UseOffset[arr] = true;
+            }
+        }
+
+        private static QMC.Common.PKGTester.TestConditionItem FindConditionItem(
+            QMC.Common.PKGTester.TestConditionSet set,
+            string[] aliases,
+            QMC.Common.PKGTester.TestItemType? preferType)
+        {
+            if (set == null) return null;
+
+            // 1) alias 이름 매칭(대소문자 무시)
+            if (aliases != null)
+            {
+                foreach (var a in aliases)
+                {
+                    var found = set.Items.FirstOrDefault(x => x != null && x.Name != null && x.Name.Equals(a, StringComparison.OrdinalIgnoreCase));
+                    if (found != null)
+                        return found;
+                }
+
+                // 2) alias 포함(contains)도 허용
+                foreach (var a in aliases)
+                {
+                    var found = set.Items.FirstOrDefault(x => x != null && x.Name != null && x.Name.IndexOf(a, StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            // 3) Type 기반 fallback(가능할 때만)
+            if (preferType.HasValue)
+                return set.Items.FirstOrDefault(x => x != null && x.Type.Equals(preferType.Value));
+
+            return null;
         }
 
     }

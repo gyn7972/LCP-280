@@ -1710,11 +1710,12 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (this.RunUnitStatus == UnitStatus.Stopped ||
                this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.Error ||
                this.RunUnitStatus == UnitStatus.CycleStop ||
                this.RunUnitStatus == UnitStatus.ManualRunning)
                 {
                     //정지하면 Stage Vacuum Off하자.
-                    InputStageVaccumOff();
+                    //InputStageVaccumOff();
 
                     this.State = ProcessState.Stop;
                     return 0;

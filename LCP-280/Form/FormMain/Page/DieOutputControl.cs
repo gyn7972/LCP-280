@@ -1018,7 +1018,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 var outputStage = TryGetUnit<OutputStage>(Equipment.UnitKeys.OutputStage);
                 if (outputStage == null)
                 {
-                    Log.Write("DieInputControl", "btnReset_Click", "InputStage unit not found.");
+                    Log.Write("DieOutputControl", "btnReset_Click", "InputStage unit not found.");
                     return;
                 }
 

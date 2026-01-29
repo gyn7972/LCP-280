@@ -58,6 +58,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlInputWaferStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
+            this.buttonMoveToLoad = new QMC.Common.IndividualMenuButton();
+            this.buttonMoveToUnLoad = new QMC.Common.IndividualMenuButton();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
@@ -200,6 +202,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             this.tableLayoutPanel6.ColumnCount = 1;
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Controls.Add(this.buttonMoveToUnLoad, 0, 3);
+            this.tableLayoutPanel6.Controls.Add(this.buttonMoveToLoad, 0, 2);
             this.tableLayoutPanel6.Controls.Add(this.buttonMoveToSlot, 0, 1);
             this.tableLayoutPanel6.Controls.Add(this.comboBoxSlot, 0, 0);
             this.tableLayoutPanel6.Controls.Add(this.btnTest, 0, 6);
@@ -291,7 +295,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.btnTest.Size = new System.Drawing.Size(269, 48);
             this.btnTest.TabIndex = 20;
             this.btnTest.TabStop = false;
-            this.btnTest.Text = "Search";
+            this.btnTest.Text = "Test";
             this.btnTest.UseVisualStyleBackColor = false;
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
@@ -452,7 +456,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage2.Size = new System.Drawing.Size(548, 506);
+            this.tabPage2.Size = new System.Drawing.Size(453, 506);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Feeder";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -465,7 +469,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlInputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlInputFeeder.Name = "manualSequenceControlInputFeeder";
             this.manualSequenceControlInputFeeder.ParentUnit = null;
-            this.manualSequenceControlInputFeeder.Size = new System.Drawing.Size(544, 502);
+            this.manualSequenceControlInputFeeder.Size = new System.Drawing.Size(449, 502);
             this.manualSequenceControlInputFeeder.TabIndex = 15;
             // 
             // tabPage3
@@ -475,7 +479,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage3.Size = new System.Drawing.Size(548, 506);
+            this.tabPage3.Size = new System.Drawing.Size(453, 506);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Stage";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -488,7 +492,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlInputWaferStage.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlInputWaferStage.Name = "manualSequenceControlInputWaferStage";
             this.manualSequenceControlInputWaferStage.ParentUnit = null;
-            this.manualSequenceControlInputWaferStage.Size = new System.Drawing.Size(544, 502);
+            this.manualSequenceControlInputWaferStage.Size = new System.Drawing.Size(449, 502);
             this.manualSequenceControlInputWaferStage.TabIndex = 16;
             // 
             // tableLayoutPanel9
@@ -504,6 +508,46 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel9.Size = new System.Drawing.Size(465, 554);
             this.tableLayoutPanel9.TabIndex = 23;
+            // 
+            // buttonMoveToLoad
+            // 
+            this.buttonMoveToLoad.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToLoad.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonMoveToLoad.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToLoad.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToLoad.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToLoad.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToLoad.ForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToLoad.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonMoveToLoad.Location = new System.Drawing.Point(2, 121);
+            this.buttonMoveToLoad.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
+            this.buttonMoveToLoad.Name = "buttonMoveToLoad";
+            this.buttonMoveToLoad.Size = new System.Drawing.Size(269, 48);
+            this.buttonMoveToLoad.TabIndex = 21;
+            this.buttonMoveToLoad.TabStop = false;
+            this.buttonMoveToLoad.Text = "Load Wafer";
+            this.buttonMoveToLoad.UseVisualStyleBackColor = false;
+            this.buttonMoveToLoad.Click += new System.EventHandler(this.buttonMoveToLoad_Click);
+            // 
+            // buttonMoveToUnLoad
+            // 
+            this.buttonMoveToUnLoad.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToUnLoad.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonMoveToUnLoad.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToUnLoad.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToUnLoad.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToUnLoad.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToUnLoad.ForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToUnLoad.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonMoveToUnLoad.Location = new System.Drawing.Point(2, 179);
+            this.buttonMoveToUnLoad.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
+            this.buttonMoveToUnLoad.Name = "buttonMoveToUnLoad";
+            this.buttonMoveToUnLoad.Size = new System.Drawing.Size(269, 48);
+            this.buttonMoveToUnLoad.TabIndex = 22;
+            this.buttonMoveToUnLoad.TabStop = false;
+            this.buttonMoveToUnLoad.Text = "Unload Wafer";
+            this.buttonMoveToUnLoad.UseVisualStyleBackColor = false;
+            this.buttonMoveToUnLoad.Click += new System.EventHandler(this.buttonMoveToUnLoad_Click);
             // 
             // Wafer_Menual
             // 
@@ -561,5 +605,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private ManualSequenceControl manualSequenceControlInputWaferStage;
         private System.Windows.Forms.ComboBox comboBoxSlot;
         private Common.IndividualMenuButton btnTest;
+        private Common.IndividualMenuButton buttonMoveToUnLoad;
+        private Common.IndividualMenuButton buttonMoveToLoad;
     }
 }

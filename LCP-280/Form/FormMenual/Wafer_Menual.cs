@@ -728,5 +728,229 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             
         }
+
+        private async void buttonMoveToLoad_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "Manual Wafer Load(=Auto 동일) 를 실행하시겠습니까?\n(Stage 로딩까지만 진행)") != DialogResult.Yes)
+                return;
+
+            if (InputFeeder == null || InputCassetteLifter == null || InputStage == null)
+            {
+                MessageBox.Show("Unit 초기화되지 않았습니다. (InputFeeder/InputCassetteLifter/InputStage)", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SetUnitsManualRunning(true);
+
+            int nRet = 0;
+            var t = Task.Run(() =>
+            {
+                // ===== Auto와 동일한 Step 호출 (Stage 로딩까지만) =====
+                // Step01: MoveToNextSlot + PrepareLoadingStage
+                nRet = InputFeeder.WaferLoadingStep1(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // Step02: UnloadWaferFromCassette (Barcode + WaferId 입력 폼 포함)
+                nRet = InputFeeder.WaferLoadingStep2(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // Step03: StageLoading + Material move + MoveToReady (※ 여기서 Stage에 wafer 올라감)
+                // 요구사항: "Stage 로딩까지만" 이므로, Step03 내부의 MoveToReady까지 포함되는 점이 싫으면
+                // InputFeeder.StageLoading()만 분리 호출로 바꾸면 됨.
+                nRet = InputFeeder.WaferLoadingStep3(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // ===== Data 검증 (Auto와 동일한 상태인지) =====
+                // - Step3에서 feeder material -> stage material로 옮기고 feeder는 null 되어야 정상
+                var waferOnStage = InputStage.GetMaterialWafer();
+                var waferOnFeeder = InputFeeder.GetMaterial() as MaterialWafer;
+
+                if (waferOnStage == null)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Load OK but Stage material is null");
+                    return -1;
+                }
+
+                if (waferOnFeeder != null)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Load OK but Feeder still has material");
+                    return -1;
+                }
+
+                if (string.IsNullOrWhiteSpace(waferOnStage.WaferId))
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Stage material WaferId empty");
+                    return -1;
+                }
+
+                return 0;
+            });
+
+            var form = new ProgressForm("Manual Running", "Wafer Load (Auto 동일, Stage 로딩까지만)", t, null);
+            try
+            {
+                form.ShowDialog(this);
+
+                if (t.IsFaulted)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", t.Exception?.GetBaseException().Message);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Canceled");
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"Manual Load 실패 (rc={rc})", "경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // UI 갱신(필요시)
+                try
+                {
+                    waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+                    waferMapView_InputWafer.Refresh();
+                }
+                catch { }
+
+                MessageBox.Show("Manual Load 완료 (Stage 로딩 완료).", "정보",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+
+
+        }
+
+        private async void buttonMoveToUnLoad_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "Manual Wafer Unload(=Auto 동일) 를 실행하시겠습니까?\n(Stage -> Feeder -> Cassette)") != DialogResult.Yes)
+                return;
+
+            if (InputFeeder == null || InputCassetteLifter == null || InputStage == null)
+            {
+                MessageBox.Show("Unit 초기화되지 않았습니다. (InputFeeder/InputCassetteLifter/InputStage)", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            SetUnitsManualRunning(true);
+
+            int nRet = 0;
+            var t = Task.Run(() =>
+            {
+                // ===== Auto와 동일한 Step 호출 (Unload) =====
+                // Step01: Stage wafer/data 정합성 확인(없으면 skip)
+                nRet = InputFeeder.WaferUnloading_Step01(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // Step02: Stage -> Feeder (Prepare + Move + Clamp + Material 이동/검증)
+                nRet = InputFeeder.WaferUnloading_Step02(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // Step03: Feeder -> Cassette (MoveToSlot + UnloadWaferFeederToCassette + Verify)
+                nRet = InputFeeder.WaferUnloading_Step03(isFine: true);
+                if (nRet != 0) return nRet;
+
+                // ===== Data 검증 (Auto와 동일한 상태인지) =====
+                // - Unload 완료 후: Stage material null, Feeder material null이어야 정상
+                var waferOnStage = InputStage.GetMaterialWafer();
+                var waferOnFeeder = InputFeeder.GetMaterial() as MaterialWafer;
+
+                if (waferOnStage != null)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Stage still has material");
+                    return -1;
+                }
+
+                if (waferOnFeeder != null)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Feeder still has material");
+                    return -1;
+                }
+
+                // 센서 기반 추가 확인(시뮬/드라이런이면 Material 기반이라 의미가 약함)
+                try
+                {
+                    if (!(InputFeeder.Config?.IsSimulation == true || InputFeeder.Config?.IsDryRun == true))
+                    {
+                        if (InputStage.IsRingPresent())
+                        {
+                            Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Stage sensor still ON");
+                            return -1;
+                        }
+
+                        if (InputFeeder.IsRingPresent())
+                        {
+                            Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Feeder sensor still ON");
+                            return -1;
+                        }
+                    }
+                }
+                catch { }
+
+                return 0;
+            });
+
+            var form = new ProgressForm("Manual Running", "Wafer Unload (Auto 동일)", t, null);
+            try
+            {
+                form.ShowDialog(this);
+
+                if (t.IsFaulted)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", t.Exception?.GetBaseException().Message);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Canceled");
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"Manual Unload 실패 (rc={rc})", "경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // UI 갱신(필요시)
+                try
+                {
+                    waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+                    waferMapView_InputWafer.Refresh();
+                }
+                catch { }
+
+                MessageBox.Show("Manual Unload 완료 (Cassette 반납 완료).", "정보",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+        }
     }
 }

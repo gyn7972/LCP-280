@@ -179,62 +179,59 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         // =========================================================
         // ======================= (B) OUTBOX =======================
         // =========================================================
-        #region B: Local Outbox Spooling + Uploader
+        #region B: Rename-only Upload Queue + Background Uploader (SMB/SFTP)
 
         private readonly object _outboxLock = new object();
 
-        // 요구사항: “초 단위” 업데이트
-        private static readonly TimeSpan OutboxMinIntervalPerDest = TimeSpan.FromSeconds(1);
+        // “실시간처럼”: 기본 1초. (PRD/WAF는 더 크게 잡는 것을 권장)
+        private static readonly TimeSpan DefaultMinInterval = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan LargeFileMinInterval = TimeSpan.FromSeconds(5); // 권장값: PRD/WAF
 
-        // 목적지(networkFile)별 스풀링 속도 제한
-        private readonly Dictionary<string, DateTime> _lastOutboxUtcByDest =
+        // 목적지(networkFile)별 업로드 요청 속도 제한
+        private readonly Dictionary<string, DateTime> _lastEnqueueUtcByDest =
             new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
-        private CancellationTokenSource _outboxCts;
-        private Task _outboxTask;
-        private readonly AutoResetEvent _outboxWake = new AutoResetEvent(false);
+        private CancellationTokenSource _uploaderCts;
+        private Task _uploaderTask;
+        private readonly AutoResetEvent _uploaderWake = new AutoResetEvent(false);
 
         private string GetOutboxRoot()
         {
-            // ResultData\yyyyMMdd\_outbox
             return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate, "_outbox");
         }
 
-        private static string ToSafeBase64Key(string s)
+        private string GetOutboxQueueDir()
         {
-            // 폴더명으로 쓰기 가능한 base64url-ish
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(s ?? ""))
-                .Replace("=", "")
-                .Replace("/", "_")
-                .Replace("+", "-");
+            return Path.Combine(GetOutboxRoot(), "queue");
         }
 
-        private string GetOutboxDirForDest(string networkFile)
+        private bool IsLargeFile(string localFile)
         {
-            // 구조: _outbox\<safeKey(destDir)>\<destFileName>\
-            string destDir = Path.GetDirectoryName(networkFile) ?? "UNKNOWN";
-            string destName = Path.GetFileName(networkFile) ?? "UNKNOWN";
-
-            string safeKey = ToSafeBase64Key(destDir);
-            return Path.Combine(GetOutboxRoot(), safeKey, destName);
+            var ext = (Path.GetExtension(localFile) ?? "").ToLowerInvariant();
+            return ext == ".prd" || ext == ".waf";
         }
 
-        private bool ShouldSpoolNow(string networkFile)
+        private TimeSpan GetMinIntervalForFile(string localFile)
+        {
+            return IsLargeFile(localFile) ? LargeFileMinInterval : DefaultMinInterval;
+        }
+
+        private bool ShouldEnqueueNow(string destKey, TimeSpan interval)
         {
             lock (_outboxLock)
             {
-                if (_lastOutboxUtcByDest.TryGetValue(networkFile, out var lastUtc))
+                if (_lastEnqueueUtcByDest.TryGetValue(destKey, out var lastUtc))
                 {
-                    if ((DateTime.UtcNow - lastUtc) < OutboxMinIntervalPerDest)
+                    if ((DateTime.UtcNow - lastUtc) < interval)
                         return false;
                 }
-                _lastOutboxUtcByDest[networkFile] = DateTime.UtcNow;
+                _lastEnqueueUtcByDest[destKey] = DateTime.UtcNow;
                 return true;
             }
         }
 
         /// <summary>
-        /// B안 핵심: 네트워크로 바로 복사하지 않고 Outbox에 스냅샷만 만든다(원자적).
+        /// 기존의 "스냅샷 복사" 대신, 업로드 작업 지시만 Outbox 큐에 넣는다(rename-only).
         /// </summary>
         private void MirrorLocalToNetworkIfNeeded(string waferId, string localFile, string networkFileForSmb)
         {
@@ -262,90 +259,109 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             if (string.IsNullOrWhiteSpace(dest))
                 return;
 
-            SpoolSnapshotToOutbox(localFile, dest); // dest는 SMB 경로 or SFTP remote path 모두 가능(문자열로만 저장)
+            // 파일 타입별 최소 enqueue 간격 적용 (실시간/부하 균형)
+            var interval = GetMinIntervalForFile(localFile);
+            if (!ShouldEnqueueNow(dest, interval))
+                return;
+
+            EnqueueUploadJob(localFile, dest);
         }
 
-        private void SpoolSnapshotToOutbox(string localFile, string networkFile)
+        private sealed class UploadJob
         {
-            if (!File.Exists(localFile))
-                return;
+            public string LocalFile;
+            public string DestFile;
+            public RemoteUploadMode Mode;
+            public DateTime Utc;
+        }
 
-            if (!ShouldSpoolNow(networkFile))
-                return;
-
+        /// <summary>
+        /// Outbox 큐에 job 파일 생성. (데이터 복사 없음)
+        /// </summary>
+        private void EnqueueUploadJob(string localFile, string destFile)
+        {
             try
             {
-                string dir = GetOutboxDirForDest(networkFile);
-                Directory.CreateDirectory(dir);
+                if (!File.Exists(localFile))
+                    return;
 
-                // 목적지 매핑은 폴더에 1회만 기록(복구/재시작에도 사용)
-                string mapping = Path.Combine(dir, "_dest.txt");
-                if (!File.Exists(mapping))
+                Directory.CreateDirectory(GetOutboxQueueDir());
+
+                var job = new UploadJob
                 {
-                    File.WriteAllText(mapping, networkFile, Encoding.UTF8);
-                }
+                    LocalFile = localFile,
+                    DestFile = destFile,
+                    Mode = UploadMode,
+                    Utc = DateTime.UtcNow
+                };
 
-                // 스냅샷 파일명: ticks.snap (정렬 위해)
-                string snapName = DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture) + ".snap";
-                string finalPath = Path.Combine(dir, snapName);
-                string tmpPath = finalPath + ".tmp";
+                // job 파일 내용은 단순 텍스트로 (닷넷프레임워크에서 JSON 의존성 피함)
+                // 1) Mode
+                // 2) LocalFile
+                // 3) DestFile
+                // 4) UtcTicks
+                string body = string.Join("\n",
+                    ((int)job.Mode).ToString(CultureInfo.InvariantCulture),
+                    job.LocalFile ?? "",
+                    job.DestFile ?? "",
+                    job.Utc.Ticks.ToString(CultureInfo.InvariantCulture)
+                );
 
-                // 부분 파일 방지
-                File.Copy(localFile, tmpPath, true);
-                File.Move(tmpPath, finalPath);
+                string name = Guid.NewGuid().ToString("N") + ".job";
+                string tmp = Path.Combine(GetOutboxQueueDir(), name + ".tmp");
+                string final = Path.Combine(GetOutboxQueueDir(), name);
 
-                _outboxWake.Set();
+                File.WriteAllText(tmp, body, Encoding.UTF8);
+                File.Move(tmp, final); // 원자적으로 큐에 투입
+
+                _uploaderWake.Set();
             }
             catch (Exception ex)
             {
-                try { Log.Write("ResultWriterManager", nameof(SpoolSnapshotToOutbox), ex.Message); } catch { }
+                try { Log.Write("ResultWriterManager", nameof(EnqueueUploadJob), ex.Message); } catch { }
             }
         }
 
         private void StartOutboxUploader()
         {
-            if (_outboxTask != null) return;
+            if (_uploaderTask != null) return;
 
-            _outboxCts = new CancellationTokenSource();
-            _outboxTask = Task.Run(() => OutboxUploadLoop(_outboxCts.Token));
+            _uploaderCts = new CancellationTokenSource();
+            _uploaderTask = Task.Run(() => UploadLoop(_uploaderCts.Token));
         }
 
         public void StopOutboxUploader(bool drain = false, int drainTimeoutMs = 5000)
         {
-            // drain=true 를 요구하면 구현 가능하지만,
-            // 요구사항은 “누락 없이 업로드” + “강제 종료 시 다음 실행에서 이어서 업로드 OK” 이므로
-            // 기본은 drain=false 권장(종료 지연 최소화)
             try
             {
                 if (drain)
-                    DrainOutbox(drainTimeoutMs);
+                    DrainJobs(drainTimeoutMs);
 
-                _outboxCts?.Cancel();
-                _outboxWake.Set();
-                _outboxTask?.Wait(1000);
+                _uploaderCts?.Cancel();
+                _uploaderWake.Set();
+                _uploaderTask?.Wait(1000);
             }
             catch { }
         }
 
-        private void DrainOutbox(int timeoutMs)
+        private void DrainJobs(int timeoutMs)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
-                if (!HasAnyOutboxSnapshot())
+                if (!HasAnyJob())
                     return;
-
                 Thread.Sleep(100);
             }
         }
 
-        private bool HasAnyOutboxSnapshot()
+        private bool HasAnyJob()
         {
             try
             {
-                var root = GetOutboxRoot();
-                if (!Directory.Exists(root)) return false;
-                return Directory.EnumerateFiles(root, "*.snap", SearchOption.AllDirectories).Any();
+                string q = GetOutboxQueueDir();
+                if (!Directory.Exists(q)) return false;
+                return Directory.EnumerateFiles(q, "*.job").Any();
             }
             catch
             {
@@ -353,102 +369,161 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             }
         }
 
-        private void OutboxUploadLoop(CancellationToken token)
+        private UploadJob TryParseJobFile(string jobPath)
+        {
+            try
+            {
+                var lines = File.ReadAllLines(jobPath, Encoding.UTF8);
+                if (lines.Length < 3) return null;
+
+                int modeInt = 0;
+                int.TryParse(lines[0].Trim(), out modeInt);
+
+                return new UploadJob
+                {
+                    Mode = (RemoteUploadMode)modeInt,
+                    LocalFile = lines[1].Trim(),
+                    DestFile = lines[2].Trim(),
+                    Utc = (lines.Length >= 4 && long.TryParse(lines[3].Trim(), out var ticks))
+                        ? new DateTime(ticks, DateTimeKind.Utc)
+                        : DateTime.UtcNow
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void UploadLoop(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
+                bool didWork = false;
+
                 try
                 {
-                    string root = GetOutboxRoot();
-                    if (!Directory.Exists(root))
+                    string q = GetOutboxQueueDir();
+                    if (!Directory.Exists(q))
                     {
-                        _outboxWake.WaitOne(500);
+                        _uploaderWake.WaitOne(500);
                         continue;
                     }
 
-                    foreach (var destKeyDir in Directory.EnumerateDirectories(root))
+                    // 오래된 job부터 처리
+                    var jobs = Directory.EnumerateFiles(q, "*.job")
+                                        .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                                        .ToList();
+
+                    foreach (var jobPath in jobs)
                     {
                         if (token.IsCancellationRequested) break;
 
-                        foreach (var fileDir in Directory.EnumerateDirectories(destKeyDir))
+                        // 처리중 락: .job -> .job.working (rename-only)
+                        string working = jobPath + ".working";
+                        try
                         {
-                            if (token.IsCancellationRequested) break;
-
-                            string mappingFile = Path.Combine(fileDir, "_dest.txt");
-                            if (!File.Exists(mappingFile))
+                            if (File.Exists(working))
                                 continue;
 
-                            string networkFile = File.ReadAllText(mappingFile, Encoding.UTF8).Trim();
-                            if (string.IsNullOrWhiteSpace(networkFile))
-                                continue;
+                            File.Move(jobPath, working);
+                        }
+                        catch
+                        {
+                            continue; // 다른 스레드/프로세스가 잡았거나 잠김
+                        }
 
-                            var snaps = Directory.EnumerateFiles(fileDir, "*.snap")
-                                                 .OrderBy(p => p, StringComparer.Ordinal)
-                                                 .ToList();
-                            if (snaps.Count == 0)
-                                continue;
+                        didWork = true;
 
-                            // “최신 파일로 덮어쓰기”만 요구됨:
-                            // 최신 1개만 업로드 시도, 나머지는 삭제
-                            string latest = snaps[snaps.Count - 1];
-                            for (int i = 0; i < snaps.Count - 1; i++)
-                                TryDeleteFileQuietly(snaps[i]);
+                        var job = TryParseJobFile(working);
+                        if (job == null || string.IsNullOrWhiteSpace(job.LocalFile) || string.IsNullOrWhiteSpace(job.DestFile))
+                        {
+                            TryDeleteFileQuietly(working);
+                            continue;
+                        }
 
-                            //기존코드
-                            //if (TryUploadSnapshot(latest, networkFile))
-                            //{
-                            //    TryDeleteFileQuietly(latest);
-                            //}
-                            //else
-                            //{
-                            //    // 실패하면 남겨두고 다음 loop에서 재시도
-                            //    // (강제 종료되어도 스냅샷이 남아 재시작 시 업로드)
-                            //}
+                        // 최신 상태만 올리고 싶으면 여기서 “중복/구버전 job” 제거 로직도 가능.
+                        // (필요시 추가해드릴게요)
 
-                            // mapping에서 읽은 목적지 문자열(= networkFile)을 그대로 사용
-                            string destFromMapping = networkFile;
+                        bool ok = false;
 
-                            if (UploadMode == RemoteUploadMode.Sftp)
+                        if (job.Mode == RemoteUploadMode.SmbShare)
+                        {
+                            ok = TryUploadLatestViaSmb_RenameOnly(job.LocalFile, job.DestFile);
+                        }
+                        else if (job.Mode == RemoteUploadMode.Sftp)
+                        {
+                            // SFTP도 tmpRemote 업로드 후 rename(이미 구현돼 있음)
+                            ok = TryUploadSnapshotViaSftp(job.LocalFile, job.DestFile);
+                        }
+
+                        if (ok)
+                        {
+                            TryDeleteFileQuietly(working);
+                        }
+                        else
+                        {
+                            // 실패 시 재시도 위해 되돌림
+                            try
                             {
-                                if (TryUploadSnapshotViaSftp(latest, destFromMapping))
-                                    TryDeleteFileQuietly(latest);
+                                if (File.Exists(working))
+                                {
+                                    // 너무 빠른 재시도를 막고 싶으면 .retryAt 같은 정책을 넣을 수 있음
+                                    File.Move(working, working.Replace(".working", ".job"));
+                                }
                             }
-                            else if (UploadMode == RemoteUploadMode.SmbShare)
+                            catch
                             {
-                                // 아직 TryUploadSnapshotViaSmb 구현이 없다면 우선 기존 TryUploadSnapshot 사용
-                                // if (TryUploadSnapshotViaSmb(latest, destFromMapping)) ...
-                                if (TryUploadSnapshot(latest, destFromMapping))
-                                    TryDeleteFileQuietly(latest);
+                                // 최악의 경우 .working이 남아도 다음 실행 때 정리/재시도 처리 가능
                             }
+
+                            // 잠깐 쉬었다가 재시도
+                            Thread.Sleep(200);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    try { Log.Write("ResultWriterManager", nameof(OutboxUploadLoop), ex.Message); } catch { }
+                    try { Log.Write("ResultWriterManager", nameof(UploadLoop), ex.Message); } catch { }
                 }
 
-                _outboxWake.WaitOne(300);
+                if (!didWork)
+                    _uploaderWake.WaitOne(300);
             }
         }
 
-        private bool TryUploadSnapshot(string snapshotFile, string networkFile)
+        /// <summary>
+        /// SMB 업로드: tmp로 COPY 후 마지막에 Rename(=Move)로 최종 반영.
+        /// - 실제 “rename-only”는 최종 단계만 rename을 의미 (네트워크로의 데이터 전송은 copy가 필요)
+        /// - 중요한 점: 웨이퍼 배출 스레드에서는 절대 이 함수가 호출되지 않음(백그라운드 전용)
+        /// </summary>
+        private bool TryUploadLatestViaSmb_RenameOnly(string localFile, string networkFile)
         {
             const int retry = 10;
+
             for (int i = 0; i < retry; i++)
             {
                 try
                 {
+                    if (!File.Exists(localFile))
+                        return false;
+
                     string ndir = Path.GetDirectoryName(networkFile);
                     if (!string.IsNullOrWhiteSpace(ndir))
                         Directory.CreateDirectory(ndir);
 
-                    // temp -> replace
                     string tmp = networkFile + ".tmp";
-                    File.Copy(snapshotFile, tmp, true);
 
+                    // 네트워크 전송 자체는 Copy가 필요 (SMB는 rename만으로 로컬->원격 전송 불가)
+                    // 대신 최종 반영은 rename으로 원자적 교체
+                    File.Copy(localFile, tmp, true);
+
+                    // 최종 파일을 원자적으로 교체
+                    // .NET Framework에서도 File.Replace가 가능하지만, SMB에서 정책/권한에 따라 실패할 수 있어 Move 기반으로 구성
                     if (File.Exists(networkFile))
-                        File.Delete(networkFile);
+                    {
+                        try { File.Delete(networkFile); } catch { /* ignore */ }
+                    }
 
                     File.Move(tmp, networkFile);
                     return true;
@@ -458,6 +533,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                     Thread.Sleep(200 * (i + 1));
                 }
             }
+
             return false;
         }
 

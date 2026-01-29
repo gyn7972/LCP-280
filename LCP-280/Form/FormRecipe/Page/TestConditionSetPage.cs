@@ -559,5 +559,59 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
         }
+
+        public void ReloadFromRecipe(bool showErrorMessage = false)
+        {
+            if (IsDesignMode()) return;
+
+            var recipe = currentRecipe;
+            if (recipe == null) return;
+
+            var path = recipe.TestConditionSetFile;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                {
+                    // 레시피 경로가 비었거나 파일이 없으면 UI Clear
+                    filePath = "";
+                    lbSetNameValue.Text = "";
+                    isModified = false;
+                    ClearConditionSetGrid();
+                    return;
+                }
+
+                if (tempSet.LoadFromFile(path) == 0)
+                {
+                    // Apply(런타임에도 즉시 반영)
+                    try { equipment.Tester.LoadTestConditionSet(path); } catch { }
+
+                    filePath = path;
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                    isModified = false;
+
+                    UpdateConditionSetGrid();
+                }
+                else
+                {
+                    if (showErrorMessage)
+                        MessageBox.Show("Failed to load file.", "Error");
+
+                    filePath = "";
+                    lbSetNameValue.Text = "";
+                    isModified = false;
+                    ClearConditionSetGrid();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                if (showErrorMessage)
+                    MessageBox.Show("Failed to load file.\n" + ex.Message, "Error");
+            }
+        }
+
+
+
     }
 }

@@ -28,6 +28,7 @@
             this.btnApply = new System.Windows.Forms.Button();
             this.btnSave = new System.Windows.Forms.Button();
             this.tlButtons = new System.Windows.Forms.TableLayoutPanel();
+            this.btnOffsetSave = new System.Windows.Forms.Button();
             this.btnStart = new System.Windows.Forms.Button();
             this.btnStop = new System.Windows.Forms.Button();
             this.dgvCopy = new System.Windows.Forms.DataGridView();
@@ -232,7 +233,7 @@
             this.btnApply.Name = "btnApply";
             this.btnApply.Size = new System.Drawing.Size(50, 66);
             this.btnApply.TabIndex = 2;
-            this.btnApply.Text = "적용";
+            this.btnApply.Text = "Apply";
             // 
             // btnSave
             // 
@@ -241,13 +242,14 @@
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(27, 66);
             this.btnSave.TabIndex = 3;
-            this.btnSave.Text = "저장";
+            this.btnSave.Text = "Save";
             // 
             // tlButtons
             // 
             this.tlButtons.ColumnCount = 2;
             this.tlButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tlButtons.Controls.Add(this.btnOffsetSave, 0, 1);
             this.tlButtons.Controls.Add(this.btnStart, 0, 0);
             this.tlButtons.Controls.Add(this.btnStop, 1, 0);
             this.tlButtons.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -258,6 +260,16 @@
             this.tlButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
             this.tlButtons.Size = new System.Drawing.Size(89, 98);
             this.tlButtons.TabIndex = 2;
+            // 
+            // btnOffsetSave
+            // 
+            this.btnOffsetSave.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnOffsetSave.Location = new System.Drawing.Point(3, 75);
+            this.btnOffsetSave.Name = "btnOffsetSave";
+            this.btnOffsetSave.Size = new System.Drawing.Size(38, 22);
+            this.btnOffsetSave.TabIndex = 5;
+            this.btnOffsetSave.Text = "Offset Save";
+            this.btnOffsetSave.Click += new System.EventHandler(this.btnOffsetSave_Click);
             // 
             // btnStart
             // 
@@ -332,5 +344,6 @@
         private System.Windows.Forms.DataGridView dgvOffset;
         private System.Windows.Forms.DataGridView dgvSpec;
         private System.Windows.Forms.DataGridView dgvCopy;
+        private System.Windows.Forms.Button btnOffsetSave;
     }
 }

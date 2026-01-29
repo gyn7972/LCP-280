@@ -3,6 +3,7 @@ using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.UI;
 using QMC.Common.Vision;
 using QMC.LCP_280.Process;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -18,6 +19,7 @@ namespace QMC.LCP_280.Process.Component
     public partial class FormMapMatchManual : Form
     {
         public event EventHandler<ManualMapMatchAppliedEventArgs> ManualMatchApplied;
+        public event EventHandler<QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs> MotorMoveRequested;
 
         private PointF? _pickedScan;
         private PointF? _pickedDownload;
@@ -58,6 +60,8 @@ namespace QMC.LCP_280.Process.Component
         private bool _undoCaptured;
         private Dictionary<int, DieSnapshot> _undoByDieIndex;
 
+        private double _lastMatchRatePercent = 0.0;
+
         private struct DieSnapshot
         {
             public int MapX;
@@ -68,6 +72,15 @@ namespace QMC.LCP_280.Process.Component
         // [ADD] Apply 누적 방지용 "원본" 스냅샷 (ScanMap 로드 시점 기준)
         private bool _baseCaptured;
         private Dictionary<int, DieSnapshot> _baseByDieIndex;
+
+        // [ADD] 실제 mapmatch 표시용 최근 점수/경로
+        private double? _lastRealMapMatchPercent;
+        private string _lastRealMapMatchFile;
+        private DateTime _lastRealMapMatchTime;
+
+        // ===== [ADD] Monitoring_Main 방식 모터 이동 =====
+        private InputStage _inputStage;            // 실제 MoveStage 호출용 (옵션)
+        private MaterialWafer _lastInputWafer;     // CenterX/CenterY 매핑용 (옵션)
 
         public FormMapMatchManual()
         {
@@ -88,11 +101,217 @@ namespace QMC.LCP_280.Process.Component
             try { cbRotate.SelectedIndexChanged += (s, e) => RecomputeDxDyFromPairsAndUpdateUi(); } catch { }
             try { chkMirrorX.CheckedChanged += (s, e) => RecomputeDxDyFromPairsAndUpdateUi(); } catch { }
             try { chkMirrorY.CheckedChanged += (s, e) => RecomputeDxDyFromPairsAndUpdateUi(); } catch { }
+
+            // [ADD] Monitoring_Main처럼 기본 유닛 확보 (Form이 단독으로 열린 경우에도 Move 가능)
+            try { _inputStage = TryGetUnit<InputStage>(Equipment.UnitKeys.InputStage); } catch { }
+        }
+
+        // [ADD] Monitoring_Main과 동일한 유닛 getter
+        private static T TryGetUnit<T>(string unitName) where T : class
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
+                    return u as T;
+            }
+            catch { }
+            return null;
+        }
+
+        // [ADD] Monitoring_Main EnsureAxisReadyOrShowMessage 축 가드 (동일 호출)
+        private bool EnsureAxisReadyOrShowMessage(string actionName)
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq == null)
+                {
+                    MessageBox.Show("Equipment 인스턴스를 찾을 수 없습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                return eq.EnsureAxisReadyForAutoOrMove(actionName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "초기화 필요",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
+        // ===== [ADD] 1) FormMapMatchManual에서 직접 모터 이동 구현 (Monitoring_Main 참고) =====
+        private void MovePickMotorTo(double stageX, double stageY)
+        {
+            try
+            {
+                if (!EnsureAxisReadyOrShowMessage("MapMatchManual.PickMove"))
+                    return;
+
+                if (_inputStage == null)
+                    _inputStage = TryGetUnit<InputStage>(Equipment.UnitKeys.InputStage);
+
+                if (_inputStage == null)
+                    return;
+
+                int rc = _inputStage.MoveStage(stageX, stageY);
+                if (rc != 0)
+                {
+                    MessageBox.Show("모터 이동 실패(인터락 또는 축 오류)", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"모터 이동 실패: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ===== [ADD] 2) 더블클릭 이벤트 -> die 매핑 -> MoveStage 호출 (Monitoring_Main OnDieInput_MotorMoveRequested 참고) =====
+        private void HandleMotorMoveRequested(QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
+        {
+            if (e?.Item == null)
+                return;
+
+            try { MotorMoveRequested?.Invoke(this, e); } catch { }
+
+            if (_pickMode != PickMode.None)
+                return;
+
+            var item = e.Item;
+
+            // Download에서 클릭된 경우 -> Scan die로 치환
+            if (item.GroupId == 1) // Download
+            {
+                // Scan wafer 기준으로 Map 좌표로 die를 다시 찾는다
+                var scanDie = FindScanDieByMap(item.DieMap.X, item.DieMap.Y);
+                if (scanDie != null)
+                {
+                    MovePickMotorTo(scanDie.CenterX, scanDie.CenterY);
+                    return;
+                }
+
+                // 못 찾으면 이동하지 않거나(권장), fallback 정책을 명확히
+                return;
+            }
+
+            // Scan 아이템인 경우 기존대로
+            var die = FindInputDieByDisplayItem(item);
+            if (die != null)
+            {
+                double stageX = die.CenterX;
+                double stageY = die.CenterY;
+
+                if (Math.Abs(stageX) < 0.0001 && Math.Abs(stageY) < 0.0001)
+                {
+                    stageX = die.MapX;
+                    stageY = die.MapY;
+                }
+
+                MovePickMotorTo(stageX, stageY);
+                return;
+            }
+
+            MovePickMotorTo(item.DieMap.X, item.DieMap.Y);
+        }
+
+        private MaterialDie FindScanDieByMap(int mapX, int mapY)
+        {
+            try
+            {
+                var dies = (_targetWafer ?? _lastInputWafer)?.Dies;
+                if (dies == null) return null;
+
+                return dies.FirstOrDefault(d => d != null && d.MapX == mapX && d.MapY == mapY);
+            }
+            catch { return null; }
+        }
+
+
+        //기존 코드
+        //private void HandleMotorMoveRequested(QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
+        //{
+        //    if (e == null || e.Item == null)
+        //        return;
+
+        //    // 외부(상위)에서 이미 MotorMoveRequested를 핸들링하고 싶으면 기존 이벤트도 같이 쏘되,
+        //    // 여기서는 "FormMapMatchManual 자체에서" 바로 이동도 수행한다.
+        //    try { MotorMoveRequested?.Invoke(this, e); } catch { }
+
+        //    // Pick 모드이면 이동하지 않음 (Pick 우선)
+        //    if (_pickMode != PickMode.None)
+        //        return;
+
+        //    // 1) 우선 Scan(=InputStage wafer)에서 die 찾아 CenterX/CenterY로 이동
+        //    var die = FindInputDieByDisplayItem(e.Item);
+        //    if (die != null)
+        //    {
+        //        double stageX = die.CenterX;
+        //        double stageY = die.CenterY;
+
+        //        // 방어: CenterX/CenterY가 비어있으면 MapX/MapY로 fallback
+        //        if (Math.Abs(stageX) < 0.0001 && Math.Abs(stageY) < 0.0001)
+        //        {
+        //            stageX = die.MapX;
+        //            stageY = die.MapY;
+        //        }
+
+        //        MovePickMotorTo(stageX, stageY);
+        //        return;
+        //    }
+
+        //    // 2) 매핑 실패 시 Map 좌표로 이동(기존 Monitoring_Main fallback 동일 흐름)
+        //    MovePickMotorTo(e.Item.DieMap.X, e.Item.DieMap.Y);
+        //}
+
+        // [ADD] Monitoring_Main FindInputDieByDisplayItem 방식 차용 (FormMapMatchManual은 DisplayView_DieScanMap 기반)
+        private MaterialDie FindInputDieByDisplayItem(QMC.Common.Controls.DisplayView_DieScanMap.DisplayItem displayItem)
+        {
+            try
+            {
+                // 우선순위: _targetWafer(스크린/장비 Scan) -> _lastInputWafer (예비)
+                var wafer = _targetWafer ?? _lastInputWafer;
+                var dies = wafer?.Dies;
+                if (dies == null)
+                    return null;
+
+                if (displayItem.DieId >= 0)
+                {
+                    var byIndex = dies.FirstOrDefault(d => d != null && d.Index == displayItem.DieId);
+                    if (byIndex != null)
+                        return byIndex;
+                }
+
+                // DieMap 우선으로 매칭
+                int mx = displayItem.DieMap.X;
+                int my = displayItem.DieMap.Y;
+                var byMap = dies.FirstOrDefault(d => d != null && (int)d.MapX == mx && (int)d.MapY == my);
+                if (byMap != null)
+                    return byMap;
+
+                // Position 기반 fallback (컨트롤 구현에 따라 DieMap/Position이 동일할 수 있음)
+                mx = displayItem.Position.X;
+                my = displayItem.Position.Y;
+                byMap = dies.FirstOrDefault(d => d != null && (int)d.MapX == mx && (int)d.MapY == my);
+                if (byMap != null)
+                    return byMap;
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public void BindTargetWafer(MaterialWafer wafer)
         {
             _targetWafer = wafer;
+            _lastInputWafer = wafer; // [ADD] Monitoring_Main과 동일 캐시 개념
 
             // Scan은 항상 장비 웨이퍼를 화면에 표시 (Auto/Manual 공용)
             try
@@ -106,6 +325,11 @@ namespace QMC.LCP_280.Process.Component
                     // preview/overlay용 캐시도 갱신
                     _scanMapPoints = dies.Select(d => new Point(d.MapX, d.MapY)).ToList();
                     _scanMapInfoText = _targetWafer?.WaferId ?? "SCAN";
+
+                    // [ADD] 다이얼로그 표시 시점의 wafer 상태를 base로 캡처(누적 적용 방지)
+                    _undoCaptured = false;
+                    _undoByDieIndex = null;
+                    CaptureBaseSnapshot();
                 }
             }
             catch { }
@@ -113,28 +337,36 @@ namespace QMC.LCP_280.Process.Component
 
         private void ViewScan_ItemClickedPick(object sender, QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
         {
-            //if (_pickMode != PickMode.Scan) return;
             if (e?.Item == null) return;
 
-            _pickedScan = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
+            // Pick 모드일 때만 Pick 처리
+            if (_pickMode == PickMode.Scan)
+            {
+                _pickedScan = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
 
-            _pickMode = PickMode.None;
-            btnPickScan.Enabled = true;
-            btnPickDownload.Enabled = true;
-            UpdateHint();
+                _pickMode = PickMode.None;
+                btnPickScan.Enabled = true;
+                btnPickDownload.Enabled = true;
+                UpdateHint();
+                return;
+            }
         }
 
         private void ViewDownload_ItemClickedPick(object sender, QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
         {
-            //if (_pickMode != PickMode.Download) return;
             if (e?.Item == null) return;
 
-            _pickedDownload = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
+            // Pick 모드일 때만 Pick 처리
+            if (_pickMode == PickMode.Download)
+            {
+                _pickedDownload = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
 
-            _pickMode = PickMode.None;
-            btnPickScan.Enabled = true;
-            btnPickDownload.Enabled = true;
-            UpdateHint();
+                _pickMode = PickMode.None;
+                btnPickScan.Enabled = true;
+                btnPickDownload.Enabled = true;
+                UpdateHint();
+                return;
+            }
         }
 
         public void SetDownloadedMapFile(string downloadedMapFilePath)
@@ -225,6 +457,7 @@ namespace QMC.LCP_280.Process.Component
                 LoadScanMapToView();
                 // [ADD] 초기에도 한번 계산 시도
                 RecomputeDxDyFromPairsAndUpdateUi();
+                UpdateMatchRateUi(); // [ADD] 초기 표시 (다운로드맵이 이미 세팅된 케이스)
             }
             catch { }
         }
@@ -265,7 +498,16 @@ namespace QMC.LCP_280.Process.Component
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
-            try { ResumeCameras(); } catch { }
+
+            try
+            {
+                EnsureCameraViewerCreated();
+                if (_camera == null) _camera = Equipment.Instance?.InStageCam;
+                if (_cameraViewer?.Camera == null) BindCamera();
+
+                ResumeCameras();
+            }
+            catch { }
         }
 
         protected override void OnDeactivate(EventArgs e)
@@ -295,7 +537,7 @@ namespace QMC.LCP_280.Process.Component
                     host = pbCamera;
                 }
             }
-            catch { } 
+            catch { }
 
             if (host == null)
                 host = pnlCamera;
@@ -399,15 +641,30 @@ namespace QMC.LCP_280.Process.Component
                     if (cam != null)
                     {
                         try { cam.SuspendedImageDisplay = false; } catch { }
+
+                        // [FIX] PauseCameras()에서 StopLive() 했으니 재개 시 StartLive() 필요
+                        try { cam.StartLive(); } catch { }
                     }
 
                     try { viewer.ResumeDisplay(); } catch { }
+
                     try
                     {
                         var startMethod = viewer.GetType().GetMethod("StartUpdateTask");
                         startMethod?.Invoke(viewer, null);
                     }
                     catch { }
+                }
+
+                // [ADD] viewer/camera가 아직 바인딩 안 된 경우 대비
+                if ((_cameraViewer == null || _cameraViewer.IsDisposed) || _cameraViewer.Camera == null)
+                {
+                    EnsureCameraViewerCreated();
+
+                    if (_camera == null)
+                        _camera = Equipment.Instance?.InStageCam;
+
+                    BindCamera();
                 }
 
                 ResumeViewer(_cameraViewer);
@@ -442,7 +699,32 @@ namespace QMC.LCP_280.Process.Component
                     });
                 }
 
+                // [ADD] WaferId 먼저 반영
+                try
+                {
+                    var waferId = _targetWafer?.WaferId ?? _scanMapInfoText ?? "N/A";
+                    viewScan?.SetWaferId(waferId);
+                }
+                catch { }
+
+                // 리스트 표시
                 viewScan?.SetDieList(dies);
+
+                // [ADD] die count는 SetDieList()가 내부에서 덮어쓸 수 있으니 마지막에 overlay 포맷으로 다시 설정
+                try
+                {
+                    int scanCount = dies.Count(d => d != null && d.Presence == MaterialPresence.Exist);
+
+                    // 원본(ORG)은 Download 쪽 데이터(가능하면 _downloadedDies 우선, 아니면 _downloadedMapPoints 기반)
+                    int orgCount = 0;
+                    if (_downloadedDies != null && _downloadedDies.Count > 0)
+                        orgCount = _downloadedDies.Count(d => d != null && d.Presence == MaterialPresence.Exist);
+                    else if (_downloadedMapPoints != null && _downloadedMapPoints.Count > 0)
+                        orgCount = _downloadedMapPoints.Count;
+
+                    viewScan?.SetDieCountOverlay(orgCount, scanCount);
+                }
+                catch { }
             }
             catch (Exception ex)
             {
@@ -501,6 +783,18 @@ namespace QMC.LCP_280.Process.Component
                     }
                 }
 
+                // [ADD] viewDownload 상단 라벨에 waferId / 카운트 표시
+                try
+                {
+                    var waferId = _targetWafer?.WaferId ?? _scanMapInfoText ?? "N/A";
+                    viewDownload?.SetWaferId(waferId);
+
+                    int orgCount = dies.Count(d => d != null && d.Presence == MaterialPresence.Exist);
+                    int scanCount = scanDies.Count(d => d != null && d.Presence == MaterialPresence.Exist);
+                    viewDownload?.SetDieCountOverlay(orgCount, scanCount);
+                }
+                catch { }
+
                 viewDownload?.SetDieListOverlay(dies, scanDies);
             }
             catch (Exception ex)
@@ -516,6 +810,10 @@ namespace QMC.LCP_280.Process.Component
         private void btnPickScan_Click(object sender, EventArgs e)
         {
             //Auto / Manual 에 따라 구분 필요.
+            _pickMode = PickMode.Scan;
+            btnPickScan.Enabled = false;
+            btnPickDownload.Enabled = true;
+            UpdateHint();
             return;
 
             _scanMapFilePath = string.Empty;
@@ -531,6 +829,9 @@ namespace QMC.LCP_280.Process.Component
         private void btnPickDownload_Click(object sender, EventArgs e)
         {
             //Auto / Manual 에 따라 구분 필요.
+            _pickMode = PickMode.Download;
+            btnPickDownload.Enabled = false;
+            btnPickScan.Enabled = true;
             return;
 
             _downloadedMapFilePath = string.Empty;
@@ -545,32 +846,43 @@ namespace QMC.LCP_280.Process.Component
 
         private void ViewScan_MotorMoveRequested(object sender, QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
         {
-            if (_pickMode != PickMode.Scan) return;
             if (e?.Item == null) return;
 
-            // [FIX] Map 좌표 기준으로 Pick 해야 함 (Position 쓰면 좌표계 꼬임)
-            _pickedScan = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
+            // 1) Pick 모드면 Pick 처리
+            if (_pickMode == PickMode.Scan)
+            {
+                _pickedScan = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
 
-            _pickMode = PickMode.None;
-            btnPickScan.Enabled = true;
-            btnPickDownload.Enabled = true;
+                _pickMode = PickMode.None;
+                btnPickScan.Enabled = true;
+                btnPickDownload.Enabled = true;
+                UpdateHint();
+                return;
+            }
 
-            UpdateHint();
+            // [FIX] Monitoring_Main 로직 기반으로 실제 이동 수행
+            JogSourceMap(0, 0);
+            HandleMotorMoveRequested(e);
         }
 
         private void ViewDownload_MotorMoveRequested(object sender, QMC.Common.Controls.DisplayView_DieScanMap.DisplayItemEventArgs e)
         {
-            if (_pickMode != PickMode.Download) return;
             if (e?.Item == null) return;
 
-            // [FIX] Map 좌표 기준
-            _pickedDownload = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
+            // 1) Pick 모드면 Pick 처리
+            if (_pickMode == PickMode.Download)
+            {
+                _pickedDownload = new PointF(e.Item.DieMap.X, e.Item.DieMap.Y);
 
-            _pickMode = PickMode.None;
-            btnPickScan.Enabled = true;
-            btnPickDownload.Enabled = true;
+                _pickMode = PickMode.None;
+                btnPickScan.Enabled = true;
+                btnPickDownload.Enabled = true;
+                UpdateHint();
+                return;
+            }
 
-            UpdateHint();
+            JogSourceMap(0, 0);
+            HandleMotorMoveRequested(e);
         }
 
         private void btnAddPair_Click(object sender, EventArgs e)
@@ -727,12 +1039,12 @@ namespace QMC.LCP_280.Process.Component
         // [ADD] Pairs -> Dx/Dy 자동 추정 및 nud 반영
         private void RecomputeDxDyFromPairsAndUpdateUi()
         {
-            if (_suppressAutoCalc) 
+            if (_suppressAutoCalc)
                 return;
 
             try
             {
-                if (_pairs == null || _pairs.Count <= 0) 
+                if (_pairs == null || _pairs.Count <= 0)
                     return;
 
                 int r = ParseRotate(cbRotate);
@@ -754,7 +1066,7 @@ namespace QMC.LCP_280.Process.Component
                     n++;
                 }
 
-                if (n <= 0) 
+                if (n <= 0)
                     return;
 
                 double dx = sumDx / n;
@@ -810,7 +1122,7 @@ namespace QMC.LCP_280.Process.Component
 
         // 이하 EnsureDownloadedMapLoaded / EnsureScanMapLoaded 는 기존 그대로…
         // (파일 로드 파트는 이번 수정의 본질과 무관)
-        
+
         //기존코드
         //private bool EnsureDownloadedMapLoaded(bool promptFileIfMissing)
         //{
@@ -1201,22 +1513,22 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnUp_Click(object sender, EventArgs e)
         {
-            JogSourceMap(0, -1);
+            JogSourceMap(0, +1);
         }
 
         private void btnDown_Click(object sender, EventArgs e)
         {
-            JogSourceMap(0, +1);
+            JogSourceMap(0, -1);
         }
 
         private void btnLeft_Click(object sender, EventArgs e)
         {
-            JogSourceMap(-1, 0);
+            JogSourceMap(+1, 0);
         }
 
         private void btnRight_Click(object sender, EventArgs e)
         {
-            JogSourceMap(+1, 0);
+            JogSourceMap(-1, 0);
         }
 
         /// <summary>
@@ -1267,7 +1579,9 @@ namespace QMC.LCP_280.Process.Component
 
             var settings = BuildCurrentSettings();
             ApplyTransformToTargetWaferAndCopyPreRank(settings, _downloadedDies);
+
             UpdateDownloadOverlayView();
+            UpdateMatchRateUi(); // [ADD] 매칭율 표시 갱신
 
             if (!previewOnly)
             {
@@ -1343,6 +1657,30 @@ namespace QMC.LCP_280.Process.Component
                 var downInfo = Path.GetFileName(_downloadedMapLoadedFromPath ?? _downloadedMapFilePath) ?? "DOWNLOAD";
                 for (int i = 0; i < _downloadedDies.Count; i++)
                     _downloadedDies[i].Name = downInfo;
+
+                // [ADD] viewScan 상단 라벨도 동기 갱신(선택)
+                try
+                {
+                    var waferId = _targetWafer?.WaferId ?? _scanMapInfoText ?? "N/A";
+                    viewScan?.SetWaferId(waferId);
+
+                    int orgCount = _downloadedDies?.Count(d => d != null && d.Presence == MaterialPresence.Exist) ?? 0;
+                    int scanCount = _targetWafer?.Dies?.Count(d => d != null && d.Presence == MaterialPresence.Exist) ?? 0;
+                    viewScan?.SetDieCountOverlay(orgCount, scanCount);
+                }
+                catch { }
+
+                // [ADD] viewDownload 상단 라벨 갱신(Apply/Preview 때 계속 업데이트)
+                try
+                {
+                    var waferId = _targetWafer?.WaferId ?? _scanMapInfoText ?? "N/A";
+                    viewDownload?.SetWaferId(waferId);
+
+                    int orgCount = _downloadedDies.Count(d => d != null && d.Presence == MaterialPresence.Exist);
+                    int scanCount = _targetWafer?.Dies?.Count(d => d != null && d.Presence == MaterialPresence.Exist) ?? 0;
+                    viewDownload?.SetDieCountOverlay(orgCount, scanCount);
+                }
+                catch { }
 
                 // Download + 변환된 Scan(=target wafer)
                 viewDownload?.SetDieListOverlay(_downloadedDies, _targetWafer.Dies);
@@ -1490,6 +1828,151 @@ namespace QMC.LCP_280.Process.Component
                 _downloadedDies = null;
                 _downloadedMapPoints = null;
                 _downloadedMapLoadedFromPath = null;
+                return false;
+            }
+        }
+
+        // [ADD] 현재 overlay 기준 매칭율 계산 (0~100)
+        private double ComputeMatchRatePercent()
+        {
+            try
+            {
+                if (_downloadedDies == null || _downloadedDies.Count == 0) return 0.0;
+                if (_targetWafer?.Dies == null || _targetWafer.Dies.Count == 0) return 0.0;
+
+                // 다운로드 좌표 set
+                var downSet = new HashSet<long>();
+                for (int i = 0; i < _downloadedDies.Count; i++)
+                {
+                    var d = _downloadedDies[i];
+                    if (d == null) continue;
+                    long key = ((long)d.MapX << 32) ^ (uint)d.MapY;
+                    downSet.Add(key);
+                }
+
+                int hit = 0;
+                int total = 0;
+
+                lock (_targetWafer.Dies)
+                {
+                    for (int i = 0; i < _targetWafer.Dies.Count; i++)
+                    {
+                        var s = _targetWafer.Dies[i];
+                        if (s == null) continue;
+
+                        long key = ((long)s.MapX << 32) ^ (uint)s.MapY;
+                        if (downSet.Contains(key)) hit++;
+                        total++;
+                    }
+                }
+
+                if (total <= 0) return 0.0;
+                return (hit / (double)total) * 100.0;
+            }
+            catch
+            {
+                return 0.0;
+            }
+        }
+
+        // [ADD] 매칭율 표시 + Limit 표기 + 색상
+        private void UpdateMatchRateUi()
+        {
+            try
+            {
+                double limit = GetRecipeMatchLimitPercent();
+                double score;
+
+                // 1) 우선: "진짜 Mapmatch" (mapFile 있을 때만)
+                if (!TryComputeRealMapMatchPercent(out score))
+                {
+                    // 2) fallback: 기존 빠른 내부 계산(대략 일치율)
+                    score = ComputeMatchRatePercent();
+                }
+
+                _lastMatchRatePercent = score;
+
+                if (lblMatchRate == null || lblMatchRate.IsDisposed)
+                    return;
+
+                lblMatchRate.Text = $"Match: {_lastMatchRatePercent:0.00}% (Limit: {limit:0.00}%)";
+
+                // 색상: limit 이상 Green, 미만 Red
+                // limit=0이면(레시피 미설정) 기본색 유지
+                if (limit > 0.0)
+                {
+                    lblMatchRate.ForeColor = (_lastMatchRatePercent >= limit)
+                        ? Color.ForestGreen
+                        : Color.Red;
+                }
+            }
+            catch { }
+        }
+
+        // [ADD] OK 버튼: 확정 후 닫기 (Apply는 화면 유지)
+        private void btnOk_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 마지막 상태 반영
+                RecomputeDxDyFromPairsAndUpdateUi();
+                ApplyManualMatch(previewOnly: false);
+
+                // OK로 닫음(취소/Undo 방지)
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            catch
+            {
+                // 실패 시엔 닫지 않음
+            }
+        }
+
+        // =========================
+        // [ADD] 레시피 MatchLimit 가져오기
+        // =========================
+        private double GetRecipeMatchLimitPercent()
+        {
+            try
+            {
+                var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                if (recipe == null) return 0.0;
+                return recipe.WaferMatchLimitPercent;
+            }
+            catch
+            {
+                return 0.0;
+            }
+        }
+
+        // =========================
+        // [ADD] 실제 Mapmatch 점수 계산 (mapFile이 있을 때만)
+        // =========================
+        private bool TryComputeRealMapMatchPercent(out double percent)
+        {
+            percent = 0.0;
+
+            try
+            {
+                if (_targetWafer == null) return false;
+
+                var mapFile = _downloadedMapFilePath;
+                if (string.IsNullOrWhiteSpace(mapFile) || !File.Exists(mapFile))
+                    return false;
+
+                // NOTE: Mapmatch는 내부에서 BinX/BinY 업데이트 등의 부작용 가능성이 있음.
+                //       현 요구는 "진짜 점수" 표기이므로 호출 허용.
+                double s = _targetWafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf);
+                percent = s * 100.0;
+
+                _lastRealMapMatchPercent = percent;
+                _lastRealMapMatchFile = mapFile;
+                _lastRealMapMatchTime = DateTime.Now;
+
+                return true;
+            }
+            catch
+            {
                 return false;
             }
         }

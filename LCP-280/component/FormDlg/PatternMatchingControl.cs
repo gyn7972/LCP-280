@@ -58,6 +58,7 @@ namespace QMC.LCP_280.Process
             if (_designMode)
                 return;
 
+
             this.VisibleChanged += PatternMatchingControl_VisibleChanged;
 
             // 이벤트 구독
@@ -242,7 +243,8 @@ namespace QMC.LCP_280.Process
 
         private void Equipment_CurrentRecipeChanged(object sender, EquipmentRecipe.MeasurementRecipeChangedEventArgs e)
         {
-            if (_designMode) return;
+            if (_designMode) 
+                return;
 
             try
             {
@@ -495,81 +497,100 @@ namespace QMC.LCP_280.Process
                 // 0) runner detach (오버레이 포함)
                 DetachRunnerForCurrentViewer();
 
-                // 3) 전환 중 화면 업데이트 중단 (중요)
-                _viewer.SuspendDisplay();
+                // 1) 이전 카메라 live stop (실패 로그)
                 try
                 {
-                    // 2) 이전 카메라 live stop
-                    try { _viewer.Camera?.StopLive(); } catch { }
+                    if (_viewer.Camera != null)
+                        _viewer.Camera.StopLive();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("PatternMatchingControl", "StopLive failed: " + ex.Message);
+                }
 
-                    // 3) viewer 흔적 제거 (overlay/cross 버퍼만)
-                    try { _viewer.ResultOverlays?.Clear(); } catch { }
-                    try { _viewer.NormalOverlays?.Clear(); } catch { }
-                    try { _viewer.InitCrossLine(); } catch { }
+                // 2) viewer 흔적 제거 + 업데이트 일시정지
+                try { _viewer.SuspendDisplay(); } catch { }
 
-                    // 결과/상태 초기화(이미지 null로는 만들지 않음)
-                    _lastResultPoint = Point.Empty;
-                    _lastResultAngle = 0;
-                    _lastValues?.Clear();
-                    _lastRunResult = null;
+                try { _viewer.ResultOverlays?.Clear(); } catch { }
+                try { _viewer.NormalOverlays?.Clear(); } catch { }
+                try { _viewer.InitCrossLine(); } catch { }
 
-                    // 4) 카메라 교체
-                    _viewer.Camera = cam;
+                // 결과/상태 초기화
+                _lastResultPoint = Point.Empty;
+                _lastResultAngle = 0;
+                _lastValues?.Clear();
+                _lastRunResult = null;
 
-                    // 5) 크로스라인/스케일 재초기화 (Grab 없이)
+                // 3) 카메라 교체
+                _viewer.Camera = cam;
+
+                // 4) VisionControl과 동일하게 표시 관련 상태 강제
+                try { _viewer.Simulated = false; } catch { }
+                try { cam.SuspendedImageDisplay = false; } catch { }
+
+                // 5) 스케일/크로스/오버레이 초기화 + 스냅 1회
+                try
+                {
                     _viewer.VisibleCrossLine = true;
                     _viewer.FrameRate = 30;
 
-                    // 6) 스케일/크로스/오버레이 재초기화 + 스냅 1회
-                    try
+                    if (_viewer.Scale != null && cam.Resolution.Width > 0 && cam.Resolution.Height > 0)
                     {
-                        if (_viewer.Scale != null && cam.Resolution.Width > 0 && cam.Resolution.Height > 0)
-                        {
-                            _viewer.Scale.Wheel = 1.0;
-                            _viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
-                            _viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
-                        }
+                        _viewer.Scale.Wheel = 1.0;
+                        _viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
+                        _viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
                     }
-                    catch (Exception ex) { Log.Write(ex); }
-
-
-                    try { _viewer.ResultOverlays?.Clear(); } catch { }
-                    try { _viewer.NormalOverlays?.Clear(); } catch { }
-
-                    try
-                    {
-                        _viewer.InitCrossLine();
-                        _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
-                    }
-                    catch { }
-
-                    try
-                    {
-                        cam.GrabSync(out var snap);
-                        if (snap != null)
-                            _viewer.SetImageNDisplay(snap);
-                    }
-                    catch { }
-
-                    // ROI 컨트롤 동기화
-                    SyncImageInfoToControls(cam);
                 }
-                finally
+                catch (Exception ex)
                 {
-                    // 7) 새 카메라 live 시작 + 표시 재개
-                    try { cam.StartLive(); } catch { }
-                    _viewer.ResumeDisplay();
-                    _viewer.StartUpdateTask();
+                    Log.Write("PatternMatchingControl", "Scale reset error: " + ex.Message);
                 }
 
-                // 8) 레시피 로드(UI + runner)
+                try
+                {
+                    _viewer.ResultOverlays?.Clear();
+                    _viewer.NormalOverlays?.Clear();
+
+                    _viewer.InitCrossLine();
+                    _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
+                }
+                catch { }
+
+                // 스냅샷(선택) - live 전에 1회 잡아서 화면 안정화
+                try
+                {
+                    cam.GrabSync(out var snap);
+                    if (snap != null)
+                        _viewer.SetImageNDisplay(snap);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("PatternMatchingControl", "GrabSync (pre-live) failed: " + ex.Message);
+                }
+
+                SyncImageInfoToControls(cam);
+
+                // 6) 새 카메라 live 시작 (실패 로그) + 표시 재개
+                try
+                {
+                    cam.StartLive();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("PatternMatchingControl", "StartLive failed: " + ex.Message);
+                }
+
+                try { _viewer.ResumeDisplay(); } catch { }
+                try { _viewer.StartUpdateTask(); } catch { }
+
+                // 7) 레시피 로드(UI + runner)
                 _suspendAutoLoad = true;
                 try { LoadRecipeForCurrentCamera(); }
                 finally { _suspendAutoLoad = false; }
 
                 BindUiToCurrentContext(cam);
 
-                // 9) Hub attach
+                // 8) Hub attach
                 AttachRunnerForCurrentViewer();
 
                 _viewer.Invalidate();
@@ -580,6 +601,110 @@ namespace QMC.LCP_280.Process
                 try { _viewer.ResumeDisplay(); } catch { }
             }
         }
+
+
+        //기존 코드
+        //private void ApplyCameraSelection(int index)
+        //{
+        //    if (_viewer == null) return;
+
+        //    try
+        //    {
+        //        if (index < 0 || index >= _cameras.Count)
+        //            return;
+
+        //        var cam = _cameras[index];
+        //        if (cam == null) return;
+
+        //        // 0) runner detach (오버레이 포함)
+        //        DetachRunnerForCurrentViewer();
+
+        //        // 3) 전환 중 화면 업데이트 중단 (중요)
+        //        _viewer.SuspendDisplay();
+        //        try
+        //        {
+        //            // 2) 이전 카메라 live stop
+        //            try { _viewer.Camera?.StopLive(); } catch { }
+
+        //            // 3) viewer 흔적 제거 (overlay/cross 버퍼만)
+        //            try { _viewer.ResultOverlays?.Clear(); } catch { }
+        //            try { _viewer.NormalOverlays?.Clear(); } catch { }
+        //            try { _viewer.InitCrossLine(); } catch { }
+
+        //            // 결과/상태 초기화(이미지 null로는 만들지 않음)
+        //            _lastResultPoint = Point.Empty;
+        //            _lastResultAngle = 0;
+        //            _lastValues?.Clear();
+        //            _lastRunResult = null;
+
+        //            // 4) 카메라 교체
+        //            _viewer.Camera = cam;
+
+        //            // 5) 크로스라인/스케일 재초기화 (Grab 없이)
+        //            _viewer.VisibleCrossLine = true;
+        //            _viewer.FrameRate = 30;
+
+        //            // 6) 스케일/크로스/오버레이 재초기화 + 스냅 1회
+        //            try
+        //            {
+        //                if (_viewer.Scale != null && cam.Resolution.Width > 0 && cam.Resolution.Height > 0)
+        //                {
+        //                    _viewer.Scale.Wheel = 1.0;
+        //                    _viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
+        //                    _viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
+        //                }
+        //            }
+        //            catch (Exception ex) { Log.Write(ex); }
+
+
+        //            try { _viewer.ResultOverlays?.Clear(); } catch { }
+        //            try { _viewer.NormalOverlays?.Clear(); } catch { }
+
+        //            try
+        //            {
+        //                _viewer.InitCrossLine();
+        //                _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
+        //            }
+        //            catch { }
+
+        //            try
+        //            {
+        //                cam.GrabSync(out var snap);
+        //                if (snap != null)
+        //                    _viewer.SetImageNDisplay(snap);
+        //            }
+        //            catch { }
+
+        //            // ROI 컨트롤 동기화
+        //            SyncImageInfoToControls(cam);
+        //        }
+        //        finally
+        //        {
+        //            // 7) 새 카메라 live 시작 + 표시 재개
+        //            try { cam.StartLive(); } catch { }
+        //            _viewer.ResumeDisplay();
+        //            _viewer.StartUpdateTask();
+        //        }
+
+        //        // 8) 레시피 로드(UI + runner)
+        //        _suspendAutoLoad = true;
+        //        try { LoadRecipeForCurrentCamera(); }
+        //        finally { _suspendAutoLoad = false; }
+
+        //        BindUiToCurrentContext(cam);
+
+        //        // 9) Hub attach
+        //        AttachRunnerForCurrentViewer();
+
+        //        _viewer.Invalidate();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //        try { _viewer.ResumeDisplay(); } catch { }
+        //    }
+        //}
+
 
         private void UpdateRunnerModeFromUI()
         {

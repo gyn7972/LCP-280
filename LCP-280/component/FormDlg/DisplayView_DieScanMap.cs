@@ -251,6 +251,11 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         /// <summary>모터 이동 확인 팝업</summary>
         private void ShowMotorMovePopup(DisplayItem item)
         {
+            // Scan(map)만 모터 이동 허용
+            // 0=기본, 1=Download, 2=Scan
+            if (item == null || item.GroupId != 2 || item.GroupId == 1)
+                return;
+
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("모터 이동 확인", $"Die:{item.DieId + 1}로 이동하시겠습니까?") == DialogResult.Yes)
             {

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe
 {
@@ -20,7 +21,14 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         private PropertyCollection _pc;
         private Dictionary<string, PropertyInfo> _propMap; // title -> property
         private string _recipesDir;
+        private string _recipesFolderDir;
         private string _clipboardRecipePath; // copy/paste용
+        private class RecipeClipboard
+        {
+            public string JsonPath;
+            public string RecipeName;
+        }
+        private RecipeClipboard _clipboard;
 
         // [ADD] UI 읽기전용 타이틀 모음 + 로그인 레벨 규칙
         private readonly HashSet<string> _uiReadOnlyTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -443,7 +451,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
             // [추가] 레시피와 동일 이름의 폴더도 함께 복사 대상으로 기억
             // 규칙: /Recipes/{TypeName}/{RecipeName}/
-            var srcDir = Path.Combine(_recipesDir, name);
+
+            _recipesFolderDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recipes");
+            var srcDir = Path.Combine(_recipesFolderDir, name);
 
             // json을 기준으로 Copy/Paste를 동작시키되, 폴더는 존재하면 같이 처리
             _clipboardRecipePath = srcRecipe;
@@ -510,20 +520,25 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 // 4) json 복사
                 File.Copy(_clipboardRecipePath, dstRecipe, overwrite: false);
 
+
+                _recipesFolderDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recipes");
+                var srcFolderDir = Path.Combine(_recipesFolderDir, oldName);
+                var dstFolderDir = Path.Combine(_recipesFolderDir, newName);
+
                 // 5) 폴더 복사 + 치환
-                if (Directory.Exists(srcDir))
+                if (Directory.Exists(srcFolderDir))
                 {
-                    CopyDirectoryRecursive(srcDir, dstDir);
+                    CopyDirectoryRecursive(srcFolderDir, dstFolderDir);
 
                     // 복사 결과 확인(보수적으로)
-                    if (!Directory.Exists(dstDir))
-                        throw new IOException($"폴더 복사에 실패했습니다: {dstDir}");
+                    if (!Directory.Exists(dstFolderDir))
+                        throw new IOException($"폴더 복사에 실패했습니다: {dstFolderDir}");
 
                     // 5-1) 파일/폴더 이름 치환
-                    RenamePathsByRecipeName(dstDir, oldName, newName);
+                    RenamePathsByRecipeName(dstFolderDir, oldName, newName);
 
                     // 5-2) 폴더 내부 텍스트 내용 치환
-                    ReplaceTextContentsByRecipeName(dstDir, oldName, newName);
+                    ReplaceTextContentsByRecipeName(dstFolderDir, oldName, newName);
                 }
 
                 // 6) 전역 전환
@@ -629,42 +644,49 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                                     .OrderByDescending(p => p.Length)
                                     .ToArray();
 
-            foreach (var file in allFiles)
+            try
             {
-                var dir = Path.GetDirectoryName(file);
-                var fn = Path.GetFileName(file);
-
-                if (fn.IndexOf(oldName, StringComparison.OrdinalIgnoreCase) < 0)
-                    continue;
-
-                var newFn = ReplaceIgnoreCase(fn, oldName, newName);
-                var newPath = Path.Combine(dir, newFn);
-
-                if (!string.Equals(file, newPath, StringComparison.OrdinalIgnoreCase))
+                foreach (var file in allFiles)
                 {
-                    if (File.Exists(newPath))
-                        throw new IOException($"파일 이름 변경 충돌: {newPath}");
-                    File.Move(file, newPath);
+                    var dir = Path.GetDirectoryName(file);
+                    var fn = Path.GetFileName(file);
+
+                    if (fn.IndexOf(oldName, StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+
+                    var newFn = ReplaceIgnoreCase(fn, oldName, newName);
+                    var newPath = Path.Combine(dir, newFn);
+
+                    if (!string.Equals(file, newPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (File.Exists(newPath))
+                            throw new IOException($"파일 이름 변경 충돌: {newPath}");
+                        File.Move(file, newPath);
+                    }
+                }
+
+                foreach (var dirPath in allDirs)
+                {
+                    var parent = Path.GetDirectoryName(dirPath);
+                    var dn = Path.GetFileName(dirPath);
+
+                    if (dn.IndexOf(oldName, StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+
+                    var newDn = ReplaceIgnoreCase(dn, oldName, newName);
+                    var newPath = Path.Combine(parent, newDn);
+
+                    if (!string.Equals(dirPath, newPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (Directory.Exists(newPath))
+                            throw new IOException($"폴더 이름 변경 충돌: {newPath}");
+                        Directory.Move(dirPath, newPath);
+                    }
                 }
             }
-
-            foreach (var dirPath in allDirs)
+            catch( Exception ex)
             {
-                var parent = Path.GetDirectoryName(dirPath);
-                var dn = Path.GetFileName(dirPath);
-
-                if (dn.IndexOf(oldName, StringComparison.OrdinalIgnoreCase) < 0)
-                    continue;
-
-                var newDn = ReplaceIgnoreCase(dn, oldName, newName);
-                var newPath = Path.Combine(parent, newDn);
-
-                if (!string.Equals(dirPath, newPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (Directory.Exists(newPath))
-                        throw new IOException($"폴더 이름 변경 충돌: {newPath}");
-                    Directory.Move(dirPath, newPath);
-                }
+                Log.Write(ex);
             }
         }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,7 +40,6 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-
         public DieScanMapControl()
         {
             InitializeComponent();
@@ -53,6 +53,31 @@ namespace QMC.LCP_280.Process.Component
                 // [ADD] 클릭 선택 이벤트 (DisplayView는 ItemDoubleClicked 이름이지만 실제로 단일 클릭)
                 displayView1.ItemDoubleClicked += DisplayView1_ItemDoubleClicked;
             }
+        }
+
+        // [ADD] Info 문자열 구성 (Name + CenterX/Y + BinNo(=PreRank))
+        private static string BuildInfo(MaterialDie die)
+        {
+            if (die == null) return string.Empty;
+
+            string name = die.Name ?? string.Empty;
+
+            // BinNo가 별도 필드가 없고, 현재 프로젝트에서는 PreRank를 BinCode처럼 사용 중
+            int binNo = die.PreRank;
+
+            // CenterX/Y가 0인 케이스가 있을 수 있으니 표시 형식만 통일
+            //return string.Format(
+            //    System.Globalization.CultureInfo.InvariantCulture,
+            //    "{0}  CX={1:0.###},CY={2:0.###}  Bin={3}",
+            //    name,
+            //    die.CenterX, die.CenterY,
+            //    binNo);
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "CX={0:0.###},CY={1:0.###}  Bin={2}",
+                die.CenterX,
+                die.CenterY,
+                binNo);
         }
 
         // ===== Pivot 계산 =====
@@ -101,7 +126,7 @@ namespace QMC.LCP_280.Process.Component
             rel = new Point(-rel.X, rel.Y);
             //180도 회전해야. 장비랑 비젼이랑 1:1
             rel = new Point(-rel.X, -rel.Y);
-            
+
             return rel;
         }
 
@@ -114,7 +139,7 @@ namespace QMC.LCP_280.Process.Component
             }
 
             var incoming = dies ?? new List<MaterialDie>();
-            
+
             _dies = incoming;
             RecalcPivot();
             var items = _dies.Where(d => d != null).Select(c =>
@@ -136,7 +161,7 @@ namespace QMC.LCP_280.Process.Component
                     DieMap = modelPos,
                     State = state,
                     DieId = c.Index,       // DieId는 Index 유지(외부 매칭 안정)
-                    Info = c.Name ?? string.Empty
+                    Info = BuildInfo(c)
                 };
             }).ToList();
 
@@ -202,7 +227,6 @@ namespace QMC.LCP_280.Process.Component
             });
         }
 
-
         public void SetWaferId(string waferId)
         {
             if (this.InvokeRequired)
@@ -260,22 +284,6 @@ namespace QMC.LCP_280.Process.Component
 
             var items = new List<DisplayView_DieScanMap.DisplayItem>(_dies.Count);
 
-            // Download = GroupId 1 (Blue)
-            for (int i = 0; i < d1.Count; i++)
-            {
-                var c = d1[i];
-                if (c == null) continue;
-
-                items.Add(new DisplayView_DieScanMap.DisplayItem
-                {
-                    Position = ToDisplay(new PointD(c.MapX, c.MapY)),
-                    DieMap = new PointD(c.MapX, c.MapY),
-                    State = DisplayView_DieScanMap.ItemState.Present,
-                    DieId = c.Index,
-                    Info = c.Name ?? "",
-                    GroupId = 1
-                });
-            }
 
             // Scan = GroupId 2 (Red)
             for (int i = 0; i < d2.Count; i++)
@@ -289,14 +297,52 @@ namespace QMC.LCP_280.Process.Component
                     DieMap = new PointD(c.MapX, c.MapY),
                     State = DisplayView_DieScanMap.ItemState.Present,
                     DieId = c.Index,
-                    Info = c.Name ?? "",
+                    Info = BuildInfo(c),
                     GroupId = 2
+                });
+            }
+
+            // Download = GroupId 1 (Blue)
+            for (int i = 0; i < d1.Count; i++)
+            {
+                var c = d1[i];
+                if (c == null) continue;
+
+                items.Add(new DisplayView_DieScanMap.DisplayItem
+                {
+                    Position = ToDisplay(new PointD(c.MapX, c.MapY)),
+                    DieMap = new PointD(c.MapX, c.MapY),
+                    State = DisplayView_DieScanMap.ItemState.Present,
+                    DieId = c.Index,
+                    Info = BuildInfo(c),
+                    GroupId = 1
                 });
             }
 
             displayView1.SetItems(items);
             displayView1.Refresh();
-            UpdateDieCount();
+        }
+
+        public void SetDieCountOverlay(int orgCount, int scanCount)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => SetDieCountOverlay(orgCount, scanCount)));
+                return;
+            }
+
+            try
+            {
+                var fld = GetType().GetField("lblDieCountValue",
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.NonPublic |
+                    System.Reflection.BindingFlags.Public);
+
+                var lbl = fld?.GetValue(this) as Label;
+                if (lbl != null)
+                    lbl.Text = $"ORG: {orgCount} / SCAN: {scanCount}";
+            }
+            catch { }
         }
     }
 }
