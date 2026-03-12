@@ -32,6 +32,16 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit<OutputStageConfig>
     {
+        private bool IsDryRunEqp
+        {
+            get
+            {
+                var eq = Equipment.Instance;
+                bool r = eq.EquipmentConfig.IsDryRun;
+                return r;
+            }
+        }
+
         public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
 
         public LinkTypeXYTStageCorrection linkTypeXYTStageCorrection { get; set; }
@@ -56,9 +66,9 @@ namespace QMC.LCP_280.Process.Unit
         public delegate void UpdateUIWafer(MaterialWafer wafer);
         public event UpdateUIWafer EventUpdateUIWafer;
 
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
-            eDieTransferPlaceZNotSafety = 3001,
+            eDieTransferPlaceZNotSafety = 11101,
             eOutputFeederCylinderZNotSafety,
             eOutputFeederYNotSafe,
             eNoBinDetected,
@@ -67,95 +77,118 @@ namespace QMC.LCP_280.Process.Unit
             ePlate,
             eStageNotLoding,
             ePlateCyliderZNotDown,
-            eNotReadyToMeasure, // 임시 알람 번호
+            eNotReadyToMeasure,
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Bin_Stage";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafety;
-            alarm.Title = "Die TrZAxis Not safety Pos.";
-            alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputFeederCylinderZNotSafety;
-            alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
-            alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
 
-            //
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputFeederYNotSafe;
-            alarm.Title = "Feeder Y-Axis Not safety Pos.";
-            alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
 
-            //eNoBinDetected
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eNoBinDetected;
-            alarm.Title = "No Bin Detected";
-            alarm.Cause = "Bin이 감지되지 않았습니다. Bin이 있는지 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafety;
+                alarm.Title = "Die TrZAxis Not safety Pos.";
+                alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            //,
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eClampFB;
-            alarm.Title = "Clamp F/B Not Pos.";
-            alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //,
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eClampLift;
-            alarm.Title = "Clamp Lift Not Pos.";
-            alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //,
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.ePlate;
-            alarm.Title = "Plate Not Pos.";
-            alarm.Cause = "Plate가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //,
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eStageNotLoding;
-            alarm.Title = "Stage Not Loading Pos.";
-            alarm.Cause = "Stage 가 준비 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //,
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.ePlateCyliderZNotDown;
-            alarm.Title = "Plate CylinerZ Not Down.";
-            alarm.Cause = "Plate CylinerZ 가 하강 위치가 아닙니다.\n 상태 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputFeederCylinderZNotSafety;
+                alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
+                alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
-            alarm.Title = "측정 준비가 되지 않았습니다.";
-            alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                //
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputFeederYNotSafe;
+                alarm.Title = "Feeder Y-Axis Not safety Pos.";
+                alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                //eNoBinDetected
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eNoBinDetected;
+                alarm.Title = "No Bin Detected";
+                alarm.Cause = "Bin이 감지되지 않았습니다. Bin이 있는지 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                //,
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eClampFB;
+                alarm.Title = "Clamp F/B Not Pos.";
+                alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //,
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eClampLift;
+                alarm.Title = "Clamp Lift Not Pos.";
+                alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //,
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.ePlate;
+                alarm.Title = "Plate Not Pos.";
+                alarm.Cause = "Plate가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //,
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eStageNotLoding;
+                alarm.Title = "Stage Not Loading Pos.";
+                alarm.Cause = "Stage 가 준비 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //,
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.ePlateCyliderZNotDown;
+                alarm.Title = "Plate CylinerZ Not Down.";
+                alarm.Cause = "Plate CylinerZ 가 하강 위치가 아닙니다.\n 상태 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
+                alarm.Title = "측정 준비가 되지 않았습니다.";
+                alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
+            
         }
         #endregion
 
@@ -298,9 +331,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (args == null)
                 return;
-
-            // 시뮬/드라이런이면 필요 없으면 여기서 return 처리 가능
-            // if (Config.IsSimulation || Config.IsDryRun) return;
 
             var now = DateTime.Now;
             string path = GetDiePlaceTaktCsvPath(now);
@@ -619,7 +649,7 @@ namespace QMC.LCP_280.Process.Unit
         // --- Existing High-Level APIs (인터락 포함) ---
         public bool IsVacuumOn()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -628,7 +658,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring0()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -637,7 +667,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring1()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -703,7 +733,7 @@ namespace QMC.LCP_280.Process.Unit
         // Plate: expectUp=true(UP 기대), false(DOWN 기대)
         private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -724,7 +754,7 @@ namespace QMC.LCP_280.Process.Unit
         // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
         private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -745,7 +775,7 @@ namespace QMC.LCP_280.Process.Unit
         // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
         private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -813,7 +843,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int MoveApplyOffset(string positionName, double dx, double dy, double dt)
         {
-            int nRtn = 0;
             // Teaching Position 가져오기
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) 
@@ -1243,8 +1272,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 var Bin = GetMaterialWafer();
-                if (Config.IsSimulation == false
-                    && Config.IsDryRun == false)
+                if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (IsRingPresent() == true)
                     {
@@ -1253,7 +1281,7 @@ namespace QMC.LCP_280.Process.Unit
                             //알람 발생 해야함.
                             // 제품이 있는데 wafer 정보가 없으면 이상
                             //이건 다른곳에서 확인해야 하나? 이 함수에서는,,
-                            Log.Write(UnitName, "IsWorkCompleted", "Wafer present but wafer info is null");
+                            //Log.Write(UnitName, "IsWorkCompleted", "Wafer present but wafer info is null");
                             return false;
                         }
                     }
@@ -1274,7 +1302,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 if (Config.IsSimulation == false
-                   && Config.IsDryRun == false)
+                   && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (IsRingPresent() == false)
                     {
@@ -1368,7 +1396,7 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "LoadingBinPrepare", "LoadingBinPrepare Start");
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
-            if (!Config.IsSimulation && !Config.IsDryRun)
+            if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
             {
                 if (IsRingPresent())
                 {
@@ -1423,14 +1451,14 @@ namespace QMC.LCP_280.Process.Unit
             // 아직 Wafer 안 올라옴 → 대기
             bool bRtn = Config.IsSimulation;
             // 준비 안 되었으면 호출 순서 오류
-            if (!IsRingPresent() && bRtn == false && Config.IsDryRun == false)
+            if (!IsRingPresent() && bRtn == false && (Config.IsDryRun == false && IsDryRunEqp == false))
             {
                 Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingBinComplete first)");
                 return -1;
             }
 
             
-            if (IsRingPresent() || bRtn || Config.IsDryRun)
+            if (IsRingPresent() || bRtn || (Config.IsDryRun || IsDryRunEqp))
             {
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 {
@@ -1528,7 +1556,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent()
         {
             bool bRtn = true;
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 // 시뮬레이션: 실제 보유 머티리얼로 판단
                 return this.GetMaterial() is MaterialWafer;
@@ -1627,7 +1655,6 @@ namespace QMC.LCP_280.Process.Unit
                     return;
 
                 MaterialDie slot = null;
-
                 lock (_reserveLock)
                     lock (wafer.Dies)
                     {
@@ -1643,11 +1670,12 @@ namespace QMC.LCP_280.Process.Unit
                         if (slot == null)
                             return;
 
+                        // [중요] 이미 처리된 칩이 아니면 상태 변경
                         if (slot.State == DieProcessState.Placed)
                             return;
 
                         // [중요] 실패여도 MapX/MapY는 InputStage 기준으로 갱신
-                        int mx, my;
+                        double mx, my;
                         if (TryGetInputMapByIndex(slot.Index, out mx, out my))
                         {
                             slot.MapX = mx;
@@ -1663,48 +1691,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, "MarkCurrentReservedMissing", ex.Message);
+                Log.Write(ex);
             }
         }
-
-        //public void MarkCurrentReservedMissing()
-        //{
-        //    try
-        //    {
-        //        var wafer = GetMaterialWafer();
-        //        if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0) 
-        //            return;
-
-        //        lock (wafer)
-        //        {
-        //            if (_currentDie == null) 
-        //                return;
-
-        //            int idx = _currentDie.Index;
-        //            lock (wafer.Dies)
-        //            {
-        //                var die = wafer.Dies.FirstOrDefault(d => d != null && d.Index == idx);
-        //                if (die == null)
-        //                    return;
-
-        //                // 이미 Placed면 변경하지 않음
-        //                if (die.State == DieProcessState.Placed)
-        //                    return;
-
-        //                die.State = DieProcessState.Rejected;
-        //                die.Presence = Material.MaterialPresence.Exist; // 변경: NotExist → Exist
-        //            }
-        //            //Test 해보자.
-        //            //PlaceDie(die);
-        //        }
-        //        UpdateUI();
-        //        Log.Write(UnitName, "MarkCurrentReservedMissing", "Marked current reserved slot as Rejected.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(UnitName, "MarkCurrentReservedMissing", ex.Message);
-        //    }
-        //}
 
         public void PlaceDie(MaterialDie die)
         {
@@ -1718,6 +1707,7 @@ namespace QMC.LCP_280.Process.Unit
             lock (_reserveLock)
                 lock (wafer.Dies)
                 {
+                    Log.Write(UnitName, "PlaceDie", "[Processing]01");
                     // 1) 예약 슬롯 찾기(반드시 BinX/BinY 기반)
                     if (_reservedSlotKey != null)
                     {
@@ -1726,6 +1716,8 @@ namespace QMC.LCP_280.Process.Unit
                             d != null &&
                             Math.Abs(d.BinX - key.BinX) < 1e-9 &&
                             Math.Abs(d.BinY - key.BinY) < 1e-9);
+
+                        Log.Write(UnitName, "PlaceDie", "[Processing] _reservedSlotKey != null");
                     }
 
                     // fallback
@@ -1740,12 +1732,11 @@ namespace QMC.LCP_280.Process.Unit
                     die.BinY = slot.BinY;
 
                     // 3) [핵심] MapX/MapY는 무조건 InputStage 값으로 덮어쓰기
-                    int mx, my;
+                    double mx, my;
                     if (TryGetInputMapByIndex(die.Index, out mx, out my))
                     {
                         slot.MapX = mx;
                         slot.MapY = my;
-
                         // incoming 객체도 일관성 맞추려면 같이 세팅(디버그/후속 처리)
                         die.MapX = mx;
                         die.MapY = my;
@@ -1760,14 +1751,15 @@ namespace QMC.LCP_280.Process.Unit
                     // 4) 결과/측정/얼라인 데이터는 outTr die 기준으로 슬롯에 Copy (슬롯 객체 유지)
                     slot.Presence = Material.MaterialPresence.Exist;
                     slot.State = DieProcessState.Placed;
-
                     slot.TesterResult = die.TesterResult;
                     slot.MeasureValues = (die.MeasureValues != null)
                         ? new Dictionary<string, double>(die.MeasureValues)
                         : new Dictionary<string, double>();
 
-                    //전체를 복사하고 업데이트 하자.
-                    slot = die;
+                    // 4) 데이터 복사 [중요 수정]
+                    // slot = die;  <-- 이 줄을 삭제해야 합니다! (참조가 끊김)
+                    // 대신 die(소스)의 값을 slot(타겟)에 하나씩 복사해야 합니다.
+
 
                     slot.CenterX = die.CenterX;
                     slot.CenterY = die.CenterY;
@@ -1799,32 +1791,77 @@ namespace QMC.LCP_280.Process.Unit
                     allPlacedOrRejected = (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed);
                 }
 
-            // 6) 저장/로그/GUI는 slot 기준으로 수행해야 최종 MapX/MapY가 input과 동일
-            Equipment.Instance.ResultWriterManager.CurrentTestConditionSet = Equipment.Instance.Tester.ConditionSet;
+            // ============================================================
+            // [패치 핵심] 비동기 큐에 저장 요청 (Deep Copy는 내부에서 처리됨)
+            // ============================================================
 
-            Equipment.Instance.ResultWriterManager.AccumulateDie(slot);
-
+            // 1. CSV 및 로컬 로그 저장을 위한 데이터 할당 (필요하다면 유지, 시간이 짧다면)
+            // AssignDataToMaterialObject는 단순 데이터 매핑이면 여기서 수행, 
+            // 파일 쓰기가 포함되어 있으면 이것도 Manager로 이동 권장.
             int rc = AssignDataToMaterialObject(slot);
-            if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            if (rc != 0) 
+            { 
+                PostAlarm((int)AlarmKeys.eNotReadyToMeasure); 
+                return; 
+            }
 
-            rc = Equipment.Instance.ResultWriterManager.AppendTxTDie(slot); // Data 업데이트까지 OK
-            if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            // 2. 비동기 저장 요청 (즉시 리턴됨 -> Takt Time 개선)
+            try
+            {
+                var mgr = Equipment.Instance.ResultWriterManager;
 
-            rc = Equipment.Instance.ResultWriterManager.AppendPrdDie(slot);
-            if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+                // [중요] 비동기 큐에 넣기 전에 Deep Copy (스냅샷) 생성
+                // ResultWriterManager 내부에서 Clone을 안 한다면, 여기서 해야 데이터 꼬임을 완벽히 방지함.
+                // 하지만 이미 ResultWriterManager.EnqueueDieSave 내부에서 처리하도록 설계했다면 slot 그대로 넘김.
+                // 현재 코드 흐름상 slot은 lock 밖으로 나왔으므로, 
+                // 큐에 넣는 순간의 데이터를 보존하기 위해 Clone을 해서 넘기는 것이 가장 안전합니다.
+                MaterialDie snapshot = CloneDie(slot); // 아래 CloneDie 함수 참고
+                mgr.EnqueueDieSave(snapshot, Equipment.Instance.Tester.ConditionSet);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "PlaceDie_EnqueueError", ex.Message);
+            }
 
-            rc = Equipment.Instance.ResultWriterManager.AppendWafDie(slot);
-            if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            //Task.Run(() =>
+            //{
+            //    try
+            //    {
+            //        // 6) 저장/로그/GUI는 slot 기준으로 수행해야 최종 MapX/MapY가 input과 동일
+            //        Equipment.Instance.ResultWriterManager.CurrentTestConditionSet = Equipment.Instance.Tester.ConditionSet;
+            //        Equipment.Instance.ResultWriterManager.AccumulateDie(slot);
 
-            Equipment.Instance.ResultWriterManager.AppendBinDie(slot); // Data 업데이트까지 OK
-            Equipment.Instance.ResultWriterManager.FinalizeSummary();
-            Equipment.Instance.ResultWriterManager.WriteSumFile(slot);
+            //        int rc = AssignDataToMaterialObject(slot);
+            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AssignDataToMaterialObject");
+
+            //        rc = Equipment.Instance.ResultWriterManager.AppendTxTDie(slot); // Data 업데이트까지 OK
+            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendTxTDie");
+
+            //        rc = Equipment.Instance.ResultWriterManager.AppendPrdDie(slot);
+            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendPrdDie");
+
+            //        rc = Equipment.Instance.ResultWriterManager.AppendWafDie(slot);
+            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
+            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendWafDie");
+
+            //        Equipment.Instance.ResultWriterManager.AppendBinDie(slot); // Data 업데이트까지 OK
+            //        Equipment.Instance.ResultWriterManager.FinalizeSummary();
+            //        Equipment.Instance.ResultWriterManager.WriteSumFile(slot);
+            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendBinDie");
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Log.Write(ex);
+            //    }
+            //});
 
             UpdateUI();
             OnDiePlaced(slot);
             RecordDiePlaceTakt(slot);
-
-            //Log.Write(UnitName, "[RotateToolTForPlace_AsyncWait] AddWaferVisionAsMiss");
+            //Log.Write(UnitName, "PlaceDie", "[OK]");
             try
             {
                 var ctx = Equipment.Instance.SummaryContext;
@@ -1833,6 +1870,36 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             { Log.Write(ex); }
         }
+
+        // [추가] Deep Copy를 위한 헬퍼 함수 (OutputStage 클래스 내부에 추가)
+        private MaterialDie CloneDie(MaterialDie org)
+        {
+            if (org == null) return null;
+
+            MaterialDie newDie = new MaterialDie();
+
+            // 값 타입 및 String 복사
+            newDie.Index = org.Index;
+            newDie.MapX = org.MapX;
+            newDie.MapY = org.MapY;
+            newDie.BinX = org.BinX;
+            newDie.BinY = org.BinY;
+            newDie.State = org.State;
+            newDie.Rank = org.Rank;
+            newDie.RankName = org.RankName;
+            newDie.IsPass = org.IsPass;
+            newDie.SourceWaferId = org.SourceWaferId;
+            newDie.TargetWaferId = org.TargetWaferId;
+
+            // 참조 타입 복사 (Dictionary, Object 등)
+            if (org.MeasureValues != null)
+                newDie.MeasureValues = new Dictionary<string, double>(org.MeasureValues);
+
+            // TesterResult는 보통 참조만 해도 되지만, 내용이 변한다면 Deep Copy 필요 (여기선 참조로 둠)
+            newDie.TesterResult = org.TesterResult;
+
+            return newDie;
+        }
         #endregion
 
         /// <summary>
@@ -1840,7 +1907,6 @@ namespace QMC.LCP_280.Process.Unit
         /// 내부 상태 변경(Completed 전환 등) 없이 순수 조회만 수행.
         /// </summary>
         /// 
-        private int _lastHasNextMask = -1;
         public bool HasNextDie()
         {
             var wafer = GetMaterialWafer();
@@ -1856,9 +1922,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 // TryReserveNextEmptyBin과 동일 기준: Presence 무시, State만 사용
                 bool has = dies.Any(d =>
-                    d != null &&
-                    d.State != DieProcessState.Placed &&
-                    d.State != DieProcessState.Rejected);
+                    d != null
+                     && d.State != DieProcessState.Placed
+                     && d.State != DieProcessState.Rejected
+                     && d.State != DieProcessState.Skip);
 
                 // 상태 정합성 보정
                 if (has == false)
@@ -1873,44 +1940,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 return has;
             }
-
-            // 진짜 안되면 변경해보자.
-            //var wafer = GetMaterialWafer();
-            //if (wafer == null) return false;
-            //lock (wafer)
-            //{
-            //    var dies = wafer.Dies;
-            //    if (dies == null || dies.Count == 0) return false;
-
-            //    int total = dies.Count;
-            //    int placed = 0;
-            //    int rejected = 0;
-            //    int unplaced = 0; // 실제 배치 대상
-            //    foreach (var d in dies)
-            //    {
-            //        if (d == null) continue;
-            //        if (d.State == DieProcessState.Placed) { placed++; continue; }
-            //        if (d.State == DieProcessState.Rejected) { rejected++; continue; }
-            //        // 나머지(NONE / Mapped / Picked / Inspected 등)는 아직 배치 가능
-            //        unplaced++;
-            //    }
-
-            //    // 순수 조회: wafer.ProcessSatate 변경하지 않음
-            //    // false가 나올 때 구분은 호출측에서 카운트로 판단 가능하도록 로그 조건 추가
-            //    bool has = unplaced > 0;
-
-            //    // 변화 시에만 로그 (과다 방지)
-            //    int mask = (has ? 1 : 0) |
-            //               ((placed == total) ? 2 : 0) |
-            //               ((rejected == total) ? 4 : 0);
-            //    if (_lastHasNextMask != mask)
-            //    {
-            //        Log.Write(UnitName, "HasNextDie",
-            //            $"has={has}, total={total}, placed={placed}, rejected={rejected}, unplaced={unplaced}, waferState={wafer.ProcessSatate}");
-            //        _lastHasNextMask = mask;
-            //    }
-            //    return has;
-            //}
         }
 
         // OutputStage 클래스 멤버 필드 근처에 추가
@@ -1924,30 +1953,49 @@ namespace QMC.LCP_280.Process.Unit
 
             var wafer = this.GetMaterialWafer();
             if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
+            {
                 return false;
+            }
+
+            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            bool useSameAsWafer = recipe.UseSameAsWafer;
+
             lock (wafer.Dies)
             {
                 Func<MaterialDie, bool> isUnplaced = d =>
                 d != null &&
-                d.State != DieProcessState.Placed &&
-                d.State != DieProcessState.Rejected;
+                d.State != DieProcessState.Placed
+                && d.State != DieProcessState.Rejected
+                && d.State != DieProcessState.Skip;
 
                 var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
                 var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
-
                 MaterialDie next = null;
 
-                // 1) OutputDieTransfer가 들고 있는 다이 우선
-                if (dieOutTr != null)
-                    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
+                if (useSameAsWafer)
+                {
+                    // 1) OutputDieTransfer가 들고 있는 다이 우선
+                    if (dieOutTr != null)
+                    {
+                        next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
+                    }
 
-                // 2) Rotary 소켓 다이
-                if (next == null && dieRotary != null)
-                    next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
+                    // 2) Rotary 소켓 다이
+                    if (next == null && dieRotary != null)
+                    {
+                        next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
+                    }
 
-                // 3) 그 외 첫 미배치
-                if (next == null)
+                    // 3) 그 외 첫 미배치
+                    if (next == null)
+                        next = wafer.Dies.FirstOrDefault(isUnplaced);
+                }
+                else
+                {
+                    // [Case 2] useSameAsWafer == false
+                    // 순차적으로 빈 곳(Unplaced)을 찾아서 채움 (기존 로직 중 순차 검색 부분)
                     next = wafer.Dies.FirstOrDefault(isUnplaced);
+                }
 
                 if (next == null)
                     return false;
@@ -1956,16 +2004,18 @@ namespace QMC.LCP_280.Process.Unit
                 // [FIX] 예약 슬롯을 Index가 아니라 Bin 좌표로 고정
                 _reservedSlotKey = (next.BinX, next.BinY);
 
-
                 double baseT = GetTeahcingPosCenterT();
                 double dx = 0;
                 double dy = 0;
                 double dt = baseT;
+                int dirX = -1;
+                int dirY = 1;
+                int dirT = 1;
                 if (die != null)
                 {
-                    dx = die.UnloadAlignOffsetX;
-                    dy = die.UnloadAlignOffsetY;
-                    dt = die.UnloadAlignOffsetT;
+                    dx = die.UnloadAlignOffsetX * dirX;
+                    dy = die.UnloadAlignOffsetY * dirY;
+                    dt = die.UnloadAlignOffsetT * dirT;
                 }
 
                 double dStagePosT = AxisT?.GetPosition() ?? 0.0;
@@ -2012,6 +2062,105 @@ namespace QMC.LCP_280.Process.Unit
             }
             return true;
         }
+
+
+
+        //public bool TryReserveNextEmptyBin(MaterialDie die, out double binX, out double binY, out double dT, out MaterialDie slot)
+        //{
+        //    binX = binY = dT = -1;
+        //    slot = null;
+
+        //    var wafer = this.GetMaterialWafer();
+        //    if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
+        //        return false;
+        //    lock (wafer.Dies)
+        //    {
+        //        Func<MaterialDie, bool> isUnplaced = d =>
+        //        d != null &&
+        //        d.State != DieProcessState.Placed
+        //        && d.State != DieProcessState.Rejected
+        //        && d.State != DieProcessState.Skip;
+
+        //        var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
+        //        var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
+
+        //        MaterialDie next = null;
+
+        //        // 1) OutputDieTransfer가 들고 있는 다이 우선
+        //        if (dieOutTr != null)
+        //            next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
+
+        //        // 2) Rotary 소켓 다이
+        //        if (next == null && dieRotary != null)
+        //            next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
+
+        //        // 3) 그 외 첫 미배치
+        //        if (next == null)
+        //            next = wafer.Dies.FirstOrDefault(isUnplaced);
+
+        //        if (next == null)
+        //            return false;
+
+        //        _currentDie = next;
+        //        // [FIX] 예약 슬롯을 Index가 아니라 Bin 좌표로 고정
+        //        _reservedSlotKey = (next.BinX, next.BinY);
+
+
+        //        double baseT = GetTeahcingPosCenterT();
+        //        double dx = 0;
+        //        double dy = 0;
+        //        double dt = baseT;
+        //        if (die != null)
+        //        {
+        //            dx = die.UnloadAlignOffsetX;
+        //            dy = die.UnloadAlignOffsetY;
+        //            dt = die.UnloadAlignOffsetT;
+        //        }
+
+        //        double dStagePosT = AxisT?.GetPosition() ?? 0.0;
+
+        //        // 지정 Bin 위치로 XY 이동
+        //        binX = next.BinX;
+        //        binY = next.BinY;
+        //        var (tx, ty) = GetBinWorldPosition(binX, binY);
+
+        //        Log.Write(UnitName, "TryReserveNextEmptyBin",
+        //            $"Origin Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}");
+
+        //        if (Config.TCorrectionMode)
+        //        {
+        //            if (this.linkTypeXYTStageCorrection == null)
+        //            {
+        //                LoadTCorrectionCsvAndApply(Config.TCorrectionFile);
+        //            }
+        //        }
+
+        //        if (Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
+        //        {
+        //            XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
+        //            XyCoordinate xyCoordinateVision = new XyCoordinate(dx, dy);
+
+        //            this.linkTypeXYTStageCorrection.GetCorrectionPoint(dt, xyCoordinateTarget, xyCoordinateVision, out var pointD, out double t);
+        //            binX = pointD.X;
+        //            binY = pointD.Y;
+        //            dT = t;
+        //        }
+        //        else
+        //        {
+        //            binX = tx + dx;
+        //            binY = ty + dy;
+        //            dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
+        //        }
+        //        slot = next;
+
+        //        bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
+        //        bool matchedRotary = (dieRotary != null && next.Index == dieRotary.Index);
+
+        //        Log.Write(UnitName, "TryReserveNextEmptyBin",
+        //            $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByOutTr={matchedOutTr}, MatchedByRotary={matchedRotary}");
+        //    }
+        //    return true;
+        //}
 
 
         public (double x, double y) GetBinWorldPosition(double binX, double binY)
@@ -2230,7 +2379,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             // 인터락은 SetClampLift(false) 내부에서 IsClampBwd() 확인
             bool issued = SetClampLift(false);
-            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            if (!issued && !(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
             {
                 AxisX?.EmgStop();
                 AxisY?.EmgStop();
@@ -2256,7 +2405,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             // 인터락은 SetClampFB(true) 내부에서 IsClampLiftUp() 확인
             bool issued = SetClampFB(true);
-            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            if (!issued && !(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
             {
                 AxisX?.EmgStop();
                 AxisY?.EmgStop();
@@ -2282,7 +2431,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             // 인터락은 SetClampFB(false) 내부에서 IsClampLiftUp() 확인
             bool issued = SetClampFB(false);
-            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            if (!issued && !(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
             {
                 AxisX?.EmgStop();
                 AxisY?.EmgStop();
@@ -2372,7 +2521,7 @@ namespace QMC.LCP_280.Process.Unit
             // 5) IO 안전 상태 복귀
             try
             {
-                if (!(Config.IsSimulation || Config.IsDryRun))
+                if (!(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
                 {
                     // 순서: 클램프 후퇴 → 리프트 다운 → 플레이트 다운 → 진공 OFF
                     nRet = ClampBackward();
@@ -2639,7 +2788,7 @@ namespace QMC.LCP_280.Process.Unit
             dLastFoundY = 0.0;
             dLastFoundAngle = 0.0;
 
-            if (Config.IsSimulation || this.Config.IsDryRun)
+            if (Config.IsSimulation || (this.Config.IsDryRun || IsDryRunEqp))
             {
                 IsAlignResult = true;
                 IsStatus_AlignDoneXY = true;
@@ -2787,8 +2936,6 @@ namespace QMC.LCP_280.Process.Unit
             double rangeDeg, double stepDeg, bool fineSpeed,
             System.Threading.CancellationToken ct)
         {
-            int nRet = 0;
-
             if (marks == null || marks.Count < 4)
             {
                 Log.Write(UnitName, "StartTCorrection", "marks 부족(4개 필요)");
@@ -3316,10 +3463,11 @@ namespace QMC.LCP_280.Process.Unit
                                 continue;
 
                             // 아직 정리되지 않은 항목은 전부 Rejected로 마킹
-                            if (d.State != DieProcessState.Placed && d.State != DieProcessState.Rejected)
+                            if (d.State != DieProcessState.Placed
+                             && d.State != DieProcessState.Rejected
+                             && d.State != DieProcessState.Skip )
                             {
                                 d.State = DieProcessState.Rejected;
-
                                 // 여기 Presence는 프로젝트 내 의미가 섞여있는데,
                                 // 현재 코드 흐름(HasNextDie/TryReserveNextEmptyBin)이 Presence를 무시하므로
                                 // 기존 MarkCurrentReservedMissing과 동일하게 Exist로 맞춥니다.
@@ -3414,11 +3562,10 @@ namespace QMC.LCP_280.Process.Unit
                 default:
                     return -1;
             }
-            return 0;
         }
 
         // OutputStage 클래스 내부 편한 위치에 추가
-        private bool TryGetInputMapByIndex(int dieIndex, out int mapX, out int mapY)
+        private bool TryGetInputMapByIndex(int dieIndex, out double mapX, out double mapY)
         {
             mapX = 0;
             mapY = 0;

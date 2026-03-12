@@ -1,5 +1,6 @@
 using LCP_280;
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -25,229 +26,251 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class InputFeeder : BaseUnit<InputFeederConfig>
     {
-        enum AlarmKeys
+        public new enum AlarmKeys
         {
             // ===== 기존 알람(의미 유지 / 문구 개선) =====
-            Alarm_WaferLoadingFailed = 2000,
-            Alarm_BarcodeReadingFailed = 2001,
-            Alarm_StageLoadingFailed = 2002,
-            Alarm_StageUnloadingFailed = 2003,
-            Alarm_WaferUnloadingFailed = 2004,
+            Alarm_WaferLoadingFailed = 10101,
+            Alarm_BarcodeReadingFailed = 10102,
+            Alarm_StageLoadingFailed,
+            Alarm_StageUnloadingFailed,
+            Alarm_WaferUnloadingFailed,
 
-            Alarm_InputStageInterlockFailed = 2010,
+            Alarm_InputStageInterlockFailed,
 
-            Alarm_GripperClampFailed = 2020,
-            Alarm_FeederClampUp = 2021,
-            Alarm_IsWaferReadyForLoading = 2022,
-            Alarm_WaferLoadingPosition = 2023,
-            Alarm_InputCassetteLifterInterlockFailed = 2024,
-            Alarm_InputFeederNoPosition = 2025,
-            Alarm_InputFeederInterlockFailed = 2026,
-            Alarm_GripperUnClampFailed = 2027,
-            Alarm_WaferDataFaild = 2028,
+            Alarm_GripperClampFailed,
+            Alarm_FeederClampUp,
+            Alarm_IsWaferReadyForLoading,
+            Alarm_WaferLoadingPosition,
+            Alarm_InputCassetteLifterInterlockFailed,
+            Alarm_InputFeederNoPosition,
+            Alarm_InputFeederInterlockFailed,
+            Alarm_GripperUnClampFailed,
+            Alarm_WaferDataFaild,
 
             // ===== 추가/명확화(현 코드에서 실제로 구분 필요) =====
-            Alarm_FeederLiftUpTimeout = 2030,
-            Alarm_FeederLiftDownTimeout = 2031,
-            Alarm_FeederClampTimeout = 2032,
-            Alarm_FeederUnclampTimeout = 2033,
+            Alarm_FeederLiftUpTimeout,
+            Alarm_FeederLiftDownTimeout,
+            Alarm_FeederClampTimeout,
+            Alarm_FeederUnclampTimeout,
 
-            Alarm_WaferMissingAfterStageToFeeder = 2040,
-            Alarm_WaferMissingAfterFeederToCassette = 2041,
-            Alarm_WaferSensorDataMismatch = 2042,
+            Alarm_WaferMissingAfterStageToFeeder,
+            Alarm_WaferMissingAfterFeederToCassette,
+            Alarm_WaferSensorDataMismatch,
 
             // ===== 기존에 값이 명시되지 않아 위험하던 항목 =====
-            Alarm_VerifyWaferMovedStageToFeeder = 2050,
-            Alarm_AlignT = 2051,
+            Alarm_VerifyWaferMovedStageToFeeder,
+            Alarm_AlignT,
 
-            Alarm_UnloadTargetSlotInvalid = 2060,
-            Alarm_CassetteSlotNotEmptyForUnload = 2061,
-            Alarm_CassetteMoveToSlotFailedForUnload = 2062,
+            Alarm_UnloadTargetSlotInvalid,
+            Alarm_CassetteSlotNotEmptyForUnload,
+            Alarm_CassetteMoveToSlotFailedForUnload,
 
-            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed = 2070,
-            Alarm_UnloadFeederToCassette_UnclampFailed = 2071,
-            Alarm_UnloadFeederToCassette_WaferDataInvalid = 2072,
-            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed = 2073,
-            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed = 2074,
+            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
+            Alarm_UnloadFeederToCassette_UnclampFailed,
+            Alarm_UnloadFeederToCassette_WaferDataInvalid,
+            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
+            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
 
             //IsRingPresent
-            Alarm_RingPresentFailed = 2075,
+            Alarm_RingPresentFailed = 10133,
         }
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Wafer_Feeder";
             base.InitAlarm();
-            // 2000~2004: Flow 실패(상위 레벨)
-            AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingFailed,
-                "InputFeeder Wafer Loading Failed",
-                "InputFeeder 로딩 시퀀스 실패. (카세트/바코드/피더/스테이지 상태 및 인터락을 확인하십시오.)",
-                "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
-                "InputFeeder Barcode Read Failed",
-                "바코드 읽기 실패. 바코드 인쇄 상태/리더기 상태/바코드 위치(Teaching) 및 트리거 설정을 확인하십시오.",
-                "Error");
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
 
-            AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
-                "InputStage Loading Failed",
-                "스테이지 로딩 실패. 스테이지 위치/클램프/플레이트 상태 및 인터락을 확인하십시오.",
-                "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
-                "InputStage Unloading Failed",
-                "스테이지 언로딩 실패. 스테이지 준비동작(언로딩 포지션/클램프/플레이트) 및 인터락을 확인하십시오.",
-                "Error");
+                // 2000~2004: Flow 실패(상위 레벨)
+                AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingFailed,
+                    "InputFeeder Wafer Loading Failed",
+                    "InputFeeder 로딩 시퀀스 실패. (카세트/바코드/피더/스테이지 상태 및 인터락을 확인하십시오.)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_WaferUnloadingFailed,
-                "InputFeeder Wafer Unloading Failed",
-                "InputFeeder 언로딩 시퀀스 실패. (Feeder/Stage/Cassette 상태 및 웨이퍼 존재 여부를 확인하십시오.)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
+                    "InputFeeder Barcode Read Failed",
+                    "바코드 읽기 실패. 바코드 인쇄 상태/리더기 상태/바코드 위치(Teaching) 및 트리거 설정을 확인하십시오.",
+                    source, "Error");
 
-            // 2010~: 인터락
-            AlarmRegister((int)AlarmKeys.Alarm_InputStageInterlockFailed,
-                "Interlock Failed - InputStage",
-                "인터락 불일치로 동작을 중단했습니다. InputStage가 로딩/언로딩 위치가 아니거나, 축 이동/플레이트 UP/클램프리프트 UP 등 위험 상태일 수 있습니다.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
+                    "InputStage Loading Failed",
+                    "스테이지 로딩 실패. 스테이지 위치/클램프/플레이트 상태 및 인터락을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_InputFeederInterlockFailed,
-                "Interlock Failed - InputFeeder",
-                "인터락 불일치로 동작을 중단했습니다. Feeder 위치/클램프 상태/안전 조건을 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
+                    "InputStage Unloading Failed",
+                    "스테이지 언로딩 실패. 스테이지 준비동작(언로딩 포지션/클램프/플레이트) 및 인터락을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_InputFeederNoPosition,
-                "InputFeeder Unknown Position",
-                "현재 Feeder Y가 어떤 Teaching Position(Ready/Barcode/Stage/Cassette)에도 해당하지 않습니다. 수동으로 안전 위치(Ready)로 이동 후 Teaching/Origin 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_WaferUnloadingFailed,
+                    "InputFeeder Wafer Unloading Failed",
+                    "InputFeeder 언로딩 시퀀스 실패. (Feeder/Stage/Cassette 상태 및 웨이퍼 존재 여부를 확인하십시오.)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_InputCassetteLifterInterlockFailed,
-                "Interlock Failed - InputCassetteLifter",
-                "카세트 리프터 인터락 불일치. 카세트 존재/리프터 축 이동/Ready for Loading 신호를 확인하십시오.",
-                "Error");
+                // 2010~: 인터락
+                AlarmRegister((int)AlarmKeys.Alarm_InputStageInterlockFailed,
+                    "Interlock Failed - InputStage",
+                    "인터락 불일치로 동작을 중단했습니다. InputStage가 로딩/언로딩 위치가 아니거나, 축 이동/플레이트 UP/클램프리프트 UP 등 위험 상태일 수 있습니다.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_IsWaferReadyForLoading,
-                "Cassette Not Ready For Loading",
-                "Cassette Ready For Loading 신호가 OFF 입니다. 카세트 장착 상태/리프터 위치/센서 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_InputFeederInterlockFailed,
+                    "Interlock Failed - InputFeeder",
+                    "인터락 불일치로 동작을 중단했습니다. Feeder 위치/클램프 상태/안전 조건을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingPosition,
-                "InputStage Not In Loading Position",
-                "InputStage가 Wafer Loading Position이 아닙니다. 스테이지 로딩 위치로 이동 후 다시 시도하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_InputFeederNoPosition,
+                    "InputFeeder Unknown Position",
+                    "현재 Feeder Y가 어떤 Teaching Position(Ready/Barcode/Stage/Cassette)에도 해당하지 않습니다. 수동으로 안전 위치(Ready)로 이동 후 Teaching/Origin 상태를 확인하십시오.",
+                    source, "Error");
 
-            // 2020~: 실린더/그리퍼
-            AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
-                "Feeder Clamp Failed",
-                "클램프 동작 실패(클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_InputCassetteLifterInterlockFailed,
+                    "Interlock Failed - InputCassetteLifter",
+                    "카세트 리프터 인터락 불일치. 카세트 존재/리프터 축 이동/Ready for Loading 신호를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_GripperUnClampFailed,
-                "Feeder Unclamp Failed",
-                "언클램프 동작 실패(언클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_IsWaferReadyForLoading,
+                    "Cassette Not Ready For Loading",
+                    "Cassette Ready For Loading 신호가 OFF 입니다. 카세트 장착 상태/리프터 위치/센서 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
-                "Feeder Lift Up Required",
-                "Feeder가 UP 상태가 아닙니다. Feeder Lift(UP) 센서/에어/밸브 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingPosition,
+                    "InputStage Not In Loading Position",
+                    "InputStage가 Wafer Loading Position이 아닙니다. 스테이지 로딩 위치로 이동 후 다시 시도하십시오.",
+                    source, "Error");
 
-            // 2030~: 타임아웃(정확 원인 분리)
-            AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
-                "Feeder Lift Up Timeout",
-                "Feeder Lift UP 타임아웃. UP 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                "Error");
+                // 2020~: 실린더/그리퍼
+                AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
+                    "Feeder Clamp Failed",
+                    "클램프 동작 실패(클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
-                "Feeder Lift Down Timeout",
-                "Feeder Lift DOWN 타임아웃. DOWN 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_GripperUnClampFailed,
+                    "Feeder Unclamp Failed",
+                    "언클램프 동작 실패(언클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
-                "Feeder Clamp Timeout",
-                "Feeder Clamp 타임아웃. Clamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
+                    "Feeder Lift Up Required",
+                    "Feeder가 UP 상태가 아닙니다. Feeder Lift(UP) 센서/에어/밸브 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
-                "Feeder Unclamp Timeout",
-                "Feeder Unclamp 타임아웃. Unclamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                "Error");
+                // 2030~: 타임아웃(정확 원인 분리)
+                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
+                    "Feeder Lift Up Timeout",
+                    "Feeder Lift UP 타임아웃. UP 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
+                    source, "Error");
 
-            // 2040~: 유실/정합성
-            AlarmRegister((int)AlarmKeys.Alarm_WaferDataFaild,
-                "Wafer Data Mismatch",
-                "웨이퍼 센서 상태와 데이터 객체(Material) 상태가 불일치합니다. (센서 ON인데 객체 null, 객체 있는데 센서 OFF 등) 장비 내부를 확인 후 데이터 리셋이 필요할 수 있습니다.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
+                    "Feeder Lift Down Timeout",
+                    "Feeder Lift DOWN 타임아웃. DOWN 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_WaferSensorDataMismatch,
-                "Wafer Sensor/Data Inconsistency",
-                "웨이퍼 센서/데이터 정합성 오류. 센서 입력과 내부 웨이퍼 객체 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
+                    "Feeder Clamp Timeout",
+                    "Feeder Clamp 타임아웃. Clamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterStageToFeeder,
-                "Wafer Missing After Stage -> Feeder",
-                "Stage에서 Feeder로 이송 후 Feeder에 웨이퍼가 감지되지 않습니다. 웨이퍼 유실/낙하/그리퍼 미클램프 가능성이 있습니다.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
+                    "Feeder Unclamp Timeout",
+                    "Feeder Unclamp 타임아웃. Unclamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterFeederToCassette,
-                "Wafer Missing After Feeder -> Cassette",
-                "Feeder에서 Cassette로 배출 후 Feeder가 비워지지 않거나(센서 ON/객체 잔존) 웨이퍼 상태가 비정상입니다. 배출 동작/센서 상태를 확인하십시오.",
-                "Error");
+                // 2040~: 유실/정합성
+                AlarmRegister((int)AlarmKeys.Alarm_WaferDataFaild,
+                    "Wafer Data Mismatch",
+                    "웨이퍼 센서 상태와 데이터 객체(Material) 상태가 불일치합니다. (센서 ON인데 객체 null, 객체 있는데 센서 OFF 등) 장비 내부를 확인 후 데이터 리셋이 필요할 수 있습니다.",
+                    source, "Error");
 
-            // 2050~: 기존 명칭 정리(필요시 유지)
-            AlarmRegister((int)AlarmKeys.Alarm_VerifyWaferMovedStageToFeeder,
-                "Verify Transfer Stage -> Feeder Failed",
-                "Stage -> Feeder 이송 검증 실패. 센서/데이터 정합 및 SlotIndex 일치 여부를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_WaferSensorDataMismatch,
+                    "Wafer Sensor/Data Inconsistency",
+                    "웨이퍼 센서/데이터 정합성 오류. 센서 입력과 내부 웨이퍼 객체 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_AlignT,
-                "InputStage Align(T) Failed",
-                "InputStage Align(T) 실패. 얼라인 조건/비전/축 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterStageToFeeder,
+                    "Wafer Missing After Stage -> Feeder",
+                    "Stage에서 Feeder로 이송 후 Feeder에 웨이퍼가 감지되지 않습니다. 웨이퍼 유실/낙하/그리퍼 미클램프 가능성이 있습니다.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
-                "Unload Target Slot Invalid",
-                "언로딩 대상 슬롯(SlotIndex)을 결정할 수 없습니다. (Feeder/Stage/Lifter SlotIndex 확인 필요)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterFeederToCassette,
+                    "Wafer Missing After Feeder -> Cassette",
+                    "Feeder에서 Cassette로 배출 후 Feeder가 비워지지 않거나(센서 ON/객체 잔존) 웨이퍼 상태가 비정상입니다. 배출 동작/센서 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
-                "Cassette Slot Not Empty",
-                "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot Empty 상태/매핑 데이터 확인 필요)",
-                "Error");
+                // 2050~: 기존 명칭 정리(필요시 유지)
+                AlarmRegister((int)AlarmKeys.Alarm_VerifyWaferMovedStageToFeeder,
+                    "Verify Transfer Stage -> Feeder Failed",
+                    "Stage -> Feeder 이송 검증 실패. 센서/데이터 정합 및 SlotIndex 일치 여부를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
-                "Cassette MoveToSlot Failed",
-                "언로딩 대상 Slot으로 Cassette 이동에 실패했습니다. 축 상태/인터락/리미트/서보 상태를 확인하십시오.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_AlignT,
+                    "InputStage Align(T) Failed",
+                    "InputStage Align(T) 실패. 얼라인 조건/비전/축 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
-                "Unload Feeder->Cassette Failed - Move Position Cassette",
-                "Feeder->Cassette 언로딩 중 Cassette Teaching Position 이동 실패. (Y축 상태/인터락/Teaching/서보 알람 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
+                    "Unload Target Slot Invalid",
+                    "언로딩 대상 슬롯(SlotIndex)을 결정할 수 없습니다. (Feeder/Stage/Lifter SlotIndex 확인 필요)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
-                "Unload Feeder->Cassette Failed - Unclamp",
-                "Feeder->Cassette 언로딩 중 Unclamp 실패/타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
+                    "Cassette Slot Not Empty",
+                    "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot Empty 상태/매핑 데이터 확인 필요)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_WaferDataInvalid,
-                "Unload Feeder->Cassette Failed - Wafer Data Invalid",
-                "Feeder에 웨이퍼 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette에 반영할 수 없습니다. (센서/Material 객체 정합 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
+                    "Cassette MoveToSlot Failed",
+                    "언로딩 대상 Slot으로 Cassette 이동에 실패했습니다. 축 상태/인터락/리미트/서보 상태를 확인하십시오.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
-                "Unload Feeder->Cassette Failed - Move Standby Barcode",
-                "언로딩 후 다음 로딩 대기(Barcode) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
+                    "Unload Feeder->Cassette Failed - Move Position Cassette",
+                    "Feeder->Cassette 언로딩 중 Cassette Teaching Position 이동 실패. (Y축 상태/인터락/Teaching/서보 알람 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
-                "Unload Feeder->Cassette Failed - Move Standby Ready",
-                "언로딩 후 안전 대기(Ready) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
+                    "Unload Feeder->Cassette Failed - Unclamp",
+                    "Feeder->Cassette 언로딩 중 Unclamp 실패/타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
+                    source, "Error");
 
-            //Alarm_RingPresentFailed
-            AlarmRegister((int)AlarmKeys.Alarm_RingPresentFailed,
-                "Feeder Ring Present Check Failed",
-                "Feeder의 Ring Present 상태 확인 실패. 센서/데이터 정합성 확인이 필요합니다.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_WaferDataInvalid,
+                    "Unload Feeder->Cassette Failed - Wafer Data Invalid",
+                    "Feeder에 웨이퍼 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette에 반영할 수 없습니다. (센서/Material 객체 정합 확인)",
+                    source, "Error");
+
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
+                    "Unload Feeder->Cassette Failed - Move Standby Barcode",
+                    "언로딩 후 다음 로딩 대기(Barcode) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
+                    source, "Error");
+
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
+                    "Unload Feeder->Cassette Failed - Move Standby Ready",
+                    "언로딩 후 안전 대기(Ready) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
+                    source, "Error");
+
+                //Alarm_RingPresentFailed
+                AlarmRegister((int)AlarmKeys.Alarm_RingPresentFailed,
+                    "Feeder Ring Present Check Failed",
+                    "Feeder의 Ring Present 상태 확인 실패. 센서/데이터 정합성 확인이 필요합니다.",
+                    source, "Error");
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
 
         }
         #endregion
@@ -256,7 +279,9 @@ namespace QMC.LCP_280.Process.Unit
         public InputCassetteLifter InputCassetteLifterUnit { get; set; }
         public InputStage InputStageUnit { get; set; }
 
+        private InputDieTransfer InputDieTransferUnit { get; set; }
         private Rotary RotaryUnit { get; set; }
+        private OutputDieTransfer OutputDieTransferUnit { get; set; }
         private OutputStage OutputStageUnit { get; set; }
         #endregion
 
@@ -300,7 +325,9 @@ namespace QMC.LCP_280.Process.Unit
             InputCassetteLifterUnit = Equipment.Instance.GetUnit("InputCassetteLifter") as InputCassetteLifter;
             InputStageUnit = Equipment.Instance.GetUnit("InputStage") as InputStage;
 
+            InputDieTransferUnit = Equipment.Instance.GetUnit(UnitKeys.InputDieTransfer) as InputDieTransfer;
             RotaryUnit = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+            OutputDieTransferUnit = Equipment.Instance.GetUnit(UnitKeys.OutputDieTransfer) as OutputDieTransfer;
             OutputStageUnit = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage;
         }
         #endregion
@@ -472,7 +499,9 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (feederObj != null && !feederSensor && !(Config.IsSimulation || Config.IsDryRun))
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (feederObj != null && !feederSensor && !(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
             {
                 Log.Write(UnitName, "[Unload] Feeder object exists but feeder sensor off");
                 PostAlarm((int)AlarmKeys.Alarm_WaferSensorDataMismatch);
@@ -586,22 +615,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Config.IsSimulation == false && Config.IsDryRun == false)
+            if(IsUnClamped() == false)
             {
-                if(IsUnClamped() == false)
-                {
-                    PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
-                    Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
-                    return -1;
-                }
-                //if (IsRingPresent() == true)
-                //{
-                    
-                //}
+                PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
+                return -1;
             }
 
-
-            if (!IsUnClamped())
+            if (IsUnClamped() == false)
             {
                 AxisInputFeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
@@ -792,8 +813,9 @@ namespace QMC.LCP_280.Process.Unit
                 return bRet;
             }
 
-            if(Config.IsSimulation == false 
-                && Config.IsDryRun == false)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
             {
                 if (InputStageUnit.IsPlateUp() == true)
                 {
@@ -1070,16 +1092,23 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsRingPresent()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            bool bRet = false;
+
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
-                return this.GetMaterial() is MaterialWafer;
-                //return true;
+                bRet = this.GetMaterial() is MaterialWafer;
+                return bRet;
             }
-            return this.ReadInput(InputFeederConfig.IO.FEEDER_RING_CHECK);
+            bRet =  this.ReadInput(InputFeederConfig.IO.FEEDER_RING_CHECK);
+            return bRet;
         }
         public bool IsOverload()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -1090,7 +1119,9 @@ namespace QMC.LCP_280.Process.Unit
         // Clamp: expectClamp=true(Clamp 완료 기대), false(Unclamp 완료 기대)
         private int WaitClampStateOrAlarm(bool expectClamp, int timeoutMs = 1500, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -1115,7 +1146,9 @@ namespace QMC.LCP_280.Process.Unit
         // Lift: expectUp=true(UP 완료 기대), false(DOWN 완료 기대)
         private int WaitLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -1301,14 +1334,14 @@ namespace QMC.LCP_280.Process.Unit
                     catch (Exception ex)
                     { Log.Write(ex); }
 
-                    nRet = WaferUnloading_Step01(true);
+                    nRet = WaferUnloading_CheckStage(true);
                     if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
                     if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }
                     AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step01);
                     goto case UnloadFlowStep.Step02;
 
                 case UnloadFlowStep.Step02:
-                    nRet = WaferUnloading_Step02(true);
+                    nRet = WaferUnloading_StageToFeeder(true);
                     if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return nRet; }
                     if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return 0; }
 
@@ -1339,7 +1372,7 @@ namespace QMC.LCP_280.Process.Unit
                         return nRet;
                     }
 
-                    nRet = WaferUnloading_Step03(true);
+                    nRet = WaferUnloading_FeederToCassette(true);
                     if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return nRet; }
                     if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return 0; }
                     AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step03);
@@ -1401,7 +1434,7 @@ namespace QMC.LCP_280.Process.Unit
                         break;
                     }
 
-                    nRet = WaferLoadingStep1(true);
+                    nRet = WaferLoading_Prepare(true);
                     if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return nRet; }
                     if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step01); return 0; }
                     AdvanceLoadStepOnSuccess(LoadFlowStep.Step01);
@@ -1409,7 +1442,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 case LoadFlowStep.Step02:
                     didLoad = true;
-                    nRet = WaferLoadingStep2(true);
+                    nRet = WaferLoading_CassetteToFeeder(true);
                     if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return nRet; }
                     if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step02); return 0; }
                     AdvanceLoadStepOnSuccess(LoadFlowStep.Step02);
@@ -1417,7 +1450,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 case LoadFlowStep.Step03:
                     didLoad = true;
-                    nRet = WaferLoadingStep3(true);
+                    nRet = WaferLoading_FeederToStage(true);
                     if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return nRet; }
                     if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step03); return 0; }
                     AdvanceLoadStepOnSuccess(LoadFlowStep.Step03);
@@ -1426,7 +1459,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 case LoadFlowStep.Step04:
                     didLoad = true;
-                    nRet = WaferLoadingStep4(true);
+                    nRet = WaferLoading_StageAlignMap(true);
                     if (nRet != 0) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return nRet; }
                     if (IsStop) { MarkLoadStepOnFailure(LoadFlowStep.Step04); return 0; }
                     AdvanceLoadStepOnSuccess(LoadFlowStep.Step04);
@@ -1550,6 +1583,23 @@ namespace QMC.LCP_280.Process.Unit
                             }
                         }
                     }
+                    else if (waferStage != null
+                        && waferStage.ProcessSatate == Material.MaterialProcessSatate.Processing)
+                    {
+                        bool chipMappingDone = false;
+                        chipMappingDone = this.InputStageUnit.ChipMappingDone;
+                        if(chipMappingDone == false)
+                        {
+                            nRet = PreparetoInputStage();
+                            if (nRet != 0)
+                            {
+                                AxisInputFeederY.EmgStop();
+                                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                                Log.Write(this, "OnRunWork Fail - LoadingWaferComplete");
+                                return nRet;
+                            }
+                        }
+                    }
 
                     /// Scan/Load 계획 없이 Work로 전환
                     _nextDoScanAndLoad = false;
@@ -1558,11 +1608,13 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Complete;
                     return 0;
                 }
-                
+
                 // =========================
                 // 2) Stage가 Working이 아닌 경우: Plan만 세우고 Work로 넘김
                 // =========================
-                bool sim = (Config.IsSimulation || Config.IsDryRun);
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                bool sim = (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp));
 
                 // 완료된 웨이퍼가 Stage에 있으면 언로딩 우선
                 NeedUnloadFirst =
@@ -1696,7 +1748,9 @@ namespace QMC.LCP_280.Process.Unit
 
                     // 2) (선택) 웨이퍼는 있는데 Unclamp 상태로 판단되는 경우(데이터/센서 불일치 가능)
                     //    -> 이 경우도 위험하므로 막는 방향 권장
-                    if (!(Config.IsSimulation || Config.IsDryRun))
+                    var equipment = Equipment.Instance;
+                    bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                    if (!(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
                     {
                         // 센서 OFF + 객체만 남은 케이스 등을 포함해 강하게 막고 싶으면 아래로 처리
                         // AxisInputFeederY.EmgStop();
@@ -1750,8 +1804,12 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 // 시뮬/드라이런이면 센서보다 Material이 기준
-                if (Config.IsSimulation || Config.IsDryRun)
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
+                {
                     return (GetMaterial() is MaterialWafer);
+                }
 
                 bool sensor = false;
                 try { sensor = IsRingPresent(); } catch { sensor = false; }
@@ -1759,7 +1817,8 @@ namespace QMC.LCP_280.Process.Unit
                 bool obj = (GetMaterial() is MaterialWafer);
 
                 // 센서가 ON이면 우선 wafer 있다고 판단
-                if (sensor) return true;
+                if (sensor) 
+                    return true;
 
                 // 센서 OFF인데 객체가 있으면 데이터만 남은 상태일 수 있으니 "보유"로 간주(안전 우선)
                 if (obj) return true;
@@ -1779,9 +1838,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // 시뮬/드라이런이면 UnClamp 체크가 의미 약함
-                if (Config.IsSimulation || Config.IsDryRun)
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
+                {
                     return true;
+                }
 
                 // MovePositionReady() 내부가 IsUnClamped()를 강제하므로 여기서도 동일 조건 사용
                 return IsUnClamped();
@@ -1794,7 +1856,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
 
-        public int WaferLoadingStep1(bool isFine = false)
+        public int WaferLoading_Prepare(bool isFine = false)
         {
             int nRet = 0;
 
@@ -1802,7 +1864,6 @@ namespace QMC.LCP_280.Process.Unit
             if (nRet != 0)
             {
                 AxisInputFeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 Log.Write(this, "OnRunWork Fail - MoveToNextSlot");
                 return nRet;
             }
@@ -1821,7 +1882,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int WaferLoadingStep2(bool isFine = false)
+        public int WaferLoading_CassetteToFeeder(bool isFine = false)
         {
             int nRet = 0;
 
@@ -1838,7 +1899,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int WaferLoadingStep3(bool isFine = false)
+        public int WaferLoading_FeederToStage(bool isFine = false)
         {
             int nRet = 0;
 
@@ -1893,7 +1954,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int WaferLoadingStep4(bool isFine = false)
+        public int WaferLoading_StageAlignMap(bool isFine = false)
         {
             int nRet = 0;
 
@@ -2049,14 +2110,151 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+
+        #region Manual Sequence (for ManualSequenceControl)
+
+        // ===== Manual Load (Auto 동일 Step) =====
+        // [ADD] 통합 로딩 시퀀스 (한 번에 실행)
+        public int Manual_Load_Batch(bool isFine = true)
+        {
+            int nRet = 0;
+            bool didLoad = false;
+
+            // [Smart Resume]
+            // 만약 Feeder에 이미 웨이퍼가 있다면(이전 로딩 중단 등), 
+            // 카세트에서 꺼내는 동작(Step01/02)을 건너뛰고 Feeder->Stage(Step03)부터 시작
+            if (HasWaferOnFeeder())
+            {
+                Log.Write(UnitName, "Manual_Load_Batch", "Wafer detected on Feeder. Resuming from Step03.");
+                _loadStep = LoadFlowStep.Step03;
+            }
+            else
+            {
+                // 일반적인 경우 처음부터 시작
+                _loadStep = LoadFlowStep.Step01;
+                // Manual Batch는 보통 지정된 슬롯 작업을 가정하므로 Scan은 건너뜀 (필요시 true 변경)
+                _nextDoScanAndLoad = false;
+            }
+
+            // 로직 수행 (RunLoadWaferFlowStep 내부에서 goto case로 연속 실행됨)
+            nRet = RunLoadWaferFlowStep(out didLoad, isFine);
+
+            // 완료 상태 정리
+            if (_loadStep == LoadFlowStep.Completed)
+            {
+                // 로딩 성공 후, Auto 모드처럼 Ready 위치 복귀 및 Feeder Up 처리
+                if (didLoad)
+                {
+                    int finishRet = Manual_StandbyReady(isFine);
+                    if (finishRet != 0) 
+                        return finishRet;
+                }
+            }
+            // 실패했더라도 nRet을 반환하여 상위에서 알람 확인 가능
+            return nRet;
+        }
+        
+        // ===== Manual Unload (Auto 동일 Step) =====
+        // [ADD] 통합 언로딩 시퀀스 (Die가 있어도 강제 진행)
+        public int Manual_Unload_Batch(bool isFine = true)
+        {
+            // [Smart Resume Logic]
+            // 에러 후 재시작 시, Feeder에 웨이퍼가 이미 있다면 Stage에서 가져오는 동작(Step1,2)을 스킵하고
+            // 바로 Cassette에 넣는 동작(Step3)으로 점프해야 함.
+            if (HasWaferOnFeeder())
+            {
+                Log.Write(UnitName, "Manual_Unload_Batch", "Wafer detected on Feeder. Resuming from Step03 (To Cassette).");
+                _unloadStep = UnloadFlowStep.Step03;
+            }
+            else
+            {
+                // Feeder가 비어있으면 정상적으로 Stage 확인부터 시작
+                _unloadStep = UnloadFlowStep.Step01;
+            }
+
+            // 2. 안전 체크 없이 바로 로직 수행 (RunUnloadWaferFlowStep 내부에서 goto case로 연속 실행)
+            int nRet = RunUnloadWaferFlowStep(isFine);
+
+            // 3. 완료 상태 정리
+            if (_unloadStep == UnloadFlowStep.Completed)
+            {
+                _unloadTargetSlot = -1;
+                NeedUnloadFirst = false;
+
+                // 언로드 완료 후 안전 위치(Ready)로 복귀까지 수행하고 싶다면 주석 해제
+                // Manual_StandbyReady(isFine); 
+            }
+
+            return nRet;
+        }
+
+        // Auto OnRunWork() 끝에서 Standby Ready 처리만 따로 필요할 때(수동에서 개별 호출 가능)
+        public int Manual_StandbyReady(bool isFine = true)
+        {
+            // Auto OnRunWork()의 마지막 부분을 외부에서 직접 재현하기 위한 호출
+            // (IsPositionReady 아니면 MovePositionReady + UpFeeder)
+            int nRet = 0;
+
+            if (IsPositionReady() == false)
+            {
+                if (InputStageUnit != null
+                    && InputStageUnit.IsPositionWaferLoading() == false
+                    && InputStageUnit.IsPositionWaferUnloading() == false)
+                {
+                    AxisInputFeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                    Log.Write(UnitName, "Manual_StandbyReady", "Fail - InputStage not in Loading/Unloading position");
+                    return -1;
+                }
+
+                // Auto와 동일: wafer 있는 상태에서 Ready 이동은 Unclamp 요구
+                bool hasWafer = HasWaferOnFeeder();
+                if (hasWafer && IsSafeToMoveReady() == false)
+                {
+                    AxisInputFeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                    Log.Write(UnitName, "Manual_StandbyReady", "Blocked: Feeder has wafer and not unclamped");
+                    return -1;
+                }
+
+                nRet = MovePositionReady(isFine);
+                if (nRet != 0)
+                {
+                    AxisInputFeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                    Log.Write(UnitName, "Manual_StandbyReady", "Fail - MovePositionReady");
+                    return nRet;
+                }
+
+                nRet = UpFeeder();
+                if (nRet != 0)
+                {
+                    AxisInputFeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                    Log.Write(UnitName, "Manual_StandbyReady", "Fail - UpFeeder");
+                    return nRet;
+                }
+            }
+
+            return 0;
+        }
+
+
+        #endregion
+
         protected override void OnMakeSequence()
         {
-            base.OnMakeSequence();
-            this.SequencePlayers.Add(PrepareLoadingStage);
-            this.SequencePlayers.Add(UnloadWaferFromCassette);
-            this.SequencePlayers.Add(StageLoading);
-            this.SequencePlayers.Add(MoveToReady);
-            this.SequencePlayers.Add(WaferUnloading);
+            // [CHANGE] ManualSequenceControl에 노출할 Step 기반으로 재구성
+            // (기존: PrepareLoadingStage/UnloadWaferFromCassette/StageLoading/MoveToReady/WaferUnloading)
+            this.SequencePlayers.Clear();
+
+            this.SequencePlayers.Add(Manual_StandbyReady);                    // 마지막 Ready 복귀만 따로
+
+            // ===== Unload =====
+            this.SequencePlayers.Add(Manual_Unload_Batch);
+
+            // ===== Load =====
+            this.SequencePlayers.Add(Manual_Load_Batch);
         }
 
 
@@ -2202,7 +2400,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 bool useTrigger = false;
-                if ((!Config.IsSimulation && !Config.IsDryRun)
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                if ((Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                    && (InputCassetteLifterUnit?.IsTriggerModeConfigured() == true))
                 {
                     useTrigger = true;
@@ -2335,6 +2535,14 @@ namespace QMC.LCP_280.Process.Unit
                                                     return nRet;
                                                 }
                                                 nRet = MovePositionReady();
+                                                if (nRet != 0)
+                                                {
+                                                    AxisInputFeederY.EmgStop();
+                                                    PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                                                    Log.Write(UnitName, "CheckReady Fail - InputStage.IsStageInterLockOK");
+                                                    return -1;
+                                                }
+                                                nRet = UpFeeder();
                                                 if (nRet != 0)
                                                 {
                                                     AxisInputFeederY.EmgStop();
@@ -2567,9 +2775,10 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if(Config.IsSimulation == false && Config.IsDryRun == false)
+                    if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                     {
                         // [CHANGE] 바코드 미사용 시: 수동 Wafer ID 입력
+                        // Todo: 입력창 띄워져 있는 상태에서 장비 정비 시 자동으로 입력창 닫고 장비 정지하자.
                         string waferId;
                         bool ok = FormInputWaferID.TryGetWaferId(owner: null, initialValue: string.Empty, out waferId);
                         if (!ok || string.IsNullOrWhiteSpace(waferId))
@@ -2702,9 +2911,12 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int WaferUnloading_Step01(bool isFine = false)
+        public int WaferUnloading_CheckStage(bool isFine = false)
         {
             int nRet = 0;
+
+            if (IsStop) 
+                return 0;
 
             Log.Write(UnitName, "WaferUnloading", "Start");
             MaterialWafer WaferData = this.InputStageUnit.GetMaterialWafer();
@@ -2720,19 +2932,17 @@ namespace QMC.LCP_280.Process.Unit
             if (chk != 0)
             {
                 AxisInputFeederY.EmgStop();
-                // CheckStageWaferBeforeUnload 내부에서 원인 알람을 올리므로 여기서 2004로 덮지 않음
-                this.State = ProcessState.Error;
                 Log.Write(UnitName, "CheckStageWaferBeforeUnload", "Failed");
                 return -1;
             }
             return nRet;
         }
 
-        public int WaferUnloading_Step02(bool isFine = false)
+        public int WaferUnloading_StageToFeeder(bool isFine = false)
         {
             int nRet = 0;
             MaterialWafer WaferData = this.InputStageUnit.GetMaterialWafer();
-
+             
             nRet = WaferUnloadingStage(WaferData);
             if (nRet != 0 && nRet != -2)
             {
@@ -2757,7 +2967,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int WaferUnloading_Step03(bool isFine = false)
+        public int WaferUnloading_FeederToCassette(bool isFine = false)
         {
             int nRet = 0;
             MaterialWafer WaferData = this.InputStageUnit.GetMaterialWafer();
@@ -2917,6 +3127,10 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+
+            //여기서 피더에 wafer 정보가 없으면 넘긴다. 
+            //있으면 Pass
+
             var waferFromStage = wafer;
             this.InputStageUnit.MoveMaterial(waferFromStage, this);
             this.InputStageUnit.SetMaterial(null);
@@ -2926,6 +3140,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            //여기서부터 보자!! 26-02-07
             // SlotIndex / EmptySlot 검증은 "Feeder->Cassette 단계"에서 최종 수행이 더 자연스럽지만,
             // 기존 로직 유지: 여기서도 1차로 Empty 확인하되 알람은 명확히 분리
             var waferFromFeeder = this.GetMaterial() as MaterialWafer;
@@ -3104,40 +3319,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SetMaterial(null);
             return 0;
 
-            //회피 Position으로 사용.
-            //nRet = MovePositionBarcode(isFine);
-            //if (nRet != 0)
-            //{
-            //    AxisInputFeederY.EmgStop();
-            //    PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
-            //    Log.Write(this, "UnloadWaferFeederToCassette Fail - MovePositionBarcode");
-            //    nRet = -1;
-            //    return nRet;
-            //}
-            //// 다음 로딩은 바코드에서 시작하도록 표시
-            //_exchangeStandbyForNextLoad = true;
-            //// Feeder의 material 정리 (배출 완료 후 비움)
-            //this.SetMaterial(null);
-            ////wafer = new MaterialWafer();
-            ////MoveMaterial(wafer, null);
-
-            //// ← 추가: 전 슬롯 완료되었는지 검사하여 1회 알람
-            //try 
-            //{ 
-            //    nRet = this.InputCassetteLifter.CheckCassetteCompletedAndAlarmOnce();
-            //    if(nRet != 0)
-            //    {
-            //        this.Stop();
-            //        InputCassetteLifter.Stop();
-            //        InputStage.Stop();
-            //        return -2;
-            //    }
-            //} 
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
-            //return nRet;
         }
         #endregion
 
@@ -3311,8 +3492,9 @@ namespace QMC.LCP_280.Process.Unit
             // Barcode Reading Logic
             bool isRead = true; // TODO: Barcode Reading Logic
 
-            if(Config.IsSimulation
-                || Config.IsDryRun)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 var now = DateTime.Now;
                 strBarcode = "TestWafer" + now.ToString("yyyyMMddHHmm"); // yyyyMMddHHmm 도 가능
@@ -3468,8 +3650,10 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // --- Simulation 모드: 축 위치가 0(초기 상태) 이면 teaching 여부와 무관하게 OK 처리 ---
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
             if (Config != null 
-                && (Config.IsSimulation || Config.IsDryRun))
+                && (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
             {
                 if (AxisInputFeederY != null)
                 {
@@ -3600,10 +3784,25 @@ namespace QMC.LCP_280.Process.Unit
                     else
                     {
 
-                        AxisInputFeederY.EmgStop();
-                        PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
-                        Log.Write(UnitName, "CheckReady Fail - InputStage.IsStageInterLockOK");
-                        return -1;
+                        nRet = UnClampGripper();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "CheckReady Fail - UnClampGripper");
+                            return nRet;
+                        }
+                        nRet = MovePositionReady();
+                        if (nRet != 0)
+                        {
+                            AxisInputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                            Log.Write(UnitName, "CheckReady Fail - InputStage.IsStageInterLockOK");
+                            return -1;
+                        }
+
+                        //AxisInputFeederY.EmgStop();
+                        //PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                        //Log.Write(UnitName, "CheckReady Fail - InputStage.IsStageInterLockOK");
+                        //return -1;
                     }
                 }
                 else
@@ -3819,23 +4018,12 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
+            var inArmEmpty = InputDieTransferUnit?.GetMaterial() as MaterialDie;
             bool rotaryEmpty = RotaryUnit.IsHaveDie();
-            if (rotaryEmpty == false)
+            var outArmEmpty = OutputDieTransferUnit?.GetMaterial() as MaterialDie;
+            if (inArmEmpty == null && rotaryEmpty == false && outArmEmpty == null)
             {
                 return true;
-
-                // (3) 아직 Completed가 아니어도, 외부 버퍼가 비어있지 않으면 절대 언로드 시작하면 안됨
-                //     (OutputStage에 이미 안전 종료 헬퍼가 있으니 그걸 재사용)
-                //     반환값 0=완료처리됨/가능, 1=버퍼 남아 스킵, <0=실패
-
-                // 아래를 여기서 하는건 안됨!
-                //int rc = OutputStageUnit.ForceCompleteAndAllowUnloadWhenBuffersEmpty(reason: "InputFeeder: Before input wafer unload");
-                //if (rc == 0)
-                //{
-                //    Log.Write(UnitName,
-                //        "IsSafeToStartInputWaferUnloading: OutputStage wafer force-completed successfully -> OK to unload input wafer.");
-                //    return true;
-                //}
             }
 
             // rc == 1 이면 아직 버퍼가 남아있다는 뜻

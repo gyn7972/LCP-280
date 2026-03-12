@@ -153,8 +153,8 @@ namespace QMC.LCP_280.Process.Component
         private readonly List<InterlockRule> _rules = new List<InterlockRule>();
         private readonly object _ruleLock = new object();
         private Thread _worker; 
-        private volatile bool _run; 
-        private int _periodMs = 2; //50
+        private volatile bool _run;
+        private int _periodMs = 1;//2; //50
         private readonly List<string> _lastViolations = new List<string>();
         public event Action<IReadOnlyList<string>> ViolationsUpdated;
         #endregion
@@ -162,7 +162,7 @@ namespace QMC.LCP_280.Process.Component
         private InterlockManager() { }
 
         #region Public API
-        public void Start(int periodMs = 50)
+        public void Start(int periodMs = 5) //50
         {
             if (periodMs < 10) periodMs = 10; _periodMs = periodMs;
             if (_run) return; _run = true;

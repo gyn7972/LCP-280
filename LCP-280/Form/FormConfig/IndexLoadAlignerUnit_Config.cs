@@ -39,9 +39,6 @@ namespace QMC.LCP_280.Process.Unit
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
-        private Timer _axisPosTimer; // reserved
-        private Timer _ioTimer;      // reserved
-
         private volatile bool _pendingTeachingRefresh; // [ADD]
 
         public IndexLoadAlignerUnit_Config()

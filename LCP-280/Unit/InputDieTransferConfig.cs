@@ -212,7 +212,7 @@ namespace QMC.LCP_280.Process.Unit
         public void SetTeachingPosition(TeachingPosition tp)
             => TeachingRecipe.UpsertFiltered(tp, save: true);
 
-        public TeachingPosition GetTeachingPosition(string name)
+        public new TeachingPosition GetTeachingPosition(string name)
             => TeachingRecipe.Get(name);
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)

@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Automation.Peers;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
 using Timer = System.Windows.Forms.Timer;
@@ -25,7 +26,7 @@ using Timer = System.Windows.Forms.Timer;
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
     [FormOrder(3)]
-    public partial class Index_Menual : Form
+    public partial class Index_Menual : Form, ITabActivationAware
     {
         private Equipment Equipment => Equipment.Instance;
 
@@ -48,14 +49,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
 
         #region 재현성 테스트 필드
-        private volatile bool _reproRunning;
-        private CancellationTokenSource _reproCts;
-        private int _reproNextSocket = 0;              // 0~7
-        private string _reproDataFilePath;
-        private StreamWriter _reproWriter;
-        private string _reproStatePath;
-        private TaskCompletionSource<PKGTesterResult> _probeTcs;
-        private MaterialDie _lastPickedDie;
         private readonly object _reproLock = new object();
         #endregion
 
@@ -91,7 +84,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             _tester = Equipment?.Tester;
 
             Load += Process_Working_Load;
-            FormClosing += Index_Menual_FormClosing;
 
             _ProcessCameraviewer.LightControlRequested += LightControlRequested;
 
@@ -136,6 +128,96 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
+
+        // [추가] 탭 활성화 인터페이스 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
+        }
+
+        // [추가] 폼 이벤트 오버라이드
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+                if (this.Visible) ResumeCamera();
+                else PauseCamera();
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+        private void Index_Menual_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try { PauseCamera(); } catch { }
+            UnsubscribeRecipeChanged();
+        }
+
+        // [추가] 카메라 제어 헬퍼 (_ProcessCameraviewer 사용)
+        private void PauseCamera()
+        {
+            if (_ProcessCameraviewer == null || _ProcessCameraviewer.IsDisposed) return;
+
+            try { _ProcessCameraviewer.SuspendDisplay(); } catch { }
+
+            var cam = _ProcessCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            try
+            {
+                var method = _ProcessCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_ProcessCameraviewer, null);
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_ProcessCameraviewer == null || _ProcessCameraviewer.IsDisposed) return;
+
+            var cam = _ProcessCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _ProcessCameraviewer.ResumeDisplay(); } catch { }
+
+            try
+            {
+                var method = _ProcessCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_ProcessCameraviewer, null);
+                else _ProcessCameraviewer.StartUpdateTask();
+            }
+            catch { }
+        }
 
         public void PreloadUI()
         {
@@ -907,10 +989,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
-        private void Index_Menual_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            UnsubscribeRecipeChanged();
-        }
+        
 
         // 추가: 소켓 번호 콤보 초기화 (1~8)
         private void InitSocketIndexCombo()
@@ -941,7 +1020,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             if (Equipment == null)
                 return;
-
         }
 
         private void comboBoxIndexSocketNo_SelectedIndexChanged(object sender, EventArgs e)
@@ -951,6 +1029,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void btnRotary_Click(object sender, EventArgs e)
         {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
                 return;
@@ -1068,6 +1155,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
+                var mb = new MessageBoxOk();
+                if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                    Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.ManualRunning)
+                {
+                    mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
+
                 // Index Calibration 다이얼로그를 모델리스로 표시
                 var dlg = new IndexCalibrationDialog(_manualReproTestRunner)
                 {
@@ -1135,11 +1231,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             //btn.Enabled = true;
         }
-        private volatile bool _rotaryInitBusy;
-        private CancellationTokenSource _rotaryInitCts;
 
         private async void ButtonClear_Click(object sender, EventArgs e)
         {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("확인", "Rotary 초기화(InitializeAfterHome)를 실행하시겠습니까?") != DialogResult.Yes)
                 return;
@@ -1269,6 +1372,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             btn.Enabled = false;
             try
             {
+                var mb = new MessageBoxOk();
+                if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                    Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.ManualRunning)
+                {
+                    mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
+
                 var ask = new MessageBoxYesNo();
                 if (ask.ShowDialog("확인", "비전 위치를 변경하시겠습니까?") != DialogResult.Yes)
                     return;
@@ -1313,7 +1425,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     if (task.IsFaulted)
                     {
                         var ex = task.Exception?.GetBaseException();
-                        var mb = new MessageBoxOk();
                         mb.ShowDialog("Manual Vision Error!", ex?.Message ?? "Unknown error");
                         return;
                     }

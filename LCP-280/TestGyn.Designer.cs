@@ -123,7 +123,6 @@
             this.button_TestGyn_Test.TabIndex = 3;
             this.button_TestGyn_Test.Text = "축 테스트";
             this.button_TestGyn_Test.UseVisualStyleBackColor = true;
-            this.button_TestGyn_Test.Click += new System.EventHandler(this.button_TestGyn_Test_Click);
             // 
             // button_TestGyn_Alarm
             // 

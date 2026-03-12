@@ -9,7 +9,9 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 using static QMC.Common.Unit.BaseUnit;
+
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -21,7 +23,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     ///    InputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    InputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
-    public partial class Wafer_Menual : Form
+    public partial class Wafer_Menual : Form, ITabActivationAware
     {
         private const string WORK_NAME = "InputWafer";
         private Equipment Equipment => Equipment.Instance;
@@ -60,9 +62,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             FormClosing += InputWafer_Working_FormClosing;
             _InputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
-            waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+            waferMapView_InputWafer.GetWaferSelectMapView()?.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
 
             comboBoxSlot.SelectedIndex = 0;
+        }
+
+        // 1. ITabActivationAware 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
         }
 
         /// <summary>
@@ -81,6 +94,51 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void InputWafer_Working_Load(object sender, EventArgs e)
         {
             EnsureInitialized();
+        }
+
+        // [ADD] 화면 표시 변경 시 카메라 제어 (Operator_Main 참조)
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+
+                if (this.Visible)
+                {
+                    ResumeCamera();
+                }
+                else
+                {
+                    PauseCamera();
+                }
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+
+        // [ADD] 폼 종료 시 리소스 정리
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                PauseCamera();
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
+            base.OnFormClosing(e);
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -360,12 +418,82 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 {
                     if (_InputWaferCameraviewer.Camera != InputStage.StageCamera)
                         _InputWaferCameraviewer.Camera = InputStage.StageCamera;
-                    try { InputStage.StageCamera.StartLive(); } catch { }
-                    try { _InputWaferCameraviewer.StartUpdateTask(); } catch { }
+
+                    // 현재 visible 상태라면 즉시 Resume 수행
+                    if (this.Visible)
+                    {
+                        ResumeCamera();
+                    }
                 }
             }
             catch { }
         }
+        private void PauseCamera()
+        {
+            if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed) return;
+
+            try
+            {
+                _InputWaferCameraviewer.SuspendDisplay();
+            }
+            catch { }
+
+            var cam = _InputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    // UI 숨겨질 때 이미지 갱신 플래그 OFF (불필요한 리소스 낭비 방지)
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            // 뷰어 내부의 업데이트 Task 중지 (리플렉션 또는 메서드 호출)
+            try
+            {
+                // VisionImageViewer에 StopUpdateTask가 있다면 명시적 호출
+                // Operator_Main 참조하여 리플렉션 사용 혹은 직접 호출
+                var method = _InputWaferCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_InputWaferCameraviewer, null);
+                else
+                {
+                    // 직접 호출 가능한 경우(public 인 경우)
+                    // _InputWaferCameraviewer.StopUpdateTask(); 
+                }
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed) return;
+
+            var cam = _InputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _InputWaferCameraviewer.ResumeDisplay(); } catch { }
+
+            // 뷰어 내부 업데이트 Task 재개
+            try
+            {
+                // VisionImageViewer에 StartUpdateTask 호출
+                var method = _InputWaferCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_InputWaferCameraviewer, null);
+                else
+                {
+                    _InputWaferCameraviewer.StartUpdateTask();
+                }
+            }
+            catch { }
+        }
+
+
         #endregion
 
 
@@ -485,6 +613,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void btnMapping_Click(object sender, EventArgs e)
         {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Cassette Mapping을 하시겠습니까?") != DialogResult.Yes)
+            {
+                return;
+            }
+
             try
             {
                 if (InputCassetteLifter == null)
@@ -513,7 +647,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     return;
                 }
 
-                waferMapView_InputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_InputWafer.GetWaferSelectMapView()?.SetMaterialCassette(materialCassette);
                 waferMapView_InputWafer.Refresh();
 
                 MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -521,48 +655,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch (Exception ex)
             {
                 MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void checkBoxTest_CheckedChanged(object sender, EventArgs e)
-        {
-            //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "DryRun 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
-                return;
-
-            if (checkBoxTest.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(true, save: true);
-            }
-            else if(!checkBoxTest.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: true);
-            }
-            else
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: false);
-            }
-        }
-
-        private void checkBoxSimulation_CheckedChanged(object sender, EventArgs e)
-        {
-            //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "Simulation 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
-                return;
-
-            if (checkBoxSimulation.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(true, save: true);
-            }
-            else if (!checkBoxSimulation.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: true);
-            }
-            else
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: false);
             }
         }
 
@@ -729,228 +821,5 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             
         }
 
-        private async void buttonMoveToLoad_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "Manual Wafer Load(=Auto 동일) 를 실행하시겠습니까?\n(Stage 로딩까지만 진행)") != DialogResult.Yes)
-                return;
-
-            if (InputFeeder == null || InputCassetteLifter == null || InputStage == null)
-            {
-                MessageBox.Show("Unit 초기화되지 않았습니다. (InputFeeder/InputCassetteLifter/InputStage)", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            SetUnitsManualRunning(true);
-
-            int nRet = 0;
-            var t = Task.Run(() =>
-            {
-                // ===== Auto와 동일한 Step 호출 (Stage 로딩까지만) =====
-                // Step01: MoveToNextSlot + PrepareLoadingStage
-                nRet = InputFeeder.WaferLoadingStep1(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // Step02: UnloadWaferFromCassette (Barcode + WaferId 입력 폼 포함)
-                nRet = InputFeeder.WaferLoadingStep2(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // Step03: StageLoading + Material move + MoveToReady (※ 여기서 Stage에 wafer 올라감)
-                // 요구사항: "Stage 로딩까지만" 이므로, Step03 내부의 MoveToReady까지 포함되는 점이 싫으면
-                // InputFeeder.StageLoading()만 분리 호출로 바꾸면 됨.
-                nRet = InputFeeder.WaferLoadingStep3(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // ===== Data 검증 (Auto와 동일한 상태인지) =====
-                // - Step3에서 feeder material -> stage material로 옮기고 feeder는 null 되어야 정상
-                var waferOnStage = InputStage.GetMaterialWafer();
-                var waferOnFeeder = InputFeeder.GetMaterial() as MaterialWafer;
-
-                if (waferOnStage == null)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Load OK but Stage material is null");
-                    return -1;
-                }
-
-                if (waferOnFeeder != null)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Load OK but Feeder still has material");
-                    return -1;
-                }
-
-                if (string.IsNullOrWhiteSpace(waferOnStage.WaferId))
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Stage material WaferId empty");
-                    return -1;
-                }
-
-                return 0;
-            });
-
-            var form = new ProgressForm("Manual Running", "Wafer Load (Auto 동일, Stage 로딩까지만)", t, null);
-            try
-            {
-                form.ShowDialog(this);
-
-                if (t.IsFaulted)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", t.Exception?.GetBaseException().Message);
-                    return;
-                }
-
-                if (t.IsCanceled)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToLoad_Click", "Canceled");
-                    return;
-                }
-
-                var rc = await t.ConfigureAwait(true);
-                if (rc != 0)
-                {
-                    MessageBox.Show($"Manual Load 실패 (rc={rc})", "경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // UI 갱신(필요시)
-                try
-                {
-                    waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
-                    waferMapView_InputWafer.Refresh();
-                }
-                catch { }
-
-                MessageBox.Show("Manual Load 완료 (Stage 로딩 완료).", "정보",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                SetUnitsManualRunning(false);
-            }
-
-
-        }
-
-        private async void buttonMoveToUnLoad_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "Manual Wafer Unload(=Auto 동일) 를 실행하시겠습니까?\n(Stage -> Feeder -> Cassette)") != DialogResult.Yes)
-                return;
-
-            if (InputFeeder == null || InputCassetteLifter == null || InputStage == null)
-            {
-                MessageBox.Show("Unit 초기화되지 않았습니다. (InputFeeder/InputCassetteLifter/InputStage)", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            SetUnitsManualRunning(true);
-
-            int nRet = 0;
-            var t = Task.Run(() =>
-            {
-                // ===== Auto와 동일한 Step 호출 (Unload) =====
-                // Step01: Stage wafer/data 정합성 확인(없으면 skip)
-                nRet = InputFeeder.WaferUnloading_Step01(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // Step02: Stage -> Feeder (Prepare + Move + Clamp + Material 이동/검증)
-                nRet = InputFeeder.WaferUnloading_Step02(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // Step03: Feeder -> Cassette (MoveToSlot + UnloadWaferFeederToCassette + Verify)
-                nRet = InputFeeder.WaferUnloading_Step03(isFine: true);
-                if (nRet != 0) return nRet;
-
-                // ===== Data 검증 (Auto와 동일한 상태인지) =====
-                // - Unload 완료 후: Stage material null, Feeder material null이어야 정상
-                var waferOnStage = InputStage.GetMaterialWafer();
-                var waferOnFeeder = InputFeeder.GetMaterial() as MaterialWafer;
-
-                if (waferOnStage != null)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Stage still has material");
-                    return -1;
-                }
-
-                if (waferOnFeeder != null)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Feeder still has material");
-                    return -1;
-                }
-
-                // 센서 기반 추가 확인(시뮬/드라이런이면 Material 기반이라 의미가 약함)
-                try
-                {
-                    if (!(InputFeeder.Config?.IsSimulation == true || InputFeeder.Config?.IsDryRun == true))
-                    {
-                        if (InputStage.IsRingPresent())
-                        {
-                            Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Stage sensor still ON");
-                            return -1;
-                        }
-
-                        if (InputFeeder.IsRingPresent())
-                        {
-                            Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Unload OK but Feeder sensor still ON");
-                            return -1;
-                        }
-                    }
-                }
-                catch { }
-
-                return 0;
-            });
-
-            var form = new ProgressForm("Manual Running", "Wafer Unload (Auto 동일)", t, null);
-            try
-            {
-                form.ShowDialog(this);
-
-                if (t.IsFaulted)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", t.Exception?.GetBaseException().Message);
-                    return;
-                }
-
-                if (t.IsCanceled)
-                {
-                    Log.Write("InputWafer_Working", "buttonMoveToUnLoad_Click", "Canceled");
-                    return;
-                }
-
-                var rc = await t.ConfigureAwait(true);
-                if (rc != 0)
-                {
-                    MessageBox.Show($"Manual Unload 실패 (rc={rc})", "경고", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // UI 갱신(필요시)
-                try
-                {
-                    waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
-                    waferMapView_InputWafer.Refresh();
-                }
-                catch { }
-
-                MessageBox.Show("Manual Unload 완료 (Cassette 반납 완료).", "정보",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                MessageBox.Show(ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                SetUnitsManualRunning(false);
-            }
-        }
     }
 }

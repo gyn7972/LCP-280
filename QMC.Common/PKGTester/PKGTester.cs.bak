@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using NPOI.OpenXmlFormats.Dml;
 using QMC.Common.Component;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QMC.Common.PKGTester
 {
@@ -358,7 +360,9 @@ namespace QMC.Common.PKGTester
                                     isOpticalSource = true;
                             }
                             if (!sourcemeter.AddTestItem(item, isOpticalSource))
+                            {
                                 throw new Exception("Failed to add test item to sourcemeter.");
+                            }
                             break;
                         case TestItemCategory.Optical:
                             if (!spectrometer.AddTestItem(item))
@@ -412,93 +416,296 @@ namespace QMC.Common.PKGTester
         #region Internal Process
         private async Task<int> DoMeasure(int rotaryIndex)
         {
-            stopWatch.Restart();
-
+            //stopWatch.Restart();
             TaskCompletionSource<bool> tcs = null;
             CASSpectrometer.DeviceEventHandler handler = null;
             Task<int> spcTask = null;
             Task<int> smuTask = null;
+            Task<int> smuTotal = null;
 
             try
             {
                 ResetResultItem();
                 if (!CanMeasure())
                 {
-                    //Test
-                    //if (!BinningDataProcess())
-                    //    throw new Exception("Failed to binning data.");
-
                     Log.Write("PKGTester", "Cannot perform measurement. Check the condition set and instrument status.");
                     throw new InvalidOperationException("Cannot perform measurement.");
                 }
 
+                bool hasSpc = HasTaskSpectrometer();
+                bool hasSmu = HasTaskSourcemeter();
+
+                // CAS 이벤트 대기 준비 (HW Trigger에서만 의미가 큼)
                 tcs = new TaskCompletionSource<bool>();
                 handler = (s) => { tcs.TrySetResult(true); };
                 spectrometer.OnMeasureCommandSended += handler;
 
-                try 
-                { 
-                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
-                        Thread.CurrentThread.Name = "DoSpectrometerMeasure"; 
-                } catch 
-                { }
-                spcTask = Task.Run(() => DoSpectrometerMeasure());
+                bool useHwTrig = (spectrometer != null && spectrometer.Config != null && spectrometer.Config.UseHardwareTrigger);
 
-                var timeoutTask = Task.Delay(2000);
-                if (HasTaskSpectrometer())
+                stopWatch.Restart();
+                if (useHwTrig && hasSpc && hasSmu)
                 {
-                    var completed = await Task.WhenAny(tcs.Task, timeoutTask);
-                    if (completed == timeoutTask)
+                    // HW Trigger: CAS 먼저 Arm/Measure 들어가게 한 다음 SMU 시작
+                    try
                     {
-                        Log.Write("PKGTester", "Spectrometer send measurement command timed out.");
-                        throw new TimeoutException("Spectrometer command timeout.");
+                        if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                            Thread.CurrentThread.Name = "DoSpectrometerMeasure";
                     }
+                    catch { }
+
+                    spcTask = Task.Run(() => DoSpectrometerMeasure());
+
+                    // CAS가 paPrepareMeasurement 후 Measure command를 보내는 타이밍까지 대기
+                    var completed = await Task.WhenAny(tcs.Task, Task.Delay(2000));
+                    if (completed != tcs.Task)
+                    {
+                        Log.Write("PKGTester", "Spectrometer send measurement command timed out. (HW Trigger)");
+                        return -1;
+                    }
+
+                    // 이제 SMU 시작 (TRIG1 assert가 CAS 준비 이후에 나가도록)
+                    try
+                    {
+                        if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                            Thread.CurrentThread.Name = "DoSourcemeterMeasure";
+                    }
+                    catch { }
+
+                    //[추가] casMeasure() 진입 보장용 (OS 스케줄링/Task 시작 레이스 방지)
+                    //await Task.Delay(30);
+                    smuTask = Task.Run(() => DoSourcemeterMeasure());
+
+                    // SPC(2) Line OFF (Send Falling edge to SMU(3))
+                    //if (useHardwareTrigger)
+                    //{
+                    //    // [중요] SMU Master 구조에서는 CAS DigitalOut을 절대 토글하지 않는다.
+                    //    spectrometer.OffDigitalOut(2);
+                    //}
+                }
+                else
+                {
+                    // DC(또는 단독 장비): 기존 병렬 흐름 유지
+                    if (hasSmu)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                                Thread.CurrentThread.Name = "DoSourcemeterMeasure";
+                        }
+                        catch { }
+
+                        smuTask = Task.Run(() => DoSourcemeterMeasure());
+                    }
+                    // 기존과 동일하게 약간의 간격(필요하면 유지)
                     Thread.Sleep(10);
+                    if (hasSpc)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                                Thread.CurrentThread.Name = "DoSpectrometerMeasure";
+                        }
+                        catch { }
+
+                        spcTask = Task.Run(() => DoSpectrometerMeasure());
+
+                        // 기존 코드에서 하던 타임아웃 체크는 DC에서도 유지 가능
+                        var completed = await Task.WhenAny(tcs.Task, Task.Delay(2000));
+                        if (completed != tcs.Task)
+                        {
+                            Log.Write("PKGTester", "Spectrometer send measurement command timed out.");
+                            return -1;
+                        }
+                        Thread.Sleep(10);
+                    }
                 }
 
-                try 
-                { 
-                    if (string.IsNullOrEmpty(Thread.CurrentThread.Name)) 
-                        Thread.CurrentThread.Name = "DoSourcemeterMeasure"; 
-                } 
-                catch 
-                { }
-                 smuTask = Task.Run(() => DoSourcemeterMeasure());
+                // null task 방지: 없는 작업은 0 리턴 task로 대체
+                if (smuTask == null) smuTask = Task.FromResult(0);
+                if (spcTask == null) spcTask = Task.FromResult(0);
 
                 int[] codes = await Task.WhenAll(spcTask, smuTask);
                 if (codes.Any(r => r != 0))
-                    throw new Exception("Instrument measure incomplete.");
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Measurement failed in one of the instruments.");
+                    return -1;
+                }
+
+                stopWatch.Stop();
+                measureTime = stopWatch.Elapsed;
 
                 if (!GetResultProcess())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to process measurement results.");
                     throw new Exception("Failed to process data.");
+                }
 
                 if (!CalibrateDataProcess(rotaryIndex))
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to calibrate measurement data.");
                     throw new Exception("Failed to calibrate data.");
+                }
 
                 if (!CalulateUserDefineItem())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to calculate user defined items.");
                     throw new Exception("Failed to calculate user define item.");
+                }
 
                 if (!BinningDataProcess())
+                {
+                    Log.Write("PKGTester", "DoMeasure", "Failed to binning measurement data.");
                     throw new Exception("Failed to binning data.");
+                }
 
                 return 0;
             }
             catch (Exception ex)
             {
-                //TEST로 막아둠.
                 ResetResultItem();
-                Log.Write(this, ex.Message);
+                Log.Write("PKGTester", ex.Message);
                 return -1;
             }
             finally
             {
-                spectrometer.OnMeasureCommandSended -= handler;
+                if (handler != null)
+                    spectrometer.OnMeasureCommandSended -= handler;
+
                 spcTask?.Dispose();
                 smuTask?.Dispose();
+                smuTotal?.Dispose();
+
                 stopWatch.Stop();
                 measureTime = stopWatch.Elapsed;
             }
         }
+
+
+        //기존 코드 원래 기존 코드
+        //private async Task<int> DoMeasure(int rotaryIndex)
+        //{
+        //    stopWatch.Restart();
+        //    TaskCompletionSource<bool> tcs = null;
+        //    CASSpectrometer.DeviceEventHandler handler = null;
+        //    Task<int> spcTask = null;
+        //    Task<int> smuTask = null;
+        //    Task<int> smuTotal = null;
+
+        //    try
+        //    {
+        //        ResetResultItem();
+        //        if (!CanMeasure())
+        //        {
+        //            Log.Write("PKGTester", "Cannot perform measurement. Check the condition set and instrument status.");
+        //            throw new InvalidOperationException("Cannot perform measurement.");
+        //        }
+
+        //        tcs = new TaskCompletionSource<bool>();
+        //        handler = (s) => { tcs.TrySetResult(true); };
+        //        spectrometer.OnMeasureCommandSended += handler;
+
+        //        try
+        //        {
+        //            if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+        //                Thread.CurrentThread.Name = "DoSourcemeterMeasure";
+        //        }
+        //        catch
+        //        { }
+        //        smuTask = Task.Run(() => DoSourcemeterMeasure());
+
+        //        //Thread.Sleep(10);
+
+        //        try
+        //        {
+        //            if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+        //                Thread.CurrentThread.Name = "DoSpectrometerMeasure";
+        //        }
+        //        catch
+        //        { }
+
+        //        spcTask = Task.Run(() => DoSpectrometerMeasure());
+        //        var timeoutTask = Task.Delay(2000);
+        //        if (HasTaskSpectrometer())
+        //        {
+        //            var completed = await Task.WhenAny(tcs.Task, timeoutTask);
+        //            if (completed == timeoutTask)
+        //            {
+        //                Log.Write("PKGTester", "Spectrometer send measurement command timed out.");
+        //                return -1;
+        //            }
+        //            Thread.Sleep(10);
+        //        }
+
+        //        //여기 오면 측정은 완료.
+        //        int[] codes = await Task.WhenAll(spcTask, smuTask);
+        //        if (codes.Any(r => r != 0))
+        //        {
+        //            Log.Write("PKGTester", "DoMeasure", "Measurement failed in one of the instruments.");
+        //            return -1;
+        //        }
+
+        //        stopWatch.Stop();
+        //        measureTime = stopWatch.Elapsed;
+
+        //        // 순차로 진행. // Script 해보고 안되면 이거다...
+        //        //try
+        //        //{
+        //        //    if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+        //        //        Thread.CurrentThread.Name = "DoMeasureTotal";
+        //        //}
+        //        //catch
+        //        //{ }
+        //        //smuTotal = Task.Run(() => DoMeasureTotal());
+        //        //int[] codes = await Task.WhenAll(smuTotal);
+        //        //if (codes.Any(r => r != 0))
+        //        //{
+        //        //    Log.Write("PKGTester", "DoMeasure", "Measurement failed in one of the instruments.");
+        //        //    throw new Exception("Instrument measure incomplete.");
+        //        //}
+
+        //        if (!GetResultProcess())
+        //        {
+        //            Log.Write("PKGTester", "DoMeasure", "Failed to process measurement results.");
+        //            throw new Exception("Failed to process data.");
+        //        }
+
+        //        if (!CalibrateDataProcess(rotaryIndex))
+        //        {
+        //            Log.Write("PKGTester", "DoMeasure", "Failed to calibrate measurement data.");
+        //            throw new Exception("Failed to calibrate data.");
+        //        }
+
+        //        if (!CalulateUserDefineItem())
+        //        {
+        //            Log.Write("PKGTester", "DoMeasure", "Failed to calculate user defined items.");
+        //            throw new Exception("Failed to calculate user define item.");
+        //        }
+
+        //        if (!BinningDataProcess())
+        //        {
+        //            Log.Write("PKGTester", "DoMeasure", "Failed to binning measurement data.");
+        //            throw new Exception("Failed to binning data.");
+        //        }
+
+        //        return 0;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //TEST로 막아둠.
+        //        ResetResultItem();
+        //        Log.Write("PKGTester", ex.Message);
+        //        return -1;
+        //    }
+        //    finally
+        //    {
+        //        spectrometer.OnMeasureCommandSended -= handler;
+        //        spcTask?.Dispose();
+        //        smuTask?.Dispose();
+        //        smuTotal?.Dispose();
+        //        stopWatch.Stop();
+        //        measureTime = stopWatch.Elapsed;
+        //    }
+        //}
 
         private bool HasTaskSourcemeter()
         {
@@ -559,10 +766,18 @@ namespace QMC.Common.PKGTester
                     {
                         var itemResult = result.Items[item.Name];
                         double value = itemResult.RawData;
+
+                        // 1) Total Gain/Offset 먼저 적용
+                        if (item.UseTotalGain)
+                            value *= item.TotalGain;
+                        if (item.UseTotalOffset)
+                            value += item.TotalOffset;
+
                         if (item.UseGain[rotaryIndex])
                             value *= item.Gain[rotaryIndex];
                         if (item.UseOffset[rotaryIndex])
                             value += item.Offset[rotaryIndex];
+
                         itemResult.Value = value;
                     }
                 }
@@ -627,8 +842,6 @@ namespace QMC.Common.PKGTester
         {
             try
             {
-                //TEST - 장비에서는 꼭 막자...
-                //binningClassifier.IsSimulation = true;
                 binningClassifier.IsSimulation = false;
 
                 var binningResult = binningClassifier.Classify(result.Items);

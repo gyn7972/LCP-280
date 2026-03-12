@@ -802,21 +802,21 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                     return -1;
                 }
 
-                nRet = _dieTransfer.ChipPickDown();
+                nRet = _dieTransfer.PickDownDie();
                 if (nRet != 0)
                 {
                     Log.Write(_dieTransfer.UnitName, "PickDieFromWaferAsync", "ChipPickDown failed");
                     return -1;
                 }
 
-                nRet = _dieTransfer.SyncPickPinUp();
+                nRet = _dieTransfer.SyncPickUpDie();
                 if (nRet != 0)
                 {
                     Log.Write(_dieTransfer.UnitName, "PickDieFromWaferAsync", "SyncPickPinUp failed");
                     return -1;
                 }
 
-                nRet = _dieTransfer.SyncPickPinRetreat();
+                nRet = _dieTransfer.SyncPickDieRetreat();
                 if (nRet != 0)
                 {
                     Log.Write(_dieTransfer.UnitName, "PickDieFromWaferAsync", "SyncPickPinRetreat failed");
@@ -840,9 +840,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
             return await Task.Run(() =>
             {
                 int rc = 0;
-                rc = _dieTransfer.RotateToolTForPlace_AsyncWait(); if (rc != 0) return -1;
-                rc = _dieTransfer.PlaceChipDown(); if (rc != 0) return -1;
-                rc = _dieTransfer.ReleaseVacuumAndPlaceUp(); if (rc != 0) return -1; // 암 Off, 로터리 Vac On
+                rc = _dieTransfer.PlaceDie_ToolT(); if (rc != 0) return -1;
+                rc = _dieTransfer.PlaceDownDie(); if (rc != 0) return -1;
+                rc = _dieTransfer.PlaceUp(); if (rc != 0) return -1; // 암 Off, 로터리 Vac On
                 return 0;
             }, ct).ConfigureAwait(false);
         }

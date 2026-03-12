@@ -51,7 +51,7 @@ namespace QMC.Common.Cameras.HIKVISION
     {
         #region Define
         [Serializable]
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
             eExposeTimeOut = -25,
         }
@@ -193,14 +193,32 @@ namespace QMC.Common.Cameras.HIKVISION
         }
         protected override void InitAlarm()
         {
+            string source = this.CameraName; 
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eExposeTimeOut;
-            alarm.Title = "Expose Time Out";
-            alarm.Cause = "Exposi Time Out";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eExposeTimeOut;
+                alarm.Title = "Expose Time Out";
+                alarm.Cause = "Exposi Time Out";
+                alarm.Source = Name;
+                alarm.Grade = "Error";
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
         }
         public override int Create()
         {
@@ -242,6 +260,13 @@ namespace QMC.Common.Cameras.HIKVISION
                 this.SuspendedImageDisplay = false;
 
                 //SetInitializeProgress(100);
+            }
+            catch (DllNotFoundException)
+            {
+                // [수정] 드라이버 미설치 PC 대응
+                Log.Write("Warn", "Camera Driver DLL not found. Running in Simulation Mode.");
+                this.Opened = true; // 가짜 성공
+                return 0;
             }
             catch (Exception ex)
             {
@@ -329,9 +354,33 @@ namespace QMC.Common.Cameras.HIKVISION
         }
         public int DeviceSearch(string strSerialNumber, ref DeviceCollection devices)
         {
-            stDeviceList.nDeviceNum = 0;
+            // [수정] 시뮬레이션 모드거나 이미 실패한 경우 즉시 리턴
+            dynamic eq = EquipmentLocator.Instance;
+            var bIsSim = eq.EquipmentConfig.IsSimulation;
+            if (bIsSim) 
+                return -1;
 
-            nRet = MyCamera.MV_CC_EnumDevices_NET(MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE, ref stDeviceList);
+            try
+            {
+                stDeviceList.nDeviceNum = 0;
+                nRet = MyCamera.MV_CC_EnumDevices_NET(MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE, ref stDeviceList);
+            }
+            catch (DllNotFoundException)
+            {
+                // [수정] DLL이 없으면 시뮬레이션 모드로 자동 전환
+                Log.Write("Warn", "Camera DLL not found in DeviceSearch. Switching to Simulation Mode.");
+                eq.EquipmentConfig.IsSimulation = true;
+                    
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Error", $"DeviceSearch Failed: {ex.Message}");
+                return -1;
+            }
+
+            //stDeviceList.nDeviceNum = 0;
+            //nRet = MyCamera.MV_CC_EnumDevices_NET(MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE, ref stDeviceList);
 
             DeviceInformation deviceInformation = new DeviceInformation();
 
@@ -370,159 +419,179 @@ namespace QMC.Common.Cameras.HIKVISION
 
         public void ModeChange(GrabMode grabMode)
         {
-            if (grabMode == m_CurrentMode)
+            // [수정 1] 카메라가 연결되지 않았거나(Opened == false), 드라이버 객체가 없으면
+            // 실제 하드웨어 제어를 하지 않고 상태만 변경하거나 리턴해야 합니다.
+            if (Config.IsSimulation || this.Opened == false || m_MyCamera == null)
             {
+                // 시뮬레이션 모드라면 로그만 남기고 상태만 갱신하는 척 함
+                CamLog += $"[Sim] Mode Changed to {grabMode} (No Hardware)\r\n";
+                m_CurrentMode = grabMode;
+
+                // 라이브 모드라면 가짜 스레드를 돌려주는 등의 처리가 필요할 수도 있음 (선택 사항)
                 return;
             }
-            else
+
+            try
             {
-                if (m_CurrentMode == GrabMode.Live)
+                if (grabMode == m_CurrentMode)
                 {
-                    StopLive();
-                }
-                else if (m_CurrentMode == GrabMode.None)
-                {
+                    return;
                 }
                 else
                 {
-                    int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
+                    if (m_CurrentMode == GrabMode.Live)
+                    {
+                        StopLive();
+                    }
+                    else if (m_CurrentMode == GrabMode.None)
+                    {
+                    }
+                    else
+                    {
+                        int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
+                        if (MyCamera.MV_OK != nRet)
+                        {
+                            CamLog += string.Format("MV_CC_StopGrabbing_NET Fail!", nRet);
+                        }
+                        nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "Off");
+                        if (MyCamera.MV_OK != nRet)
+                        {
+                            Console.WriteLine("Set EventNotification failed!");
+                            return;
+                        }
+                    }
+                }
+                if (grabMode == GrabMode.Grab)
+                {
+
+                    if (m_bGrabbing)
+                    {
+                        StopLive();
+                        m_bGrabbing = false;
+                    }
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_ON);
                     if (MyCamera.MV_OK != nRet)
                     {
-                        CamLog += string.Format("MV_CC_StopGrabbing_NET Fail!", nRet);
+                        CamLog += string.Format("Grab TriggerMode Fail", nRet);
                     }
-                    nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "Off");
+                    //LatestImage = null;
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        CamLog += string.Format("Grab TriggerSource Fail", nRet);
+                    }
+                    nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        CamLog += string.Format("Grab Fail!", nRet);
+                    }
+                }
+                else if (grabMode == GrabMode.Live)
+                {
+                    int nRet = m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        m_bGrabbing = false;
+                        CamLog += string.Format(" Live AcquisitionMode Fail!", nRet);
+                        return;
+                    }
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        m_bGrabbing = false;
+                        CamLog += string.Format(" Live TriggerMode Fail!", nRet);
+                        return;
+                    }
+                }
+                else
+                {
+                    //Exporce
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        CamLog += string.Format("Exporce AcquisitionMode Fail!", nRet);
+                    }
+                    //nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
+                    //if (MyCamera.MV_OK != nRet)
+                    //{
+                    //    CamLog += string.Format("Exporce TriggerMode Fail!", nRet);
+                    //}
+
+
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_ON);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        CamLog += string.Format("Grab TriggerMode Fail", nRet);
+                    }
+                    LatestImage = null;
+                    nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        CamLog += string.Format("Grab TriggerSource Fail", nRet);
+                    }
+
+                    nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventSelector", "ExposureEnd");
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Set EventSelector failed!");
+                        return;
+                    }
+
+                    nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "On");
                     if (MyCamera.MV_OK != nRet)
                     {
                         Console.WriteLine("Set EventNotification failed!");
                         return;
                     }
+
+                    nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventSelector", "FrameEnd");
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Set EventSelector failed!");
+                        return;
+                    }
+
+                    nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "On");
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Set EventNotification failed!");
+                        return;
+                    }
+
+                    //if (EventCallbackExposureEnd == null)
+                    //    EventCallbackExposureEnd = new MyCamera.cbEventdelegateEx(EventCallbackFuncExposureEnd);
+                    if (EventCallback == null)
+                        EventCallback = new MyCamera.cbEventdelegateEx(EventCallbackFunc);
+                    nRet = m_MyCamera.MV_CC_RegisterEventCallBackEx_NET("ExposureEnd", EventCallback, IntPtr.Zero);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Register event callback failed!");
+                        return;
+                    }
+                    //if (EventCallback== null)
+                    //    EventCallback = new MyCamera.cbEventdelegateEx(EventCallbackFunc);
+                    nRet = m_MyCamera.MV_CC_RegisterEventCallBackEx_NET("FrameEnd", EventCallback, IntPtr.Zero);
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Register event callback failed!");
+                        return;
+                    }
+
+                    nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
+                    if (MyCamera.MV_OK != nRet)
+                    {
+                        Console.WriteLine("Start grabbing failed:{0:x8}", nRet);
+                        return;
+                    }
                 }
+                m_CurrentMode = grabMode;
             }
-            if (grabMode == GrabMode.Grab)
+            catch (Exception ex)
             {
-
-                if (m_bGrabbing)
-                {
-                    StopLive();
-                    m_bGrabbing = false;
-                }
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_ON);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Grab TriggerMode Fail", nRet);
-                }
-                //LatestImage = null;
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Grab TriggerSource Fail", nRet);
-                }
-                nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Grab Fail!", nRet);
-                }
+                Log.Write(ex);
             }
-            else if (grabMode == GrabMode.Live)
-            {
-                int nRet = m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    m_bGrabbing = false;
-                    CamLog += string.Format(" Live AcquisitionMode Fail!", nRet);
-                    return;
-                }
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    m_bGrabbing = false;
-                    CamLog += string.Format(" Live TriggerMode Fail!", nRet);
-                    return;
-                }
-            }
-            else
-            {
-                //Exporce
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Exporce AcquisitionMode Fail!", nRet);
-                }
-                //nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_OFF);
-                //if (MyCamera.MV_OK != nRet)
-                //{
-                //    CamLog += string.Format("Exporce TriggerMode Fail!", nRet);
-                //}
-
-
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerMode", (uint)MyCamera.MV_CAM_TRIGGER_MODE.MV_TRIGGER_MODE_ON);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Grab TriggerMode Fail", nRet);
-                }
-                LatestImage = null;
-                nRet = m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    CamLog += string.Format("Grab TriggerSource Fail", nRet);
-                }
-
-                nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventSelector", "ExposureEnd");
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Set EventSelector failed!");
-                    return;
-                }
-
-                nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "On");
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Set EventNotification failed!");
-                    return;
-                }
-
-                nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventSelector", "FrameEnd");
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Set EventSelector failed!");
-                    return;
-                }
-
-                nRet = m_MyCamera.MV_CC_SetEnumValueByString_NET("EventNotification", "On");
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Set EventNotification failed!");
-                    return;
-                }
-
-                //if (EventCallbackExposureEnd == null)
-                //    EventCallbackExposureEnd = new MyCamera.cbEventdelegateEx(EventCallbackFuncExposureEnd);
-                if (EventCallback == null)
-                    EventCallback = new MyCamera.cbEventdelegateEx(EventCallbackFunc);
-                nRet = m_MyCamera.MV_CC_RegisterEventCallBackEx_NET("ExposureEnd", EventCallback, IntPtr.Zero);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Register event callback failed!");
-                    return;
-                }
-                //if (EventCallback== null)
-                //    EventCallback = new MyCamera.cbEventdelegateEx(EventCallbackFunc);
-                nRet = m_MyCamera.MV_CC_RegisterEventCallBackEx_NET("FrameEnd", EventCallback, IntPtr.Zero);
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Register event callback failed!");
-                    return;
-                }
-
-                nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
-                if (MyCamera.MV_OK != nRet)
-                {
-                    Console.WriteLine("Start grabbing failed:{0:x8}", nRet);
-                    return;
-                }
-            }
-            m_CurrentMode = grabMode;
         }
+
         public void ReadOut()
         {
             VisionImage image = null;
@@ -755,6 +824,18 @@ namespace QMC.Common.Cameras.HIKVISION
 
         public int Grab()
         {
+            // [수정] 하드웨어 미연결 시 가짜 이미지 생성
+            if (this.Opened == false || m_MyCamera == null)
+            {
+                // 가짜 이미지 생성 (예: 100x100 검은 이미지)
+                // LatestImage에 할당하여 상위 로직이 null 참조 오류를 내지 않도록 함
+                // 비전 라이브러리에 맞는 빈 이미지 생성 코드가 필요함
+                // ex) LatestImage = new VisionImage(1024, 768); 
+
+                CamLog += "[Sim] Grabbed Fake Image\r\n";
+                return 0; // 성공 리턴
+            }
+
             ModeChange(GrabMode.Grab);
             // DateTime StartTime = DateTime.Now;
             //Log.Write("TopInspection", "Camera Grab Start");
@@ -802,12 +883,15 @@ namespace QMC.Common.Cameras.HIKVISION
 
             try
             {
-                int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
-                if (nRet != MyCamera.MV_OK)
+                if(Config.IsSimulation == false)
                 {
-                    CamLog += string.Format("Stop Grabbing Fail", nRet);
+                    int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
+                    if (nRet != MyCamera.MV_OK)
+                    {
+                        CamLog += string.Format("Stop Grabbing Fail", nRet);
+                    }
+                    m_MyCamera.MV_CC_CloseDevice_NET();
                 }
-                m_MyCamera.MV_CC_CloseDevice_NET();
             }
             catch (DllNotFoundException ex)
             {
@@ -932,6 +1016,7 @@ namespace QMC.Common.Cameras.HIKVISION
             {
                 return;
             }
+
             m_bGrabbing = true;
             ModeChange(GrabMode.Live);
 
@@ -944,7 +1029,15 @@ namespace QMC.Common.Cameras.HIKVISION
             m_hReceiveThread.Start();
             m_stFrameInfo.nFrameLen = 0;
             m_stFrameInfo.enPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_Undefined;
-            nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
+            if(Config.IsSimulation == false)
+            {
+                nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
+            }
+            else
+            {
+                nRet = -1;
+            }
+
             if (MyCamera.MV_OK != nRet)
             {
                 m_bGrabbing = false;
@@ -964,6 +1057,13 @@ namespace QMC.Common.Cameras.HIKVISION
                 m_hReceiveThread.Join();
             }
 
+            if(Config.IsSimulation)
+            {
+                IsLiveOn = false;
+                m_CurrentMode = GrabMode.None;
+                return;
+            }
+
             int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
             if (nRet != MyCamera.MV_OK)
             {
@@ -979,6 +1079,10 @@ namespace QMC.Common.Cameras.HIKVISION
 
             while (m_bGrabbing)
             {
+                if(Config.IsSimulation)
+                {
+                    return;
+                }
                 nRet = m_MyCamera.MV_CC_GetImageBuffer_NET(ref stFrameInfo, 1000);
                 if (nRet == MyCamera.MV_OK)
                 {
@@ -1353,10 +1457,29 @@ namespace QMC.Common.Cameras.HIKVISION
         /// </summary>
         private int RefreshDeviceList()
         {
+            // [수정] 시뮬레이션 모드일 경우 하드웨어 탐색 생략
+            dynamic eq = EquipmentLocator.Instance;
+            var bIsSim = eq.EquipmentConfig.IsSimulation;
+            if (bIsSim)
+            {
+                stDeviceList.nDeviceNum = 0;
+                return MyCamera.MV_OK; // 성공한 척 리턴
+            }
+
             stDeviceList.nDeviceNum = 0;
-            return MyCamera.MV_CC_EnumDevices_NET(
-                MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE,
-                ref stDeviceList);
+            try
+            {
+                return MyCamera.MV_CC_EnumDevices_NET(
+                    MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE,
+                    ref stDeviceList);
+            }
+            catch (DllNotFoundException)
+            {
+                eq.EquipmentConfig.IsSimulation = true;
+                // DLL이 없으면 시뮬레이션 모드로 간주하거나 에러 처리
+                Log.Write("Warn", "MvCameraControl.dll not found in RefreshDeviceList.");
+                return -1;
+            }
         }
 
         /// <summary>

@@ -613,6 +613,15 @@ namespace QMC.LCP_280.Process.Component
         {
             try
             {
+                var mb = new MessageBoxOk();
+                if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                    Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.ManualRunning)
+                {
+                    mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
+
                 // [ADD] Interlock: 설비 전체 초기화 + Axis Home 완료 전에는 모션 이동 금지
                 // - Equipment.InitializeEquipment() 완료 => IsEquipmentInitialized = true
                 // - Home 완료는 외부에서 Equipment.MarkAxisHomed() 호출되어야 함

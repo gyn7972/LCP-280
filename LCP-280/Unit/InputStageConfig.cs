@@ -201,7 +201,7 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public new TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         /// <summary>
         /// Teaching Position + Offset 적용 좌표 반환 (X/Y/T)
@@ -319,6 +319,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "Interlock", 2 },
+                { "Limit", 3 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)

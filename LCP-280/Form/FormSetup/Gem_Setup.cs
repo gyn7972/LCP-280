@@ -348,14 +348,17 @@ namespace QMC.LCP_280.Process.Unit
         private static decimal Clamp(NumericUpDown nud, short value) 
             => Clamp(nud, (int)value);
 
-        private Gem_SecsMsgDialog _secsMsgDlg;
         private void btnGEMDlg_Click(object sender, EventArgs e)
         {
-            if (_secsMsgDlg == null || _secsMsgDlg.IsDisposed)
-                _secsMsgDlg = new Gem_SecsMsgDialog(_gem);
+            //test
+            var dlg = new FormGemClient();
+            dlg.ShowDialog();
 
-            _secsMsgDlg.Show();
-            _secsMsgDlg.BringToFront();
+            //if (_secsMsgDlg == null || _secsMsgDlg.IsDisposed)
+            //    _secsMsgDlg = new Gem_SecsMsgDialog(_gem);
+
+            //_secsMsgDlg.Show();
+            //_secsMsgDlg.BringToFront();
         }
     }
 }

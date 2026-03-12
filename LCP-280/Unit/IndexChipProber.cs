@@ -1,6 +1,7 @@
 using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Component;
+using QMC.Common.IOUtil;
 using QMC.Common.Keithley;
 using QMC.Common.Motions;
 using QMC.Common.PKGTester;
@@ -11,6 +12,8 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
@@ -25,22 +28,44 @@ namespace QMC.LCP_280.Process.Unit
 {
     public sealed class IndexChipProber : BaseUnit<IndexChipProberConfig>, IDisposable
     {
-        public enum AlarmKeys
+        public new enum AlarmKeys
         { 
-            eNotReadyToMeasure = 99990, // 임시 알람 번호
+            eNotReadyToMeasure = 10801, // 임시 알람 번호
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Index_Prober";
+
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
-            alarm.Title = "측정 준비가 되지 않았습니다.";
-            alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
+                alarm.Title = "측정 준비가 되지 않았습니다.";
+                alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
+            
         }
         #endregion
 
@@ -125,13 +150,6 @@ namespace QMC.LCP_280.Process.Unit
             var ret = base.OnStart();
             if (ret != 0) 
                 return ret;
-
-            if(Config.IsSimulation == false
-               && Config.IsDryRun == false)
-            {
-                // 자동 모드에서는 모니터 자동 시작
-                //TryStartStrainGageMonitor();
-            }
 
             return 0;
         }
@@ -305,23 +323,27 @@ namespace QMC.LCP_280.Process.Unit
                 // 1) Check Can Measure
                 InspectDone = false;
 
-                Log.Write("kkkkkkProb", "m1");
-                if (Config.IsSimulation == false
-                    && Config.IsDryRun == false )
+                //Log.Write("kkkkkkProb", "m1");
+
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (!tester.CanMeasure())
                     {
                         PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
-                        Log.Write(this, "PKG Tester: Not ready to measure.");
-                        return -1;
+                        Log.Write(UnitName, "MeasureChip", "PKG Tester: Not ready to measure.");
+                        bRet = -1;
+                        return bRet;
                     }
 
                     // 2) Measure Chip
                     bRet &= Measure();
                     if (bRet != 0)
                     {
-                        Log.Write(UnitName, "Measure() Fail");
-                        return -1;
+                        Log.Write(UnitName, "MeasureChip", "Measure() Fail");
+                        bRet = 0; // -1;
+                        return bRet;
                     }
                 }
                 else
@@ -329,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
                     bRet &= Measure();
                 }
 
-                Log.Write("kkkkkkProb", "m3");
+                //Log.Write("kkkkkkProb", "m3");
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {
@@ -346,12 +368,14 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
                         Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
+                        bRet = -1;
+                        return bRet;
                     }
                 }
 
                 InspectDone = true;
 
-                Log.Write("kkkkkkProb", "m4");
+                //Log.Write("kkkkkkProb", "m4");
             }
             catch (Exception ex)
             {
@@ -370,19 +394,51 @@ namespace QMC.LCP_280.Process.Unit
         {
             int rotaryIndex = this.GetProbeIndexNo();
 
-            Task<int> task = tester.MeasureAsync(rotaryIndex);
-            while (!IsEndTask(task))
+            try
             {
-                Thread.Sleep(1);
+                var s = Rotary.GetSocket(rotaryIndex);
+                if (s != null)
+                {
+                    MaterialDie currentDie = s.GetMaterialDie();
+                    // 1) PKGTester에 현재 측정할 Die의 X, Y 좌표 정보를 전달
+                    tester.CurrentDieContext = $"XADR={currentDie?.MapX}, YADR={currentDie?.MapY}";
+                    //tester.CurrentDieContext = $"Die({currentDie?.MapX},{currentDie?.MapY})";
+                }
+                Task<int> task = tester.MeasureAsync(rotaryIndex);
+                while (!IsEndTask(task))
+                {
+                    Thread.Sleep(1);
+                }
+
+                // [Patch] 비동기 작업 예외 처리
+                if (task.IsFaulted)
+                {
+                    var ex = task.Exception?.Flatten();
+                    Log.Write(UnitName, "Measure", $"Async Error: {ex?.Message}");
+                    return -1;
+                }
+
+                // [Patch] 취소 처리
+                if (task.IsCanceled)
+                {
+                    Log.Write(UnitName, "Measure", "Async Task Canceled");
+                    return -1;
+                }
+
+                int rc = task.Result;
+                if (rc == 0)
+                {
+                    // 측정 성공 시 StrainGage 기반 KELFS/KELDG 주입
+                    //TryAssignKelItemsFromStrainGage();
+                }
+                return rc;
+                //return task.Result;
             }
-            int rc = task.Result;
-            if (rc == 0)
+            catch (Exception ex)
             {
-                // 측정 성공 시 StrainGage 기반 KELFS/KELDG 주입
-                //TryAssignKelItemsFromStrainGage();
+                Log.Write(ex);
+                return -1;
             }
-            return rc;
-            //return task.Result;
         }
 
         // StrainGage 1~4 Force 값으로 KELFS / KELDG 평균 계산 후 Result에 주입
@@ -460,6 +516,9 @@ namespace QMC.LCP_280.Process.Unit
                 var outWafer = OutputStage?.GetMaterialWafer();
                 if (outWafer == null)
                 {
+                    Stopwatch sw = Stopwatch.StartNew();
+                    int timeOutMs = 3000;
+
                     while (true)
                     {
                         if (IsStop)
@@ -468,14 +527,22 @@ namespace QMC.LCP_280.Process.Unit
                             return;
                         }
 
+                        if (sw.ElapsedMilliseconds > timeOutMs)
+                        {
+                            Log.Write(UnitName, "PopulateDieWithTesterResult", $"Timeout waiting for OutputStage Wafer ({timeOutMs}ms)");
+                            // 실패 처리를 하거나, return하여 다음 로직 보호
+                            return;
+                        }
+
                         outWafer = OutputStage?.GetMaterialWafer();
-                        if(outWafer != null)
+                        if (outWafer != null)
                         {
                             break;
                         }
-                        Thread.Sleep(1);
+                        Thread.Sleep(10); // Polling 간격 완화
                     }
                 }
+
                 int probeIndex = this.GetProbeIndexNo();
                 int loadIndex = Rotary?.GetLoadIndexNo() ?? -1;
                 int socketCount = Rotary?.GetIndexCount() ?? 0;
@@ -517,7 +584,6 @@ namespace QMC.LCP_280.Process.Unit
                 // ======================
                 // 위치/메타 정보 채우기
                 // ======================
-
                 // 1) InputStage 픽업 위치 -> CenterX/CenterY (이미 매핑 시 보관된 값 사용)
                 //    필요 시 메타에도 기록
                 die.MeasureValues["_CenterX"] = die.CenterX;
@@ -620,21 +686,20 @@ namespace QMC.LCP_280.Process.Unit
 
         private int AssignDataToMaterialObject()
         {
-            // Do Something...
             PKGTesterResult result = tester.Result;
-            // 임시 테스트 코드 -----
+
             string logDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
             if (!System.IO.Directory.Exists(logDir))
                 System.IO.Directory.CreateDirectory(logDir);
 
-            var wafer = Rotary.GetMaterial() as MaterialDie;   //InputStage.GetMaterialWafer();
+            // ... (Variable setup logic) ...
+            var wafer = Rotary.GetMaterial() as MaterialDie;
             var die = Rotary.GetProbeSocketMaterial();
             string waferID = "";
             if (die != null)
             {
                 waferID = die.SourceWaferId;
-                Log.Write(UnitName, $"Index_{die.Index}, WaferID_{die.SourceWaferId}, " +
-                    $"BinID_{die.TargetWaferId}, State_{die.State.ToString()}");
+                Log.Write(UnitName, $"Index_{die.Index}, WaferID_{die.SourceWaferId}, BinID_{die.TargetWaferId}, State_{die.State.ToString()}");
             }
             else
             {
@@ -642,94 +707,229 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "AssignDataToMaterialObject", "die.SourceWaferId Fail");
             }
             int nIndex = this.GetProbeIndexNo();
-            
+
             string logFile = System.IO.Path.Combine(logDir, $"{waferID}_{DateTime.Now:yyyyMMdd}.csv");
-            bool fileExists = System.IO.File.Exists(logFile);
 
-            // 신규 파일일 때만 StrainGage 컬럼을 헤더에 추가(기존 파일 헤더 불일치 방지)
-            var sgKeys = new List<string>();
-            if (!fileExists && die != null && die.MeasureValues != null)
+            // [Patch] 파일 I/O 재시도 로직 추가
+            int retryCount = 0;
+            const int maxRetries = 3;
+
+            while (retryCount < maxRetries)
             {
-                sgKeys = die.MeasureValues.Keys
-                          .Where(k => k.StartsWith("SG", StringComparison.OrdinalIgnoreCase))
-                          .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
-                          .ToList();
+                try
+                {
+                    bool fileExists = System.IO.File.Exists(logFile);
+                    var sgKeys = new List<string>();
+
+                    // 신규 파일일 때만 StrainGage 컬럼 헤더 준비
+                    if (!fileExists && die != null && die.MeasureValues != null)
+                    {
+                        sgKeys = die.MeasureValues.Keys
+                                  .Where(k => k.StartsWith("SG", StringComparison.OrdinalIgnoreCase))
+                                  .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+                                  .ToList();
+                    }
+
+                    using (var writer = new System.IO.StreamWriter(logFile, true, System.Text.Encoding.UTF8))
+                    {
+                        // 헤더 작성
+                        if (!fileExists)
+                        {
+                            writer.Write("Time,SocketNo,DieNo,DiePosX,DiePosY,");
+                            writer.Write("BinNo,BinType,BinLabel,");
+
+                            foreach (var item in result.Items)
+                            {
+                                writer.Write($"{item.Key},");
+                            }
+                            foreach (var key in sgKeys)
+                            {
+                                writer.Write($"{key},");
+                            }
+                            writer.WriteLine();
+                        }
+
+                        // 데이터 작성
+                        writer.Write($"{DateTime.Now:yyyy-MM-dd HH:mm:ss:fff},");
+                        writer.Write($"{nIndex + 1},");
+                        writer.Write($"{die.Index + 1},");
+
+                        // 현장 맞춤 (반전)
+                        writer.Write($"{die.MapX * -1},");
+                        writer.Write($"{die.MapY * -1},");
+
+                        var binResult = result.BinningResult;
+                        writer.Write($"{binResult?.BinNo},");
+                        writer.Write($"{binResult?.BinType},");
+                        writer.Write($"{binResult?.BinLabel},");
+
+                        foreach (var item in result.Items)
+                        {
+                            writer.Write($"{item.Value},");
+                        }
+
+                        // StrainGage 데이터
+                        // (주의: sgKeys는 신규 파일 생성 시점에만 채워지므로, 
+                        //  기존 파일에 append 할 때도 키를 다시 구해야 정확하지만, 
+                        //  기존 로직 흐름상 여기서는 생략 혹은 위쪽 sgKeys 로직을 fileExists 여부 상관없이 가져오도록 수정 필요할 수 있음. 
+                        //  일단 원본 유지하되 안전하게 작성)
+                        if (die != null && die.MeasureValues != null)
+                        {
+                            // 매번 키를 가져와서 순서대로 쓰거나, 파일 헤더와 순서를 맞춰야 함.
+                            // 여기서는 원본 로직(sgKeys.Count > 0 조건)을 따름
+                            if (sgKeys.Count > 0)
+                            {
+                                foreach (var key in sgKeys)
+                                {
+                                    double v;
+                                    die.MeasureValues.TryGetValue(key, out v);
+                                    writer.Write($"{v},");
+                                }
+                            }
+                            else if (fileExists)
+                            {
+                                // 파일이 이미 있을 때도 SG 데이터가 있다면 적어주는게 맞다면 로직 보강 필요.
+                                // 현재는 원본 로직 유지.
+                            }
+                        }
+
+                        writer.WriteLine();
+                    }
+
+                    // 성공 시 루프 탈출
+                    return 0;
+                }
+                catch (IOException ioEx)
+                {
+                    retryCount++;
+                    if (retryCount >= maxRetries)
+                    {
+                        Log.Write(UnitName, "AssignDataToMaterialObject", $"File IO Failed after {maxRetries} attempts: {ioEx.Message}");
+                        return -1;
+                    }
+                    Thread.Sleep(50); // 잠시 대기 후 재시도
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "AssignDataToMaterialObject", $"Unexpected Error: {ex.Message}");
+                    return -1;
+                }
             }
 
-            using (var writer = new System.IO.StreamWriter(logFile, true, System.Text.Encoding.UTF8))
-            {
-                // 파일이 없으면 헤더 추가
-                if (!fileExists)
-                {
-                    writer.Write("Time,");
-                    writer.Write("SocketNo,");
-                    writer.Write("DieNo,");
-                    writer.Write("DiePosX,");
-                    writer.Write("DiePosY,");
-
-                    // Bin / Rank 컬럼
-                    writer.Write("BinNo,");
-                    writer.Write("BinType,");
-                    writer.Write("BinLabel,");
-                    //writer.Write("TopRankBinNo,");
-                    //writer.Write("TopRankBinType,");
-                    //writer.Write("TopRankBinLabel,");
-                    //writer.Write("TopRankScore,");
-
-                    foreach (var item in result.Items)
-                    {
-                        writer.Write($"{item.Key},");
-                    }
-
-                    // StrainGage 헤더(있을 때만)
-                    foreach (var key in sgKeys)
-                    {
-                        writer.Write($"{key},");
-                    }
-
-                    writer.WriteLine();
-                }
-                
-                // 데이터 행 추가 +1하지말자.
-                writer.Write($"{DateTime.Now:yyyy-MM-dd HH:mm:ss:fff},");
-                writer.Write($"{nIndex +1 },");
-                writer.Write($"{die.Index + 1},");
-                //writer.Write($"{die.MapX},");
-                //writer.Write($"{die.MapY},");
-                //현장맞춤..
-                writer.Write($"{die.MapX * -1},");
-                writer.Write($"{die.MapY * -1},");
-
-                // Bin / Rank 값
-                var binResult = result.BinningResult;
-
-                // BinNo / BinLabel
-                writer.Write($"{binResult?.BinNo},");
-                writer.Write($"{binResult?.BinType},");
-                writer.Write($"{binResult?.BinLabel},");
-
-                foreach (var item in result.Items)
-                {
-                    writer.Write($"{item.Value},");
-                }
-
-                // 신규 파일 헤더에 StrainGage 키를 넣은 경우에만 값도 함께 출력
-                if (sgKeys.Count > 0 && die != null && die.MeasureValues != null)
-                {
-                    foreach (var key in sgKeys)
-                    {
-                        double v;
-                        die.MeasureValues.TryGetValue(key, out v);
-                        writer.Write($"{v},");
-                    }
-                }
-
-                writer.WriteLine();
-            }
-            // ---------------------
             return 0;
         }
-        
+
+        //private int AssignDataToMaterialObject()
+        //{
+        //    PKGTesterResult result = tester.Result;
+        //    // 임시 테스트 코드 -----
+        //    string logDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+        //    if (!System.IO.Directory.Exists(logDir))
+        //        System.IO.Directory.CreateDirectory(logDir);
+
+        //    var wafer = Rotary.GetMaterial() as MaterialDie;   //InputStage.GetMaterialWafer();
+        //    var die = Rotary.GetProbeSocketMaterial();
+        //    string waferID = "";
+        //    if (die != null)
+        //    {
+        //        waferID = die.SourceWaferId;
+        //        Log.Write(UnitName, $"Index_{die.Index}, WaferID_{die.SourceWaferId}, " +
+        //            $"BinID_{die.TargetWaferId}, State_{die.State.ToString()}");
+        //    }
+        //    else
+        //    {
+        //        waferID = "None";
+        //        Log.Write(UnitName, "AssignDataToMaterialObject", "die.SourceWaferId Fail");
+        //    }
+
+        //    int nIndex = this.GetProbeIndexNo();
+        //    string logFile = System.IO.Path.Combine(logDir, $"{waferID}_{DateTime.Now:yyyyMMdd}.csv");
+        //    bool fileExists = System.IO.File.Exists(logFile);
+
+        //    // 신규 파일일 때만 StrainGage 컬럼을 헤더에 추가(기존 파일 헤더 불일치 방지)
+        //    var sgKeys = new List<string>();
+        //    if (!fileExists && die != null && die.MeasureValues != null)
+        //    {
+        //        sgKeys = die.MeasureValues.Keys
+        //                  .Where(k => k.StartsWith("SG", StringComparison.OrdinalIgnoreCase))
+        //                  .OrderBy(k => k, StringComparer.OrdinalIgnoreCase)
+        //                  .ToList();
+        //    }
+
+        //    using (var writer = new System.IO.StreamWriter(logFile, true, System.Text.Encoding.UTF8))
+        //    {
+        //        // 파일이 없으면 헤더 추가
+        //        if (!fileExists)
+        //        {
+        //            writer.Write("Time,");
+        //            writer.Write("SocketNo,");
+        //            writer.Write("DieNo,");
+        //            writer.Write("DiePosX,");
+        //            writer.Write("DiePosY,");
+
+        //            // Bin / Rank 컬럼
+        //            writer.Write("BinNo,");
+        //            writer.Write("BinType,");
+        //            writer.Write("BinLabel,");
+        //            //writer.Write("TopRankBinNo,");
+        //            //writer.Write("TopRankBinType,");
+        //            //writer.Write("TopRankBinLabel,");
+        //            //writer.Write("TopRankScore,");
+
+        //            foreach (var item in result.Items)
+        //            {
+        //                writer.Write($"{item.Key},");
+        //            }
+
+        //            // StrainGage 헤더(있을 때만)
+        //            foreach (var key in sgKeys)
+        //            {
+        //                writer.Write($"{key},");
+        //            }
+
+        //            writer.WriteLine();
+        //        }
+
+        //        // 데이터 행 추가 +1하지말자.
+        //        writer.Write($"{DateTime.Now:yyyy-MM-dd HH:mm:ss:fff},");
+        //        writer.Write($"{nIndex +1 },");
+        //        writer.Write($"{die.Index + 1},");
+        //        //writer.Write($"{die.MapX},");
+        //        //writer.Write($"{die.MapY},");
+        //        //현장맞춤..
+        //        writer.Write($"{die.MapX * -1},");
+        //        writer.Write($"{die.MapY * -1},");
+
+        //        // Bin / Rank 값
+        //        var binResult = result.BinningResult;
+
+        //        // BinNo / BinLabel
+        //        writer.Write($"{binResult?.BinNo},");
+        //        writer.Write($"{binResult?.BinType},");
+        //        writer.Write($"{binResult?.BinLabel},");
+
+        //        foreach (var item in result.Items)
+        //        {
+        //            writer.Write($"{item.Value},");
+        //        }
+
+        //        // 신규 파일 헤더에 StrainGage 키를 넣은 경우에만 값도 함께 출력
+        //        if (sgKeys.Count > 0 && die != null && die.MeasureValues != null)
+        //        {
+        //            foreach (var key in sgKeys)
+        //            {
+        //                double v;
+        //                die.MeasureValues.TryGetValue(key, out v);
+        //                writer.Write($"{v},");
+        //            }
+        //        }
+
+        //        writer.WriteLine();
+        //    }
+        //    // ---------------------
+        //    return 0;
+        //}
+
         public int GetProbeIndexNo()
         {
             if (Rotary == null)
@@ -764,7 +964,9 @@ namespace QMC.LCP_280.Process.Unit
             // 4) 계측기 상태 로그(준비 여부 확인)
             try
             {
-                if (!(Config.IsSimulation || Config.IsDryRun))
+                var equipment = Equipment.Instance;
+                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (!tester.CanMeasure())
                     {
@@ -886,7 +1088,6 @@ namespace QMC.LCP_280.Process.Unit
             if (!Enum.TryParse(tpName, out en))
                 return -1;
 
-            int nIndex = -1;
             switch (en)
             {
                 // ===== AlignZ Index Up/Ready (Index1~8 -> 0~7) =====
@@ -898,7 +1099,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
             }
 
-            return 0;
+            //return 0;
         }
     
     

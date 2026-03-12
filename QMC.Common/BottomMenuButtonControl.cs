@@ -178,6 +178,25 @@ namespace QMC.Common
             {
                 MenuButtonType menuButtons = (MenuButtonType)button.Tag;
 
+                if (menuButtons == MenuButtonType.Config
+                    || menuButtons == MenuButtonType.Setup
+                    || menuButtons == MenuButtonType.Recipe
+                    || menuButtons == MenuButtonType.Menual
+                    || menuButtons == MenuButtonType.Login
+                    || menuButtons == MenuButtonType.Exit)
+                {
+                    
+                    if (EquipmentLocator.Instance.EqState == EquipmentState.AutoRunning ||
+                        EquipmentLocator.Instance.EqState == EquipmentState.Starting)
+                    {
+                        Log.Write("GUI", "Button_Click", "AutoRun 중 Menu 변경");
+                        //Todo : 장비 시양산 중 부터는 주석 해제 필요
+                        //var mb = new MessageBoxOk();
+                        //mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                        //return;
+                    }
+                }
+
                 // Config/Setup 버튼 클릭 시 권한 재확인 (추가 보안)
                 if (menuButtons == MenuButtonType.Config || menuButtons == MenuButtonType.Setup)
                 {
@@ -191,9 +210,19 @@ namespace QMC.Common
 
                 if (menuButtons == MenuButtonType.Exit)
                 {
+                    if (EquipmentLocator.Instance.EqState == EquipmentState.AutoRunning ||
+                        EquipmentLocator.Instance.EqState == EquipmentState.Starting)
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                        return;
+                    }
+
                     var ask = new MessageBoxYesNo();
                     if (ask.ShowDialog("Info", "Exit?") != DialogResult.Yes)
                         return;
+
+                    QMC.Common.Win32Timer.RestoreResolution();
 
                     Application.Exit();
                     return;

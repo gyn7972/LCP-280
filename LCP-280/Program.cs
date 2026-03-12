@@ -21,6 +21,10 @@ namespace QMC.LCP_280.Process
         {
             Log.Write("LCP_280", "Program Start--------------------.");
 
+            // 프로그램이 시작될 때 딱 한 번 호출해 줍니다.
+            QMC.Common.Win32Timer.SetHighResolution();
+
+
             Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(exceptionDump);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);

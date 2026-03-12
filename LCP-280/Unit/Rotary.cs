@@ -2,23 +2,15 @@
 using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
-using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
+using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // 
 
@@ -26,10 +18,20 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class Rotary : BaseUnit<RotaryConfig>
     {
-        #region Alarm
-        public enum AlarmKeys
+        private bool IsDryRunEqp
         {
-            eIndexRotary = 4800,
+            get
+            {
+                var eq = Equipment.Instance;
+                bool r = eq.EquipmentConfig.IsDryRun;
+                return r;
+            }
+        }
+
+        #region Alarm
+        public new enum AlarmKeys
+        {
+            eIndexRotary = 10501,
             eRotaryNotSafe,
             InputDieTransferPlaceZError,
             IndexLoadAlignerZError,
@@ -43,86 +45,115 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override void InitAlarm()
         {
+            string source = "Index";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
-            alarm.Title = "Rorary Not safety Pos.";
-            alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.InputDieTransferPlaceZError;
-            alarm.Title = "InputDieTraansferPlaceZ Not safety Pos.";
-            alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                AlarmInfo alarm = new AlarmInfo();
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
-            alarm.Title = "IndexLoadAlignerZ Not safety Pos.";
-            alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm.Code = (int)AlarmKeys.eIndexRotary;
+                alarm.Title = "Index Rotary Error";
+                alarm.Cause = "Index Rotary 동작 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
-            alarm.Title = "IndexChipProbeControllerZ Not safety Pos.";
-            alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+                alarm.Title = "Rorary Not safety Pos.";
+                alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.OutputDieTransferPickZError;
-            alarm.Title = "OutputDieTransferPlaceZ Not safety Pos.";
-            alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.InputDieTransferPlaceZError;
+                alarm.Title = "InputDieTraansferPlaceZ Not safety Pos.";
+                alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.InputDieTransferTimeout;
-            alarm.Title = "InputDieTransfer Timeout";
-            alarm.Cause = "InputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
+                alarm.Title = "IndexLoadAlignerZ Not safety Pos.";
+                alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.RotaryIndexMoveError;
-            alarm.Title = "Rotary Index Move Error";
-            alarm.Cause = "Rotary Index Move 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
+                alarm.Title = "IndexChipProbeControllerZ Not safety Pos.";
+                alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;  
-            alarm.Title = "OutputDieTransfer Timeout";
-            alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.OutputDieTransferPickZError;
+                alarm.Title = "OutputDieTransferPlaceZ Not safety Pos.";
+                alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eRotaryVaccum;
-            alarm.Title = "Rotary Vaccum Error";
-            alarm.Cause = "Rotary Vaccum Error. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.InputDieTransferTimeout;
+                alarm.Title = "InputDieTransfer Timeout";
+                alarm.Cause = "InputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.ExecuteUnitActionError;
-            alarm.Title = "Execute Unit Action Error";
-            alarm.Cause = "Unit Action 실행 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.RotaryIndexMoveError;
+                alarm.Title = "Rotary Index Move Error";
+                alarm.Cause = "Rotary Index Move 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;
+                alarm.Title = "OutputDieTransfer Timeout";
+                alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eRotaryVaccum;
+                alarm.Title = "Rotary Vaccum Error";
+                alarm.Cause = "Rotary Vaccum Error. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.ExecuteUnitActionError;
+                alarm.Title = "Execute Unit Action Error";
+                alarm.Cause = "Unit Action 실행 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+            
         }
         #endregion
 
@@ -156,7 +187,8 @@ namespace QMC.LCP_280.Process.Unit
         // 소켓 상태 정의
         public enum RotarySocketState
         {
-            Empty,
+            None = -1,
+            Empty = 0,
             Loading,
             Loaded,
             MAligning,
@@ -165,7 +197,7 @@ namespace QMC.LCP_280.Process.Unit
             Probed,
             VAligning,
             VAligned,
-            Unloading,      // UnloadAlign 동작(언로더 얼라인 공정)
+            Unloading,    // UnloadAlign 동작(언로더 얼라인 공정)
             Unloaded,     // OutputDieTransfer 픽/배출 공정 (새로 추가)
             Completed,
             Error
@@ -197,7 +229,6 @@ namespace QMC.LCP_280.Process.Unit
                 LastUpdated = DateTime.Now;
             }
         }
-
         private SocketInfo[] _sockets;
         private readonly object _socketLock = new object();
 
@@ -235,6 +266,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
         }
+
         private void InitSockets()
         {
             int cnt = GetIndexCount();
@@ -336,17 +368,18 @@ namespace QMC.LCP_280.Process.Unit
             // 9. 결과(물리 소켓 ID: 0 ~ count-1)
             return index;
         }
-        public int GetTrashCanIndexNo()
-        {
-            int loadIndex = this.GetLoadIndexNo();
-
-            int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
-            return probeIndex;
-        }
         public int GetIndexCount()
         {
             return 8;
         }
+
+        public int GetTrashCanIndexNo()
+        {
+            int loadIndex = this.GetLoadIndexNo();
+            int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
+            return probeIndex;
+        }
+        
         private MaterialDie EnsureSocketDie(SocketInfo s)
         {
             if (s == null)
@@ -437,7 +470,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             var socket = GetLoadSocketInfo();
             socket.SetMaterialDie  (m as MaterialDie);
-            //base.SetMaterial(m);
         }
         public MaterialDie GetLoadSocketMaterial()
         {
@@ -498,6 +530,7 @@ namespace QMC.LCP_280.Process.Unit
             SocketInfo socket = GetUnloadSocketInfo();
             return socket.GetMaterialDie();
         }
+
         public void MoveMaterialToOutputDieTransfer()
         {
             var socket = GetUnloadSocketInfo();
@@ -506,6 +539,13 @@ namespace QMC.LCP_280.Process.Unit
 
             socket.SetMaterialDie(null);
         }
+        public void ReMoveMaterialToOutputDieTransfer()
+        {
+            var socket = GetUnloadSocketInfo();
+            var die = socket.GetMaterialDie();
+            socket.SetMaterialDie(null);
+        }
+
         private SocketInfo GetUnloadSocketInfo()
         {
             int idx = OutputDieTransfer.GetUnloaderIndexNo();
@@ -702,11 +742,24 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             //// 1) Safe-Zone check.
-            //if (VerifyAllUnitsSafe(out reason) == false)
-            //{
-            //    Log.Write("Rotary", $"Index Move Blocked: {reason}");
-            //    return false;
-            //}
+            if (VerifyAllUnitsSafe(out reason) == false)
+            {
+                Log.Write("Rotary", $"Index Move Blocked: {reason}");
+                return false;
+            }
+
+            bool bInputTr = InputDieTransfer.IsPositionPlaceZSafety();
+            bool bOutTr = OutputDieTransfer.IsPositionPickZSafety();
+            bool bIndexAlignZ = IndexLoadAligner.IsPositionAlignZSafety();
+            bool bIndexProbeZ = IndexChipProbeController.IsPositionProbeZSafety();
+            bool bIndexProbeCardZ = IndexChipProbeController.IsPositionProbeCardZSafety();
+
+            if (bInputTr == false || bOutTr == false || bIndexAlignZ == false
+                || bIndexProbeZ == false || bIndexProbeCardZ == false)
+            {
+                Log.Write("Rotary", $"Index Move Blocked: {reason}");
+                return false;
+            }
 
             // 3) Move Check.
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
@@ -715,18 +768,21 @@ namespace QMC.LCP_280.Process.Unit
                 reason = $"Index 이동 시작 실패(rc={rc})";
                 return false;
             }
-            Thread.Sleep(100);
+
+            //int nRet = WaitIndexMoveDone();
+            //if (nRet != 0)
+            //{
+            //    return false;
+            //}
+            //return true;
+            Thread.Sleep(50); //100->50
             _moveStartTime = DateTime.Now;
             // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
             Task.Run(() =>
             {
                 double pos = this.AxisIndexT.GetPosition() * 1000;
-                Log.Write("KKKKK", "Starting2 _ " + pos.ToString());
-                
                 // Done + InPosition 동시 확인(가능하면 목표각 기반, 실패 시 기존 방식 fallback)
                 int wrc = WaitIndexMoveDone();
-                pos = this.AxisIndexT.GetPosition() * 1000;
-                Log.Write("KKKKK", "End2 _ " + pos.ToString());
                 if (wrc == 0)
                 {
                     try
@@ -745,88 +801,59 @@ namespace QMC.LCP_280.Process.Unit
             });
             return true;
         }
-        //private bool TryMoveIndexStep(int step, out string reason)
-        //{
-        //    bool bRtn = false;
 
-        //    reason = null;
-        //    var axis = _axisT;
-        //    if (axis == null)
-        //    {
-        //        reason = "TAxis Null.";
-        //        return false;
-        //    }
-
-        //    if(RunUnitStatus != UnitStatus.AutoRunning)
-        //    {
-        //        // 1) Safe-Zone check.
-        //        if (!VerifyAllUnitsSafe(out reason))
-        //        {
-        //            Log.Write("Rotary", $"Index Move Blocked: {reason}");
-        //            return false;
-        //        }
-        //    }
-
-        //    // 3) Move Check.
-        //    int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
-        //    if (rc != 0)
-        //    {
-        //        reason = $"Index (rc={rc})";
-        //        return false;
-        //    }
-
-        //    _moveStartTime = DateTime.Now;
-
-        //    // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
-        //    Task.Run(() =>
-        //    {
-        //        int wrc = WaitIndexMoveDone();
-        //        if (wrc == 0)
-        //        {
-        //            try
-        //            {
-        //                OnLoadIndexChanged(GetLoadIndexNo());
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Log.Write("Rotary", $"LoadIndexChanged dispatch fail: {ex.Message}");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
-        //        }
-        //    });
-
-        //    return true;
-        //}
-
-        // 인덱스 이동 완료 대기 (성공:0, 타임아웃:-1)
-        public int WaitIndexMoveDone(int timeoutMs = -1, int pollMs = 2)
+        // [수정 1] WaitIndexMoveDone: 무한 대기 방지 및 타임아웃 적용
+        public int WaitIndexMoveDone(int timeoutMs = 10000, int pollMs = 1) // 기본 타임아웃 10초 설정
         {
             if (AxisIndexT == null)
                 return -1;
 
-            if (AxisIndexT.WaitMoveDone(-1) == 0)
+            var sw = Stopwatch.StartNew();
+            while (true)
             {
-                //Log.Write(UnitName, "MoveAxisWithSafety",
-                //    $"WaitMoveDone Timeout axis={AxisIndexT.Name}");
+                // 동작 완료 확인 (WaitMoveDone에 타임아웃 0을 주어 즉시 확인)
+                //if (AxisIndexT.IsMoveDone())
+                if (AxisIndexT.WaitMoveDone(-1) == 0)
+                {
+                    // [추가] InPosition 정밀 체크 (드라이버가 Done이라도 실제 위치 도달까지 미세 지연 방지)
+                    if (IsIndexMoving() == false)
+                    {
+                        //OnLoadIndexChanged(GetLoadIndexNo());
+                        return 0;
+                    }
+                }
 
-                Thread.Sleep(pollMs); //임의로 50만 줘보자.
-                return 0;
+                if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+                {
+                    if (IsStop)
+                        return -1; // 정지 신호 시 중단.
+                }
+                else
+                {
+                    // Manual일때...
+                }
+
+
+                if (timeoutMs > 0 && sw.ElapsedMilliseconds > timeoutMs)
+                {
+                    Log.Write(UnitName, "WaitIndexMoveDone", $"Timeout ({timeoutMs}ms) axis={AxisIndexT.Name}");
+                    return -1;
+                }
+
+                Thread.Sleep(pollMs);
             }
-            return -1;
-
         }
 
-        private readonly object _lock = new object();
+        private readonly object _lockIndexMoving = new object();
 
         public bool  IsIndexMoving()
         {
             var ax = AxisIndexT;
             if (ax == null) return false;
 
-            lock (_lock)
+            lock (_lockIndexMoving)
             {
                 // 1) 1차: 드라이버 상태
                 bool driverMoving = IsAxisMoving(AxisNames.IndexT);
@@ -835,14 +862,15 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 2) 드라이버가 moving이라도, "인덱스 위치에 충분히 근접"하면 정지로 간주(상태 지연 보정)
                 double stepDeg = 360.0 / GetIndexCount(); // 45
-                double tolDeg = ax.Config?.InposTolerance ?? 0.05;
+                double tolDeg = ax.Config?.InposTolerance ?? 0.007;
 
                 // 현재 각도(deg). (단위는 질문에서 맞다고 했으니 그대로 사용)
                 double curDeg = ax.GetPosition() * 1000.0;
 
                 // 0~step 구간 잔여
                 double remain = curDeg % stepDeg;
-                if (remain < 0) remain += stepDeg;
+                if (remain < 0) 
+                    remain += stepDeg;
 
                 // 가장 가까운 인덱스까지의 오차 (0 근처 OR step 근처 모두 허용)
                 double err = Math.Min(remain, stepDeg - remain);
@@ -852,19 +880,6 @@ namespace QMC.LCP_280.Process.Unit
                     return false;
 
                 return true;
-
-                // 1) 드라이버 상태 기반 1차 판정
-                //bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-                //if (driverMoving)
-                //{
-                //    double dCurPos = this.AxisIndexT.GetPosition() * 1000;
-                //    double dRemainPos = dCurPos % 45;
-                //    if (dRemainPos > (45 - this.AxisIndexT.Config.InposTolerance))
-                //    {
-                //        return false;
-                //    }
-                //}
-                //return driverMoving;
             }
         }
         #endregion
@@ -1067,7 +1082,7 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
             }
 
-            if(Config.IsSimulation || Config.IsDryRun)
+            if(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -1101,26 +1116,26 @@ namespace QMC.LCP_280.Process.Unit
         // timeoutMs/pollMs: 타임아웃/폴링 간격
         public int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             //Todo: 2025-10-10 GYN: Vacuum 해결 되면 return 지우기.
             return 0;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds <= timeoutMs)
-            {
-                bool ok = IsVacuumOK(armIndex);
-                if (expectOn ? ok : !ok)
-                    return 0;
+            //var sw = Stopwatch.StartNew();
+            //while (sw.ElapsedMilliseconds <= timeoutMs)
+            //{
+            //    bool ok = IsVacuumOK(armIndex);
+            //    if (expectOn ? ok : !ok)
+            //        return 0;
 
-                Thread.Sleep(pollMs);
-            }
+            //    Thread.Sleep(pollMs);
+            //}
 
-            // 타임아웃 처리
-            PostAlarm((int)AlarmKeys.eRotaryVaccum);
-            Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
-            return -1;
+            //// 타임아웃 처리
+            //PostAlarm((int)AlarmKeys.eRotaryVaccum);
+            //Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
+            //return -1;
         }
 
         public bool AirTankPressureOk()
@@ -1228,7 +1243,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunReady() 
         {
-            TaktStart("OnRunReady");
             try
             {
                 int nRet = 0;
@@ -1255,182 +1269,156 @@ namespace QMC.LCP_280.Process.Unit
                 this.OnStop();
                 return -1;
             }
-            finally
-            {
-                TaktEnd("OnRunReady");
-            }
         }
         protected override int OnRunWork() 
         {
-            TaktStart("OnRunWork");
             try
             {
                 int nRet = 0;
-
                 // 인덱스 이동 중이면 대기
                 if (IsIndexMoving())
                 {
                     return 0;
                 }
-                Log.Write("kkkkkkRotary", "Start");
+                TaktStart("One Cycle");
                 int nIndex = GetLoadIndexNo();
                 bool useSocket = this.Config.GetUseSocket(nIndex);
-
                 // 변경: InputStage에 공급 가능한 Die가 있는 경우에만 요청 신호 설정
                 bool hasNextDie = true;
-                if (true)
+                if (this.InputDieTransfer != null)
                 {
-                    if (this.InputDieTransfer != null)
+                    var die = GetLoadSocketMaterial();
+                    if (die != null)
                     {
-                        var die = GetLoadSocketMaterial();
-                        if (die != null)
+                        if (die.Presence != Material.MaterialPresence.Exist)
                         {
-                            if (die.Presence != Material.MaterialPresence.Exist)
+                            if (useSocket)
                             {
-                                if (useSocket)
+                                try
                                 {
-                                    try
+                                    hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
+                                    if(hasNextDie == false)
                                     {
-                                        hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
-                                        if(hasNextDie == false)
+                                        var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
+                                        //if (hasDie != null)
+                                        if (hasDie != null && (hasDie.State == DieProcessState.Mapped 
+                                            || hasDie.State == DieProcessState.Picked))
                                         {
-                                            var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
-                                            //if (hasDie != null)
-                                            if (hasDie != null && (hasDie.State == DieProcessState.Mapped 
-                                                || hasDie.State == DieProcessState.Picked))
-                                            {
-                                                hasNextDie = true;
-                                            }
+                                            hasNextDie = true;
                                         }
                                     }
-                                    catch
-                                    {
-                                        hasNextDie = true;
-                                    }
+                                }
+                                catch
+                                {
+                                    hasNextDie = true;
+                                }
 
-                                    if (hasNextDie)
-                                    {
+                                if (hasNextDie)
+                                {
+                                    this.SetVent(nIndex, false);
+                                    this.SetBlow(nIndex, false);
+                                    Thread.Sleep(1);
+                                    this.SetVacuum(nIndex, true);
 
-                                        Log.Write("kkkkkkRotary", "SetVent Start");
-                                        this.SetVent(nIndex, false);
-                                        Thread.Sleep(1);
-                                        this.SetBlow(nIndex, false);
-                                        Thread.Sleep(1);
-                                        this.SetVacuum(nIndex, true);
-
-                                        Log.Write("kkkkkkRotary", "SetVent end");
-                                        RequestInputDieTrDie = true;
-                                    }
-                                    else
-                                    {
-                                        RequestInputDieTrDie = false; // 명시적으로 요청 안 함
-                                    }
+                                    TaktStart("Place Die");
+                                    RequestInputDieTrDie = true;
                                 }
                                 else
                                 {
-                                    try
+                                    RequestInputDieTrDie = false; // 명시적으로 요청 안 함
+                                }
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
+                                    if (hasNextDie == false)
                                     {
-                                        hasNextDie = this.InputStage?.HasNextDie() ?? true; // InputStage 미바인딩 시 기존 동작 유지
-                                        if (hasNextDie == false)
+                                        var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
+                                        //if (hasDie != null)
+                                        if (hasDie != null && (hasDie.State == DieProcessState.Mapped
+                                            || hasDie.State == DieProcessState.Picked))
                                         {
-                                            var hasDie = InputDieTransfer.GetMaterial() as MaterialDie;
-                                            //if (hasDie != null)
-                                            if (hasDie != null && (hasDie.State == DieProcessState.Mapped
-                                                || hasDie.State == DieProcessState.Picked))
-                                            {
-                                                hasNextDie = true;
-                                            }
+                                            hasNextDie = true;
                                         }
                                     }
-                                    catch
-                                    {
-                                        hasNextDie = true;
-                                    }
                                 }
-                            }
-                        }
-                    }
-                    //Log.Write("kkkkkkRotary", "InputDieTransfer Request");
-                }
-                else
-                {
-                    if (this.InputDieTransfer != null
-                        && this.InputDieTransfer.State == ProcessState.Complete)
-                    {
-                        var die = GetLoadSocketMaterial();
-                        if (die != null)
-                        {
-                            if (die.Presence != Material.MaterialPresence.Exist)
-                            {
-                                if (useSocket)
+                                catch
                                 {
-                                    RequestInputDieTrDie = true;
+                                    hasNextDie = true;
                                 }
                             }
                         }
                     }
                 }
-
-
-                // [ADD] 조기 return 전에 ForceComplete 조건을 먼저 평가
-                // - "모든 die가 소진되어 더 이상 ExecuteUnitAction/WaitPostActionSettled로 진입하지 않는" 케이스에서
-                //   OutputStage가 Processing으로 남아 언로딩이 막히는 문제를 방지
-                try
+                //Log.Write("kkkkkkRotary", "InputDieTransfer Request");
+                
+                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                if (recipe.UseSameAsWafer == true)
                 {
-                    bool inputWaferCompleted = false;
-                    var Wafer = InputStage.GetMaterialWafer();
-                    if (Wafer != null)
+                    // [ADD] 조기 return 전에 ForceComplete 조건을 먼저 평가
+                    // - "모든 die가 소진되어 더 이상 ExecuteUnitAction/WaitPostActionSettled로 진입하지 않는" 케이스에서
+                    //   OutputStage가 Processing으로 남아 언로딩이 막히는 문제를 방지
+                    try
                     {
-                        if(Wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                        bool inputWaferCompleted = false;
+                        var Wafer = InputStage.GetMaterialWafer();
+                        if (Wafer != null)
+                        {
+                            if (Wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                            {
+                                inputWaferCompleted = true;
+                            }
+                        }
+                        else
                         {
                             inputWaferCompleted = true;
                         }
-                    }
-                    else
-                    {
-                        inputWaferCompleted = true;
-                    }
 
-                    bool inputDone = (hasNextDie == false);
-                    bool rotaryEmpty = (IsHaveDie() == false);
-                    bool odtEmpty = (OutputDieTransfer == null) || (OutputDieTransfer.GetMaterial() == null);
-                    bool outStageHasBin = (OutputStage != null)
-                                          && OutputStage.IsRingPresent()
-                                          && (OutputStage.GetMaterialWafer() != null)
-                                          && (OutputStage.GetMaterialWafer().Presence == Material.MaterialPresence.Exist);
-
-                    // [초기 구간 보호] OutStage 쪽에 "언로딩 대상"이 실제로 있을 때만 고려
-                    // - HasNextDie() 호출은 내부적으로 ProcessSatate를 건드리므로 피하고,
-                    //   최소한 Dies 존재 여부 정도만 확인 (초기 오작동 방지)
-                    bool outStageHasMap = false;
-                    try
-                    {
-                        var w = OutputStage?.GetMaterialWafer();
-                        outStageHasMap = (w != null && w.Dies != null && w.Dies.Count > 0);
-                    }
-                    catch { outStageHasMap = false; }
-
-                    bool shouldForce = inputWaferCompleted && inputDone && rotaryEmpty && odtEmpty && outStageHasBin && outStageHasMap;
-                    if (shouldForce)
-                    {
-                        if (_outStageForceCompletedLatched == false)
+                        bool inputDone = (hasNextDie == false); //inputStage
+                        bool inputEmpty = (InputDieTransfer == null) || (InputDieTransfer.GetMaterial() == null);
+                        bool rotaryEmpty = (IsHaveDie() == false);
+                        bool odtEmpty = (OutputDieTransfer == null) || (OutputDieTransfer.GetMaterial() == null);
+                        
+                        var currentOutWafer = OutputStage?.GetMaterialWafer();
+                        bool outStageHasBin = (OutputStage != null)
+                                              && OutputStage.IsRingPresent()
+                                              && (currentOutWafer != null)
+                                              && (currentOutWafer?.Presence == Material.MaterialPresence.Exist);
+                        
+                        // [초기 구간 보호] OutStage 쪽에 "언로딩 대상"이 실제로 있을 때만 고려
+                        // - HasNextDie() 호출은 내부적으로 ProcessSatate를 건드리므로 피하고,
+                        //   최소한 Dies 존재 여부 정도만 확인 (초기 오작동 방지)
+                        bool outStageHasMap = false;
+                        try
                         {
-                            _outStageForceCompletedLatched = true;
-                            OutputStage.ForceCompleteAndAllowUnloadWhenBuffersEmpty(
-                                "Input done + no rotary/ODT die (early-return path, latched)");
+                            var w = OutputStage?.GetMaterialWafer();
+                            outStageHasMap = (w != null && w.Dies != null && w.Dies.Count > 0);
+                        }
+                        catch { outStageHasMap = false; }
+
+                        bool shouldForce = inputWaferCompleted && inputDone && inputEmpty && rotaryEmpty && odtEmpty && outStageHasBin && outStageHasMap;
+                        if (shouldForce)
+                        {
+                            if (_outStageForceCompletedLatched == false)
+                            {
+                                _outStageForceCompletedLatched = true;
+                                OutputStage.ForceCompleteAndAllowUnloadWhenBuffersEmpty(
+                                    "Input done + no rotary/ODT die (early-return path, latched)");
+                            }
+                        }
+                        else
+                        {
+                            // 조건이 깨지면 래치 해제
+                            _outStageForceCompletedLatched = false;
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        // 조건이 깨지면 래치 해제
-                        _outStageForceCompletedLatched = false;
+                        Log.Write(ex);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Log.Write(UnitName, "ForceCompleteCheck(EarlyReturn)", ex.Message);
-                }
-
 
                 if (useSocket)
                 {
@@ -1447,22 +1435,43 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
+                // [수정] Load Die 대기와 TaktTime 기록을 별도의 Task로 비동기 실행
+                // 이렇게 하면 ExecuteUnitAction() 처리 시간과 관계없이 다이가 실제 공급되는 즉시 
+                // 해당 모니터링 Task가 TaktEnd("Load Die")를 호출해 정확한 시간을 측정합니다.
+                bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
+                Task<int> loadWaitTask = Task.Run(() =>
+                {
+                    int res = -1;
+                    try
+                    {
+                        res = WaitPostActionSettled(needLoadWait, 60000 * 5);
+                        if (res == 0)
+                        {
+                            Log.Write(UnitName, "OnRunWork", "Load Die Completed");
+                        }
+                    }
+                    finally
+                    {
+                        TaktEnd("Place Die");
+                    }
+                    return res;
+                });
 
-
-                Log.Write("kkkkkkRotary", "ExecuteUnitAction");
-                TaktStart("ExecuteUnitAction");
                 try
                 {
-                    Log.Write(UnitName, "[ExecuteUnitAction] ExecuteUnitAction");
+                    if (IsIndexMoving())
+                    {
+                        return 0;
+                    }
+                    Log.Write(UnitName, "OnRunWork", "ExecuteUnitAction");
                     nRet = ExecuteUnitAction();
                 }
-                finally
+                catch(Exception ex)
                 {
-                    TaktEnd("ExecuteUnitAction");
+                    Log.Write(ex);
                 }
 
-
-                Log.Write("kkkkkkRotary", "ExecuteUnitAction End");
+                //Log.Write("kkkkkkRotary", "ExecuteUnitAction End");
                 if (nRet != 0)
                 {
                     // ODT Start 신호가 남지 않도록 방어적 리셋(실패 시에도)
@@ -1481,18 +1490,9 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                // 여기 블록(Load 투입 대기 + Unloader 배출 확인)이 확실히 완료된 다음에만 Rotate
-                bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
-                TaktStart("WaitPostActionSettled");
-                try
-                {
-                    nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
-                    Log.Write(UnitName, "WaitPostActionSettled");
-                }
-                finally
-                {
-                    TaktEnd("WaitPostActionSettled");
-                }
+                // 여기 블록(Load 투입 완료 대기)
+                // 백그라운드에서 진행중인 Load 투입 완료 최종 확인
+                nRet = loadWaitTask.Result;
                 if (nRet != 0)
                 {
                     AxisIndexT.EmgStop();
@@ -1502,15 +1502,15 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 // 투입 완료되었으면 요청 플래그 내림
                 RequestInputDieTrDie = false;
-                Log.Write("kkkkkkRotary", "WaitInterlockSafe");
-                TaktStart("WaitInterlockSafe");
+
+                bool bInputTr = false;
+                bool bOutTr = false;
+                bool bIndexAlignZ = false;
+                bool bIndexProbeZ = false;
+                bool bIndexProbeCardZ = false;
+                var swSafe = Stopwatch.StartNew();
                 try
                 {
-                    bool bInputTr = false;
-                    bool bOutTr = false;
-                    bool bIndexAlignZ = false;
-                    bool bIndexProbeZ = false;
-                    bool bIndexProbeCardZ = false;
                     while (true)
                     {
                         if (IsStop)
@@ -1521,23 +1521,30 @@ namespace QMC.LCP_280.Process.Unit
                         bIndexAlignZ = IndexLoadAligner.IsPositionAlignZSafety();
                         bIndexProbeZ = IndexChipProbeController.IsPositionProbeZSafety();
                         bIndexProbeCardZ = IndexChipProbeController.IsPositionProbeCardZSafety();
-
                         if (bInputTr && bOutTr && bIndexAlignZ
                             && bIndexProbeZ && bIndexProbeCardZ)
                         {
                             break;
                         }
                         Thread.Sleep(1);
+
+                        // 너무 오래 걸리면 로그 한번 찍어주는 정도의 안전장치
+                        if (swSafe.ElapsedMilliseconds > 5000) 
+                        {
+                            Log.Write(UnitName, "WaitInterlockSafe", 
+                                $"WaitInterlockSafe: Waiting for safe conditions... InputTrSafe={bInputTr} OutTrSafe={bOutTr} AlignZSafe={bIndexAlignZ} ProbeZSafe={bIndexProbeZ} ProbeCardZSafe={bIndexProbeCardZ}");
+                        }
                     }
                 }
-                finally
+                catch(Exception ex)
                 {
-                    TaktEnd("WaitInterlockSafe");
+                    Log.Write(ex);
                 }
+                
                 if (IsStop)
                     return 0;
 
-                Log.Write("kkkkkkRotary", "Rotate");
+                //Log.Write("kkkkkkRotary", "Rotate");
                 TaktStart("Rotate");
                 try
                 {
@@ -1549,7 +1556,7 @@ namespace QMC.LCP_280.Process.Unit
                     TaktEnd("Rotate");
                 }
 
-                Log.Write("kkkkkkRotary", "Rotate End");
+                //Log.Write("kkkkkkRotary", "Rotate End");
                 // 회전 직후 Start 신호 재설정(기존 동작 유지)
                 OutputDieTransfer.ReSetPickupStartEvent();
                 if (nRet != 0)
@@ -1560,7 +1567,7 @@ namespace QMC.LCP_280.Process.Unit
                     return nRet;
                 }
 
-                Log.Write(UnitName, "[Rotate] Complete");
+                Log.Write(UnitName, "OnRun", "[Rotate] Complete");
                 State = ProcessState.Complete;
                 return nRet;
             }
@@ -1573,22 +1580,21 @@ namespace QMC.LCP_280.Process.Unit
             finally
             {
                 //OutputDieTransfer.ReSetPickupStartEvent();
-                TaktEnd("OnRunWork");
-                Log.Write("kkkkkkRotary", "End");
+                //Log.Write("kkkkkkRotary", "End");
+                TaktEnd("One Cycle");
             }
         }
         protected override int OnRunComplete() 
         {
-            TaktStart("OnRunComplete");
             try
             {
-                int nRtn = 0;
                 State = ProcessState.Work;
-                return nRtn;
+                return 0;
             }
-            finally
+            catch (Exception ex)
             {
-                TaktEnd("OnRunComplete");
+                Log.Write(ex);
+                return 0;
             }
         }
         #endregion
@@ -1669,7 +1675,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int ExecuteUnitActionReady(bool isFine = false)
         {
-            int nRtn = 0;
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ExecuteUnitActionReady;
@@ -1786,7 +1791,6 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 Log.Write(UnitName, "OnExecuteUnitAction", "Start");
-
                 // ====== 병렬로 동시에 시작 ======
                 var tLoadAlign = (IndexLoadAligner != null)
                     ? Task.Run(() =>
@@ -1794,16 +1798,17 @@ namespace QMC.LCP_280.Process.Unit
 
                         try
                         {
-                            Log.Write("kkkkkkRotary", "IndexLoadAligner");
-                            TaktStart("MAlign");
+                            //Log.Write("kkkkkkRotary", "IndexLoadAligner");
+                            TaktStart("M-Align");
                             var th = Thread.CurrentThread;
                             if (th.Name == null) th.Name = "RunAlignSocketOnce(LoadAligner)";
                             try { return IndexLoadAligner.RunAlignSocketOnce(); }
                             catch (Exception ex) { Log.Write(ex); return -1; }
-                        }finally
+                        }
+                        finally
                         {
-                            TaktEnd("MAlign");
-                            Log.Write("kkkkkkRotary", "IndexLoadAligner End");
+                            TaktEnd("M-Align");
+                            //Log.Write("kkkkkkRotary", "IndexLoadAligner End");
                         }
                     })
                     : Task.FromResult(0);
@@ -1813,8 +1818,8 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         try
                         {
-                            Log.Write("kkkkkkRotary", "IndexChipProbeController");
-                            TaktStart("Plobe");
+                            //Log.Write("kkkkkkRotary", "IndexChipProbeController");
+                            TaktStart("Plobe Inspection");
                             var th = Thread.CurrentThread;
                             if (th.Name == null) th.Name = "RunInspection(ProbeController)";
                             try { return IndexChipProbeController.RunInspection(); }
@@ -1822,8 +1827,8 @@ namespace QMC.LCP_280.Process.Unit
                         }
                         finally 
                         {
-                            TaktEnd("Plobe");
-                            Log.Write("kkkkkkRotary", "IndexChipProbeController end");
+                            TaktEnd("Plobe Inspection");
+                            //Log.Write("kkkkkkRotary", "IndexChipProbeController end");
                         }
                     })
                     : Task.FromResult(0);
@@ -1833,7 +1838,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                     try
                     {
-                        Log.Write("kkkkkkRotary", "IndexUnloadAligner");
+                        //Log.Write("kkkkkkRotary", "IndexUnloadAligner");
                         TaktStart("UnloadAlign");
                         var th = Thread.CurrentThread;
                         if (th.Name == null) th.Name = "RunAlignSocketOnce(UnloadAligner)";
@@ -1843,7 +1848,7 @@ namespace QMC.LCP_280.Process.Unit
                         finally
                         {
                             TaktEnd("UnloadAlign");
-                            Log.Write("kkkkkkRotary", "IndexUnloadAligner end");
+                            //Log.Write("kkkkkkRotary", "IndexUnloadAligner end");
                         }
                     })
                     : Task.FromResult(0);
@@ -1852,7 +1857,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                 try
                 {
-                    Log.Write("kkkkkkRotary", "RunTrashCanSocketOnce");
+                    //Log.Write("kkkkkkRotary", "RunTrashCanSocketOnce");
                     TaktStart("TrashCan");
                     var th = Thread.CurrentThread;
                     if (th.Name == null) th.Name = "RunTrashCanSocketOnce(Rotary)";
@@ -1862,7 +1867,7 @@ namespace QMC.LCP_280.Process.Unit
                     finally
                     {
                         TaktEnd("TrashCan");
-                        Log.Write("kkkkkkRotary", "RunTrashCanSocketOnce end");
+                        //Log.Write("kkkkkkRotary", "RunTrashCanSocketOnce end");
                     }
                 });
 
@@ -1871,13 +1876,25 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     try
                     {
-                        Log.Write("kkkkkkUnloader", "Start");
-                        TaktStart("OutTr_PickUp");
+                        //Log.Write("kkkkkkUnloader", "Start");
+                        TaktStart("Pick Die");
+
                         // 언로더가 완료된 후 진행
-                        tUnloadAlign.Wait();
+                        if (tUnloadAlign.IsCompleted == false)
+                        {
+                            if (tUnloadAlign.Wait(30000) == false) // 30초 등 안전 타임아웃 설정 권장
+                            {
+                                Log.Write(UnitName, "OnExecuteUnitAction", "IndexUnloadAligner Wait Timeout");
+                                return -1;
+                            }
+                        }
+                            
                         int rUnload1 = tUnloadAlign.Result;
                         if (rUnload1 != 0)
-                            return -1;
+                        {
+                            Log.Write(UnitName, "OnExecuteUnitAction", "IndexUnloadAligner Failed before ODT pick");
+                            return -1;  
+                        }
 
                         if (OutputDieTransfer == null)
                             return 0;
@@ -1891,30 +1908,40 @@ namespace QMC.LCP_280.Process.Unit
                         catch (Exception ex) 
                         { Log.Write(ex); }
 
-                        bool hasDie = unloadDie != null &&
-                                      unloadDie.Presence == Material.MaterialPresence.Exist;
-
+                        bool hasDie = unloadDie != null
+                                      && unloadDie.Presence == Material.MaterialPresence.Exist;
                         if (!hasDie)
                         {
                             return 0;
                         }
 
-                        // [ADD] Bin1이 아니면 언로더 스킵 (Trash로 회전되어 배출됨)
-                        if (!ShouldUnloadToOutput(unloadDie))
-                        {
-                            Log.Write(UnitName, "[OutputDieTransfer] Skip unload: not Bin1");
-                            return 0;
-                        }
+                        //binArm에 신호를 보내서 binArm에서 die 정보를 받고 수행하도록 하자.
+                        //if(unloadDie.ProcessSatate == MaterialProcessSatate.Skipped
+                        //  || unloadDie.State == DieProcessState.Rejected
+                        //  || unloadDie.State == DieProcessState.Skip )
+                        //{
+                        //    return 0;
+                        //}
 
-                        Log.Write("kkkkkkUnloader", "SetPickupStartEvent");
-                        // 픽업 시작 이벤트
+                        // [ADD] Bin1이 아니면 언로더 스킵 (Trash로 회전되어 배출됨)
+                        // TEST
+                        //if (!ShouldUnloadToOutput(unloadDie))
+                        //{
+                        //    Log.Write(UnitName, "[OutputDieTransfer] Skip unload: not Bin1");
+                        //    return 0;
+                        //}
+
+                        //Log.Write("kkkkkkUnloader", "SetPickupStartEvent");
+                        // 3. [수정] 핸드쉐이크 시작 전, Done 이벤트를 미리 리셋하여 이전 신호 제거
+                        OutputDieTransfer.ResetPickupDoneEvent();
+
+                        // 4. 시작 이벤트 발생
                         OutputDieTransfer.SetPickupStartEvent();
                         pickupStartSet = true;
 
                         var sw = System.Diagnostics.Stopwatch.StartNew();
                         double timeoutMs = 60000 * 10;
                         bool done = false;
-
                         while (sw.ElapsedMilliseconds < timeoutMs)
                         {
                             if (IsStop)
@@ -1924,16 +1951,20 @@ namespace QMC.LCP_280.Process.Unit
                                 return 0;
                             }
 
+                            // 50ms 동안 대기. 신호 오면 true 반환하고 즉시 탈출.
+                            // 신호 안 오면 false 반환하고 루프 다시 돔 (IsStop 체크)
                             if (OutputDieTransfer.WaitPickupDoneEvent(10))
                             {
-                                OutputDieTransfer.ResetPickupDoneEvent();
                                 done = true;
                                 break;
                             }
-                            Thread.Sleep(2); // CPU 부하 완화 (10 → 2ms 단축)
                         }
 
-                        Log.Write("kkkkkkUnloader", "SetPickupStartEvent done");
+                        // 완료 후 Start 신호 해제 (Output 쪽에서 인식 후 꺼주길 기대하지만, 안전장치로)
+                        OutputDieTransfer.ReSetPickupStartEvent();
+                        pickupStartSet = false;
+
+                        //Log.Write("kkkkkkUnloader", "SetPickupStartEvent done");
                         if (!done)
                         {
                             AxisIndexT.EmgStop();
@@ -1966,8 +1997,8 @@ namespace QMC.LCP_280.Process.Unit
                             Log.Write(UnitName, "[OutputDieTransfer] Pick sequence ended but failed. Socket kept.");
                         }
 
-                        TaktEnd("OutTr_PickUp");
-                        Log.Write("kkkkkkUnloader", "End");
+                        TaktEnd("Pick Die");
+                        //Log.Write("kkkkkkUnloader", "End");
                         return 0;
                     }
                     catch (Exception ex)
@@ -1975,10 +2006,16 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(ex);
                         return -1;
                     }
+                    finally
+                    {
+                        TaktEnd("Pick Die");
+                    }
                 });
 
                 TaktStart("WaitAll");
                 // ====== 모든 태스크 병렬 실행 후 대기 ======
+                // [수정] WaitAll 대신 WhenAll 사용 고려 혹은 안전하게 대기
+                // 기존 Task.WaitAll은 예외 발생 시 바로 throw하므로 try-catch로 감싸야 함
                 Task.WaitAll(new Task[] { tLoadAlign, tProbe, tUnloadAlign, tTrash, odtTask });
                 int rLoad = tLoadAlign.Result;
                 int rProbe = tProbe.Result;
@@ -1992,11 +2029,22 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName,
                         string.Format("OnExecuteUnitAction Fail (LoadAligner={0}, Probe={1}, UnloadAligner={2}, TrashCan={3}, ODT={4})",
                             rLoad, rProbe, rUnload, rTrash, rOdt));
+
+                    TaktEnd("WaitAll");
                     return -1;
                 }
                 TaktEnd("WaitAll");
-                Log.Write(UnitName, "OnExecuteUnitAction", "End");
+                //Log.Write(UnitName, "OnExecuteUnitAction", "End");
                 return 0;
+            }
+            catch (AggregateException ae) // Task.WaitAll 예외 처리
+            {
+                AxisIndexT.EmgStop();
+                foreach (var e in ae.InnerExceptions)
+                {
+                    Log.Write(UnitName, $"OnExecuteUnitAction Exception: {e.Message}");
+                }
+                return -1;
             }
             catch (Exception ex)
             {
@@ -2022,37 +2070,35 @@ namespace QMC.LCP_280.Process.Unit
         // Bin 필터: 검사 결과가 Bin1일 때만 언로더 수행
         private bool ShouldUnloadToOutput(MaterialDie die)
         {
-            //Test
+            ////Test
             return true;
 
-            if (die == null) return false;
-
-            // 검사 결과(Binning)에서 Bin1 판정
-            var bin = die.TesterResult?.BinningResult;
-            if (bin == null) return false;
-
-            // 우선순위: BinNo == 1
-            if (bin.BinNo == 1)
-                return true;
-
-            // 보조: 라벨이 "Bin1" 또는 "Bin 1" (대소문자 무시)
-            var label = bin.BinLabel ?? string.Empty;
-            if (label.Equals("bin1", StringComparison.OrdinalIgnoreCase)
-                || label.Equals("bin 1", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return false;
+            //if (die == null) return false;
+            //// 검사 결과(Binning)에서 Bin1 판정
+            //var bin = die.TesterResult?.BinningResult;
+            //if (bin == null) return false;
+            //// 우선순위: BinNo == 1
+            //if (bin.BinNo == 1)
+            //    return true;
+            //// 보조: 라벨이 "Bin1" 또는 "Bin 1" (대소문자 무시)
+            //var label = bin.BinLabel ?? string.Empty;
+            //if (label.Equals("bin1", StringComparison.OrdinalIgnoreCase)
+            //    || label.Equals("bin 1", StringComparison.OrdinalIgnoreCase))
+            //    return true;
+            //return false;
         }
 
         // [ADD] Trash로 버릴 때 상태/존재 플래그를 일관되게 정리
         private void MarkDieDiscarded(MaterialDie die)
         {
-            if (die == null) return;
+            if (die == null) 
+                return;
+
             try
             {
-                die.State = DieProcessState.Rejected; // 폐기 표식(프로젝트 규약 그대로 사용)
+                //die.State = DieProcessState.Rejected; // 폐기 표식(프로젝트 규약 그대로 사용)
+                //die.Presence = Material.MaterialPresence.NotExist; // 물리적으로 없음
                 die.ProcessSatate = Material.MaterialProcessSatate.Completed;
-                die.Presence = Material.MaterialPresence.NotExist; // 물리적으로 없음
             }
             catch { /* 방어적 */ }
         }
@@ -2080,7 +2126,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             //일정 시간 대기
-            WaitByTime(GetClearTimeMs()); // 기본: 500ms
+            WaitByTime(GetClearTimeMs()); // 기본: 100ms
             
             // [ADD] Trash 위치 소켓에 남은 Die가 있으면 폐기 상태로 마킹 후 제거
             var trashSock = GetTrashCanSocketInfo();
@@ -2090,7 +2136,6 @@ namespace QMC.LCP_280.Process.Unit
                 MarkDieDiscarded(trashDie);
             }
             trashSock?.SetMaterialDie(null);
-
 
             if (SetTrashVacuum(false) == false)
             {
@@ -2115,10 +2160,21 @@ namespace QMC.LCP_280.Process.Unit
             this.SetVent(nIndexTrash, false);
             this.SetBlow(nIndexTrash, false);
             Thread.Sleep(1);
-            this.SetVacuum(nIndexTrash, true);
+
+            bool useSocket = this.Config.GetUseSocket(nIndexTrash);
+            if (useSocket)
+            {
+                this.SetVacuum(nIndexTrash, true);
+            }
+            else
+            {
+                this.SetVacuum(nIndexTrash, false);
+            }
+
             Log.Write(UnitName, "[RunTrashCanSocketOnce] ", "Clear Comp.");
             return nRet;
         }
+
         private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)
         {
             var timeout = new TimeoutChecker(timeoutMs, autoStart: true); 
@@ -2154,7 +2210,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     return -1;
                 }
-                Thread.Sleep(1);
+                Thread.Sleep(5);
             }
 
             OnLoadIndexChanged(GetLoadIndexNo());
@@ -2169,6 +2225,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = Rotate;
             }
 
+            TaktStart("MoveRotate");
             nRet = MovePositionRotate();
             if (nRet != 0)
             {
@@ -2177,7 +2234,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
+            TaktEnd("MoveRotate");
 
+            TaktStart("WaitDoneRotate");
             nRet = WaitIndexMoveDone();
             if (nRet != 0)
             {
@@ -2186,6 +2245,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
+            TaktEnd("WaitDoneRotate");
 
             //OnLoadIndexChanged(GetLoadIndexNo());
             return nRet;
@@ -2224,22 +2284,26 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionRotate(bool isFine = false)
         {
             int nRet = 0;
-
             string reason;
-            double pos = this.AxisIndexT.GetPosition() * 1000;
-            Log.Write("KKKKK", "Start_" + pos.ToString());
+
+            // 로그 최소화 (I/O 부하 감소)
+            // double pos = this.AxisIndexT.GetPosition() * 1000;
+            // Log.Write("KKKKK", "Start_" + pos.ToString()); 
             if (TryMoveIndexNext(out reason) == false)
             {
                 // 재시도 루프(로그만)
                 Log.Write(UnitName, $"TryMoveIndexNext Fail: {reason}");
-                Thread.Sleep(50);
+                Thread.Sleep(10);
                 return -1;
             }
 
-            Log.Write("KKKKK", "Starting");
+            // 비동기 Task에서 이미 WaitIndexMoveDone을 수행하고 있으므로
+            // 여기서는 중복 대기를 피하거나, 확실한 동기화를 위해 짧게 확인
             nRet = WaitIndexMoveDone();
 
-            Log.Write("KKKKK", "End");
+            //Log.Write("KKKKK", "Starting");
+            //nRet = WaitIndexMoveDone();
+            //Log.Write("KKKKK", "End");
             return nRet;
         }
 
@@ -2341,7 +2405,6 @@ namespace QMC.LCP_280.Process.Unit
                     //    Log.Write(UnitName, "[InitializeAfterHome] Canceled");
                     //    return 0;
                     //}
-
                     //이거하면 Manual에 아에 동작을 안하는데...
                     //이거 진짜 고민 필요하다..
                     //if (IsStop) { /* IO 복구/정리 */ return 0; }
@@ -2423,7 +2486,6 @@ namespace QMC.LCP_280.Process.Unit
             // 1) 런타임/시퀀스 플래그 초기화
             RequestInputDieTrDie = false;
             RequestOutputDieTrDie = false;
-            this.CurrentFunc = null;
             _moveStartTime = DateTime.MinValue;
 
             // 2) OutputDieTransfer 핸드셰이크 잔여 신호 정리
@@ -2498,7 +2560,6 @@ namespace QMC.LCP_280.Process.Unit
             if (!Enum.TryParse(tpName, out en))
                 return -1;
 
-            int nIndex = -1;
             switch (en)
             {
                 // ===== AlignZ Index Up/Ready (Index1~8 -> 0~7) =====
@@ -2510,7 +2571,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
             }
 
-            return 0;
+            //return 0;
         }
 
 

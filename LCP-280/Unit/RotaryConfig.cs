@@ -173,7 +173,22 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(500)]
         public int ClearTimeMs { get; set; }
 
-        public RotaryConfig() : base("RotaryConfig") { }
+
+        [Category("Place"), DisplayName("Use_PlaceVent")]
+        [DefaultValue(false)]
+        [JsonProperty("UsePlaceVent")]
+        public bool UsePlaceVent { get; set; } = false;
+
+        
+        [Category("Place"), DisplayName("Use_PlaceBlow")]
+        [DefaultValue(false)]
+        [JsonProperty("UsePlaceBlow")]
+        public bool UsePlaceBlow { get; set; } = false;
+
+        public RotaryConfig() : base("RotaryConfig") 
+        {
+            //
+        }
 
         public void InitializeDefaultTeachingPositions()
         {
@@ -244,7 +259,7 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public new TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         public double GetPositionWithOffset(string name)
         {
@@ -345,6 +360,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "SocketInfo", 2 },
+                { "TimeOut", 3 },
+                { "WaitTime", 4 },
+                { "Place", 5 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -354,7 +373,9 @@ namespace QMC.LCP_280.Process.Unit
             => new[]
             {
                 "Name",
-                "Simulation"
+                "Simulation",
+                "UsePlaceVent",
+                "UsePlaceBlow",
             };
         #endregion
     }

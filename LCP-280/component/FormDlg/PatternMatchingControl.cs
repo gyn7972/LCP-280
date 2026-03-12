@@ -1,16 +1,16 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Cameras;
+using QMC.Common.Vision;
+using QMC.Common.Vision.Tools;
+using QMC.Common.VisionPart;
+using QMC.LCP_280.Process.Component; // for MeasurementRecipe & RecipeManager
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 using System.Windows.Forms;
-using QMC.Common.VisionPart;
-using QMC.Common.Vision;
-using QMC.Common.Vision.Tools;
-using QMC.Common.Cameras;
-using QMC.Common;
-using System.ComponentModel;
-using QMC.LCP_280.Process.Component; // for MeasurementRecipe & RecipeManager
 
 namespace QMC.LCP_280.Process
 {
@@ -420,7 +420,11 @@ namespace QMC.LCP_280.Process
                 {
                     try { eq.InitializeEquipment(); } catch { }
                 }
-                if (eq.Cameras.Count > 0) SetCameras(eq.Cameras.Values);
+
+                if (eq.Cameras.Count > 0)
+                {
+                    SetCameras(eq.Cameras.Values);
+                }
             }
             catch (Exception ex)
             {
@@ -480,11 +484,23 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        private void OnCameraItemSelected(object sender, int selectedIndex) => ApplyCameraSelection(selectedIndex);
+        private int _lastSelectedCameraIndex = -1;
+        private void OnCameraItemSelected(object sender, int selectedIndex)
+        {
+            // [수정] 이전 선택과 동일하면 무시
+            if (_lastSelectedCameraIndex == selectedIndex)
+            {
+                return;
+            }
+            
+            _lastSelectedCameraIndex = selectedIndex;
+            ApplyCameraSelection(selectedIndex);
+        }
 
         private void ApplyCameraSelection(int index)
         {
-            if (_viewer == null) return;
+            if (_viewer == null) 
+                return;
 
             try
             {
@@ -492,105 +508,139 @@ namespace QMC.LCP_280.Process
                     return;
 
                 var cam = _cameras[index];
-                if (cam == null) return;
+                if (cam == null) 
+                    return;
+
+                // [수정] 현재 이미 활성화된 카메라와 동일하면 리턴 (이미지가 사라지는 현상 방지)
+                // 주의: _viewer.Camera가 null일 수도 있으므로 체크 필요
+                if (_viewer.Camera != null && _viewer.Camera == cam)
+                {
+                    return;
+                }
 
                 // 0) runner detach (오버레이 포함)
                 DetachRunnerForCurrentViewer();
 
-                // 1) 이전 카메라 live stop (실패 로그)
+                // 1) 이전 카메라 Live 중지 (안전하게)
                 try
                 {
-                    if (_viewer.Camera != null)
+                    if (_viewer.Camera != null && _viewer.Camera.IsLiveOn)
+                    {
                         _viewer.Camera.StopLive();
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log.Write("PatternMatchingControl", "StopLive failed: " + ex.Message);
+                catch (Exception ex) 
+                { 
+                    Log.Write(ex); 
                 }
 
-                // 2) viewer 흔적 제거 + 업데이트 일시정지
-                try { _viewer.SuspendDisplay(); } catch { }
+                // 2) 뷰어 업데이트 일시 중지 (화면 깜빡임 최소화)
+                _viewer.SuspendDisplay();
 
-                try { _viewer.ResultOverlays?.Clear(); } catch { }
-                try { _viewer.NormalOverlays?.Clear(); } catch { }
-                try { _viewer.InitCrossLine(); } catch { }
-
-                // 결과/상태 초기화
-                _lastResultPoint = Point.Empty;
-                _lastResultAngle = 0;
-                _lastValues?.Clear();
-                _lastRunResult = null;
-
-                // 3) 카메라 교체
-                _viewer.Camera = cam;
-
-                // 4) VisionControl과 동일하게 표시 관련 상태 강제
-                try { _viewer.Simulated = false; } catch { }
-                try { cam.SuspendedImageDisplay = false; } catch { }
-
-                // 5) 스케일/크로스/오버레이 초기화 + 스냅 1회
                 try
                 {
+                    // 3) 카메라 교체
+                    _viewer.Camera = cam;
+
+                    // 4) 오버레이만 정리 (이미지(Image/InputImage)는 아직 지우지 않음 -> Grab 실패 시 이전 화면이라도 남기기 위함 혹은 검은 화면 방지)
+                    try
+                    {
+                        _viewer.ResultOverlays?.Clear();
+                        _viewer.NormalOverlays?.Clear();
+                        _viewer.InitCrossLine();
+                    }
+                    catch { }
+
+                    // 5) 카메라 설정 (Simulated 해제 등)
+                    try
+                    {
+                        _viewer.Simulated = false;
+                        cam.SuspendedImageDisplay = false;
+                    }
+                    catch { }
+
                     _viewer.VisibleCrossLine = true;
                     _viewer.FrameRate = 30;
 
-                    if (_viewer.Scale != null && cam.Resolution.Width > 0 && cam.Resolution.Height > 0)
+                    // =================================================================
+                    // [핵심 수정 부분] 시뮬레이션 모드에서의 이미지 유지 전략
+                    // =================================================================
+
+                    bool imageRestored = false;
+
+                    // 1. 카메라 객체가 마지막으로 가지고 있던 이미지가 있는지 확인
+                    if (cam.LatestImage != null)
                     {
-                        _viewer.Scale.Wheel = 1.0;
-                        _viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
-                        _viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
+                        _viewer.SetImageNDisplay(cam.LatestImage);
+                        imageRestored = true;
                     }
+
+                    // 2. Live 시작 시도 (실제 장비 연결 시 필수)
+                    try
+                    {
+                        // 시뮬레이션이고 이미지가 복구되었다면 굳이 StartLive를 해서 빈 화면을 만들 필요가 없음
+                        // (단, 동영상 시뮬레이션이나 자동 생성 모드라면 StartLive가 필요할 수 있음)
+                        bool skipLive = false;
+                        if(cam.Config.IsSimulation && imageRestored)
+                        {
+                            skipLive = true;
+                        }
+
+                        if (skipLive == false)
+                        {
+                            cam.StartLive();
+
+                            // StartLive 직후 Grab 시도
+                            cam.GrabSync(out var snap);
+                            if (snap != null)
+                            {
+                                _viewer.SetImageNDisplay(snap);
+                            }
+                            else if (imageRestored)
+                            {
+                                // GrabSync가 실패했지만(null), 기존 LatestImage가 있었다면 
+                                // StartLive로 인해 뷰어가 클리어되는 것을 방지하기 위해 다시 설정
+                                _viewer.SetImageNDisplay(cam.LatestImage);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+
+                    // 7) 스케일 등 뷰어 보조 기능 갱신
+                    try
+                    {
+                        if (_viewer.Scale != null && cam.Resolution.Width > 0)
+                        {
+                            // [수정] 여기서 FitImageToScreen 호출
+                            _viewer.FitImageToScreen();
+                            // 휠/줌 리셋이 필요하다면 수행, 아니면 주석 처리하여 이전 줌 상태 유지 가능
+                            //_viewer.Scale.Wheel = 1.0;
+                            //_viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
+                            //_viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
+                        }
+                        _viewer.InitCrossLine();
+                        _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
+                    }
+                    catch { }
+
+                    SyncImageInfoToControls(cam);
                 }
-                catch (Exception ex)
+                finally
                 {
-                    Log.Write("PatternMatchingControl", "Scale reset error: " + ex.Message);
+                    // 8) 뷰어 업데이트 재개
+                    _viewer.ResumeDisplay();
+                    _viewer.StartUpdateTask();
                 }
 
-                try
-                {
-                    _viewer.ResultOverlays?.Clear();
-                    _viewer.NormalOverlays?.Clear();
-
-                    _viewer.InitCrossLine();
-                    _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
-                }
-                catch { }
-
-                // 스냅샷(선택) - live 전에 1회 잡아서 화면 안정화
-                try
-                {
-                    cam.GrabSync(out var snap);
-                    if (snap != null)
-                        _viewer.SetImageNDisplay(snap);
-                }
-                catch (Exception ex)
-                {
-                    Log.Write("PatternMatchingControl", "GrabSync (pre-live) failed: " + ex.Message);
-                }
-
-                SyncImageInfoToControls(cam);
-
-                // 6) 새 카메라 live 시작 (실패 로그) + 표시 재개
-                try
-                {
-                    cam.StartLive();
-                }
-                catch (Exception ex)
-                {
-                    Log.Write("PatternMatchingControl", "StartLive failed: " + ex.Message);
-                }
-
-                try { _viewer.ResumeDisplay(); } catch { }
-                try { _viewer.StartUpdateTask(); } catch { }
-
-                // 7) 레시피 로드(UI + runner)
+                // 9) 레시피 로드 및 러너 연결
                 _suspendAutoLoad = true;
                 try { LoadRecipeForCurrentCamera(); }
                 finally { _suspendAutoLoad = false; }
 
                 BindUiToCurrentContext(cam);
-
-                // 8) Hub attach
                 AttachRunnerForCurrentViewer();
 
                 _viewer.Invalidate();
@@ -598,113 +648,13 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 Log.Write(ex);
-                try { _viewer.ResumeDisplay(); } catch { }
+                try 
+                { 
+                    _viewer.ResumeDisplay(); 
+                } 
+                catch { }
             }
         }
-
-
-        //기존 코드
-        //private void ApplyCameraSelection(int index)
-        //{
-        //    if (_viewer == null) return;
-
-        //    try
-        //    {
-        //        if (index < 0 || index >= _cameras.Count)
-        //            return;
-
-        //        var cam = _cameras[index];
-        //        if (cam == null) return;
-
-        //        // 0) runner detach (오버레이 포함)
-        //        DetachRunnerForCurrentViewer();
-
-        //        // 3) 전환 중 화면 업데이트 중단 (중요)
-        //        _viewer.SuspendDisplay();
-        //        try
-        //        {
-        //            // 2) 이전 카메라 live stop
-        //            try { _viewer.Camera?.StopLive(); } catch { }
-
-        //            // 3) viewer 흔적 제거 (overlay/cross 버퍼만)
-        //            try { _viewer.ResultOverlays?.Clear(); } catch { }
-        //            try { _viewer.NormalOverlays?.Clear(); } catch { }
-        //            try { _viewer.InitCrossLine(); } catch { }
-
-        //            // 결과/상태 초기화(이미지 null로는 만들지 않음)
-        //            _lastResultPoint = Point.Empty;
-        //            _lastResultAngle = 0;
-        //            _lastValues?.Clear();
-        //            _lastRunResult = null;
-
-        //            // 4) 카메라 교체
-        //            _viewer.Camera = cam;
-
-        //            // 5) 크로스라인/스케일 재초기화 (Grab 없이)
-        //            _viewer.VisibleCrossLine = true;
-        //            _viewer.FrameRate = 30;
-
-        //            // 6) 스케일/크로스/오버레이 재초기화 + 스냅 1회
-        //            try
-        //            {
-        //                if (_viewer.Scale != null && cam.Resolution.Width > 0 && cam.Resolution.Height > 0)
-        //                {
-        //                    _viewer.Scale.Wheel = 1.0;
-        //                    _viewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
-        //                    _viewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
-        //                }
-        //            }
-        //            catch (Exception ex) { Log.Write(ex); }
-
-
-        //            try { _viewer.ResultOverlays?.Clear(); } catch { }
-        //            try { _viewer.NormalOverlays?.Clear(); } catch { }
-
-        //            try
-        //            {
-        //                _viewer.InitCrossLine();
-        //                _viewer.ShowCrossLine(_viewer.VisibleCrossLine);
-        //            }
-        //            catch { }
-
-        //            try
-        //            {
-        //                cam.GrabSync(out var snap);
-        //                if (snap != null)
-        //                    _viewer.SetImageNDisplay(snap);
-        //            }
-        //            catch { }
-
-        //            // ROI 컨트롤 동기화
-        //            SyncImageInfoToControls(cam);
-        //        }
-        //        finally
-        //        {
-        //            // 7) 새 카메라 live 시작 + 표시 재개
-        //            try { cam.StartLive(); } catch { }
-        //            _viewer.ResumeDisplay();
-        //            _viewer.StartUpdateTask();
-        //        }
-
-        //        // 8) 레시피 로드(UI + runner)
-        //        _suspendAutoLoad = true;
-        //        try { LoadRecipeForCurrentCamera(); }
-        //        finally { _suspendAutoLoad = false; }
-
-        //        BindUiToCurrentContext(cam);
-
-        //        // 9) Hub attach
-        //        AttachRunnerForCurrentViewer();
-
-        //        _viewer.Invalidate();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //        try { _viewer.ResumeDisplay(); } catch { }
-        //    }
-        //}
-
 
         private void UpdateRunnerModeFromUI()
         {
@@ -1048,6 +998,9 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                // 1. 전체 소요 시간 측정 시작
+                var totalWatch = System.Diagnostics.Stopwatch.StartNew();
+
                 SyncParametersFromUI();
 
                 if (_parameters == null)
@@ -1072,7 +1025,10 @@ namespace QMC.LCP_280.Process
                 }
 
                 maintROIControl?.CommitCurrentRoi();
-                SaveRecipeForCurrentCamera();
+
+                // [최적화] 1. 매 검색마다 발생하는 불필요한 레시피 디스크 저장(I/O) 제외
+                // 파라미터 저장은 별도의 "저장" 버튼 클릭 시에만 수행하도록 유도합니다.
+                // SaveRecipeForCurrentCamera(); 
 
                 if (_runner == null)
                     AttachRunnerForCurrentViewer();
@@ -1084,18 +1040,34 @@ namespace QMC.LCP_280.Process
                     return;
                 }
 
-                _runner.LoadRecipe();
+                // [최적화] 2. 러너에 레시피 파라미터를 강제 업데이트 (파일 저장을 안했으므로 메모리 갱신만)
+                if (_runner.Parameters != null && _parameters != null)
+                {
+                    //_runner.Parameters.CopyFrom(_parameters); // 구현된 파라미터 복사 메서드 사용(또는 참조 업데이트)
+                    _runner.LoadRecipe();
+                }
+
                 UpdateRunnerModeFromUI();
 
+                // ----------------------------------------
+                // 2. 순수 비전 알고리즘(Search) 소요 시간 측정
+                // ----------------------------------------
+                var searchWatch = System.Diagnostics.Stopwatch.StartNew();
                 var res = _runner.Search(testImage, save: false);
+                searchWatch.Stop();
+                // ----------------------------------------
+
                 _lastRunResult = res;
 
                 if (!res.Success || res.RawResult == null)
                 {
-                    UpdateStatus("Search Fail: " + res.FailReason);
+                    totalWatch.Stop();
+                    string failTimeMsg = $"Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms";
+
+                    UpdateStatus($"Search Fail: {res.FailReason} ({failTimeMsg})");
 
                     var mb = new MessageBoxOk();
-                    mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}");
+                    mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}\n소요시간: {searchWatch.ElapsedMilliseconds}ms");
 
                     listViewResults.Items.Clear();
                     _lastValues.Clear();
@@ -1127,7 +1099,6 @@ namespace QMC.LCP_280.Process
                 }
 
                 _viewer?.Invalidate();
-                UpdateStatus(res.Success ? "Search Success." : "Search Fail.");
 
                 if (txtAvgX != null && txtAvgY != null && txtAvgT != null)
                 {
@@ -1145,6 +1116,17 @@ namespace QMC.LCP_280.Process
                 }
 
                 ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+
+                // 3. 전체 소요 시간 측정 종료
+                totalWatch.Stop();
+
+                // 결과 출력 포맷 (예: "Total: 150ms, Search: 120ms")
+                string timeMsg = $"Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms";
+
+                UpdateStatus($"Search Success. ({timeMsg})");
+
+                // 필요시 로그에도 기록
+                try { Log.Write("PatternMatchingControl", $"Tact Time -> {timeMsg}"); } catch { }
             }
             catch (Exception ex)
             {
@@ -1153,6 +1135,115 @@ namespace QMC.LCP_280.Process
                 UpdateStatus("Search exception");
             }
         }
+        //private void BtnSearch_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        SyncParametersFromUI();
+
+        //        if (_parameters == null)
+        //            _parameters = _visionPart.GetPatternMatchingParameters();
+
+        //        if (_parameters == null
+        //            || _parameters.TrainImages == null
+        //            || _parameters.TrainImages.Count == 0
+        //            || _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", "최소 1개 이상의 Train Image가 필요합니다.");
+        //            return;
+        //        }
+
+        //        var testImage = AcquireCurrentSearchImage();
+        //        if (testImage == null || testImage.GetImage() == null)
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.");
+        //            return;
+        //        }
+
+        //        maintROIControl?.CommitCurrentRoi();
+        //        SaveRecipeForCurrentCamera();
+
+        //        if (_runner == null)
+        //            AttachRunnerForCurrentViewer();
+
+        //        if (_runner == null)
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Error!", "Runner 초기화 실패 (카메라 없음/Hub 실패)");
+        //            return;
+        //        }
+
+        //        _runner.LoadRecipe();
+        //        UpdateRunnerModeFromUI();
+
+        //        var res = _runner.Search(testImage, save: false);
+        //        _lastRunResult = res;
+
+        //        if (!res.Success || res.RawResult == null)
+        //        {
+        //            UpdateStatus("Search Fail: " + res.FailReason);
+
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}");
+
+        //            listViewResults.Items.Clear();
+        //            _lastValues.Clear();
+        //            _viewer?.Invalidate();
+        //            return;
+        //        }
+
+        //        var raw = res.RawResult;
+        //        _lastValues = raw.Values != null
+        //            ? new List<PatternMatchingResult.PatternMatchingResultValue>(raw.Values)
+        //            : new List<PatternMatchingResult.PatternMatchingResultValue>();
+
+        //        PopulateResultList();
+
+        //        if (_lastValues.Count > 0)
+        //        {
+        //            int idx = (res.ReferenceIndex >= 0 && res.ReferenceIndex < _lastValues.Count) ? res.ReferenceIndex : 0;
+        //            var first = _lastValues[idx];
+        //            _lastResultPoint = new Point((int)first.X, (int)first.Y);
+        //            _lastResultAngle = first.R;
+        //            txtResultX.Text = first.X.ToString("0.000");
+        //            txtResultY.Text = first.Y.ToString("0.000");
+        //            txtResultT.Text = first.R.ToString("0.000");
+        //        }
+        //        else
+        //        {
+        //            txtResultX.Clear(); txtResultY.Clear(); txtResultT.Clear();
+        //            _lastResultPoint = Point.Empty; _lastResultAngle = 0;
+        //        }
+
+        //        _viewer?.Invalidate();
+        //        UpdateStatus(res.Success ? "Search Success." : "Search Fail.");
+
+        //        if (txtAvgX != null && txtAvgY != null && txtAvgT != null)
+        //        {
+        //            bool isAll = radioMulti != null && radioMulti.Checked;
+        //            if (isAll && res.AvgXExcludingExtremes.HasValue)
+        //            {
+        //                txtAvgX.Text = res.AvgXExcludingExtremes.Value.ToString("0.000");
+        //                txtAvgY.Text = res.AvgYExcludingExtremes.Value.ToString("0.000");
+        //                txtAvgT.Text = res.AvgRExcludingExtremes.Value.ToString("0.000");
+        //            }
+        //            else
+        //            {
+        //                txtAvgX.Clear(); txtAvgY.Clear(); txtAvgT.Clear();
+        //            }
+        //        }
+
+        //        ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        var mb = new MessageBoxOk();
+        //        mb.ShowDialog("Error!", "Search 예외: " + ex.Message);
+        //        UpdateStatus("Search exception");
+        //    }
+        //}
 
         private void PopulateResultList()
         {

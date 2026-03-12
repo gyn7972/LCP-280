@@ -25,54 +25,86 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class OutputCassetteLifter : BaseUnit<OutputCassetteLifterConfig>
     {
+        bool _isDryRunEqp = false;
+        private bool IsDryRunEqp
+        {
+            get
+            {
+                var eq = Equipment.Instance;
+                bool r = eq.EquipmentConfig.IsDryRun;
+                return r;
+            }
+        }
+
         public delegate void UpdateUICassette(MaterialCassette Cassette);
 
         public event UpdateUICassette EventUpdateUICassette;
 
 
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
-            eBinProtrusionDetected = 5001,
-            eFeederYSafetyPosition = 5002,
-            eCassetteChangeRequired = 5003,
+            eBinProtrusionDetected = 11301,
+            eFeederYSafetyPosition,
+            eCassetteChangeRequired,
             eSlotMappingMismatch,
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Bin_Cassette";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
-            alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
-            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다. 카세트를 점검 하고 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
-            alarm.Title = "Feeder Y축이 안전 위치에 있지 않습니다.";
-            alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다. Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
+                alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
+                alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다. 카세트를 점검 하고 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eCassetteChangeRequired;
-            alarm.Title = "Cassette 교체 필요";
-            alarm.Cause = "Cassette에 남은 Wafer가 없습니다. Cassette를 교체 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
+                alarm.Title = "Feeder Y축이 안전 위치에 있지 않습니다.";
+                alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다. Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eSlotMappingMismatch;
-            alarm.Title = "입/출력 카세트 슬롯 맵 불일치";
-            alarm.Cause = "Input/Output Cassette의 Wafer 존재 슬롯 패턴이 다릅니다. 두 Cassette를 점검 후 재스캔 하십시오.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms[alarm.Code] = alarm;
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eCassetteChangeRequired;
+                alarm.Title = "Cassette 교체 필요";
+                alarm.Cause = "Cassette에 남은 Wafer가 없습니다. Cassette를 교체 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eSlotMappingMismatch;
+                alarm.Title = "입/출력 카세트 슬롯 맵 불일치";
+                alarm.Cause = "Input/Output Cassette의 Wafer 존재 슬롯 패턴이 다릅니다. 두 Cassette를 점검 후 재스캔 하십시오.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms[alarm.Code] = alarm;
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
+            
 
         }
         #endregion
@@ -97,7 +129,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitSimMappingIfNeeded()
         {
-            if (!Config.IsSimulation && !Config.IsDryRun)
+            if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
             {
                 return;
             }
@@ -119,7 +151,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ResetSimMapping()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 lock (_simMapLock)
                 {
@@ -351,7 +383,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO / Sensors
         public bool IsCassettePresent0()
         {
-            if(Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -360,7 +392,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsCassettePresent1()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -377,7 +409,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool MappingSensor()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 // 시뮬레이션: 축 위치 기반 슬롯 단위 펄스 생성
                 InitSimMappingIfNeeded();
@@ -438,7 +470,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToScanStartPositionAsync();
             while (IsEndTask(task) == false)
             {
-                if (Config.IsSimulation || Config.IsDryRun)
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 {
                     //Log.Write(this, "Bin Protrusion Detected - Simulation");
                 }
@@ -637,7 +669,7 @@ namespace QMC.LCP_280.Process.Unit
 
             BeginMapping(); // 추가
 
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 ResetSimMapping();
                 //Log.Write(this, "Bin Protrusion Detected - Simulation");
@@ -705,7 +737,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                if (Config.IsSimulation || Config.IsDryRun)
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 {
                     //Log.Write(this, "Wafer Protrusion Detected - Simulation");
                 }
@@ -744,7 +776,7 @@ namespace QMC.LCP_280.Process.Unit
 
                     // 시뮬/드라이런에서는 필터 우회 → 항상 인정
                     bool bIsIn = false;
-                    if (Config.IsSimulation || Config.IsDryRun)
+                    if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                     {
                         bIsIn = true;
                     }
@@ -793,7 +825,20 @@ namespace QMC.LCP_280.Process.Unit
             this.SetMaterial(material);
 
             nRtn = EndMapping(); // 교집합 평가
-            if(nRtn != 0)
+
+            if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.Starting)
+            {
+                if (nRtn != 0)
+                {
+                    //내부에서 알람 발생.
+                    this.BinLifterZ.EmgStop();
+                    Log.Write(this, "EndMapping Error");
+                    return -1;
+                }
+            }
+
+            if (nRtn != 0)
             {
                 //내부에서 알람 발생.
                 this.BinLifterZ.EmgStop();
@@ -854,7 +899,7 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
             int nRet = 0;
-            if (!Config.IsSimulation && !Config.IsDryRun)
+            if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
             {
                 if (IsBinProtrusionDetectionSensor())
                 {
@@ -887,7 +932,7 @@ namespace QMC.LCP_280.Process.Unit
             MoveAxisOnce(BinLifterZ, dPos);
             while (!InPos(BinLifterZ, dPos))
             {
-                if (!Config.IsSimulation && !Config.IsDryRun)
+                if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (IsBinProtrusionDetectionSensor())
                     {
@@ -1149,7 +1194,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (outExist != inExist)
                     {
                         mismatch = true;
-                        if (Config.IsSimulation || Config.IsDryRun)
+                        if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                         {
                             if (outMat.Slots[i] != null)
                             {

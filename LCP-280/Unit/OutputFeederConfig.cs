@@ -152,7 +152,7 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public new TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()

@@ -47,8 +47,8 @@
             // tlRoot
             // 
             this.tlRoot.ColumnCount = 2;
-            this.tlRoot.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 62F));
-            this.tlRoot.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 38F));
+            this.tlRoot.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 49.73046F));
+            this.tlRoot.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.26954F));
             this.tlRoot.Controls.Add(this.tlLeft, 0, 0);
             this.tlRoot.Controls.Add(this.tlRight, 1, 0);
             this.tlRoot.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -56,7 +56,7 @@
             this.tlRoot.Name = "tlRoot";
             this.tlRoot.RowCount = 1;
             this.tlRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlRoot.Size = new System.Drawing.Size(1280, 720);
+            this.tlRoot.Size = new System.Drawing.Size(1269, 720);
             this.tlRoot.TabIndex = 0;
             // 
             // tlLeft
@@ -65,13 +65,12 @@
             this.tlLeft.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tlLeft.Controls.Add(this.lblTitle, 0, 0);
             this.tlLeft.Controls.Add(this.flLeftBlocks, 0, 1);
-            this.tlLeft.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlLeft.Location = new System.Drawing.Point(3, 3);
             this.tlLeft.Name = "tlLeft";
             this.tlLeft.RowCount = 2;
             this.tlLeft.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tlLeft.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlLeft.Size = new System.Drawing.Size(787, 714);
+            this.tlLeft.Size = new System.Drawing.Size(625, 714);
             this.tlLeft.TabIndex = 0;
             // 
             // lblTitle
@@ -88,12 +87,11 @@
             // flLeftBlocks
             // 
             this.flLeftBlocks.AutoScroll = true;
-            this.flLeftBlocks.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flLeftBlocks.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flLeftBlocks.Location = new System.Drawing.Point(3, 33);
             this.flLeftBlocks.Name = "flLeftBlocks";
             this.flLeftBlocks.Padding = new System.Windows.Forms.Padding(8);
-            this.flLeftBlocks.Size = new System.Drawing.Size(781, 678);
+            this.flLeftBlocks.Size = new System.Drawing.Size(619, 678);
             this.flLeftBlocks.TabIndex = 1;
             this.flLeftBlocks.WrapContents = false;
             // 
@@ -108,7 +106,7 @@
             this.tlRight.Controls.Add(this.tlSpecAndControls, 0, 4);
             this.tlRight.Controls.Add(this.dgvCopy, 0, 5);
             this.tlRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlRight.Location = new System.Drawing.Point(796, 3);
+            this.tlRight.Location = new System.Drawing.Point(634, 3);
             this.tlRight.Name = "tlRight";
             this.tlRight.RowCount = 6;
             this.tlRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 22F));
@@ -117,7 +115,7 @@
             this.tlRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.tlRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 110F));
             this.tlRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlRight.Size = new System.Drawing.Size(481, 714);
+            this.tlRight.Size = new System.Drawing.Size(632, 714);
             this.tlRight.TabIndex = 1;
             // 
             // lblAvg
@@ -138,7 +136,7 @@
             this.dgvAvg.Location = new System.Drawing.Point(3, 25);
             this.dgvAvg.Name = "dgvAvg";
             this.dgvAvg.RowHeadersWidth = 62;
-            this.dgvAvg.Size = new System.Drawing.Size(475, 144);
+            this.dgvAvg.Size = new System.Drawing.Size(626, 144);
             this.dgvAvg.TabIndex = 1;
             // 
             // lblOffset
@@ -159,7 +157,7 @@
             this.dgvOffset.Location = new System.Drawing.Point(3, 197);
             this.dgvOffset.Name = "dgvOffset";
             this.dgvOffset.RowHeadersWidth = 62;
-            this.dgvOffset.Size = new System.Drawing.Size(475, 144);
+            this.dgvOffset.Size = new System.Drawing.Size(626, 144);
             this.dgvOffset.TabIndex = 3;
             // 
             // tlSpecAndControls
@@ -176,7 +174,7 @@
             this.tlSpecAndControls.Name = "tlSpecAndControls";
             this.tlSpecAndControls.RowCount = 1;
             this.tlSpecAndControls.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlSpecAndControls.Size = new System.Drawing.Size(475, 104);
+            this.tlSpecAndControls.Size = new System.Drawing.Size(626, 104);
             this.tlSpecAndControls.TabIndex = 4;
             // 
             // dgvSpec
@@ -186,7 +184,7 @@
             this.dgvSpec.Location = new System.Drawing.Point(3, 3);
             this.dgvSpec.Name = "dgvSpec";
             this.dgvSpec.RowHeadersWidth = 62;
-            this.dgvSpec.Size = new System.Drawing.Size(279, 98);
+            this.dgvSpec.Size = new System.Drawing.Size(369, 98);
             this.dgvSpec.TabIndex = 0;
             // 
             // tlCountPanel
@@ -199,12 +197,12 @@
             this.tlCountPanel.Controls.Add(this.btnApply, 0, 1);
             this.tlCountPanel.Controls.Add(this.btnSave, 1, 1);
             this.tlCountPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlCountPanel.Location = new System.Drawing.Point(288, 3);
+            this.tlCountPanel.Location = new System.Drawing.Point(378, 3);
             this.tlCountPanel.Name = "tlCountPanel";
             this.tlCountPanel.RowCount = 2;
             this.tlCountPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
             this.tlCountPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
-            this.tlCountPanel.Size = new System.Drawing.Size(89, 98);
+            this.tlCountPanel.Size = new System.Drawing.Size(119, 98);
             this.tlCountPanel.TabIndex = 1;
             // 
             // lblCount
@@ -222,7 +220,7 @@
             this.txtCount.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtCount.Location = new System.Drawing.Point(59, 3);
             this.txtCount.Name = "txtCount";
-            this.txtCount.Size = new System.Drawing.Size(27, 28);
+            this.txtCount.Size = new System.Drawing.Size(57, 28);
             this.txtCount.TabIndex = 1;
             this.txtCount.Text = "5";
             // 
@@ -240,7 +238,7 @@
             this.btnSave.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnSave.Location = new System.Drawing.Point(59, 29);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(27, 66);
+            this.btnSave.Size = new System.Drawing.Size(57, 66);
             this.btnSave.TabIndex = 3;
             this.btnSave.Text = "Save";
             // 
@@ -253,20 +251,20 @@
             this.tlButtons.Controls.Add(this.btnStart, 0, 0);
             this.tlButtons.Controls.Add(this.btnStop, 1, 0);
             this.tlButtons.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlButtons.Location = new System.Drawing.Point(383, 3);
+            this.tlButtons.Location = new System.Drawing.Point(503, 3);
             this.tlButtons.Name = "tlButtons";
             this.tlButtons.RowCount = 2;
-            this.tlButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 72F));
-            this.tlButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlButtons.Size = new System.Drawing.Size(89, 98);
+            this.tlButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 54F));
+            this.tlButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 46F));
+            this.tlButtons.Size = new System.Drawing.Size(120, 98);
             this.tlButtons.TabIndex = 2;
             // 
             // btnOffsetSave
             // 
             this.btnOffsetSave.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnOffsetSave.Location = new System.Drawing.Point(3, 75);
+            this.btnOffsetSave.Location = new System.Drawing.Point(3, 57);
             this.btnOffsetSave.Name = "btnOffsetSave";
-            this.btnOffsetSave.Size = new System.Drawing.Size(38, 22);
+            this.btnOffsetSave.Size = new System.Drawing.Size(54, 40);
             this.btnOffsetSave.TabIndex = 5;
             this.btnOffsetSave.Text = "Offset Save";
             this.btnOffsetSave.Click += new System.EventHandler(this.btnOffsetSave_Click);
@@ -276,16 +274,16 @@
             this.btnStart.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStart.Location = new System.Drawing.Point(3, 3);
             this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(38, 66);
+            this.btnStart.Size = new System.Drawing.Size(54, 48);
             this.btnStart.TabIndex = 0;
             this.btnStart.Text = "Start";
             // 
             // btnStop
             // 
             this.btnStop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnStop.Location = new System.Drawing.Point(47, 3);
+            this.btnStop.Location = new System.Drawing.Point(63, 3);
             this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(39, 66);
+            this.btnStop.Size = new System.Drawing.Size(54, 48);
             this.btnStop.TabIndex = 1;
             this.btnStop.Text = "Stop";
             // 
@@ -296,13 +294,13 @@
             this.dgvCopy.Location = new System.Drawing.Point(3, 457);
             this.dgvCopy.Name = "dgvCopy";
             this.dgvCopy.RowHeadersWidth = 62;
-            this.dgvCopy.Size = new System.Drawing.Size(475, 254);
+            this.dgvCopy.Size = new System.Drawing.Size(626, 254);
             this.dgvCopy.TabIndex = 5;
             // 
             // IndexCalibrationDialog
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(1280, 720);
+            this.ClientSize = new System.Drawing.Size(1269, 720);
             this.Controls.Add(this.tlRoot);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;

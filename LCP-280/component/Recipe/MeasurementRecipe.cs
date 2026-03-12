@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using QMC.Common;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -31,25 +32,17 @@ namespace QMC.LCP_280.Process.Component
         //[DefaultValue("DefaultMeasurement")]
         //public string MeasurementRecipeName { get; set; } = "DefaultMeasurement";
 
-        [Category("Measurement"), DisplayName("Test Condition Set File")]
-        [DefaultValue("")]
-        public string TestConditionSetFile { get; set; } = string.Empty;
-
-        [Category("Measurement"), DisplayName("Binning Spec Sheet File")]
-        [DefaultValue("")]
-        public string BinningSpecSheetFile { get; set; } = string.Empty;
-
         // 2. VisionParameters (비전 파라미터) 참조
+        [Category("TAlgin"), DisplayName("Align XAxis Mode")]
+        //[DefaultValue(true)]
+        [JsonProperty("AlignAxisX")]
+        public bool AlignAxisX { get; set; } = true;
+
         //ToleranceMm
         [Category("TAlgin"), DisplayName("ToleranceMm (mm)")]
         [DefaultValue(0.1)]
         [JsonProperty("ToleranceMm")]
         public double ToleranceMm { get; set; } = 0.1;
-
-        [Category("TAlgin"), DisplayName("Align XAxis Mode")]
-        //[DefaultValue(true)]
-        [JsonProperty("AlignAxisX")]
-        public bool AlignAxisX { get; set; } = true;
 
         [Category("TAlgin"), DisplayName("Align Repeat Count")]
         //[DefaultValue(true)]
@@ -108,15 +101,17 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(90.0)]
         public double WaferMatchLimitPercent { get; set; } = 99.9;
 
-        [Category("Wafer Map"), DisplayName("Wafer Rotate")]
-        [DefaultValue(MapRotateOption.None)]
-        [JsonProperty("WaferRotate")]
-        public MapRotateOption WaferRotate { get; set; } = MapRotateOption.None;
+        //[JsonIgnore]
+        //[Category("Wafer Map"), DisplayName("Wafer Rotate")]
+        //[DefaultValue(MapRotateOption.None)]
+        //[JsonProperty("WaferRotate")]
+        //public MapRotateOption WaferRotate { get; set; } = MapRotateOption.None;
 
-        [Category("Wafer Map"), DisplayName("Wafer Mirror")]
-        [DefaultValue(MapMirrorOption.None)]
-        [JsonProperty("WaferMirror")]
-        public MapMirrorOption WaferMirror { get; set; } = MapMirrorOption.None;
+        //[JsonIgnore]
+        //[Category("Wafer Map"), DisplayName("Wafer Mirror")]
+        //[DefaultValue(MapMirrorOption.None)]
+        //[JsonProperty("WaferMirror")]
+        //public MapMirrorOption WaferMirror { get; set; } = MapMirrorOption.None;
 
         [Category("Wafer Map"), DisplayName("Wafer PathStartCorner")]
         [DefaultValue(MapPathStartCorner.BottomLeft)]
@@ -124,7 +119,7 @@ namespace QMC.LCP_280.Process.Component
         [JsonProperty("WaferPathStartCorner")]
         public MapPathStartCorner WaferPathStartCorner { get; set; } = MapPathStartCorner.BottomLeft;
 
-        [Category("Wafer Map"), DisplayName("Wafer Path PrimaryAxis")]
+        [Category("Wafer Map"), DisplayName("Wafer PathPrimaryAxis")]
         //[ReadOnly(true)]
         [DefaultValue(MapPathPrimaryAxis.XFirst)]
         [JsonProperty("WaferPathPrimaryAxis")]
@@ -142,6 +137,12 @@ namespace QMC.LCP_280.Process.Component
         [JsonProperty("DieSkipLine")]
         public int DieSkipLine { get; set; } = 0;
 
+        //DieSkipShape
+        [Category("Wafer Map"), DisplayName("Die Skip Shape")]
+        //[DefaultValue(true)]
+        [JsonProperty("DieSkipShape")]
+        public OuterRemovalShape DieSkipShape { get; set; } = OuterRemovalShape.Ellipse;
+
         // 3. BinMap(빈 맵) 정보(빈 직경, 칩 크기, 행/열 개수 등)
         // ===== Bin Map =====
         [Category("Bin Array"), DisplayName("Bin Diameter (mm)")]
@@ -156,17 +157,22 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(1)]
         public double BinPitchYmm { get; set; } = 1;
 
-        [Category("Bin Array"), DisplayName("Bin Rotate")]
-        [DefaultValue(MapRotateOption.None)]
-        [JsonProperty("BinRotate")]
-        public MapRotateOption BinRotate { get; set; } = MapRotateOption.None;
+        [Category("Bin Array"), DisplayName("Use Same As Wafer")]
+        [DefaultValue(false)]
+        [JsonProperty("UseSameAsWafer")]
+        public bool UseSameAsWafer { get; set; } = true;
 
-        [Category("Bin Array"), DisplayName("BIn Mirror")]
-        [DefaultValue(MapMirrorOption.None)]
-        [JsonProperty("BinMirror")]
-        public MapMirrorOption BinMirror { get; set; } = MapMirrorOption.None;
+        //[Category("Bin Array"), DisplayName("Bin Rotate")]
+        //[DefaultValue(MapRotateOption.None)]
+        //[JsonProperty("BinRotate")]
+        //public MapRotateOption BinRotate { get; set; } = MapRotateOption.None;
 
-        [Category("Bin Array"), DisplayName("BIn PathStartCorner")]
+        //[Category("Bin Array"), DisplayName("BIn Mirror")]
+        //[DefaultValue(MapMirrorOption.None)]
+        //[JsonProperty("BinMirror")]
+        //public MapMirrorOption BinMirror { get; set; } = MapMirrorOption.None;
+
+        [Category("Bin Array"), DisplayName("Bin Path StartCorner")]
         [DefaultValue(MapPathStartCorner.BottomLeft)]
         [JsonProperty("BinPathStartCorner")]
         //[ReadOnly(true)]
@@ -201,6 +207,14 @@ namespace QMC.LCP_280.Process.Component
         //[Category("Material"), DisplayName("Chip Thickness (um)")]
         //[DefaultValue(120.0)]
         //public double ChipThicknessUm { get; set; } = 120.0;
+
+        [Category("Measurement"), DisplayName("Test Condition Set File")]
+        [DefaultValue("")]
+        public string TestConditionSetFile { get; set; } = string.Empty;
+
+        [Category("Measurement"), DisplayName("Binning Spec Sheet File")]
+        [DefaultValue("")]
+        public string BinningSpecSheetFile { get; set; } = string.Empty;
 
         //[JsonProperty("UseBarcode")] // ← JSON 키를 명시적으로 고정
         [Category("Contect"), DisplayName("Top")]

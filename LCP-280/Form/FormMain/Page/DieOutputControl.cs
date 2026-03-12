@@ -1,8 +1,8 @@
-﻿using QMC.Common;
+﻿using Org.BouncyCastle.Ocsp;
+using QMC.Common;
 using QMC.Common.Controls;                 // DisplayView_DieOutputControl
 using QMC.LCP_280.Process.Component;       // MaterialDie, DieProcessState
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -15,9 +15,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     public partial class DieOutputControl : UserControl
     {
         public event EventHandler<DisplayView_DieOutput.DisplayItemEventArgs> MotorMoveRequested;
-
         private List<MaterialDie> _dies = new List<MaterialDie>();
-        
+
+        #region 장비 좌표와 View 좌표 맴핑. 하드코딩으로 처리.
         // 화면 표시를 센터 상대좌표(0,0 중심)로 보낼지 여부
         private bool _centerOnPivot = true;
         public bool CenterOnPivot
@@ -46,6 +46,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private static readonly AxisMap EquipmentToView = new AxisMap
         {
             // 필요에 맞게 조정하세요. 예시: X<->Y 교환, View Y 반전
+            //기준.
             SwapXY = false,
             InvertX = true,
             InvertY = true
@@ -53,10 +54,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // View -> 장비(모델: BinX/BinY) 역매핑
         private static readonly AxisMap ViewToEquipment = new AxisMap
         {
+            //기준.
             SwapXY = false,
             InvertX = true,
             InvertY = true
         };
+
         private static PointD ApplyAxisMap(PointD p, AxisMap m)
         {
             double x = p.X, y = p.Y;
@@ -65,72 +68,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (m.InvertY) y = -y;
             return new PointD(x, y);
         }
-
-        // 화면 표시용 180도 회전 토글 (기본: ON)
-        private MapRotateOption _rotateDisplay = MapRotateOption.None;
-        public MapRotateOption BinRotateView
-        {
-            get => _rotateDisplay;
-            set
-            {
-                if (_rotateDisplay == value) return;
-                _rotateDisplay = value;
-                SetDieList(_dies);
-            }
-        }
-
-        private MapMirrorOption _mirrorDisplay = MapMirrorOption.None;
-        public MapMirrorOption BinMirrorView
-        {
-            get => _mirrorDisplay;
-            set
-            {
-                if (_mirrorDisplay == value) return;
-                _mirrorDisplay = value;
-                SetDieList(_dies);
-            }
-        }
-
-        private MapPathStartCorner _pathStartCorner = MapPathStartCorner.BottomLeft;
-        public MapPathStartCorner BinPathStartCorner
-        {
-            get => _pathStartCorner;
-            set
-            {
-                if (_pathStartCorner == value) return;
-                _pathStartCorner = value;
-                SetDieList(_dies);
-            }
-        }
-
-        private MapPathPrimaryAxis _pathPrimaryAxis = MapPathPrimaryAxis.XFirst;
-        public MapPathPrimaryAxis BinPathPrimaryAxis
-        {
-            get => _pathPrimaryAxis;
-            set
-            {
-                if (_pathPrimaryAxis == value) return;
-                _pathPrimaryAxis = value;
-                SetDieList(_dies);
-            }
-        }
-
-        private MapPathTraversalMode _pathTraversalMode = MapPathTraversalMode.Serpentine;
-        public MapPathTraversalMode BinPathTraversalMode
-        {
-            get => _pathTraversalMode;
-            set
-            {
-                if (_pathTraversalMode == value) return;
-                _pathTraversalMode = value;
-                SetDieList(_dies);
-            }
-        }
-
         private void RecalcPivot()
         {
             _hasPivot = false;
-            if (_dies == null || _dies.Count == 0) return;
+            if (_dies == null || _dies.Count == 0)
+                return;
 
             double minX = _dies.Min(d => d.BinX);
             double maxX = _dies.Max(d => d.BinX);
@@ -141,231 +83,173 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             _pivotY = (minY + maxY) * 0.5;
             _hasPivot = true;
         }
+        #endregion
 
-        // [NEW] OutputFeeder.CloneRotate180ForBin 값을 화면 회전에 동기화
-        private void SyncRotate()
+        private MapRotateOption _rotateDisplay = MapRotateOption.None;
+        private MapMirrorOption _mirrorDisplay = MapMirrorOption.None;
+        private MapPathStartCorner _pathStartCorner = MapPathStartCorner.BottomLeft;
+        private MapPathPrimaryAxis _pathPrimaryAxis = MapPathPrimaryAxis.XFirst;
+        private MapPathTraversalMode _pathTraversalMode = MapPathTraversalMode.Serpentine;
+        public MapRotateOption BinRotateView
+        {
+            get => _rotateDisplay;
+            set
+            {
+                if (_rotateDisplay == value) 
+                    return;
+                _rotateDisplay = value;
+            }
+        }
+        public MapMirrorOption BinMirrorView
+        {
+            get => _mirrorDisplay;
+            set
+            {
+                if (_mirrorDisplay == value) 
+                    return;
+                _mirrorDisplay = value;
+            }
+        }
+        public MapPathStartCorner BinPathStartCorner
+        {
+            get => _pathStartCorner;
+            set
+            {
+                if (_pathStartCorner == value) 
+                    return;
+                _pathStartCorner = value;
+            }
+        }
+        public MapPathPrimaryAxis BinPathPrimaryAxis
+        {
+            get => _pathPrimaryAxis;
+            set
+            {
+                if (_pathPrimaryAxis == value) 
+                    return;
+                _pathPrimaryAxis = value;
+            }
+        }
+        public MapPathTraversalMode BinPathTraversalMode
+        {
+            get => _pathTraversalMode;
+            set
+            {
+                if (_pathTraversalMode == value) 
+                    return;
+                _pathTraversalMode = value;
+            }
+        }
+        private void SyncBinViewFromRecipe()
         {
             try
             {
-                var recipe  = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+                var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
                 if (recipe != null)
                 {
-                    // 디스플레이는 Feeder의 CloneRotate180ForBin 설정을 그대로 따름
-                    BinRotateView = recipe.BinRotate;
+                    BinPathStartCorner = recipe.BinPathStartCorner;
+                    BinPathPrimaryAxis = recipe.BinPathPrimaryAxis;
+                    BinPathTraversalMode = recipe.BinPathTraversalMode;
                 }
             }
-            catch { /* 무시: 연동 실패 시 기본값 유지 */ }
+            catch { /* ignore */ }
         }
-
+        
         // 모델(Bin 인덱스) -> 디스플레이 좌표
         private PointD ToDisplay(PointD model)
         {
-            // 1) 센터 기준 상대좌표(모델 좌표계)
-            PointD relModel;
-            if (_hasPivot && _centerOnPivot)
-                relModel = new PointD(model.X - _pivotX, model.Y - _pivotY);
-            else
-                relModel = model;
+            // 1) 레시피 옵션 동기화
+            SyncBinViewFromRecipe();
 
-            // 2) 고정 장비→뷰 축 매핑
-            //PointD relView = ApplyAxisMap(relModel, EquipmentToView);
+            // [수정 1] 원본 좌표에서 먼저 Pivot을 빼서 상대좌표(0,0)로 맞춥니다.
+            PointD rel = _centerOnPivot
+                ? new PointD(model.X - _pivotX, model.Y - _pivotY)
+                : model;
 
-            // 3) 레시피 옵션 동기화
-            var Recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
-            if (Recipe != null) {
-                // 디스플레이는 Feeder의 CloneRotate180ForBin 설정을 그대로 따름
-                BinRotateView = Recipe.BinRotate;
-                BinMirrorView = Recipe.BinMirror;
-                BinPathStartCorner = Recipe.BinPathStartCorner;
-                BinPathPrimaryAxis = Recipe.BinPathPrimaryAxis;
-                BinPathTraversalMode = Recipe.BinPathTraversalMode;
-            }
+            // [수정 2] 중심이 맞춰진 상태에서 장비→뷰 축 변환(Invert, Swap 등)을 적용합니다.
+            PointD mapped = ApplyAxisMap(rel, EquipmentToView);
 
-            //180도 회전해야. 현재 장비 도는 좌표와 맞는다.
-            PointD relView = new PointD(-relModel.X, -relModel.Y);
+            return mapped;
+            //// 1) 레시피 옵션 동기화
+            //SyncBinViewFromRecipe();
+            //// 2) 고정 장비→뷰 매핑 먼저 적용
+            //PointD mapped = ApplyAxisMap(model, EquipmentToView);
+            //// 1) 센터 기준 상대좌표(모델 좌표계)
+            //// 1) 센터 상대좌표 변환
+            //PointD rel = _centerOnPivot
+            //    ? new PointD(mapped.X - _pivotX, mapped.Y - _pivotY)
+            //    : mapped;
 
-            //switch(BinRotateView)
-            //{
-            //    case MapRotateOption.CW90:
-            //        relView = new PointD(relView.Y, -relView.X);
-            //        break;
-            //    case MapRotateOption.CW180:
-            //        relView = new PointD(-relView.X, -relView.Y);
-            //        break;
-            //    case MapRotateOption.CW270:
-            //        relView = new PointD(-relView.Y, relView.X);
-            //        break;
-            //}
-
-            //switch(BinMirrorView)
-            //{
-            //    case MapMirrorOption.X:
-            //        relView = new PointD(relView.X, -relView.Y);
-            //        break;
-            //    case MapMirrorOption.Y:
-            //        relView = new PointD(-relView.X, relView.Y);
-            //        break;
-            //    case MapMirrorOption.XY:
-            //        relView = new PointD(-relView.X, -relView.Y);
-            //        break;
-            //}
-
-            //switch(BinPathStartCorner)
-            //{
-            //    case MapPathStartCorner.BottomLeft:
-            //        // 그대로
-            //        break;
-            //    case MapPathStartCorner.BottomRight:
-            //        relView = new PointD(-relView.X, relView.Y);
-            //        break;
-            //    case MapPathStartCorner.TopLeft:
-            //        relView = new PointD(relView.X, -relView.Y);
-            //        break;
-            //    case MapPathStartCorner.TopRight:
-            //        relView = new PointD(-relView.X, -relView.Y);
-            //        break;
-            //}
-            //switch(BinPathPrimaryAxis)
-            //{
-            //    case MapPathPrimaryAxis.XFirst:
-            //        // 그대로
-            //        break;
-            //    case MapPathPrimaryAxis.YFirst:
-            //        relView = new PointD(relView.Y, relView.X);
-            //        break;
-            //}
-            //switch(BinPathTraversalMode)
-            //{
-            //    case MapPathTraversalMode.Raster:
-            //        // 그대로
-            //        break;
-            //    case MapPathTraversalMode.Serpentine:
-            //        // Y 짝수 행은 X 그대로, Y 홀수 행은 X 반전
-            //        if (((int)Math.Round(relView.Y) % 2) != 0)
-            //        {
-            //            relView = new PointD(-relView.X, relView.Y);
-            //        }
-            //        break;
-            //}
-
-            return relView;
+            //return rel;
         }
 
         // 디스플레이 -> 모델 (Bin 인덱스)
         private PointD FromDisplay(PointD display)
         {
-            if (!_hasPivot) return display;
-            PointD relView = display;
+            // 1) 레시피 옵션 동기화
+            SyncBinViewFromRecipe();
 
-            var Recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
-            if (Recipe != null)
+            if (!_hasPivot)
             {
-                // 디스플레이는 Feeder의 CloneRotate180ForBin 설정을 그대로 따름
-                BinRotateView = Recipe.BinRotate;
-                BinMirrorView = Recipe.BinMirror;
-                BinPathStartCorner = Recipe.BinPathStartCorner;
-                BinPathPrimaryAxis = Recipe.BinPathPrimaryAxis;
-                BinPathTraversalMode = Recipe.BinPathTraversalMode;
+                // 뷰→장비 축 역매핑 적용만
+                return ApplyAxisMap(display, ViewToEquipment);
             }
 
-            //180도 회전해야. 현재 장비 도는 좌표와 맞는다.
-            relView = new PointD(-relView.X, -relView.Y);
+            // [수정 3] 화면 좌표에서 먼저 뷰→장비 축 변환(역매핑)을 적용해 부호/방향을 원래대로 돌립니다.
+            PointD unmapped = ApplyAxisMap(display, ViewToEquipment);
 
-            //// 2) 지그재그 역
-            //switch (BinPathTraversalMode)
-            //{
-            //    case MapPathTraversalMode.Serpentine:
-            //        if (((int)Math.Round(relView.Y) % 2) != 0)
-            //            relView = new PointD(-relView.X, relView.Y);
-            //        break;
-            //}
-            //// 3) 주축 역
-            //switch (BinPathPrimaryAxis)
-            //{
-            //    case MapPathPrimaryAxis.YFirst: relView = new PointD(relView.Y, relView.X); break;
-            //}
-            //// 4) 시작 코너 역
-            //switch (BinPathStartCorner)
-            //{
-            //    case MapPathStartCorner.BottomRight: relView = new PointD(-relView.X, relView.Y); break;
-            //    case MapPathStartCorner.TopLeft: relView = new PointD(relView.X, -relView.Y); break;
-            //    case MapPathStartCorner.TopRight: relView = new PointD(-relView.X, -relView.Y); break;
-            //}
-
-            // 5) 미러 역
-            //switch (BinMirrorView)
-            //{
-            //    case MapMirrorOption.X: relView = new PointD(relView.X, -relView.Y); break;
-            //    case MapMirrorOption.Y: relView = new PointD(-relView.X, relView.Y); break;
-            //    case MapMirrorOption.XY: relView = new PointD(-relView.X, -relView.Y); break;
-            //}
-            //// 6) 회전 역
-            //switch (BinRotateView)
-            //{
-            //    case MapRotateOption.CW90: relView = new PointD(-relView.Y, relView.X); break;
-            //    case MapRotateOption.CW180: relView = new PointD(-relView.X, -relView.Y); break;
-            //    case MapRotateOption.CW270: relView = new PointD(relView.Y, -relView.X); break;
-            //}
-
-            // 7) 고정 축 역매핑(뷰→장비)
-            //PointD relModel = ApplyAxisMap(relView, ViewToEquipment);
-
-            // 8) 센터 기준 절대 좌표 복원(모델 좌표계)
-            PointD model = (_hasPivot && _centerOnPivot)
-                ? new PointD(relView.X + _pivotX, relView.Y + _pivotY)
-                : relView;
+            // [수정 4] 그 다음 Pivot을 더해 절대 좌표로 복원합니다.
+            PointD model = _centerOnPivot
+                ? new PointD(unmapped.X + _pivotX, unmapped.Y + _pivotY)
+                : unmapped;
 
             return model;
+
+            //// 1) 레시피 옵션 동기화
+            //SyncBinViewFromRecipe();
+
+            //// 레시피 동기화는 동일하게 유지
+            //if (!_hasPivot)
+            //{
+            //    // 뷰→장비 축 역매핑 적용만
+            //    return ApplyAxisMap(display, ViewToEquipment);
+            //}
+
+            //PointD rel = display;
+            ////rel = new PointD(-rel.X, -rel.Y);
+
+            //// 1) 절대 좌표 복원 (pivot)
+            //PointD modelLikeView = _centerOnPivot
+            //    ? new PointD(rel.X + _pivotX, rel.Y + _pivotY)
+            //    : rel;
+
+            //// 0) 마지막으로 뷰→장비 고정 축 역매핑 적용
+            //PointD model = ApplyAxisMap(modelLikeView, ViewToEquipment);
+            //return model;
         }
-
-
-        private ToolTip _dieTooltip = new ToolTip();
-        private ContextMenuStrip _dieContextMenu;
-        private MaterialDie _lastRightClickedDie;
-
-        private void InitDieOutputExtensions()
-        {
-            // ToolTip 기본 옵션
-            _dieTooltip.AutoPopDelay = 8000;
-            _dieTooltip.InitialDelay = 300;
-            _dieTooltip.ReshowDelay = 100;
-            _dieTooltip.ShowAlways = true;
-
-            // 컨텍스트 메뉴 (상세보기)
-            _dieContextMenu = new ContextMenuStrip();
-            var miDetail = new ToolStripMenuItem("Die 상세 정보...");
-            miDetail.Click += (s, e) =>
-            {
-                if (_lastRightClickedDie != null)
-                    ShowDieInfoForm(_lastRightClickedDie);
-            };
-            _dieContextMenu.Items.Add(miDetail);
-
-            //// 마우스 이벤트 등록
-            //displayView1.MouseDown += DisplayView1_MouseDown;
-            //displayView1.MouseDoubleClick += DisplayView1_MouseDoubleClick;
-            // 중복 바인딩 방지 후 재바인딩
-            displayView1.MouseDown -= DisplayView1_MouseDown;
-            displayView1.MouseDoubleClick -= DisplayView1_MouseDoubleClick;
-            displayView1.MouseDown += DisplayView1_MouseDown;
-            displayView1.MouseDoubleClick += DisplayView1_MouseDoubleClick;
-        }
-
 
         public DieOutputControl()
         {
             InitializeComponent();
+            displayView1.MotorMoveRequested -= OnDisplayView_MotorMoveRequested;
             displayView1.MotorMoveRequested += OnDisplayView_MotorMoveRequested;
 
             // [ADD] WaferId 라벨 더블클릭으로 입력 처리
             if (lblWaferIdValue != null)
+            {
+                lblWaferIdValue.DoubleClick -= lblWaferIdValue_DoubleClick;
                 lblWaferIdValue.DoubleClick += lblWaferIdValue_DoubleClick;
+            }
+
+            displayView1.MouseDown -= DisplayView1_MouseDown;
+            displayView1.MouseDown += DisplayView1_MouseDown;
+            displayView1.MouseDoubleClick -= DisplayView1_MouseDoubleClick;
+            displayView1.MouseDoubleClick += DisplayView1_MouseDoubleClick;
+
+            SyncBinViewFromRecipe();
 
             // [중요] 우클릭/더블클릭 핸들러 바인딩
             InitDieOutputExtensions();
-
-            // [NEW] 초기 로드 시 Feeder 설정과 회전 연동
-            SyncRotate();
         }
 
         // [ADD] Equipment에서 유닛 얻기 헬퍼
@@ -380,9 +264,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             catch { }
             return null;
         }
-
-        
-
         // 더블클릭 → WaferId 입력 및 출력 스테이지 데이터 신규 생성 / ID 변경
         private void lblWaferIdValue_DoubleClick(object sender, EventArgs e)
         {
@@ -462,6 +343,193 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        private void UpdateDieCount()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(UpdateDieCount));
+                return;
+            }
+
+            int total = _dies.Count;
+            int present = _dies.Count(d =>
+                   //d.State == DieProcessState.Mapped
+                   //|| d.State == DieProcessState.Picked
+                   d.State == DieProcessState.Rejected
+                   || d.State == DieProcessState.Placed
+                   || d.State == DieProcessState.Skip);
+
+            lblDieCountValue.Text = present.ToString() + "/" + total.ToString();
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 1. 현재 상태가 AutoRunning이면 동작 차단
+                if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.Starting)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
+
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Question", "Bin 정보를 초기화하시겠습니까?") != DialogResult.Yes)
+                {
+                    return;
+                }
+                var outputStage = TryGetUnit<OutputStage>(Equipment.UnitKeys.OutputStage);
+                if (outputStage == null)
+                {
+                    Log.Write("DieOutputControl", "btnReset_Click", "InputStage unit not found.");
+                    return;
+                }
+
+                // 내부에서 wafer/material 정리까지 수행(명시적으로 의미가 드러나게 named arguments 사용)
+                outputStage.ResetForNewRun(moveToSafeReady: false, clearWafer: true, clearOffsets: true);
+
+                // UI 초기화(이 컨트롤은 picked history가 없으므로 표시 데이터만 정리)
+                SetWaferId(string.Empty);
+                SetDieList(new List<MaterialDie>());
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show($"Reset 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        public void SetWaferId(string waferId)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => SetWaferId(waferId)));
+                return;
+            }
+            lblWaferIdValue.Text = waferId;
+        }
+
+        public void SetDieList(List<MaterialDie> dies)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => SetDieList(dies)));
+                return;
+            }
+
+            _dieTooltip.Hide(displayView1);
+
+            _dies = dies ?? new List<MaterialDie>();
+            UpdateDieCount();
+            RecalcPivot();
+
+            // 디버그: 개수 및 좌표 범위 로그
+            try
+            {
+                int count = _dies.Count;
+                double minX = (count > 0) ? _dies.Min(d => d.BinX) : 0;
+                double maxX = (count > 0) ? _dies.Max(d => d.BinX) : 0;
+                double minY = (count > 0) ? _dies.Min(d => d.BinY) : 0;
+                double maxY = (count > 0) ? _dies.Max(d => d.BinY) : 0;
+                Log.Write("DieOutputControl", $"SetDieList: dies={count} binRangeX=[{minX},{maxX}] binRangeY=[{minY},{maxY}] center=({_pivotX},{_pivotY}) rotate180={_rotateDisplay} centerOnPivot={_centerOnPivot}");
+            }
+            catch { }
+
+            // 자동 회전 추정 제거: Rotate180View(또는 필드) 값 그대로 사용
+            var items = _dies.Select(d =>
+            {
+                var modelPos = new PointD(d.BinX, d.BinY);
+                //var modelPos = new PointD(d.MapX, d.MapY);
+                var displayPos = ToDisplay(modelPos);
+
+                GetDisplayColors(d, out var fill, out var border);
+                return new DisplayView_DieOutput.DisplayItem
+                {
+                    Position = displayPos,
+                    DieMap = new PointD(d.MapX, d.MapY),
+                    State = ConvertState(d.State),
+                    DieId = d.Index,
+                    Info = d.TesterResult?.BinningResult?.BinLabel,
+
+                    // [ADD]
+                    FillColor = fill,
+                    BorderColor = border
+                };
+            }).ToList();
+
+            displayView1.SetItems(items);
+            displayView1.Refresh();
+        }
+
+        /// <summary>
+        /// 개별 다이 상태 업데이트 (Bin 좌표로 탐색)
+        /// </summary>
+        public void UpdateDie(PointD binCoord, DieProcessState newState)
+        {
+            var die = _dies.FirstOrDefault(d =>
+                Math.Round(d.BinX) == binCoord.X &&
+                Math.Round(d.BinY) == binCoord.Y);
+
+            if (die == null)
+                return;
+
+            die.State = newState;
+
+            UpdateDieCount();
+            SetDieList(_dies);
+        }
+
+        private DisplayView_DieOutput.ItemState ConvertState(DieProcessState state)
+        {
+            // DisplayView_DieOutputControl.ItemState : Empty / Present / Picked
+            switch (state)
+            {
+                case DieProcessState.Picked:
+                case DieProcessState.Placed:
+                    return DisplayView_DieOutput.ItemState.Placed;
+
+                case DieProcessState.Inspected:
+                case DieProcessState.Inspecting:
+                case DieProcessState.Mapped:
+                    return DisplayView_DieOutput.ItemState.Present;
+
+                case DieProcessState.Rejected:
+                    return DisplayView_DieOutput.ItemState.Error;
+
+                case DieProcessState.Skip:
+                    return DisplayView_DieOutput.ItemState.Skip;
+
+                default:
+                    return DisplayView_DieOutput.ItemState.Empty;
+            }
+        }
+
+
+        private ToolTip _dieTooltip = new ToolTip();
+        private ContextMenuStrip _dieContextMenu;
+        private MaterialDie _lastRightClickedDie;
+
+        private void InitDieOutputExtensions()
+        {
+            // ToolTip 기본 옵션
+            _dieTooltip.AutoPopDelay = 8000;
+            _dieTooltip.InitialDelay = 300;
+            _dieTooltip.ReshowDelay = 100;
+            _dieTooltip.ShowAlways = true;
+
+            // 컨텍스트 메뉴 (상세보기)
+            _dieContextMenu = new ContextMenuStrip();
+            var miDetail = new ToolStripMenuItem("Die 상세 정보...");
+            miDetail.Click += (s, e) =>
+            {
+                if (_lastRightClickedDie != null)
+                    ShowDieInfoForm(_lastRightClickedDie);
+            };
+            _dieContextMenu.Items.Add(miDetail);
+        }
+
+        
 
         // Fallback 1: OutputFeeder 설정(StartCorner/PrimaryAxis/Traversal) 반영 (Feeder 실행 중이어서 직접 호출 못할 때)
         private List<MaterialDie> BuildDiesWithFeederLogicFallback(OutputFeeder feeder)
@@ -630,127 +698,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             MotorMoveRequested?.Invoke(this, e);
         }
 
-        public void SetWaferId(string waferId)
-        {
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new Action(() => SetWaferId(waferId)));
-                return;
-            }
-            lblWaferIdValue.Text = waferId;
-        }
-
-        private void UpdateDieCount()
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(UpdateDieCount));
-                return;
-            }
-
-            // 출력 쪽 카운트 정의:
-            //  - Placed : 이미 출력 영역(또는 배출 완료 위치)에 놓인 상태
-            //  - Picked : (필요 시) 픽 완료 후 상태 유지되는 경우 포함
-            // 프로젝트 정책에 따라 조정 가능
-            int total = _dies.Count;
-            int present = _dies.Count(d =>
-                   d.State == DieProcessState.Placed
-                || d.State == DieProcessState.Picked
-                || d.State == DieProcessState.Inspected    // 필요하면 표시
-                || d.State == DieProcessState.Rejected);   // 필요 시 제외 가능
-
-            lblDieCountValue.Text = present.ToString() + "/" + total.ToString();
-        }
-
-        public void SetDieList(List<MaterialDie> dies)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => SetDieList(dies)));
-                return;
-            }
-
-            _dieTooltip.Hide(displayView1);
-
-            _dies = dies ?? new List<MaterialDie>();
-            UpdateDieCount();
-            RecalcPivot();
-
-            // 디버그: 개수 및 좌표 범위 로그
-            try
-            {
-                int count = _dies.Count;
-                double minX = (count > 0) ? _dies.Min(d => d.BinX) : 0;
-                double maxX = (count > 0) ? _dies.Max(d => d.BinX) : 0;
-                double minY = (count > 0) ? _dies.Min(d => d.BinY) : 0;
-                double maxY = (count > 0) ? _dies.Max(d => d.BinY) : 0;
-                Log.Write("DieOutputControl", $"SetDieList: dies={count} binRangeX=[{minX},{maxX}] binRangeY=[{minY},{maxY}] center=({_pivotX},{_pivotY}) rotate180={_rotateDisplay} centerOnPivot={_centerOnPivot}");
-            }
-            catch { }
-
-            // 자동 회전 추정 제거: Rotate180View(또는 필드) 값 그대로 사용
-            var items = _dies.Select(d =>
-            {
-                var modelPos = new PointD(d.BinX, d.BinY);
-                var displayPos = ToDisplay(modelPos);
-
-                GetDisplayColors(d, out var fill, out var border);
-
-                return new DisplayView_DieOutput.DisplayItem
-                {
-                    Position = displayPos,
-                    DieMap = new Point(d.MapX, d.MapY),
-                    State = ConvertState(d.State),
-                    DieId = d.Index,
-                    Info = d.TesterResult?.BinningResult?.BinLabel,
-
-                    // [ADD]
-                    FillColor = fill,
-                    BorderColor = border
-                };
-            }).ToList();
-
-            displayView1.SetItems(items);
-            displayView1.Refresh();
-        }
-
-        /// <summary>
-        /// 개별 다이 상태 업데이트 (Bin 좌표로 탐색)
-        /// </summary>
-        public void UpdateDie(Point binCoord, DieProcessState newState)
-        {
-            var die = _dies.FirstOrDefault(d =>
-                (int)Math.Round(d.BinX) == binCoord.X &&
-                (int)Math.Round(d.BinY) == binCoord.Y);
-            if (die == null) return;
-
-            die.State = newState;
-
-            UpdateDieCount();
-            SetDieList(_dies);
-        }
-
-        private DisplayView_DieOutput.ItemState ConvertState(DieProcessState state)
-        {
-            // DisplayView_DieOutputControl.ItemState : Empty / Present / Picked
-            switch (state)
-            {
-                case DieProcessState.Picked:
-                case DieProcessState.Placed:
-                    return DisplayView_DieOutput.ItemState.Placed;
-
-                case DieProcessState.Inspected:
-                case DieProcessState.Inspecting:
-                case DieProcessState.Mapped:
-                    return DisplayView_DieOutput.ItemState.Present;
-
-                case DieProcessState.Rejected:
-                    return DisplayView_DieOutput.ItemState.Error;
-
-                default:
-                    return DisplayView_DieOutput.ItemState.Empty;
-            }
-        }
+        
 
         #region (선택) 호환용 Legacy Wrapper
         // 과거 코드에서 DieOutputControl.Die 사용하던 부분이 있다면
@@ -759,72 +707,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public class LegacyDie
         {
             public int Index { get; set; }
-            public Point Position { get; set; }
+            public PointD Position { get; set; }
             public bool Present { get; set; }
         }
         #endregion
 
-
-        //private void DisplayView1_MouseDown(object sender, MouseEventArgs e)
-        //{
-        //    if (e.Button != MouseButtons.Right) return;
-
-        //    // 화면 좌표 → DisplayView 내부 좌표
-        //    Point clientPt = e.Location;
-
-        //    // DisplayView_DieOutputControl 가 노출하는 Items 컬렉션이 있다고 가정
-        //    // 없으면 DisplayView_DieOutputControl에 public IReadOnlyList<DisplayItem> Items 추가 필요
-        //    var items = displayView1.Items; // (필요 시 해당 컨트롤 수정)
-
-        //    if (items == null || items.Count == 0) return;
-
-        //    // 가장 가까운 아이템 찾기 (간단한 거리 기반)
-        //    DisplayView_DieOutputControl.DisplayItem hit = null;
-        //    double bestDist = double.MaxValue;
-        //    foreach (var it in items)
-        //    {
-        //        // DisplayView 내부의 좌표 → 화면 픽셀 변환이 별도로 없다면
-        //        // Position을 그대로 비교 (컨트롤이 중앙 (0,0) 기준이라면 스케일 고려 필요)
-        //        // 여기서는 Position이 이미 그려지는 논리 좌표라 가정
-        //        var p = it.Position;
-        //        // 단순히 X,Y가 픽셀이라고 가정 (실제 구현에서 Scale/Offset 필요 시 수정)
-        //        double dx = p.X - clientPt.X;
-        //        double dy = p.Y - clientPt.Y;
-        //        double dist = dx * dx + dy * dy;
-        //        if (dist < bestDist)
-        //        {
-        //            bestDist = dist;
-        //            hit = it;
-        //        }
-        //    }
-
-        //    if (hit == null) return;
-
-        //    // Display 좌표 → 모델 Bin 좌표로 역변환
-        //    var modelPos = FromDisplay(hit.Position);
-
-        //    // 해당 Bin 좌표로 MaterialDie 찾기
-        //    var die = _dies.FirstOrDefault(d =>
-        //        Math.Round(d.BinX) == Math.Round(modelPos.X) &&
-        //        Math.Round(d.BinY) == Math.Round(modelPos.Y));
-
-        //    if (die == null) return;
-
-        //    _lastRightClickedDie = die;
-
-        //    // Shift + RightClick 시 상세 Form, 일반 RightClick 시 ToolTip
-        //    if ((ModifierKeys & Keys.Shift) == Keys.Shift)
-        //    {
-        //        ShowDieInfoForm(die);
-        //    }
-        //    else
-        //    {
-        //        ShowDieTooltip(die, clientPt);
-        //        // 컨텍스트 메뉴도 함께 (선택적으로)
-        //        _dieContextMenu.Show(displayView1, clientPt);
-        //    }
-        //}
-        // 기존 DisplayView1_MouseDown → HitTest 사용으로 단순화
         private void DisplayView1_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right)
@@ -851,7 +738,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             else
             {
                 // 간단 Tooltip + ContextMenu
-                ShowDieTooltip(die, e.Location);
+                ShowDieTooltip(die, (PointD)e.Location);
                 _dieContextMenu.Show(displayView1, e.Location);
             }
         }
@@ -859,10 +746,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // 더블클릭(좌측) → 모터 이동: DisplayView_DieOutputControl ItemDoubleClicked 이벤트 활용 권장
         private void DisplayView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+
             if (e.Button != MouseButtons.Left)
                 return;
+
             var hit = displayView1.HitTest(e.Location);
-            if (hit == null) return;
+            if (hit == null) 
+                return;
+
+
 
             // 모터 이동 요청 이벤트 발생 (기존 구조 유지)
             MotorMoveRequested?.Invoke(this, new DisplayView_DieOutput.DisplayItemEventArgs
@@ -873,7 +765,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
 
 
-        private void ShowDieTooltip(MaterialDie die, Point clientPoint)
+        private void ShowDieTooltip(MaterialDie die, PointD clientPoint)
         {
             try
             {
@@ -1006,36 +898,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private void btnReset_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var ask = new MessageBoxYesNo();
-                if (ask.ShowDialog("Question", "Bin 정보를 초기화하시겠습니까?") != DialogResult.Yes)
-                {
-                    return;
-                }
-                var outputStage = TryGetUnit<OutputStage>(Equipment.UnitKeys.OutputStage);
-                if (outputStage == null)
-                {
-                    Log.Write("DieOutputControl", "btnReset_Click", "InputStage unit not found.");
-                    return;
-                }
-
-                // 내부에서 wafer/material 정리까지 수행(명시적으로 의미가 드러나게 named arguments 사용)
-                outputStage.ResetForNewRun(moveToSafeReady: false, clearWafer: true, clearOffsets: true);
-
-                // UI 초기화(이 컨트롤은 picked history가 없으므로 표시 데이터만 정리)
-                SetWaferId(string.Empty);
-                SetDieList(new List<MaterialDie>());
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                MessageBox.Show($"Reset 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
+        
 
         // [ADD] BinNo -> Color 팔레트(원하는대로 수정)
         // 보통 GoodBin BinNo를 기준으로 색을 달리 주는 용도
@@ -1087,6 +950,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             //{
             //    return;
             //}
+
+            // Skip / Fail 등은
+            if (die.State == DieProcessState.Skip || die.IsPass == false)
+            {
+                fill = Color.DimGray;
+                border = Color.DarkGoldenrod;
+                return;
+            }
 
             // Rejected / Fail 등은 빨강
             if (die.State == DieProcessState.Rejected || die.IsPass == false)

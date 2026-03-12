@@ -476,43 +476,51 @@ namespace QMC.Common.Keithley
             }
             return false;
         }
+
         public bool ReadBufferData()
         {
             try
-            {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+            {
                 string bufferName = $"{Name}.nvbuffer1";
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+
+                // =================================================================================
+                // 1. 측정된 결과값 (Readings) 읽어오기
+                // =================================================================================
                 string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
-                
                 string bufferData = "";
 
-                KeithleyInstrumentCommunicator comm = Owner.Communicator;
                 if (!comm.Query(bufferReadCommand, ref bufferData))
-                    throw new Exception($"[{Name}] Failed to read buffer.");
+                    throw new Exception($"[{Name}] Failed to read buffer readings.");
 
                 bufferData = bufferData.Trim();
-                string[] datas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] measureDatas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
+                // =================================================================================
+                // 2. 장비가 실제로 인가한 소스값 (SourceValues) 읽어오기
+                // =================================================================================
+                string sourceValuesCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.sourcevalues)";
+                string sourceData = "";
+                string[] actualSourceDatas = new string[0];
+
+                if (comm.Query(sourceValuesCommand, ref sourceData))
+                {
+                    sourceData = sourceData.Trim();
+                    actualSourceDatas = sourceData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                }
+                else
+                {
+                    Log.Write("KeithleySourcemeter", $"[{Name}] Failed to read actual source values.");
+                }
+
+                // =================================================================================
+                // 3. Command와 데이터를 1:1 매칭하여 저장 및 로그 출력
+                // =================================================================================
                 bufferDatas.Clear();
-                //foreach (var d in datas)
-                //    bufferDatas.Add(d.Trim());
                 int dataIndex = 0;
-                bool vf3Encountered = false;
 
                 foreach (var cmd in commands)
                 {
-                    // VF3 앞에 주입한 VR 데이터를 정확히 스킵: 첫 VF3 직전에만 인덱스 1 증가
-                    //if (!vf3Encountered
-                    //    && injectedVrForFirstVf3
-                    //    && cmd.Name != null
-                    //    && cmd.Name.StartsWith("VF3", StringComparison.OrdinalIgnoreCase))
-                    //{
-                    //    // 버퍼에 최소 1개 데이터 있어야 스킵 가능
-                    //    if (dataIndex >= datas.Length)
-                    //        throw new Exception($"[{Name}] Insufficient buffer data to skip injected VR before VF3.");
-                    //    dataIndex++;            // 주입된 VR 데이터 스킵
-                    //    vf3Encountered = true;  // 첫 VF3 처리 플래그 설정
-                    //}
-
                     switch (cmd.Action)
                     {
                         case CommandAction.MeasureI:
@@ -520,20 +528,35 @@ namespace QMC.Common.Keithley
                         case CommandAction.MeasureIAndTrig:
                         case CommandAction.MeasureVAndTrig:
                             {
-                                if (dataIndex >= datas.Length)
+                                if (dataIndex >= measureDatas.Length)
                                     throw new Exception($"[{Name}] Insufficient buffer data received.");
-                                bufferDatas.Add(datas[dataIndex]);
+
+                                // 측정값 저장
+                                string measuredVal = measureDatas[dataIndex];
+                                bufferDatas.Add(measuredVal);
+
+                                // 실제 인가된 소스값 가져오기 (배열 인덱스 보호)
+                                string actualSourceVal = (dataIndex < actualSourceDatas.Length) ? actualSourceDatas[dataIndex] : "Unknown";
+
+                                // ★ [로그 출력] 설정값 vs 실제값 vs 측정값 비교
+                                Log.Write("KeithleySourcemeter",
+                                    $"[{Name}] [{cmd.Name}] Target Source: {cmd.SourceValue:E3} -> Actual Source: {actualSourceVal} | Measured: {measuredVal}");
+
                                 dataIndex++;
                             }
                             break;
+
                         case CommandAction.MeasureContactRHigh:
                             {
                                 bufferDatas.Add(contactRHighData);
+                                Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R High Measured: {contactRHighData}");
                             }
                             break;
+
                         case CommandAction.MeasureContactRLow:
                             {
                                 bufferDatas.Add(contactRLowData);
+                                Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R Low Measured: {contactRLowData}");
                             }
                             break;
                     }
@@ -544,7 +567,6 @@ namespace QMC.Common.Keithley
             {
                 // Error handling
                 bufferDatas.Clear();
-
                 Log.Write(ex);
                 return false;
             }
@@ -553,9 +575,89 @@ namespace QMC.Common.Keithley
                 // 다음 측정을 위해 항상 리셋
                 injectedVrForFirstVf3 = false;
             }
-
-            return true;
         }
+
+        // 기존 코드
+        //public bool ReadBufferData()
+        //{
+        //    try
+        //    {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+        //        string bufferName = $"{Name}.nvbuffer1";
+        //        string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
+
+        //        string bufferData = "";
+
+        //        KeithleyInstrumentCommunicator comm = Owner.Communicator;
+        //        if (!comm.Query(bufferReadCommand, ref bufferData))
+        //            throw new Exception($"[{Name}] Failed to read buffer.");
+
+        //        bufferData = bufferData.Trim();
+        //        string[] datas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+        //        bufferDatas.Clear();
+        //        //foreach (var d in datas)
+        //        //    bufferDatas.Add(d.Trim());
+        //        int dataIndex = 0;
+        //        bool vf3Encountered = false;
+
+        //        foreach (var cmd in commands)
+        //        {
+        //            // VF3 앞에 주입한 VR 데이터를 정확히 스킵: 첫 VF3 직전에만 인덱스 1 증가
+        //            //if (!vf3Encountered
+        //            //    && injectedVrForFirstVf3
+        //            //    && cmd.Name != null
+        //            //    && cmd.Name.StartsWith("VF3", StringComparison.OrdinalIgnoreCase))
+        //            //{
+        //            //    // 버퍼에 최소 1개 데이터 있어야 스킵 가능
+        //            //    if (dataIndex >= datas.Length)
+        //            //        throw new Exception($"[{Name}] Insufficient buffer data to skip injected VR before VF3.");
+        //            //    dataIndex++;            // 주입된 VR 데이터 스킵
+        //            //    vf3Encountered = true;  // 첫 VF3 처리 플래그 설정
+        //            //}
+
+        //            switch (cmd.Action)
+        //            {
+        //                case CommandAction.MeasureI:
+        //                case CommandAction.MeasureV:
+        //                case CommandAction.MeasureIAndTrig:
+        //                case CommandAction.MeasureVAndTrig:
+        //                    {
+        //                        if (dataIndex >= datas.Length)
+        //                            throw new Exception($"[{Name}] Insufficient buffer data received.");
+        //                        bufferDatas.Add(datas[dataIndex]);
+        //                        dataIndex++;
+        //                    }
+        //                    break;
+        //                case CommandAction.MeasureContactRHigh:
+        //                    {
+        //                        bufferDatas.Add(contactRHighData);
+        //                    }
+        //                    break;
+        //                case CommandAction.MeasureContactRLow:
+        //                    {
+        //                        bufferDatas.Add(contactRLowData);
+        //                    }
+        //                    break;
+        //            }
+        //        }
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Error handling
+        //        bufferDatas.Clear();
+
+        //        Log.Write(ex);
+        //        return false;
+        //    }
+        //    finally
+        //    {
+        //        // 다음 측정을 위해 항상 리셋
+        //        injectedVrForFirstVf3 = false;
+        //    }
+
+        //    return true;
+        //}
         #endregion
 
         #region Simulation Method

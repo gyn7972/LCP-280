@@ -35,6 +35,8 @@ namespace QMC.Common.Spectrometer
         public int ColormetricStop { get; set; }
         public int TriggerTimeout { get; set; }
         public bool UseHardwareTrigger { get; set; }
+
+        public double SkipLevel { get; set; }
         #endregion
 
         #region Constructor
@@ -58,6 +60,7 @@ namespace QMC.Common.Spectrometer
             ColormetricStop = 780;
             TriggerTimeout = 5000;
             UseHardwareTrigger = false;
+            SkipLevel = 0.0;
             IsSimulation = false;
         }
         public override bool Validate()
@@ -99,6 +102,7 @@ namespace QMC.Common.Spectrometer
             pc.Add("Colormetric Stop", "", ColormetricStop);
             pc.Add("Trigger Timeout", "ms", TriggerTimeout);
             pc.Add("Use Hardware Trigger", "", UseHardwareTrigger);
+            pc.Add("Skip Level", "", SkipLevel);
             pc.Add("Is Simulation", "", IsSimulation);
             return pc;
         }
@@ -121,6 +125,7 @@ namespace QMC.Common.Spectrometer
                 ColormetricStop = pc.GetValue<int>("Colormetric Stop");
                 TriggerTimeout = pc.GetValue<int>("Trigger Timeout");
                 UseHardwareTrigger = pc.GetValue<bool>("Use Hardware Trigger");
+                SkipLevel = pc.GetValue<double>("Skip Level");
                 IsSimulation = pc.GetValue<bool>("Is Simulation");
             }
             catch (Exception)

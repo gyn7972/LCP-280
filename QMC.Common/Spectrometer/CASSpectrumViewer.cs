@@ -92,6 +92,8 @@ namespace QMC.Common.Spectrometer
             //lbMaxIntensity.Text = $"Max Intensity = {Intensity:F5}";// [{spectrometer.DeviceInfo != null ? spectrometer.Config != null ? "" : "" : ""}{GetCalibrationUnit(spectrometer)}]";
             lbADC.Text = $"MaxCount(ADC) = {ADC:F1}";
 
+            Log.Write("CASSpectrumViewer", $"UpdateSpectrumChart: Intensity={Intensity}, ADC(MaxCount)={ADC}");
+
             var area = chart.ChartAreas[0];
             area.AxisX.Minimum = _chartMinX;
             area.AxisX.Maximum = _chartMaxX;

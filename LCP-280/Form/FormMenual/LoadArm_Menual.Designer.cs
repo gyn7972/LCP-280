@@ -29,13 +29,14 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.buttonPickUpNiddle_Move = new QMC.Common.IndividualMenuButton();
-            this.buttonTest2 = new QMC.Common.IndividualMenuButton();
+            this.label1 = new System.Windows.Forms.Label();
             this.buttonTest = new QMC.Common.IndividualMenuButton();
             this.btnTest = new QMC.Common.IndividualMenuButton();
-            this.btnDieUnloading = new QMC.Common.IndividualMenuButton();
-            this.btnDieLoading = new QMC.Common.IndividualMenuButton();
+            this.buttonTest2 = new QMC.Common.IndividualMenuButton();
+            this.buttonPickUpNeedle_Move = new QMC.Common.IndividualMenuButton();
             this.cbLoadIndex = new System.Windows.Forms.ComboBox();
+            this.btnDieLoading = new QMC.Common.IndividualMenuButton();
+            this.btnDieUnloading = new QMC.Common.IndividualMenuButton();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.MoveToPositionControl();
             this.groupBoxImageView.SuspendLayout();
@@ -139,6 +140,7 @@ namespace QMC.LCP_280.Process.Unit
             this._btnVisionSetting.TabStop = false;
             this._btnVisionSetting.Text = "VisionSetting";
             this._btnVisionSetting.UseVisualStyleBackColor = false;
+            this._btnVisionSetting.Visible = false;
             // 
             // buttonDataManual
             // 
@@ -161,6 +163,7 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonDataManual.TabStop = false;
             this.buttonDataManual.Text = "ManualData";
             this.buttonDataManual.UseVisualStyleBackColor = false;
+            this.buttonDataManual.Visible = false;
             // 
             // tableLayoutPanel1
             // 
@@ -242,13 +245,14 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tableLayoutPanel2.Controls.Add(this.buttonPickUpNiddle_Move, 2, 3);
-            this.tableLayoutPanel2.Controls.Add(this.buttonTest2, 2, 2);
-            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnTest, 2, 1);
-            this.tableLayoutPanel2.Controls.Add(this.btnDieUnloading, 0, 2);
+            this.tableLayoutPanel2.Controls.Add(this.label1, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 0, 8);
+            this.tableLayoutPanel2.Controls.Add(this.btnTest, 1, 8);
+            this.tableLayoutPanel2.Controls.Add(this.buttonTest2, 2, 8);
+            this.tableLayoutPanel2.Controls.Add(this.buttonPickUpNeedle_Move, 2, 7);
+            this.tableLayoutPanel2.Controls.Add(this.cbLoadIndex, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnDieLoading, 0, 1);
-            this.tableLayoutPanel2.Controls.Add(this.cbLoadIndex, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.btnDieUnloading, 1, 1);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 29);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(5);
@@ -267,49 +271,17 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Size = new System.Drawing.Size(560, 529);
             this.tableLayoutPanel2.TabIndex = 34;
             // 
-            // buttonPickUpNiddle_Move
+            // label1
             // 
-            this.buttonPickUpNiddle_Move.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonPickUpNiddle_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonPickUpNiddle_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.buttonPickUpNiddle_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonPickUpNiddle_Move.CustomFont = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonPickUpNiddle_Move.CustomForeColor = System.Drawing.Color.Black;
-            this.buttonPickUpNiddle_Move.Font = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonPickUpNiddle_Move.ForeColor = System.Drawing.Color.Black;
-            this.buttonPickUpNiddle_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(374, 167);
-            this.buttonPickUpNiddle_Move.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
-            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(184, 51);
-            this.buttonPickUpNiddle_Move.TabIndex = 36;
-            this.buttonPickUpNiddle_Move.TabStop = false;
-            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
-            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = false;
-            // 
-            // buttonTest2
-            // 
-            this.buttonTest2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonTest2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonTest2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.buttonTest2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonTest2.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonTest2.CustomForeColor = System.Drawing.Color.Black;
-            this.buttonTest2.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonTest2.ForeColor = System.Drawing.Color.Black;
-            this.buttonTest2.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonTest2.Location = new System.Drawing.Point(374, 112);
-            this.buttonTest2.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonTest2.Name = "buttonTest2";
-            this.buttonTest2.Size = new System.Drawing.Size(184, 51);
-            this.buttonTest2.TabIndex = 34;
-            this.buttonTest2.TabStop = false;
-            this.buttonTest2.Text = "Test2";
-            this.buttonTest2.UseVisualStyleBackColor = false;
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label1.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Location = new System.Drawing.Point(3, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(180, 55);
+            this.label1.TabIndex = 41;
+            this.label1.Text = "Slot";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // buttonTest
             // 
@@ -324,14 +296,15 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonTest.ForeColor = System.Drawing.Color.Black;
             this.buttonTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonTest.Location = new System.Drawing.Point(374, 2);
+            this.buttonTest.Location = new System.Drawing.Point(2, 442);
             this.buttonTest.Margin = new System.Windows.Forms.Padding(2);
             this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(184, 51);
+            this.buttonTest.Size = new System.Drawing.Size(182, 51);
             this.buttonTest.TabIndex = 37;
             this.buttonTest.TabStop = false;
             this.buttonTest.Text = "SEQ STOP";
             this.buttonTest.UseVisualStyleBackColor = false;
+            this.buttonTest.Visible = false;
             // 
             // btnTest
             // 
@@ -346,48 +319,89 @@ namespace QMC.LCP_280.Process.Unit
             this.btnTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnTest.ForeColor = System.Drawing.Color.Black;
             this.btnTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnTest.Location = new System.Drawing.Point(374, 57);
+            this.btnTest.Location = new System.Drawing.Point(188, 442);
             this.btnTest.Margin = new System.Windows.Forms.Padding(2);
             this.btnTest.Name = "btnTest";
-            this.btnTest.Size = new System.Drawing.Size(184, 51);
+            this.btnTest.Size = new System.Drawing.Size(182, 51);
             this.btnTest.TabIndex = 33;
             this.btnTest.TabStop = false;
             this.btnTest.Text = "test1";
             this.btnTest.UseVisualStyleBackColor = false;
+            this.btnTest.Visible = false;
             // 
-            // btnDieUnloading
+            // buttonTest2
             // 
-            this.btnDieUnloading.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.buttonTest2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnDieUnloading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDieUnloading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnDieUnloading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDieUnloading.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDieUnloading.CustomForeColor = System.Drawing.Color.Black;
-            this.btnDieUnloading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDieUnloading.ForeColor = System.Drawing.Color.Black;
-            this.btnDieUnloading.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDieUnloading.Location = new System.Drawing.Point(2, 112);
-            this.btnDieUnloading.Margin = new System.Windows.Forms.Padding(2);
-            this.btnDieUnloading.Name = "btnDieUnloading";
-            this.btnDieUnloading.Size = new System.Drawing.Size(182, 51);
-            this.btnDieUnloading.TabIndex = 39;
-            this.btnDieUnloading.TabStop = false;
-            this.btnDieUnloading.Text = "Die PlaceDown";
-            this.btnDieUnloading.UseVisualStyleBackColor = false;
-            this.btnDieUnloading.Click += new System.EventHandler(this.btnDiePlaceDown_Click);
+            this.buttonTest2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonTest2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest2.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest2.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonTest2.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest2.ForeColor = System.Drawing.Color.Black;
+            this.buttonTest2.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonTest2.Location = new System.Drawing.Point(374, 442);
+            this.buttonTest2.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonTest2.Name = "buttonTest2";
+            this.buttonTest2.Size = new System.Drawing.Size(184, 51);
+            this.buttonTest2.TabIndex = 34;
+            this.buttonTest2.TabStop = false;
+            this.buttonTest2.Text = "Test2";
+            this.buttonTest2.UseVisualStyleBackColor = false;
+            this.buttonTest2.Visible = false;
+            // 
+            // buttonPickUpNeedle_Move
+            // 
+            this.buttonPickUpNeedle_Move.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonPickUpNeedle_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonPickUpNeedle_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonPickUpNeedle_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonPickUpNeedle_Move.CustomFont = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonPickUpNeedle_Move.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonPickUpNeedle_Move.Font = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonPickUpNeedle_Move.ForeColor = System.Drawing.Color.Black;
+            this.buttonPickUpNeedle_Move.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonPickUpNeedle_Move.Location = new System.Drawing.Point(374, 387);
+            this.buttonPickUpNeedle_Move.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonPickUpNeedle_Move.Name = "buttonPickUpNeedle_Move";
+            this.buttonPickUpNeedle_Move.Size = new System.Drawing.Size(184, 51);
+            this.buttonPickUpNeedle_Move.TabIndex = 36;
+            this.buttonPickUpNeedle_Move.TabStop = false;
+            this.buttonPickUpNeedle_Move.Text = "PickUp && Niddle Move";
+            this.buttonPickUpNeedle_Move.UseVisualStyleBackColor = false;
+            this.buttonPickUpNeedle_Move.Visible = false;
+            // 
+            // cbLoadIndex
+            // 
+            this.cbLoadIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbLoadIndex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbLoadIndex.FormattingEnabled = true;
+            this.cbLoadIndex.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8"});
+            this.cbLoadIndex.Location = new System.Drawing.Point(189, 3);
+            this.cbLoadIndex.Name = "cbLoadIndex";
+            this.cbLoadIndex.Size = new System.Drawing.Size(180, 36);
+            this.cbLoadIndex.TabIndex = 40;
             // 
             // btnDieLoading
             // 
-            this.btnDieLoading.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnDieLoading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnDieLoading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btnDieLoading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnDieLoading.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDieLoading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnDieLoading.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnDieLoading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDieLoading.ForeColor = System.Drawing.Color.Black;
             this.btnDieLoading.ImageSize = new System.Drawing.Size(45, 45);
@@ -401,23 +415,26 @@ namespace QMC.LCP_280.Process.Unit
             this.btnDieLoading.UseVisualStyleBackColor = false;
             this.btnDieLoading.Click += new System.EventHandler(this.btnDiePickUp_Click);
             // 
-            // cbLoadIndex
+            // btnDieUnloading
             // 
-            this.cbLoadIndex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbLoadIndex.FormattingEnabled = true;
-            this.cbLoadIndex.Items.AddRange(new object[] {
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8"});
-            this.cbLoadIndex.Location = new System.Drawing.Point(3, 3);
-            this.cbLoadIndex.Name = "cbLoadIndex";
-            this.cbLoadIndex.Size = new System.Drawing.Size(180, 36);
-            this.cbLoadIndex.TabIndex = 40;
+            this.btnDieUnloading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDieUnloading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnDieUnloading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDieUnloading.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDieUnloading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnDieUnloading.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnDieUnloading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDieUnloading.ForeColor = System.Drawing.Color.Black;
+            this.btnDieUnloading.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnDieUnloading.Location = new System.Drawing.Point(188, 57);
+            this.btnDieUnloading.Margin = new System.Windows.Forms.Padding(2);
+            this.btnDieUnloading.Name = "btnDieUnloading";
+            this.btnDieUnloading.Size = new System.Drawing.Size(182, 51);
+            this.btnDieUnloading.TabIndex = 39;
+            this.btnDieUnloading.TabStop = false;
+            this.btnDieUnloading.Text = "Die PlaceDown";
+            this.btnDieUnloading.UseVisualStyleBackColor = false;
+            this.btnDieUnloading.Click += new System.EventHandler(this.btnDiePlaceDown_Click);
             // 
             // dioControl
             // 
@@ -462,6 +479,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel3.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.tableLayoutPanel2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -485,12 +503,13 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton _btnVisionSetting;
         private IndividualMenuButton buttonTest;
         private IndividualMenuButton buttonTest2;
-        private IndividualMenuButton buttonPickUpNiddle_Move;
+        private IndividualMenuButton buttonPickUpNeedle_Move;
         private GroupBox groupBoxManualTrSeq;
         private TableLayoutPanel tableLayoutPanel3;
         private ManualSequenceControl manualSequenceControl;
         private IndividualMenuButton btnDieUnloading;
         private IndividualMenuButton btnDieLoading;
         private ComboBox cbLoadIndex;
+        private Label label1;
     }
 }

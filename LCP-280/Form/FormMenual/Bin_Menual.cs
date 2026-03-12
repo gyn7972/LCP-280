@@ -4,8 +4,10 @@ using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -17,7 +19,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     ///    OutputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    OutputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
-    public partial class Bin_Menual : Form
+    public partial class Bin_Menual : Form, ITabActivationAware
     {
         private const string WORK_NAME = "WaferBin";
         private Equipment Equipment => Equipment.Instance;
@@ -36,7 +38,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         // T-보정 다이얼로그 인스턴스 유지 (모달리스)
         private TCorrectionDialog _tCorrectionDlg;
-        private PatternMatchingRunner _patternRunner; // 프로젝트에서 Runner를 주입할 경우 사용
+        private PatternMatchingRunner _patternRunner = null; // 프로젝트에서 Runner를 주입할 경우 사용
 
 
         public Bin_Menual() : this(
@@ -58,7 +60,102 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             _OutputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
-            waferMapView_OutputWafer.SetMaterialCassette(OutputCassetteLifter.GetMaterialCassette());
+            waferMapView_OutputWafer.GetWaferSelectMapView()?.SetMaterialCassette(OutputCassetteLifter.GetMaterialCassette());
+        }
+
+        // [추가] 탭 활성화 인터페이스 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
+        }
+
+        // [추가] 폼 이벤트 오버라이드
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+                if (this.Visible) ResumeCamera();
+                else PauseCamera();
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                PauseCamera();
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
+            base.OnFormClosing(e);
+        }
+
+        // [추가] 카메라 제어 헬퍼 (_OutputWaferCameraviewer 사용)
+        private void PauseCamera()
+        {
+            if (_OutputWaferCameraviewer == null || _OutputWaferCameraviewer.IsDisposed) return;
+
+            try { _OutputWaferCameraviewer.SuspendDisplay(); } catch { }
+
+            var cam = _OutputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            try
+            {
+                var method = _OutputWaferCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_OutputWaferCameraviewer, null);
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_OutputWaferCameraviewer == null || _OutputWaferCameraviewer.IsDisposed) return;
+
+            var cam = _OutputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _OutputWaferCameraviewer.ResumeDisplay(); } catch { }
+
+            try
+            {
+                var method = _OutputWaferCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_OutputWaferCameraviewer, null);
+                else _OutputWaferCameraviewer.StartUpdateTask();
+            }
+            catch { }
         }
 
         public void PreloadUI()
@@ -449,6 +546,21 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void btnMapping_Click(object sender, EventArgs e)
         {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Cassette Mapping을 하시겠습니까?") != DialogResult.Yes)
+            {
+                return;
+            }
+
             try
             {
                 if (OutputCassetteLifter == null)
@@ -476,7 +588,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                waferMapView_OutputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_OutputWafer.GetWaferSelectMapView()?.SetMaterialCassette(materialCassette);
                 waferMapView_OutputWafer.Refresh();
 
                 MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -615,6 +727,131 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 MessageBox.Show("T-보정 Dlg 열기 중 오류: " + ex.Message, "오류",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        private int _nSelectSlot = 0;
+        private void comboBoxSlot_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _nSelectSlot = comboBoxSlot.SelectedIndex;
+        }
+        private void SetUnitsManualRunning(bool running)
+        {
+            try
+            {
+                if (running)
+                {
+                    OutputCassetteLifter.StartManual();
+                    OutputFeeder.StartManual();
+                    OutputStage.StartManual();
+                }
+                else
+                {
+                    OutputCassetteLifter.Stop();
+                    OutputFeeder.Stop();
+                    OutputStage.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private async Task<int> MoveToSlotAsync(CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                int nRet = 0;
+
+                if (_nSelectSlot == -1)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Warring", "No Select Slot.");
+                }
+
+                nRet = this.OutputCassetteLifter.MoveToSlot(_nSelectSlot); // 언로딩 해야하는 Slot으로 이동 요청.
+                if (nRet != 0)
+                {
+                    Log.Write("LCP-280", "buttonMoveToSlot_Click", "MoveToSlot Fail.");
+                    return nRet;
+                }
+
+                return nRet;
+            }, ct).ConfigureAwait(false);
+        }
+
+        private async void buttonMoveToSlot_Click(object sender, EventArgs e)
+        {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Are you sure you want Move?") != DialogResult.Yes)
+                return;
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+            SetUnitsManualRunning(true);
+
+            var t = Task.Run(async () =>
+            {
+                token.ThrowIfCancellationRequested();
+
+                nRet = await Task.Run(() => MoveToSlotAsync(token), token).ConfigureAwait(false);
+                if (nRet != 0)
+                {
+                    Log.Write("LCP-280", "buttonMoveToSlot_Click", "MoveToSlotAsync failed");
+                    return nRet;
+                }
+                return nRet;
+
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "Move To Slot", t, null);
+            try
+            {
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    //mb.ShowDialog("MoveToSlot Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    //mb.ShowDialog("MoveToSlot Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    //MessageBox.Show("MoveToSlot Fail",
+                    //    "MoveToSlot Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
             }
         }
     }

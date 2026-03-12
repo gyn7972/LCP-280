@@ -1,12 +1,16 @@
 ﻿using QMC.Common;
+using QMC.Common.UI;
+using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
@@ -36,11 +40,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public event EventHandler<Rotary.SocketInfo> SelectIndexRequested;
 
         private Rotary _rotary;
+        private InputDieTransfer _waferArm;
+        private OutputDieTransfer _binArm;
+
         private readonly List<SocketView> _socketViews = new List<SocketView>();
 
         private SocketView _selectedSocketView;
         private SocketView _hoveredSocketView;
-        private bool _isAutoSequencing;
+        private bool _isAutoSequencing = false;
 
         private ToolTip _toolTip;
         private Timer _hoverTimer;
@@ -85,7 +92,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             CalculateSocketPositions();
             InitializeFixedLabelPositions();
             displayPanel.Invalidate();
+        }
 
+        public void BindWaferArm(InputDieTransfer arm)
+        {
+            _waferArm = arm;
+        }
+        public void BindBinArm(OutputDieTransfer arm)
+        {
+            _binArm = arm;
         }
 
         public void Rotary_LoadIndexChanged(object sender, int loadIndex0Based)
@@ -161,15 +176,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             // 휠 스크롤 안정화를 위해 포커스 부여
             displayPanel.MouseEnter += (s, e) => displayPanel.Focus();
-            //displayPanel.MouseWheel += DisplayPanel_MouseWheel;
-            //displayPanel.MouseDown += DisplayPanel_MouseDown;
-            //displayPanel.MouseUp += DisplayPanel_MouseUp;
-            //displayPanel.MouseMove += DisplayPanel_MouseMove;
-            //displayPanel.MouseClick += DisplayPanel_MouseClick;
-            //displayPanel.MouseDoubleClick += DisplayPanel_MouseDoubleClick;
-            //displayPanel.MouseLeave += DisplayPanel_MouseLeave;
-            //displayPanel.Paint += DisplayPanel_Paint;
-            //displayPanel.Resize += DisplayPanel_Resize;
         }
 
         private void CalculateSocketPositions()
@@ -191,8 +197,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 int phys = sv.Socket.No & 7;
                 int relative = (phys - loadIndex + 8) & 7;
-                //int angleDeg = guiAngles[relative]; //정방향
-                int angleDeg = guiAngles[(8 - relative) & 7];       // 역방향 매핑 (핵심 변경)
+                // 역방향 매핑
+                int angleDeg = guiAngles[(8 - relative) & 7];
                 double rad = angleDeg * Math.PI / 180.0;
 
                 float x = centerX + radius * (float)Math.Cos(rad);
@@ -252,51 +258,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 _toolTip.Hide(displayPanel);
             }
-
-            //_hoverTimer.Stop();
-            //if (_hoveredSocketView != null)
-            //{
-            //    var s = _hoveredSocketView.Socket;
-            //    string tooltipText = $"Socket: {_hoveredSocketView.Number}\nState: {s.State}";
-            //    var md = s.GetMaterialDie();
-            //    if (md != null)
-            //    {
-            //        tooltipText += $"\nMaterial: {(md.Presence == Material.MaterialPresence.Exist ? "Exist" : "None")}";
-            //        tooltipText += $"\nDieState: {md.State}";
-            //    }
-            //    tooltipText += $"\nUpdated: {s.LastUpdated:HH:mm:ss}";
-
-            //    Point mousePos = displayPanel.PointToClient(Cursor.Position);
-            //    _toolTip.Show(tooltipText, displayPanel, mousePos.X + 10, mousePos.Y - 10);
-            //    SocketHovered?.Invoke(this, s);
-            //}
-            //else
-            //{
-            //    _toolTip.Hide(displayPanel);
-            //}
         }
-        //private void HoverTimer_Tick(object sender, EventArgs e)
-        //{
-        //    _hoverTimer.Stop();
-
-        //    if (_hoveredSocketView != null)
-        //    {
-        //        var s = _hoveredSocketView.Socket;
-        //        string tooltipText = $"Socket: {_hoveredSocketView.Number}\nState: {s.State}";
-        //        var md = s.GetMaterialDie();
-        //        if (md != null)
-        //            tooltipText += $"\nMaterial: {(md.Presence == Material.MaterialPresence.Exist ? "Exist" : "None")}";
-        //        tooltipText += $"\nUpdated: {s.LastUpdated:HH:mm:ss}";
-
-        //        Point mousePos = displayPanel.PointToClient(Cursor.Position);
-        //        _toolTip.Show(tooltipText, displayPanel, mousePos.X + 10, mousePos.Y - 10);
-        //        SocketHovered?.Invoke(this, s);
-        //    }
-        //    else
-        //    {
-        //        _toolTip.Hide(displayPanel);
-        //    }
-        //}
 
         private void DisplayPanel_Paint(object sender, PaintEventArgs e)
         {
@@ -313,13 +275,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             float size = BASE_DIE_SIZE;
 
-            // 최신 소켓 상태가 필요하다면 여기서 갱신 (참조 사용 시 생략 가능)
             if (_rotary != null)
             {
                 var latest = _rotary.GetAllSockets();
                 if (latest != null && latest.Length == _socketViews.Count)
                 {
-                    // 필요한 경우 상태 참조를 동기화할 수 있음 (현재는 참조 그대로 사용)
+                    // 상태 갱신 필요 시 처리
                 }
             }
 
@@ -331,43 +292,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             DrawFixedLabels(g, size);
         }
 
-        //private void DrawSocket(Graphics g, SocketView sv, float size)
-        //{
-        //    var socket = sv.Socket;
-        //    Color fill, text, border;
-        //    GetSocketColors(socket, out fill, out text, out border);
-
-        //    RectangleF bounds = sv.GetBounds(size);
-
-        //    if (sv == _selectedSocketView)
-        //    {
-        //        using (Pen hoverPen = new Pen(Color.FromArgb(200, Color.Gold), 2f / _scale))
-        //        {
-        //            float inflate = 2f / _scale;
-        //            RectangleF hb = new RectangleF(bounds.X - inflate, bounds.Y - inflate,
-        //                bounds.Width + inflate * 2, bounds.Height + inflate * 2);
-        //            g.DrawEllipse(hoverPen, hb);
-        //        }
-        //    }
-
-        //    using (Brush b = new SolidBrush(fill))
-        //        g.FillEllipse(b, bounds);
-        //    using (Pen p = new Pen(border, 1.5f / _scale))
-        //        g.DrawEllipse(p, bounds);
-
-        //    using (Brush tb = new SolidBrush(text))
-        //    using (Font font = new Font("Arial", size * 0.5f, FontStyle.Bold))
-        //    {
-        //        string txt = sv.Number.ToString();
-        //        var ts = g.MeasureString(txt, font);
-        //        g.DrawString(txt, font, tb,
-        //            sv.Position.X - ts.Width / 2f,
-        //            sv.Position.Y - ts.Height / 2f);
-        //    }
-        //}
-
-
-        // === Die 존재 판정 헬퍼 추가 ===
+        // === Die 존재 판정 헬퍼 ===
         private bool HasPhysicalDie(Rotary.SocketInfo socket)
         {
             if (socket == null) return false;
@@ -396,7 +321,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 text = Color.FromArgb(60, 60, 60);
                 border = Color.FromArgb(100, 100, 100);
             }
-
 
             RectangleF bounds = sv.GetBounds(size);
 
@@ -433,12 +357,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 var die = socket.GetMaterialDie();
                 DrawDieBadge(g, bounds, die, socket.UseSocket);
             }
-            //// [ADD] 소켓 내 Die 상태 배지 표시 (우하단)
-            //var die = socket.GetMaterialDie();
-            //if (die != null)
-            //{
-            //    DrawDieBadge(g, bounds, die, socket.UseSocket);
-            //}
         }
 
         // [ADD] Die 상태를 작은 배지로 표시 (우하단 원형)
@@ -511,7 +429,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-
         private void GetSocketColors(Rotary.SocketInfo s, out Color fill, out Color text, out Color border)
         {
             border = Color.FromArgb(70, 70, 70);
@@ -519,19 +436,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             switch (s.State)
             {
                 case Rotary.RotarySocketState.Empty:
-                    fill = Color.FromArgb(170, 170, 170); 
+                    fill = Color.FromArgb(170, 170, 170);
                     text = Color.FromArgb(60, 60, 60); break;
-                case Rotary.RotarySocketState.Loading: 
+                case Rotary.RotarySocketState.Loading:
                     fill = Color.SkyBlue; break;
-                case Rotary.RotarySocketState.Loaded: 
+                case Rotary.RotarySocketState.Loaded:
                     fill = Color.FromArgb(0, 160, 0); break;
                 case Rotary.RotarySocketState.MAligning:
                     fill = Color.Orange; break;
-                case Rotary.RotarySocketState.MAligned: 
+                case Rotary.RotarySocketState.MAligned:
                     fill = Color.DarkOrange; break;
-                case Rotary.RotarySocketState.Probing: 
+                case Rotary.RotarySocketState.Probing:
                     fill = Color.MediumPurple; break;
-                case Rotary.RotarySocketState.Probed: 
+                case Rotary.RotarySocketState.Probed:
                     fill = Color.Indigo; break;
                 case Rotary.RotarySocketState.VAligning:
                     fill = Color.MediumOrchid; break;
@@ -539,13 +456,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     fill = Color.DarkOrchid; break;
                 case Rotary.RotarySocketState.Unloading:
                     fill = Color.Goldenrod; break;
-                case Rotary.RotarySocketState.Unloaded: 
+                case Rotary.RotarySocketState.Unloaded:
                     fill = Color.Teal; break;
-                case Rotary.RotarySocketState.Completed: 
+                case Rotary.RotarySocketState.Completed:
                     fill = Color.DarkGreen; break;
-                case Rotary.RotarySocketState.Error: 
+                case Rotary.RotarySocketState.Error:
                     fill = Color.Red; break;
-                default: 
+                default:
                     fill = Color.Gray; break;
             }
             if (!s.UseSocket)
@@ -641,9 +558,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             UpdateCursor(e.Location);
         }
 
-        private void DisplayPanel_MouseClick(object sender, MouseEventArgs e) 
+        // [Fix] 디자이너에서 참조하는 이벤트 핸들러 메서드 추가
+        private void DisplayPanel_MouseClick(object sender, MouseEventArgs e)
         {
-
+            // 클릭 로직은 MouseDown/MouseUp 조합으로 처리하고 있으므로 비워둠
         }
 
         private void DisplayPanel_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -661,12 +579,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (sv == null || _rotary == null)
                 return;
 
-            // ★ 중요: UI가 가진 Socket이 아니라, Rotary 내부의 "실제 Socket"을 가져와서 수정해야 시퀀스와 연동됨
             var realSocket = _rotary.GetSocket(sv.Socket.No);
             if (realSocket == null)
                 return;
 
-            // Die 존재 여부 체크(실제 소켓 기준): 없으면 적용 금지
             if (!HasPhysicalDie(realSocket))
             {
                 MessageBox.Show($"Socket {realSocket.No + 1}에 Die가 없습니다.", "Info",
@@ -683,55 +599,51 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (ask.ShowDialog() != DialogResult.OK)
                 return;
 
-            // 상태 업데이트 (실제 소켓 객체 수정)
+            var die = new MaterialDie();
             switch (ask.RotateStatus)
             {
                 case (int)Rotary.RotarySocketState.Empty:
                     realSocket.SetState(Rotary.RotarySocketState.Empty);
+                    //die.Presence = Material.MaterialPresence.NotExist;
+                    //die.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                    //die.State = DieProcessState.None;
+                    realSocket.SetMaterialDie(die);
+                    realSocket.SetState(Rotary.RotarySocketState.Empty);
                     break;
                 case (int)Rotary.RotarySocketState.Loading:
-                    realSocket.SetState(Rotary.RotarySocketState.Loading);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Loading); break;
                 case (int)Rotary.RotarySocketState.Loaded:
-                    realSocket.SetState(Rotary.RotarySocketState.Loaded);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Loaded); break;
                 case (int)Rotary.RotarySocketState.MAligning:
-                    realSocket.SetState(Rotary.RotarySocketState.MAligning);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.MAligning); break;
                 case (int)Rotary.RotarySocketState.MAligned:
-                    realSocket.SetState(Rotary.RotarySocketState.MAligned);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.MAligned); break;
                 case (int)Rotary.RotarySocketState.Probing:
-                    realSocket.SetState(Rotary.RotarySocketState.Probing);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Probing); break;
                 case (int)Rotary.RotarySocketState.Probed:
-                    realSocket.SetState(Rotary.RotarySocketState.Probed);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Probed); break;
                 case (int)Rotary.RotarySocketState.VAligning:
-                    realSocket.SetState(Rotary.RotarySocketState.VAligning);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.VAligning); break;
                 case (int)Rotary.RotarySocketState.VAligned:
-                    realSocket.SetState(Rotary.RotarySocketState.VAligned);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.VAligned); break;
                 case (int)Rotary.RotarySocketState.Unloading:
-                    realSocket.SetState(Rotary.RotarySocketState.Unloading);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Unloading); break;
                 case (int)Rotary.RotarySocketState.Unloaded:
-                    realSocket.SetState(Rotary.RotarySocketState.Unloaded);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Unloaded); break;
                 case (int)Rotary.RotarySocketState.Completed:
-                    realSocket.SetState(Rotary.RotarySocketState.Completed);
-                    break;
+                    realSocket.SetState(Rotary.RotarySocketState.Completed); break;
                 case (int)Rotary.RotarySocketState.Error:
+                    die = realSocket.GetMaterialDie();
+                    die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
+                    die.State = DieProcessState.Skip;
+                    die.IsPass = true;
+                    realSocket.SetMaterialDie(die);
                     realSocket.SetState(Rotary.RotarySocketState.Error);
                     break;
             }
 
-            // UI selection이 참조하는 SocketView도 realSocket을 바라보게 갱신(표시 일관성)
             try
             {
-                // SocketView.Socket은 private set이라 교체는 못하지만,
-                // 현재는 내부 배열의 같은 객체를 수정했으므로 UI도 자동으로 동일 객체 상태를 보게 됨.
                 SocketStateChanged?.Invoke(this, realSocket);
             }
             catch { }
@@ -808,10 +720,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             displayPanel.Invalidate();
         }
 
-        // ===== Rotation (offset 제거) =====
+        // ===== Rotation =====
         public void RotateCounterClockwise()
         {
-            // 필요 시 방향 반대면 step = -1;
             RequestRotationStep(+1);
         }
 
@@ -820,7 +731,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             RotationRequested?.Invoke(this, step);
         }
 
-        // 하위호환 (더 이상 offset 사용 안함)
+        // [Fix] Monitoring_Main 등에서 호출하는 메서드 (public 정의 필수)
         public void UpdateRotationUI(int ignored)
         {
             CalculateSocketPositions();
@@ -884,28 +795,26 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private string BuildDieInfoText(MaterialDie die)
         {
-            // 표시 우선순위: Index, SourceWaferId, TargetWaferId, TargetChipIndex, TargetSlot, State
             var parts = new List<string>();
-            if (die.Index >= 0) 
+            if (die.Index >= 0)
                 parts.Add($"Idx:{die.Index}");
 
-            if (!string.IsNullOrEmpty(die.SourceWaferId)) 
+            if (!string.IsNullOrEmpty(die.SourceWaferId))
                 parts.Add($"Src:{die.SourceWaferId}");
 
-            if (!string.IsNullOrEmpty(die.TargetWaferId)) 
+            if (!string.IsNullOrEmpty(die.TargetWaferId))
                 parts.Add($"Tgt:{die.TargetWaferId}");
 
-            if (die.TargetChipIndex >= 0) 
+            if (die.TargetChipIndex >= 0)
                 parts.Add($"Chip:{die.TargetChipIndex}");
 
-            if (die.TargetSlot >= 0) 
+            if (die.TargetSlot >= 0)
                 parts.Add($"Slot:{die.TargetSlot}");
 
             parts.Add($"State:{die.State}");
 
             return string.Join(" | ", parts);
         }
-
 
         private void DisplayPanel_Resize(object sender, EventArgs e)
         {
@@ -916,29 +825,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             return;
 
-            if (_isAutoSequencing) 
-                return;
-
-            _isAutoSequencing = true;
-            btnAutoSequence.Enabled = false;
-            btnReset.Enabled = false;
-
-            try
-            {
-                foreach (var sv in _socketViews.OrderBy(v => v.Number))
-                {
-                    _selectedSocketView = sv;
-                    UpdateInfoPanel();
-                    displayPanel.Invalidate();
-                    await Task.Delay(300);
-                }
-            }
-            finally
-            {
-                _isAutoSequencing = false;
-                btnAutoSequence.Enabled = true;
-                btnReset.Enabled = true;
-            }
+            /* Auto Sequence 로직 생략 (원래 코드 주석 혹은 비활성 상태) */
         }
 
         private void btnRotateCounterClockwise_Click(object sender, EventArgs e)
@@ -947,18 +834,26 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             RotateCounterClockwise();
         }
 
-        public void Reset()
+        public async void Reset()
         {
-            // 1) Rotary 소켓 데이터 초기화 (Material/State/Tag + (실기면) IO OFF)
+            _rotary.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
             try
             {
-                // 전체 소켓 클리어
+                var rc = await RunRotaryInitializeAfterHomeAsync(CancellationToken.None).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally
+            {
+                if (_rotary != null)
+                    _rotary.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
+            }
+
+            try
+            {
                 _rotary?.ClearSocketData(socketNo: -1, offIo: true, resetState: true);
-
-                // UseSocket(Enable) 설정 반영까지 포함해서 초기화하고 싶으면 아래도 선택적으로 호출 가능
-                // _rotary?.ResetForNewRun(clearSockets: true, moveIndexToSafe: false);
-
-                // UI 회전/표시도 현재 loadIndex 기준으로 즉시 갱신
                 if (_rotary != null)
                     SyncRotationFromLoadIndex(_rotary.GetLoadIndexNo());
             }
@@ -967,26 +862,130 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 Log.Write(ex);
             }
 
-            // 2) UI 선택/뷰 초기화
             _selectedSocketView = null;
             _hoveredSocketView = null;
-            _toolTip?.Hide(displayPanel);
-            _hoverTimer?.Stop();
+
+            if (_toolTip != null)
+                _toolTip.Hide(displayPanel);
+
+            if (_hoverTimer != null)
+                _hoverTimer.Stop();
 
             UpdateInfoPanel();
             displayPanel.Invalidate();
         }
 
+        private async Task<int> RunRotaryInitializeAfterHomeAsync(CancellationToken token)
+        {
+            var runningTasks = new List<Task<int>>();
+
+            Task<int> tWaferArm = null;
+            if (_waferArm != null)
+            {
+                tWaferArm = _waferArm.RunManualFunction(_waferArm.ManualResetForNewRun);
+                if (tWaferArm != null) runningTasks.Add(tWaferArm);
+            }
+
+            Task<int> tBinArm = null;
+            if (_binArm != null)
+            {
+                tBinArm = _binArm.RunManualFunction(_binArm.ManualResetForNewRun);
+                if (tBinArm != null) runningTasks.Add(tBinArm);
+            }
+
+            Task<int> tRotary = null;
+            if (_rotary != null)
+            {
+                tRotary = _rotary.RunManualFunction(_rotary.InitializeAfterHome);
+                if (tRotary != null) runningTasks.Add(tRotary);
+            }
+
+            if (runningTasks.Count == 0)
+                return 0;
+
+            async Task<int> RunAllAndAggreateAsync()
+            {
+                int[] results = await Task.WhenAll(runningTasks);
+                return results.Any(r => r != 0) ? -1 : 0;
+            }
+
+            Task<int> combinedTask = RunAllAndAggreateAsync();
+            var form = new ProgressForm("Manual Running", "Initialize All Units", combinedTask, this._rotary);
+
+            try
+            {
+                form.ShowDialog();
+
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    _waferArm?.CancelSequence();
+                    _binArm?.CancelSequence();
+                    _rotary?.CancelSequence();
+                    MessageBox.Show("Initialize Sequence Canceled", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                if (combinedTask.IsFaulted)
+                {
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Manual Run Error!", combinedTask.Exception?.GetBaseException().Message);
+                    return -1;
+                }
+
+                int rc = await combinedTask.ConfigureAwait(true);
+
+                if (rc != 0)
+                {
+                    string errorMsg = "Initialize Failed:";
+                    if (tWaferArm != null && tWaferArm.Result != 0)
+                        errorMsg += $"\nWaferArm(rc={tWaferArm.Result})";
+                    if (tBinArm != null && tBinArm.Result != 0)
+                        errorMsg += $"\nBinArm(rc={tBinArm.Result})";
+                    if (tRotary != null && tRotary.Result != 0)
+                        errorMsg += $"\nRotary(rc={tRotary.Result})";
+
+                    MessageBox.Show(errorMsg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return -1;
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("Initialize Exception: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+
         private void btnReset_Click_1(object sender, EventArgs e)
         {
+            if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.Starting)
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("Question", "Index 정보를 초기화하시겠습니까?") != DialogResult.Yes)
             {
                 return;
             }
 
-
-            Reset();
+            try
+            {
+                Reset();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error", "Index 초기화 중 오류가 발생했습니다:\n" + ex.Message);
+                return;
+            }
         }
     }
 }

@@ -28,6 +28,9 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
+        // 1. 상태 업데이트를 위한 타이머 추가
+        private System.Windows.Forms.Timer _ioUpdateTimer;
+
         public DigitalIOControl()
         {
             InitializeComponent();
@@ -50,6 +53,9 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             {
                 BindingList_DigitalIO();
                 WriteEvents_DigitalIO();
+
+                // 2. 타이머 초기화 및 시작
+                StartIoUpdateTimer();
             }
             catch (Exception ex)
             {
@@ -57,6 +63,84 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             }
         }
 
+        // 3. 타이머 관련 메서드 추가
+        private void StartIoUpdateTimer()
+        {
+            if (_ioUpdateTimer == null)
+            {
+                _ioUpdateTimer = new System.Windows.Forms.Timer();
+                _ioUpdateTimer.Interval = 300; // 300ms 마다 갱신 (장비 상황에 맞게 조절)
+                _ioUpdateTimer.Tick += OnIoUpdateTimerTick;
+            }
+            _ioUpdateTimer.Start();
+        }
+
+        private void OnIoUpdateTimerTick(object sender, EventArgs e)
+        {
+            try
+            {
+                // 컨트롤이 보이지 않거나 해제된 상태면 불필요한 통신 방지
+                if (this.IsDisposed || !this.Visible) 
+                    return;
+
+                var eq = Equipment.Instance;
+                var scan = eq?.DioScan;
+                if (scan == null) return;
+
+                bool isViewChanged = false; // UI를 새로고침해야 하는지 확인하는 플래그
+
+                // Input 상태 갱신
+                foreach (var item in _ioInputs)
+                {
+                    if (scan.TryGetInput(item.Module, item.Disp, out bool val))
+                    {
+                        if (item.Prop.State != val)
+                        {
+                            item.Prop.State = val; // 모델(Data)의 상태 변경
+                            inputView?.SetStateByKey(item.Disp, val); // 기존 로직 유지 (혹시 맞을 경우를 대비)
+                            isViewChanged = true;
+                        }
+                    }
+                }
+
+                // Output 상태 갱신
+                foreach (var item in _ioOutputs)
+                {
+                    if (scan.TryGetOutput(item.Module, item.Disp, out bool val))
+                    {
+                        if (item.Prop.State != val)
+                        {
+                            item.Prop.State = val; // 모델(Data)의 상태 변경
+                            outputView?.SetStateByKey(item.Disp, val); // UI 색상 변경 시도
+                            isViewChanged = true;
+                        }
+                    }
+                }
+
+                // ★ 핵심: 상태값이 단 하나라도 바뀌었다면 강제로 전체 View를 다시 그리도록 지시합니다.
+                if (isViewChanged)
+                {
+                    inputView?.Refresh();
+                    outputView?.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        // 4. 컨트롤이 해제될 때 타이머 정지 (메모리 누수 방지)
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            if (_ioUpdateTimer != null)
+            {
+                _ioUpdateTimer.Stop();
+                _ioUpdateTimer.Dispose();
+                _ioUpdateTimer = null;
+            }
+            base.OnHandleDestroyed(e);
+        }
 
         private void WriteEvents_DigitalIO()
         {

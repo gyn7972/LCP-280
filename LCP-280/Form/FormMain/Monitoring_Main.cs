@@ -376,6 +376,17 @@ namespace QMC.LCP_280.Process
             }
             catch { }
 
+            try
+            {
+                if (_taktMonitorAllDialog != null && !_taktMonitorAllDialog.IsDisposed)
+                {
+                    _taktMonitorAllDialog.Close();
+                    _taktMonitorAllDialog = null;
+                }
+            }
+            catch { }
+
+
             if (InputDieTransfer != null)
                 InputDieTransfer.DiePicked -= InputDieTransfer_DiePicked;
 
@@ -618,8 +629,8 @@ namespace QMC.LCP_280.Process
             if (die == null)
             {
                 Console.WriteLine($"[Input] 매핑 실패 → 맵 좌표 사용 이동. Map({e.Item.Position.X},{e.Item.Position.Y})");
-                MovePickMotorTo(e.Item.Position.X, e.Item.Position.Y, new Point((e.Item.Position.X),
-                                                                               (e.Item.Position.Y)));
+                MovePickMotorTo(e.Item.Position.X, e.Item.Position.Y, new PointD((e.Item.Position.X),
+                                                                               (    e.Item.Position.Y)));
                 ShowMotorMovingStatus($"Input 모터가 맵좌표 ({e.Item.Position.X:0.###},{e.Item.Position.Y:0.###})로 이동 중...(Die 매핑 실패)");
                 return;
             }
@@ -799,6 +810,8 @@ namespace QMC.LCP_280.Process
             if (Rotary != null)
             {
                 dieIndexSelectControl1.BindRotary(Rotary);
+                dieIndexSelectControl1.BindWaferArm(InputDieTransfer);
+                dieIndexSelectControl1.BindBinArm(OutputDieTransfer);
             }
         }
 
@@ -1470,7 +1483,7 @@ namespace QMC.LCP_280.Process
             var token = PrepareNewHomeToken();
 
             // 6) 전 유닛 Ready 이동 → int 반환
-            var rcReady = await MoveUnitsToReadyAsync(token).ConfigureAwait(true);
+            var rcReady = await MoveUnitsToResetAsync(token).ConfigureAwait(true);
             if (rcReady != 0)
             {
                 MessageBox.Show("일부 유닛 Ready 이동 실패", "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1478,7 +1491,7 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        private async Task<int> MoveUnitsToReadyAsync(CancellationToken token)
+        private async Task<int> MoveUnitsToResetAsync(CancellationToken token)
         {
             string failureSummary = null;
 
@@ -1495,12 +1508,12 @@ namespace QMC.LCP_280.Process
 
                         if (InputDieTransfer != null)
                         {
-                            tasks.Add(Task.Run(() => InputDieTransfer.EnsureReady(), token));
+                            tasks.Add(Task.Run(() => InputDieTransfer.ManualResetForNewRun(), token));
                             names.Add("InputDieTransfer");
                         }
                         if (OutputDieTransfer != null)
                         {
-                            tasks.Add(Task.Run(() => OutputDieTransfer.EnsureReady(), token));
+                            tasks.Add(Task.Run(() => OutputDieTransfer.ManualResetForNewRun(), token));
                             names.Add("OutputDieTransfer");
                         }
 
@@ -1516,19 +1529,12 @@ namespace QMC.LCP_280.Process
                                 }
                             }
                         }
-                        InputDieTransfer.ResetForNewRun();
-                        OutputDieTransfer.ResetForNewRun();
-
-                        InputDieTransfer.SetMaterial(null);
-                        OutputDieTransfer.SetMaterial(null);
-
                     }
 
                     // 2) Rotary (단독)
                     if (Rotary != null)
                     {
                         token.ThrowIfCancellationRequested();
-
                         var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
                         if (rc != 0)
                         {
@@ -1536,20 +1542,26 @@ namespace QMC.LCP_280.Process
                             return -1;
                         }
 
+                        //한번 더 확인한다는 느낌.
                         IndexLoadAligner.ResetForNewRun();
-                        //IndexChipProbeController.ResetForNewRun();
-                        IndexChipProber.ResetForNewRun();
+                        IndexChipProbeController.ResetForNewRun();
                         IndexChipProber.ResetForNewRun();
                         IndexUnloadAligner.ResetForNewRun();
+
+                        //Rotary도 Reset
+                        var indexRc = await Task.Run(() => Rotary.InitializeAfterHome(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "Rotary(InitializeAfterHome)";
+                            return -1;
+                        }
                         Rotary.ResetForNewRun();
 
                         IndexLoadAligner.SetMaterial(null);
                         IndexChipProbeController.SetMaterial(null);
                         IndexChipProber.SetMaterial(null);
                         IndexUnloadAligner.SetMaterial(null);
-
                         Rotary.SetMaterial(null);
-                        
                     }
 
                     // 3) InputStageEjector (단독, CheckReady)
@@ -1806,49 +1818,6 @@ namespace QMC.LCP_280.Process
 
                 dlg.ShowDialog(this);
             }
-            else
-            {
-                var dlg = new QMC.LCP_280.Process.Component.FormMapMatchManual();
-                dlg.BindEquipmentInStageCamera();
-
-                // [ADD] 현재 InputStage 웨이퍼 -> ScanItems 주입 (클릭 Pick 가능해짐)
-                try
-                {
-                    var wafer = InputStage?.GetMaterialWafer();
-                    var dies = wafer?.Dies;
-
-                    if (dies != null && dies.Count > 0)
-                    {
-                        var scanItems = new List<QMC.Common.Controls.DisplayView_DieScanMap.DisplayItem>(dies.Count);
-                        lock (dies)
-                        {
-                            for (int i = 0; i < dies.Count; i++)
-                            {
-                                var d = dies[i];
-                                if (d == null) continue;
-
-                                scanItems.Add(new QMC.Common.Controls.DisplayView_DieScanMap.DisplayItem
-                                {
-                                    DieId = d.Index,
-                                    Info = wafer?.WaferId ?? "SCAN",
-                                    // DisplayView에서 hit-test/그리기 기준은 Position이지만,
-                                    // FormMapMatchManual은 Pick 시 DieMap을 읽어 사용함.
-                                    // 따라서 둘 다 일단 Map으로 통일.
-                                    Position = new Point((int)d.MapX, (int)d.MapY),
-                                    DieMap = new Point((int)d.MapX, (int)d.MapY),
-                                    State = QMC.Common.Controls.DisplayView_DieScanMap.ItemState.Present
-                                });
-                            }
-                        }
-
-                        dlg.SetScanItems(scanItems);
-                    }
-                }
-                catch { }
-
-                // Download는 dlg 내부에서 btnPickDownload 누르면 파일 chooser로 로드/표시 가능
-                dlg.ShowDialog(this);
-            }
         }
 
         private void btnProcessStatus_Click(object sender, EventArgs e)
@@ -1875,6 +1844,34 @@ namespace QMC.LCP_280.Process
                 _waferTotalSummaryViewerForm = null;
             }
 
+        }
+
+        private TaktMonitorAllDialog _taktMonitorAllDialog; // 인스턴스 변수 추가
+
+        private void btnTack2_Click(object sender, EventArgs e)
+        {
+            if (_taktMonitorAllDialog != null && !_taktMonitorAllDialog.IsDisposed)
+            {
+                // 이미 창이 생성되어 있을 경우
+
+                // 1. 창이 최소화 상태라면 원래 크기로 복구
+                if (_taktMonitorAllDialog.WindowState == FormWindowState.Minimized)
+                {
+                    _taktMonitorAllDialog.WindowState = FormWindowState.Normal;
+                }
+
+                // 2. 창을 맨 앞으로 가져오고 포커스 부여
+                _taktMonitorAllDialog.BringToFront();
+                _taktMonitorAllDialog.Activate();
+                return;
+            }
+
+            _taktMonitorAllDialog = new TaktMonitorAllDialog();
+            _taktMonitorAllDialog.FormClosed += (s, ev) => { _taktMonitorAllDialog = null; }; // 닫힐 때 null 처리
+            _taktMonitorAllDialog.Show(); // 모달리스로 띄워야 장비 동작 중에 볼 수 있음
+
+            //var dlg = new TaktMonitorAllDialog();
+            //dlg.Show(); // 모달리스로 띄워야 장비 동작 중에 볼 수 있음
         }
     }
 }

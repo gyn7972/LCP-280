@@ -68,5 +68,35 @@ namespace QMC.Common
         {
             LogManager.Instance.Write(LogLevel.Normal, baseUnit.UnitName, baseUnit.UnitName, strMessage);
         }
+
+        // [추가] 외부에서 호출 가능한 로그 정리 메서드
+        /// <summary>
+        /// 지정된 일수(days)가 지난 로그 파일을 삭제합니다.
+        /// </summary>
+        /// <param name="keepDays">로그 보관 일수 (예: 30)</param>
+        public static void DeleteOldLogs(int keepDays)
+        {
+            if (keepDays < 1) return;
+            LogManager.Instance.DeleteOldLogs(keepDays);
+        }
+
+        // [추가] 임의의 폴더 정리 기능 노출
+        public static void DeleteOldFiles(string folderPath, int keepDays, string pattern = "*.*")
+        {
+            if (keepDays < 1) return;
+            LogManager.Instance.DeleteOldFiles(folderPath, keepDays, pattern);
+        }
+
+        // [추가] 오래된 폴더 삭제 기능 노출
+        /// <summary>
+        /// 지정된 경로 하위의 폴더들 중 오래된 폴더를 삭제합니다.
+        /// </summary>
+        /// <param name="rootPath">검사할 상위 폴더 경로 (예: D:\Log)</param>
+        /// <param name="keepDays">보관 일수</param>
+        public static void DeleteOldFolders(string rootPath, int keepDays)
+        {
+            if (keepDays < 1) return;
+            LogManager.Instance.DeleteOldFolders(rootPath, keepDays);
+        }
     }
 }

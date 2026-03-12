@@ -146,13 +146,26 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 return;
             }
 
-            if (_camSwitch == null) return;
-            if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
+            if (_camSwitch == null) 
+                return;
+
+            if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) 
+                return;
 
             var cameraName = _cameraNames[selectedIndex];
-            _selectedCamera = Equipment.Instance.Cameras[cameraName];
-
-            try { _selectedCamera.StopLive(); } catch { }
+            var newCamera = Equipment.Instance.Cameras[cameraName];
+            // [수정] 방어 코드 추가: 현재 이미 선택된 카메라와 동일하면 로직 수행 중단
+            if (_selectedCamera == newCamera)
+            {
+                return;
+            }
+            // 카메라 변경 로직 시작
+            _selectedCamera = newCamera;
+            try 
+            { 
+                _selectedCamera.StopLive(); 
+            } 
+            catch { }
 
             // 기존 뷰 크로스라인/오버레이 완전 정리
             PrepareViewerForCameraSwitch();
@@ -171,7 +184,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
             catch (Exception ex)
             {
-                Log.Write("Vision_Setup", $"OnVisionItemSelected StartLive error: {ex}");
+                Log.Write(ex);
             }
 
             // 새 카메라 기준 크로스라인 재구성
@@ -300,7 +313,9 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
         private void ResetViewerForCameraChange(int selectedIndex)
         {
             var cam = _camSwitch.Cameras[selectedIndex];
-            if (cam == null) return;
+            if (cam == null) 
+                return;
+
             try
             {
                 visionImageViewer.Scale.Wheel = 1.0;

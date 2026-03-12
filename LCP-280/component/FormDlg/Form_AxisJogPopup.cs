@@ -406,7 +406,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (!EnsureAxisReadyOrShowMessage("Jog.IndexPrev")) return;
+                if (!EnsureAxisReadyOrShowMessage("Jog.IndexPrev")) 
+                    return;
 
                 // Rotary 유닛이 있으면 우선 사용(인터락 포함)
                 Rotary rotary = null;
@@ -418,8 +419,8 @@ namespace QMC.LCP_280.Process.Unit
                     string reason;
                     if (!rotary.TryMoveIndexPrev(out reason) && !string.IsNullOrEmpty(reason))
                     {
-                        var mb = new MessageBoxOk();
-                        mb.ShowDialog("Interlock!", reason);
+                        //var mb = new MessageBoxOk();
+                        //mb.ShowDialog("Interlock!", reason);
                     }
                     return;
                 }
@@ -427,7 +428,8 @@ namespace QMC.LCP_280.Process.Unit
                 // 폴백: 기존 직접 축 호출
                 if (_axisManager == null) return;
                 string axisName = GetSelectedAxisName(); // 실제 축 이름
-                if (string.IsNullOrEmpty(axisName)) return;
+                if (string.IsNullOrEmpty(axisName)) 
+                    return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
                 if (axis == null) return;
@@ -456,8 +458,8 @@ namespace QMC.LCP_280.Process.Unit
                     string reason;
                     if (!rotary.TryMoveIndexNext(out reason) && !string.IsNullOrEmpty(reason))
                     {
-                        var mb = new MessageBoxOk();
-                        mb.ShowDialog("Interlock!", reason);
+                        //var mb = new MessageBoxOk();
+                        //mb.ShowDialog("Interlock!", reason);
                     }
                     else
                     {
@@ -576,8 +578,6 @@ namespace QMC.LCP_280.Process.Unit
         // ★ 스텝조그(1회 이동) — jerk 포함!
         private void DoStepMove(MotionAxis axis, JogCommand jc, double stepUnit)
         {
-            int dir = 1;// (axis.Config?.ManualJogDir ?? +1); // +1 또는 -1
-
             double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity;
             double acc = axis.Config.JogAcc;
             double dec = axis.Config.JogDec;

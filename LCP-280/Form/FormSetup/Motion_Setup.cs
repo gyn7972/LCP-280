@@ -533,7 +533,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
                 EnsureAxisHomeInterlocks(_axis);
-                string reason;
+                string reason = string.Empty;
                 //if (!InterlockManager.Instance.ValidateAxisForHome(_axis, out reason))
                 //{
                 //    MessageBox.Show("홈 인터락 차단:\r\n" + reason);

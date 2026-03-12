@@ -35,11 +35,15 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this._btnVisionSetting = new QMC.Common.IndividualMenuButton();
+            this.buttonDataManual = new QMC.Common.IndividualMenuButton();
             this._ChipUnloadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox1.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
+            this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -107,16 +111,79 @@
             // 
             this.tableLayoutPanel5.ColumnCount = 1;
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel2, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this._ChipUnloadingCameraviewer, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 30);
-            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel5.TabIndex = 1;
+            // 
+            // tableLayoutPanel2
+            // 
+            this.tableLayoutPanel2.ColumnCount = 2;
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.Controls.Add(this._btnVisionSetting, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.buttonDataManual, 1, 0);
+            this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(5, 424);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(5);
+            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
+            this.tableLayoutPanel2.RowCount = 1;
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(546, 95);
+            this.tableLayoutPanel2.TabIndex = 16;
+            // 
+            // _btnVisionSetting
+            // 
+            this._btnVisionSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnVisionSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this._btnVisionSetting.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.CustomForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.ForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.ImageSize = new System.Drawing.Size(45, 45);
+            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
+            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(269, 91);
+            this._btnVisionSetting.TabIndex = 34;
+            this._btnVisionSetting.TabStop = false;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = false;
+            this._btnVisionSetting.Visible = false;
+            // 
+            // buttonDataManual
+            // 
+            this.buttonDataManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonDataManual.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonDataManual.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.ForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonDataManual.Location = new System.Drawing.Point(275, 2);
+            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonDataManual.Name = "buttonDataManual";
+            this.buttonDataManual.Size = new System.Drawing.Size(269, 91);
+            this.buttonDataManual.TabIndex = 35;
+            this.buttonDataManual.TabStop = false;
+            this.buttonDataManual.Text = "ManualData";
+            this.buttonDataManual.UseVisualStyleBackColor = false;
+            this.buttonDataManual.Visible = false;
             // 
             // _ChipUnloadingCameraviewer
             // 
@@ -151,7 +218,7 @@
             this.tableLayoutPanel1.Controls.Add(this.teachingPositionControl, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -170,6 +237,7 @@
             this.groupBox1.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -185,5 +253,8 @@
         private Common.Vision.VisionImageViewer _ChipUnloadingCameraviewer;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
+        private Common.IndividualMenuButton _btnVisionSetting;
+        private Common.IndividualMenuButton buttonDataManual;
     }
 }

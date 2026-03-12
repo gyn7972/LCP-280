@@ -358,9 +358,6 @@
         private Common.IndividualMenuButton btnBarcoderScan;
         private System.Windows.Forms.Label labelBarcoderData;
         private Common.ListBoxItemsView listBoxItemsView;
-        // groupBox2 내부에 추가
-        private System.Windows.Forms.ListBox listBoxBarcodeData;
-        private QMC.Common.IndividualMenuButton btnClearList;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;

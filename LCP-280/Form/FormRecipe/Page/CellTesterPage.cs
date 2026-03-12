@@ -10,10 +10,12 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 {
@@ -468,24 +470,23 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                         // 하단 접촉 준비 위치로 이동
                         try
                         {
-                            rc = controller.MovePositionProbeZGripperIndexUp();
+                            rc = controller.SyncProbeZGripperUpAndBottomReady(selectedProbeIndex);
                             if (rc != 0) return -1;
+
+                            //rc = controller.MovePositionProbeZGripperIndexUp();
+                            //if (rc != 0) return -1;
+                            //rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
+                            //if (rc != 0) return -1;
 
                             if (controller.Config.GripperMode == true)
                             {
                                 rc = controller.MovePositionGripperXClamp();
                                 if (rc != 0) return -1;
                             }
-
                             if (controller.SetProbeVac(true) == false)
                             {
                                 return -1;
                             }
-
-                            rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
-                            if (rc != 0) return -1;
-
-
                             rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
                             if (rc != 0) return -1;
 
@@ -774,36 +775,134 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private int MoveContactUp_UsingController(int selectedProbeIndex, bool isTop, IndexChipProbeController controller)
         {
-            int rc;
+            int nRet = 0;
 
             if (isTop)
             {
-                rc = controller.MovePositionTopContact_Index_Ready(selectedProbeIndex);
-                if (rc != 0) 
-                    return -1;
+                if (controller.IsContactTop() == false)
+                {
+                    if (controller.SetContectTop(true) == false)
+                    {
+                        Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Top) failed");
+                        return -1;
+                    }
+                }
 
-                rc = controller.MovePositionTopContact_Index_Up(selectedProbeIndex);
-                if (rc != 0) 
+                //Log.Write("kkkkkkProb", "Start3");
+                nRet = controller.TopContactAndMeasureOnce();
+                if (nRet != 0)
+                {
+                    Log.Write(controller.UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
                     return -1;
+                }
+            }
+            else
+            {
+                if (controller.IsContactProbe() == false)
+                {
+                    if (controller.SetContectTop(false) == false)
+                    {
+                        Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Bottom) failed");
+                        return -1;
+                    }
+                }
 
-                return 0;
+                while (controller.IsRotaryIdle() != 0)
+                {
+                    return -1;
+                }
+
+                bool bFineSpeed = true;
+                int nIndex = controller.GetProbeIndexNo();
+                controller.SetProbeVac(true);
+
+                nRet = controller.MovePositionGripperXReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                    return -1;
+                }
+
+                nRet = controller.MovePositionProbeZGripperIndexUp(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
+                    return -1;
+                }
+
+                nRet = controller.MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
+                    return -1;
+                }
+
+                if (controller.Config.GripperMode)
+                {
+                    nRet = controller.MovePositionGripperXClamp(bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                        return -1;
+                    }
+                }
+
+                if (controller.IsPositionProbeZGripperIndexUp() == false)
+                {
+                    Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
+                    return -1;
+                }
+
+                nRet = controller.MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
+                    return -1;
+                }
+
+                controller.WaitByTime(controller.Config.UpperWaitTime);
+
+                //nRet = controller.BottomContactAndMeasureOnce();
+                //if (nRet != 0)
+                //{
+                //    Log.Write(controller.UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
+                //    return -1;
+                //}
             }
 
+
+            //if (isTop)
+            //{
+            //    rc = controller.MovePositionTopContact_Index_Ready(selectedProbeIndex);
+            //    if (rc != 0) 
+            //        return -1;
+
+            //    rc = controller.MovePositionTopContact_Index_Up(selectedProbeIndex);
+            //    if (rc != 0) 
+            //        return -1;
+
+            //    return 0;
+            //}
+
+            //rc = controller.BottomContactAndMeasureOnce();
+            //if (rc != 0)
+            //    return -1;
+
             // Bottom
-            if (controller.SetProbeVac(true) == false)
-                return -1;
+            //if (controller.SetProbeVac(true) == false)
+            //    return -1;
 
-            rc = controller.MovePositionProbeZGripperIndexUp();
-            if (rc != 0) 
-                return -1;
+            //rc = controller.MovePositionProbeZGripperIndexUp();
+            //if (rc != 0) 
+            //    return -1;
 
-            rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
-            if (rc != 0) 
-                return -1;
+            //rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
+            //if (rc != 0) 
+            //    return -1;
 
-            rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
-            if (rc != 0) 
-                return -1;
+            //rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
+            //if (rc != 0) 
+            //    return -1;
 
             return 0;
         }
@@ -863,7 +962,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
                     token.ThrowIfCancellationRequested();
 
-                    // 측정은 기존대로 ManualMeasureAsync 유지
+                    //// 측정은 기존대로 ManualMeasureAsync 유지
                     int rotaryIndex = GetCurrentProbeIndexNo();
                     int result = await tester.ManualMeasureAsync(rotaryIndex).ConfigureAwait(false);
                     if (result < 0) break;

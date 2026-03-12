@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process
         
 
         /// <summary>
-        /// AxisNo 순서를 그대로 반영한 배열. 인덱스 = AxisNo.
+        /// 장비에 맞춰 임의로 지정한 배열. 
         /// </summary>
         public static readonly string[] AllInOrder = new[]
         {
@@ -87,8 +87,8 @@ namespace QMC.LCP_280.Process
                 { WaferStageX,  "WaferStageX" },
                 { WaferStageY,  "WaferStageY" },
                 { WaferStageT,  "WaferStageT" },
-                { EjectorZ,     "WaferNiddleZ" },
-                { EjectPinZ,    "WaferNiddlePinZ" },
+                { EjectorZ,     "WaferNeedleZ" },
+                { EjectPinZ,    "WaferNeedlePinZ" },
                 { LeftPickZ,    "WaferArmPickZ" },
                 { LeftPlaceZ,   "WaferArmPlaceZ" },
                 { LeftToolT,    "WaferArmT" },
@@ -117,6 +117,23 @@ namespace QMC.LCP_280.Process
             if (string.IsNullOrWhiteSpace(axisName)) return axisName;
             string display;
             return DisplayNames.TryGetValue(axisName, out display) ? display : axisName;
+        }
+
+        /// <summary>
+        /// "Left Tool T Axis" -> "LeftToolT" 형태로 변환하여 반환합니다.
+        /// (알람 Source 매핑이나 Enum Prefix 검색 용도로 사용)
+        /// </summary>
+        public static string GetPrefixName(string axisName)
+        {
+            if (string.IsNullOrWhiteSpace(axisName)) return axisName;
+
+            // 1. 끝에 붙은 " Axis" 또는 " Axis"를 무시하기 위해 제거
+            string result = axisName.Replace(" Axis", "").Replace(" axis", "");
+
+            // 2. 남은 공백들 모두 제거
+            result = result.Replace(" ", "");
+
+            return result;
         }
     }
 }

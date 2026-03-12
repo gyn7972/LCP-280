@@ -24,8 +24,8 @@ namespace QMC.LCP_280.Process.Component
         private List<MaterialDie> _dies = new List<MaterialDie>();
 
         // pivot: MapX/MapY 범위 중심(0.0 포함 가능)
-        private int _pivotX;
-        private int _pivotY;
+        private double _pivotX;
+        private double _pivotY;
         private bool _hasPivot;
 
         private bool _centerOnPivot = true;
@@ -86,46 +86,44 @@ namespace QMC.LCP_280.Process.Component
             _hasPivot = false;
             if (_dies == null || _dies.Count == 0) return;
 
-            int minX = _dies.Min(c => c.MapX);
-            int maxX = _dies.Max(c => c.MapX);
-            int minY = _dies.Min(c => c.MapY);
-            int maxY = _dies.Max(c => c.MapY);
+            double minX = _dies.Min(c => c.MapX);
+            double maxX = _dies.Max(c => c.MapX);
+            double minY = _dies.Min(c => c.MapY);
+            double maxY = _dies.Max(c => c.MapY);
 
-            _pivotX = (minX + maxX) * 1;
-            _pivotY = (minY + maxY) * 1;
+            _pivotX = (minX + maxX) * 0.5;
+            _pivotY = (minY + maxY) * 0.5;
             _hasPivot = true;
         }
 
         // 모델(MapX/MapY) -> 디스플레이 좌표
-        private Point ToDisplay(Point map)
+        private PointD ToDisplay(PointD map)
         {
             if (!_centerOnPivot || !_hasPivot)
                 return map;
 
-            Point rel = _centerOnPivot
-                ? new Point(map.X - _pivotX, map.Y - _pivotY)
+            PointD rel = _centerOnPivot
+                ? new PointD(map.X - _pivotX, map.Y - _pivotY)
                 : map;
 
-            //180도 회전해야. 장비랑 비젼이랑 1:1.
-            rel = new Point(-rel.X, -rel.Y);
-            //Y반전.
-            rel = new Point(-rel.X, rel.Y);
+            //Todo:
+            //rel = new Point(-rel.X, -rel.Y); //180도 회전해야. 장비랑 비젼이랑 1:1.
+            rel = new PointD(-rel.X, rel.Y); //X반전.
 
             return rel;
         }
 
         // 디스플레이 -> 모델(MapX/MapY)
-        private Point FromDisplay(Point display)
+        private PointD FromDisplay(PointD display)
         {
             if (!_centerOnPivot || !_hasPivot)
                 return display;
 
-            Point rel = display;
+            PointD rel = display;
 
-            //Y반전도.
-            rel = new Point(-rel.X, rel.Y);
-            //180도 회전해야. 장비랑 비젼이랑 1:1
-            rel = new Point(-rel.X, -rel.Y);
+            //Todo:
+            rel = new PointD(-rel.X, rel.Y);//X반전.
+            //rel = new Point(-rel.X, -rel.Y);//180도 회전해야. 장비랑 비젼이랑 1:1
 
             return rel;
         }

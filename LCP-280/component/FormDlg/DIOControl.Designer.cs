@@ -2,8 +2,6 @@
 {
     partial class DIOControl
     {
-        private System.ComponentModel.IContainer components = null;
-
         private void InitializeComponent()
         {
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();

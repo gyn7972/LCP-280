@@ -1,4 +1,5 @@
-﻿using QMC.Common;
+﻿using Newtonsoft.Json.Linq;
+using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Cameras;
 using QMC.Common.Cameras.HIKVISION; // HIK camera
@@ -8,6 +9,7 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.Common.Vision;              // VisionImage
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Work;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -201,12 +203,14 @@ namespace QMC.LCP_280.Process.Unit
         #region Alarm
         protected override void InitAlarm()
         {
+            string unitSource = "Wafer_Stage";
+
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eDieTransferPickZNotSafety;
             alarm.Title = "Die Tr Z-Axis Not safety Pos.";
             alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -214,7 +218,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputFeederCylinderZNotSafety;
             alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -223,7 +227,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafety;
             alarm.Title = "EjectorPin Z-Axis Not safety Pos.";
             alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
@@ -231,7 +235,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafety;
             alarm.Title = "Ejector Z-Axis Not safety Pos.";
             alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -240,7 +244,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputFeederYNotSafe;
             alarm.Title = "Feeder Y-Axis Not safety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -248,7 +252,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eVisionTsearch;
             alarm.Title = "Vision T Search.";
             alarm.Cause = "Vision T Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //
@@ -256,7 +260,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eVisionXYsearch;
             alarm.Title = "Vision XY Search.";
             alarm.Cause = "Vision XY Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -264,7 +268,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageMoveFail;
             alarm.Title = "스테이지 이동에 실패 하였습니다.";
             alarm.Cause = "모터상태를 확인 하여주십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -272,7 +276,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eRingLockFailed;
             alarm.Title = "스테이지 제품 잠금 실패 하였습니다.";
             alarm.Cause = "스테이지 Lift Lock 실린더 상태를 확인 하여주십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -280,7 +284,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageAlignNotDone;
             alarm.Title = "Input Stage Align Not Done.";
             alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -288,7 +292,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageNoWafer;
             alarm.Title = "Input Stage No Wafer.";
             alarm.Cause = "Input Stage에 Wafer가 없습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -296,7 +300,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageAlignNotCompleted;
             alarm.Title = "Input Stage Align Not Completed.";
             alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -304,7 +308,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageMapMatch;
             alarm.Title = "Input Stage Map Match Failed.";
             alarm.Cause = "Input Stage Map Match 가 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -312,7 +316,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageRingPresent;
             alarm.Title = "Input Stage Ring Present Failed.";
             alarm.Cause = "Input Stage에 제품 감지가 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -320,7 +324,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageLiftUp;
             alarm.Title = "Input Stage Lift Up Failed.";
             alarm.Cause = "Input Stage에 Lift Up 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -328,7 +332,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageLiftDown;
             alarm.Title = "Input Stage Lift Down Failed.";
             alarm.Cause = "Input Stage에 Lift Down 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -337,7 +341,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageClampFWD;
             alarm.Title = "Input Stage Clamp FWD Failed.";
             alarm.Cause = "Input Stage에 Clamp FWD 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -345,7 +349,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageClampBWD;
             alarm.Title = "Input Stage Clamp BWD Failed.";
             alarm.Cause = "Input Stage에 Clamp BWD 실패하였습니다. 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
@@ -353,7 +357,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputStageScanEmpty;
             alarm.Title = "Input Stage Scan Empty.";
             alarm.Cause = "Chip Mapping Scan 결과가 0개입니다. Vision/Recipe/조명 상태를 확인 후 다시 시도 하십시요.";
-            alarm.Source = this.UnitName;
+            alarm.Source = unitSource;// this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
@@ -1519,6 +1523,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                this.RunUnitStatus == UnitStatus.Stopping ||
+               this.RunUnitStatus == UnitStatus.Error ||
                this.RunUnitStatus == UnitStatus.CycleStop ||
                this.RunUnitStatus == UnitStatus.ManualRunning)
             {
@@ -1825,6 +1830,7 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
+        int nMaxRetry = 0;
         private int RefineThetaWithDualPointAxis(bool useXAxis, bool bFineSpeed)
         {
             //사이즈를 벗어나서 마크를 못찾으면? 그건 어떻게 하지?
@@ -1833,7 +1839,16 @@ namespace QMC.LCP_280.Process.Unit
 
             //Todo: 
             //step을 wafer 사이즈 기준으로 잡아야함.
-            maxAttempts = 8;
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            if (recipe != null)
+            {
+                maxAttempts = recipe.AlignRepeatCount;
+            }
+            else
+            {
+                maxAttempts = 5;
+            }
+
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 //if (!TryAcquireDualPointAngle(useXAxis, out double residualDeg, bFineSpeed, attempt))
@@ -1843,15 +1858,45 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (Math.Abs(residualDeg) <= toleranceDeg)
+                if (attempt == maxAttempts)
                 {
-                    if(attempt == maxAttempts)
+                    if (Math.Abs(residualDeg) <= toleranceDeg)
                     {
-                        Log.Write(UnitName, "ThetaRefine",
-                        $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
-                        return 0;
+                        if (attempt == maxAttempts)
+                        {
+                            Log.Write(UnitName, "ThetaRefine",
+                            $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                            return 0;
+                        }
+                    }
+                    else
+                    {
+                        if (maxAttempts == nMaxRetry)
+                        {
+                            if (Math.Abs(residualDeg) <= toleranceDeg)
+                            {
+                                Log.Write(UnitName, "ThetaRefine",
+                                $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                                return 0;
+                            }
+                        }
+                        else
+                        {
+                            maxAttempts = maxAttempts + 3;
+                            nMaxRetry = maxAttempts;
+                        }
                     }
                 }
+
+                //if (Math.Abs(residualDeg) <= toleranceDeg)
+                //{
+                //    if (attempt == maxAttempts)
+                //    {
+                //        Log.Write(UnitName, "ThetaRefine",
+                //        $"OK axis={(useXAxis ? "X" : "Y")} attempt {attempt}: residual={residualDeg:F5}deg tol={toleranceDeg:F5}deg");
+                //        return 0;
+                //    }
+                //}
 
                 // residual을 0으로 만들기 위한 보정
                 // ApplyThetaCorrection 내부에서 AngleMaxApplyDeg 제한/누적적용/리밋체크를 함
@@ -2112,15 +2157,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
 
             MaterialWafer wafer;
-            //List<PointD> consolidated;
-            //int rc = PerformHardwareScanAndBuildWaferMap(bFineSpeed, out wafer, out consolidated);
-            List<PointD> consolidated;
             int rc = PerformHardwareScanAndBuildWaferMap(bFineSpeed, out wafer);
             if (rc != 0)
+            {
                 return rc;
+            }
 
             // wafer null 방어 (예외 방지)
-           if (wafer == null)
+            if (wafer == null)
             {
                 AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageScanEmpty); // 가장 근접한 알람 재사용 (전용 알람키 있으면 교체 권장)
@@ -2138,16 +2182,70 @@ namespace QMC.LCP_280.Process.Unit
                 ChipMappingDone = false;
                 return -1;
             }
-            
+
+            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            // [ADD] 외곽 N줄 스킵(Reject 처리)
+            if (recipe != null)
+                OuterBorderSkipRows = recipe.DieSkipLine;
+
+            // [변경 후] 아예 삭제하고 싶을 경우 (이걸로 교체)
+            RemoveOuterBorderDies(wafer, OuterBorderSkipRows);
+            //ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+
             rc = EvaluateMapMatchAndDecide(wafer);
             if (rc != 0)
             {
+                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
                 ChipMappingDone = false;
                 return rc;
             }
 
+            // [ADD] MapMatch OK 확정 후에도 OK Die -> Rank=1 재적용(수동 변환/재매칭 후에도 일관성 보장)
+            ApplyOkRankToDies(wafer, 1);
+            MarkNonRank1DiesAsSkip(wafer, 1);
+
+            //var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            //// [ADD] 외곽 N줄 스킵(Reject 처리)
+            //if (recipe != null)
+            //    OuterBorderSkipRows = recipe.DieSkipLine;
+
+            //ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+
+            //EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+            //MapMatch하고 적용하도록 옮기자.
+            ApplyAndNormalizeDieOrder(wafer);
+
+            // ---------------------------------------------------------
+            // [수정됨] 맵핑 완료 후 첫 번째 칩 위치로 선행 이동 (Pre-move)
+            // ---------------------------------------------------------
             wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-            ChipMappingDone = true;
+            Log.Write(UnitName, "PerformChipMapping", "Pre-moving to the first die position...");
+
+            // 첫 번째 픽업 대상 다이를 가져옵니다.
+            var firstDie = GetNextDie();
+            if (firstDie != null)
+            {
+                // 첫 번째 다이 위치로 이동
+                int moveRet = MoveStage(firstDie.CenterX, firstDie.CenterY, bFineSpeed);
+                if (moveRet != 0)
+                {
+                    Log.Write(UnitName, "PerformChipMapping", $"Fail: Pre-move to 1st die failed (Idx={firstDie.Index})");
+                    // 이동 실패 시 알람 처리 및 리턴 - 필요에 따라 주석 처리 가능하나 안전을 위해 실패 처리 권장
+                    return moveRet;
+                }
+
+                // 이동 후 위치 안정화 대기 (InPosition 확인은 MoveStage 내부에서 수행됨)
+                Log.Write(UnitName, "PerformChipMapping", $"Success: Pre-moved to 1st die (Idx={firstDie.Index}, X={firstDie.CenterX:F3}, Y={firstDie.CenterY:F3})");
+            }
+            else
+            {
+                Log.Write(UnitName, "PerformChipMapping", "Warning: No pickable die found for pre-move.");
+            }
+            // ---------------------------------------------------------
+
+            ChipMappingDone = true; // GetNextDie()가 정상 동작하려면 true여야 함
+            EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+            
             return 0;
         }
 
@@ -2211,16 +2309,14 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 1) 하드웨어적으로 스캔하여 좌표 생성 + 웨이퍼 Dies 생성/정렬/인덱싱 + Scan Summary 반영
         /// </summary>
-        /// 
-        //private int PerformHardwareScanAndBuildWaferMap(bool bFineSpeed, out MaterialWafer wafer, out List<PointD> consolidated)
         private int PerformHardwareScanAndBuildWaferMap(bool bFineSpeed, out MaterialWafer wafer)
         {
             wafer = null;
-            //consolidated = null;
-
             TrySummaryStartScan();
             try
             {
+                wafer = GetMaterialWafer();
+
                 ApplyDynamicPitchParameters();
                 OnWaferOrRecipeChanged();
 
@@ -2236,18 +2332,38 @@ namespace QMC.LCP_280.Process.Unit
                 //UpdateChipInfo(consolidated);
                 //TrySummaryUpdateScanAndTotalCount(consolidated);
 
-				raw = ConsolidateRawChips(raw);
-                UpdateChipInfo(raw);
-                TrySummaryUpdateScanAndTotalCount(raw);
+                //맵서치완료한 다이 정보 로그 출력을 다른 파일에 저장하도록 변경
+                int nIndex = 0;
+                DateTime now = DateTime.Now;
+                string logFile = string.Empty;
+                logFile = string.Format("DieLowDataLog_{0}_{1}", wafer.WaferId, now.ToString("yyyyMMdd_HHmmss"));
+                Log.Write(logFile, "rawList", "Index,posX ,posY");
+                foreach (var c in raw)
+                {
+                    if (true)
+                    {
+                        Log.Write(logFile, "rawList", $"{nIndex},{c.X},{c.Y}");
+                        nIndex++;
+                    }
+                }
 
-                wafer = GetMaterialWafer();
+                // [TEST] 중복 칩 병합 사용 여부 토글 : false로 설정됨
+                if (true)
+                {
+				    raw = ConsolidateRawChips(raw);
+                }
+
+                // UpdateChipInfo 내부에서 wafer 생성/설정까지 수행
+                UpdateChipInfo(raw);
+                
                 if (wafer != null)
                 {
-                    ApplyAndNormalizeDieOrder(wafer);
+                    //MapMatch하고 적용하도록 옮기자.
+                    //ApplyAndNormalizeDieOrder(wafer);
 
                     // [ADD] Scan 완료 시 OK Die -> Rank=1
                     ApplyOkRankToDies(wafer, 1);
-                    MarkNonRank1DiesAsSkippedOrNg(wafer, 1);
+                    MarkNonRank1DiesAsSkip(wafer, 1);
 
                     EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
                 }
@@ -2259,13 +2375,15 @@ namespace QMC.LCP_280.Process.Unit
                 TrySummaryStopScan();
             }
         }
+
+        public bool SimUseRawChipFile { get; set; } = true; // UI에서 옵션으로 열어도 됨
+        public string SimRawChipFilePath { get; private set; } = ""; // 선택된 파일 경로 캐시
         private int ScanPathAndCollectRawChips(List<PointD> path, bool bFineSpeed, List<PointD> rawOut)
         {
             if (rawOut == null)
                 return -1;
 
             Task<int> tImageProcess = null;
-
             try
             {
                 foreach (var pt in path)
@@ -2289,20 +2407,63 @@ namespace QMC.LCP_280.Process.Unit
 
                     if (Config.IsSimulation || Config.IsDryRun)
                     {
-                        EnsureSimDiePoolGenerated();
-
                         const int maxSimChips = 20000;
                         rawOut.Clear();
-                        if (maxSimChips > 0 && _simAllDiesPool.Count > maxSimChips)
-                            rawOut.AddRange(_simAllDiesPool.Take(maxSimChips));
-                        else
-                            rawOut.AddRange(_simAllDiesPool);
+                        bool loadedFromFile = false;
 
-                        Log.Write(UnitName, "Sim",
-                            $"[ChipMap] Use full sim pool. chips={rawOut.Count} (pool={_simAllDiesPool.Count})");
+                        SimUseRawChipFile = true;
+                        if (SimUseRawChipFile)
+                        {
+                            if (string.IsNullOrWhiteSpace(SimRawChipFilePath))
+                            {
+                                // Auto 운전 중에도 파일 선택창 띄우기
+                                var loadpath = AskSimRawChipFilePathAsync().GetAwaiter().GetResult(); // 또는 .Wait()
+                                if (!string.IsNullOrWhiteSpace(loadpath))
+                                    SimRawChipFilePath = loadpath; // set 접근자 필요하면 private set -> set으로 변경
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(SimRawChipFilePath) &&
+                                TryLoadRawChipsFromFile(SimRawChipFilePath, out var fileChips, maxSimChips))
+                            {
+                                rawOut.AddRange(fileChips);
+                                loadedFromFile = true;
+
+                                Log.Write(UnitName, "Sim",
+                                    $"[ChipMap] Loaded chips from file. chips={rawOut.Count} file='{SimRawChipFilePath}'");
+                            }
+                        }
+
+                        if (!loadedFromFile)
+                        {
+                            EnsureSimDiePoolGenerated();
+                            if (maxSimChips > 0 && _simAllDiesPool.Count > maxSimChips)
+                                rawOut.AddRange(_simAllDiesPool.Take(maxSimChips));
+                            else
+                                rawOut.AddRange(_simAllDiesPool);
+
+                            Log.Write(UnitName, "Sim",
+                                $"[ChipMap] Use generated sim pool. chips={rawOut.Count} (pool={_simAllDiesPool.Count})");
+                        }
 
                         break;
                     }
+
+                    //if (Config.IsSimulation || Config.IsDryRun)
+                    //{
+                    //    EnsureSimDiePoolGenerated();
+
+                    //    const int maxSimChips = 20000;
+                    //    rawOut.Clear();
+                    //    if (maxSimChips > 0 && _simAllDiesPool.Count > maxSimChips)
+                    //        rawOut.AddRange(_simAllDiesPool.Take(maxSimChips));
+                    //    else
+                    //        rawOut.AddRange(_simAllDiesPool);
+
+                    //    Log.Write(UnitName, "Sim",
+                    //        $"[ChipMap] Use full sim pool. chips={rawOut.Count} (pool={_simAllDiesPool.Count})");
+
+                    //    break;
+                    //}
 
                     if (tImageProcess != null)
                         tImageProcess.Wait();
@@ -2380,7 +2541,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (!IsMapMatchModeEnabled())
                 {
-                    return AskContinueWhenMapMatchDisabled();
+                    return AskContinueWhenMapMatchDisabled(wafer);
                 }
 
                 // MapMatchMode = true
@@ -2391,7 +2552,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(UnitName, "MapMatch", "Simulation/DryRun -> skip file-based map matching.");
-                    return 0;
+                    //return 0;
                 }
 
                 return RunMapMatchAndDecide(wafer, mapFile);
@@ -2406,30 +2567,49 @@ namespace QMC.LCP_280.Process.Unit
                 TrySummaryStopSort();
             }
         }
+
         private bool IsMapMatchModeEnabled()
         {
             var eqpConfig = Equipment.Instance.EquipmentConfig;
             return eqpConfig != null && eqpConfig.MapMatchMode;
         }
-        private int AskContinueWhenMapMatchDisabled()
+        private int AskContinueWhenMapMatchDisabled(MaterialWafer wafer)
         {
+            // [ADD] 외곽 N줄 스킵(Reject 처리)
+            //var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            //if (recipe != null)
+            //{
+            //    OuterBorderSkipRows = recipe.DieSkipLine;
+            //}
+            //ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+            // [ADD] Skip die 제거 (복구 불가)
+            //RemoveSkippedDiesFromWafer("MapMatchDisabled_RemoveSkippedDies");
+
+            // 외곽 N줄 스킵(Reject 처리) 내부에서 함.
+            string strMapFile = string.Empty;
+            strMapFile = "MapMatchDisabled_NoFile";
+            strMapFile = "D:\\MapTestWafer.waf";
+            return RunMapMatchAndDecide(wafer, strMapFile);
+
             // 기존: 맵핑 완료 후 사용자 확인
-            if (Config.IsSimulation == false)
-            {
-                var ask = new MessageBoxYesNo();
-                ask.TopMost = true;
-                if (ask.ShowDialog("진행 유무 확인", "맵핑 완료. 진행 하시겠습니까?") != DialogResult.Yes)
-                {
-                    OnStop();
-                    ChipMappingDone = false;
+            //if (Config.IsSimulation == false)
+            //{
+            //    var ask = new MessageBoxYesNo();
+            //    ask.TopMost = true;
+            //    if (ask.ShowDialog("진행 유무 확인", "맵핑 완료. 진행 하시겠습니까?") != DialogResult.Yes)
+            //    {
+            //        OnStop();
+            //        ChipMappingDone = false;
 
-                    var eq = Equipment.Instance;
-                    eq.SequenceStopAllAsync(CancellationToken.None);
+            //        var eq = Equipment.Instance;
+            //        eq.SequenceStopAllAsync(CancellationToken.None);
 
-                    Log.Write(UnitName, "TryShutdownIfAllCassettesEmpty", "모든 관련 Unit 정지 완료.");
-                    return -1;
-                }
-            }
+            //        Log.Write(UnitName, "TryShutdownIfAllCassettesEmpty", "모든 관련 Unit 정지 완료.");
+            //        return -1;
+            //    }
+            //}
+
+
             return 0;
         }
         private string PrepareMapFileForMatchingOrAlarm(MaterialWafer wafer)
@@ -2438,87 +2618,501 @@ namespace QMC.LCP_280.Process.Unit
             string mapFilePath = recipe.MapFilePath;
             return PrepareLocalMapFileOrAlarm(wafer, mapFilePath);
         }
+
         private int RunMapMatchAndDecide(MaterialWafer wafer, string mapFile)
         {
-            var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
 
-            var orgPreview = wafer.ReadFileOnline(mapFile, MaterialWafer.MapTyp.waf);
-            if (orgPreview == null || orgPreview.Count == 0)
+            // 방어
+            if (wafer == null)
+                return -1;
+
+            if (wafer.Dies == null || wafer.Dies.Count == 0)
             {
-                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                Log.Write(UnitName, "MapMatch", $"Original map parse failed or empty: {mapFile}");
+                PostAlarm((int)AlarmKeys.eInputStageScanEmpty);
+                Log.Write(UnitName, "MapMatch", "Scan Dies empty.");
                 return -1;
             }
 
-            TrySummaryUpdateOrgAndScanCount(orgPreview.Count, wafer.Dies != null ? wafer.Dies.Count : 0);
+            try
+            {
+                // ==========================================================
+                // [수정] 180도 회전된 스캔 데이터 보정 로직 추가
+                // ==========================================================
+                // 다운로드 맵은 0도인데 스캔은 180도인 경우, 매칭 전에 스캔 데이터를 180도 돌려줍니다.
+                // 180도 회전은 (X, Y) -> (-X, -Y)로 변환하면 패턴이 일치하게 됩니다.
+                // (Mapmatch 내부에서 Offset은 자동으로 찾아내므로 부호만 바꾸면 됩니다.)
 
-            double bestScore = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf) * 100.0;
-            Log.Write(UnitName, "MapMatch",
-                $"Done. Score={bestScore:F3} OrgCount={orgPreview.Count} ScanCount={wafer.Dies.Count} MapFile='{mapFile}'");
+                bool needRotate180 = false;
 
-            double scoreThreshold = recipe.WaferMatchLimitPercent;
+                // Case 1: 레시피 설정을 따를 경우 (추천)
+                //if (recipe != null && recipe.WaferRotate == MapRotateOption.CW180)
+                //{
+                //    needRotate180 = true;
+                //}
 
-            int rc = DecideWithManualRematchLoop(wafer, mapFile, ref bestScore, scoreThreshold);
-            if (rc != 0)
-                return rc;
+                // Case 2: 무조건 180도 회전이 필요하다면 아래 주석을 해제하세요.
+                needRotate180 = true;
+                if (needRotate180)
+                {
+                    Log.Write(UnitName, "MapMatch", "Applying 180 degree rotation (Invert XY) to scanned dies before matching.");
+                    lock (wafer.Dies)
+                    {
+                        foreach (var d in wafer.Dies)
+                        {
+                            if (d != null)
+                            {
+                                d.MapX = -d.MapX;
+                                d.MapY = -d.MapY;
+                            }
+                        }
+                    }
+                }
+                // ==========================================================
 
-            // [ADD] MapMatch OK 확정 후에도 OK Die -> Rank=1 재적용(수동 변환/재매칭 후에도 일관성 보장)
-            ApplyOkRankToDies(wafer, 1);
-            MarkNonRank1DiesAsSkippedOrNg(wafer, 1);
 
-            EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
-            return 0;
+
+                // mapFile이 있으면 기존 로직(파일 기반) 사용
+                if (!string.IsNullOrWhiteSpace(mapFile) && File.Exists(mapFile))
+                {
+                    //var orgPreview = wafer.ReadFileOnline(mapFile, MaterialWafer.MapTyp.waf);
+                    var orgPreview = wafer.ReadFileOnline(mapFile, MaterialWafer.MapTyp.txt);
+                    if (orgPreview == null || orgPreview.Count == 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                        Log.Write(UnitName, "MapMatch", $"Original map parse failed or empty: {mapFile}");
+                        return -1;
+                    }
+
+                    TrySummaryUpdateOrgAndScanCount(orgPreview.Count, wafer.Dies != null ? wafer.Dies.Count : 0);
+
+                    //double bestScore = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf) * 100.0;
+                    double bestScore = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.txt) * 100.0;
+                    //MapmatchFast
+                    //double bestScore = wafer.MapmatchFast(mapFile, MaterialWafer.MapTyp.waf) * 100.0;
+
+                    Log.Write(UnitName, "MapMatch",
+                        $"Done. Score={bestScore:F3} OrgCount={orgPreview.Count} ScanCount={wafer.Dies.Count} MapFile='{mapFile}'");
+
+                    double scoreThreshold = recipe != null ? recipe.WaferMatchLimitPercent : 0.0;
+
+                    int rc = DecideWithManualRematchLoop(wafer, mapFile, ref bestScore, scoreThreshold);
+                    if (rc != 0)
+                        return rc;
+
+                    //// [ADD] MapMatch OK 확정 후에도 OK Die -> Rank=1 재적용(수동 변환/재매칭 후에도 일관성 보장)
+                    //ApplyOkRankToDies(wafer, 1);
+                    //MarkNonRank1DiesAsSkip(wafer, 1);
+
+                    //// [ADD] 외곽 N줄 스킵(Reject 처리)
+                    //if (recipe != null)
+                    //    OuterBorderSkipRows = recipe.DieSkipLine;
+
+                    //ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+
+                    //EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+                    return 0;
+                }
+
+                // ============================
+                // mapFile이 없는 경우(Manual / 다운로드 불가 등)
+                // - "원본맵"을 wafer.Dies 기반으로 구성해서 화면/판단 흐름을 동일하게 제공
+                // ============================
+
+                var preview = BuildPreviewFromWaferDies(wafer);
+                if (preview == null || preview.Count == 0)
+                {
+                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                    Log.Write(UnitName, "MapMatch", "Preview generation failed (wafer.dies -> preview).");
+                    return -1;
+                }
+
+                // 파일 기반이 아니므로 org=scan 동일 취급으로 Summary만 반영
+                TrySummaryUpdateOrgAndScanCount(preview.Count, wafer.Dies.Count);
+
+                // 초기 스코어는 100으로 시작(원본=스캔으로 간주)
+                // 이후 수동 변환이 들어오면, 아래 내부 스코어링으로 다시 계산
+                double bestScoreNoFile = 100.0;
+
+                double threshold = recipe != null ? recipe.WaferMatchLimitPercent : 0.0;
+
+                // mapFile이 없으므로 "수동 변환 후 재매칭"은 내부 스코어링으로 처리
+                int rcNoFile = DecideWithManualRematchLoop_NoMapFile(wafer, ref bestScoreNoFile, threshold);
+                if (rcNoFile != 0)
+                    return rcNoFile;
+
+                ApplyOkRankToDies(wafer, 1);
+                MarkNonRank1DiesAsSkip(wafer, 1);
+
+                if (recipe != null)
+                    OuterBorderSkipRows = recipe.DieSkipLine;
+
+                ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+
+                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
         }
+
+        private List<object> BuildPreviewFromWaferDies(MaterialWafer wafer)
+        {
+            // MaterialWafer.ReadFileOnline(mapFile) 반환 타입이 프로젝트에서 "List<...>"인데,
+            // 여기 파일 컨텍스트만으로 정확한 제네릭 타입을 특정할 수 없어서 object로 반환.
+            // 실제 이 preview는 count/log 용도라서 타입 안정성이 필요 없도록 설계.
+            try
+            {
+                if (wafer?.Dies == null)
+                    return null;
+
+                // Map 좌표가 있는 die만
+                var dies = wafer.Dies.Where(d => d != null && d.Presence == MaterialPresence.Exist).ToList();
+                if (dies.Count == 0)
+                    return new List<object>();
+
+                // “원본맵”이라고 가정할 엔트리 개수만 맞추면 됨(현 코드에서 orgPreview는 Count/log/summary 목적)
+                var list = new List<object>(dies.Count);
+                for (int i = 0; i < dies.Count; i++)
+                    list.Add(dies[i]);
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, nameof(BuildPreviewFromWaferDies), ex.Message);
+                return null;
+            }
+        }
+
+        //기존파일.
+        //private int DecideWithManualRematchLoop_NoMapFile(MaterialWafer wafer, ref double bestScore, double scoreThreshold)
+        //{
+        //    // mapFile 없이도 동일 UI를 사용하되, Rematch는 내부 점수로 계산
+        //    while (true)
+        //    {
+        //        // 무조건 실행하자. Manual인 경우에
+        //        //if (bestScore >= scoreThreshold)
+        //        //    return 0;
+
+        //        //FormMapMatchManual <- 이 Dlg 사용
+        //        using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, "(NO MAP FILE)"))
+        //        {
+        //            var dr = dlg.ShowDialog();
+        //            if (dr != DialogResult.Yes)
+        //            {
+        //                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //                Log.Write(UnitName, "MapMatch",
+        //                    $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. (NoMapFile)");
+        //                return -1;
+        //            }
+
+        //            if (dlg.ManualSettings != null)
+        //            {
+        //                bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
+        //                if (!applied)
+        //                {
+        //                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //                    Log.Write(UnitName, "MapMatch", "Manual settings apply failed -> abort (NoMapFile)");
+        //                    return -1;
+        //                }
+
+        //                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+        //                // mapFile이 없으므로 내부 score 계산
+        //                bestScore = ComputeInternalMatchScorePercent(wafer);
+
+        //                Log.Write(UnitName, "MapMatch",
+        //                    $"Rematch after manual. Score={bestScore:F2} Threshold={scoreThreshold:F2} (NoMapFile)");
+
+        //                continue;
+        //            }
+
+        //            Log.Write(UnitName, "MapMatch",
+        //                $"User chose CONTINUE without manual. Score={bestScore:F2}, Threshold={scoreThreshold:F2}. (NoMapFile)");
+        //            return 0;
+        //        }
+        //    }
+        //}
+
+        private double ComputeInternalMatchScorePercent(MaterialWafer wafer)
+        {
+            // 파일이 없을 때 “수동 변환이 얼마나 안정적인지”를 대충이라도 표현하기 위한 내부 점수.
+            // 기준:
+            //  - MapX/MapY가 얼마나 촘촘하게(중복 없이) 분포하는지
+            //  - 중복(MapX,MapY) 발생률이 낮을수록 점수 높음
+            try
+            {
+                if (wafer?.Dies == null || wafer.Dies.Count == 0)
+                    return 0.0;
+
+                var dies = wafer.Dies.Where(d => d != null && d.Presence == MaterialPresence.Exist).ToList();
+                if (dies.Count == 0)
+                    return 0.0;
+
+                var set = new HashSet<long>();
+                int dup = 0;
+
+                foreach (var d in dies)
+                {
+                    long key = (((long)((int)d.MapX)) << 32) ^ (uint)((int)d.MapY);
+                    if (!set.Add(key))
+                        dup++;
+                }
+
+                // 중복이 0이면 100, 전부 중복이면 0
+                double unique = dies.Count - dup;
+                double score = (unique / Math.Max(1.0, dies.Count)) * 100.0;
+                if (score < 0) score = 0;
+                if (score > 100) score = 100;
+                return score;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, nameof(ComputeInternalMatchScorePercent), ex.Message);
+                return 0.0;
+            }
+        }
+
+        // 기존코드.
+        //private int RunMapMatchAndDecide(MaterialWafer wafer, string mapFile)
+        //{
+        //    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+
+        //    if (wafer == null) // 방어
+        //        return -1;
+
+        //    var orgPreview = wafer.ReadFileOnline(mapFile, MaterialWafer.MapTyp.waf);
+        //    if (orgPreview == null || orgPreview.Count == 0)
+        //    {
+        //        PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //        Log.Write(UnitName, "MapMatch", $"Original map parse failed or empty: {mapFile}");
+        //        return -1;
+        //    }
+
+        //    TrySummaryUpdateOrgAndScanCount(orgPreview.Count, wafer.Dies != null ? wafer.Dies.Count : 0);
+
+        //    double bestScore = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf) * 100.0;
+        //    Log.Write(UnitName, "MapMatch",
+        //        $"Done. Score={bestScore:F3} OrgCount={orgPreview.Count} ScanCount={wafer.Dies.Count} MapFile='{mapFile}'");
+
+        //    double scoreThreshold = recipe.WaferMatchLimitPercent;
+
+        //    int rc = DecideWithManualRematchLoop(wafer, mapFile, ref bestScore, scoreThreshold);
+        //    if (rc != 0)
+        //        return rc;
+
+        //    // [ADD] MapMatch OK 확정 후에도 OK Die -> Rank=1 재적용(수동 변환/재매칭 후에도 일관성 보장)
+        //    ApplyOkRankToDies(wafer, 1);
+        //    MarkNonRank1DiesAsSkip(wafer, 1);
+
+        //    // [ADD] 외곽 N줄 스킵(Reject 처리)
+        //    if (recipe != null)
+        //    {
+        //        OuterBorderSkipRows = recipe.DieSkipLine;
+        //    }
+        //    ApplyOuterBorderSkipOrReject(wafer, OuterBorderSkipRows);
+        //    // [ADD] Skip die 제거 (복구 불가)
+        //    //RemoveSkippedDiesFromWafer("MapMatchDisabled_RemoveSkippedDies");
+
+        //    EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+        //    return 0;
+        //}
+
+
         private int DecideWithManualRematchLoop(MaterialWafer wafer, string mapFile, ref double bestScore, double scoreThreshold)
         {
             while (true)
             {
-                if (bestScore >= scoreThreshold)
-                    return 0;
-
-                using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, mapFile))
+                if(Config.IsSimulation == false)
                 {
-                    var dr = dlg.ShowDialog();
-                    if (dr != DialogResult.Yes)
+                    if (bestScore >= scoreThreshold)
+                        return 0;
+                }
+                
+
+                //bool manualApplied = false;
+                //FormMapMatchManual.ManualTransformSettings appliedSettings = null;
+
+                using (var dlg = new FormMapMatchManual())
+                {
+                    try
+                    {
+                        // Scan = 항상 장비 웨이퍼(현재 wafer) 기준
+                        dlg.BindTargetWafer(wafer);
+
+                        // Download map 파일 경로 전달(있으면 자동 로드에 사용)
+                        if (!string.IsNullOrWhiteSpace(mapFile) && File.Exists(mapFile))
+                            dlg.SetDownloadedMapFile(mapFile);
+
+                        // Camera 바인딩(필요 시)
+                        dlg.BindEquipmentInStageCamera();
+
+                        //dlg.ManualMatchApplied += (s, e) =>
+                        //{
+                        //    manualApplied = true;
+                        //    appliedSettings = e?.Settings;
+                        //    try { dlg.DialogResult = DialogResult.OK; } catch { }
+                        //    try { dlg.Close(); } catch { }
+                        //};
+
+                        var dr = dlg.ShowDialog();
+
+                        // 1) 사용자가 창을 그냥 닫았거나 Cancel이면 중단
+                        //if (dr != DialogResult.OK || !manualApplied)
+                        // OK 버튼으로 닫힌 경우에만 확정 진행
+                        if (dr != DialogResult.OK)
+                        {
+                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                            Log.Write(UnitName, "MapMatch",
+                                $"User cancelled manual rematch. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
+                            return -1;
+                        }
+                    }
+                    catch (Exception ex)
                     {
                         PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                        Log.Write(UnitName, "MapMatch",
-                            $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
+                        Log.Write(UnitName, "MapMatch", "Manual dialog exception: " + ex.Message);
                         return -1;
                     }
-
-                    if (dlg.ManualSettings != null)
-                    {
-                        bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
-                        if (!applied)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                            Log.Write(UnitName, "MapMatch", "Manual settings apply failed -> abort");
-                            return -1;
-                        }
-
-                        EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
-
-                        if (!TryRematchAfterManual(wafer, mapFile, out var retryScore))
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                            Log.Write(UnitName, "MapMatch", "Rematch failed after manual -> abort");
-                            return -1;
-                        }
-
-                        Log.Write(UnitName, "MapMatch",
-                            $"Rematch after manual. Score={retryScore:F2} Threshold={scoreThreshold:F2}");
-
-                        bestScore = retryScore;
-                        continue;
-                    }
-
-                    Log.Write(UnitName, "MapMatch",
-                        $"User chose CONTINUE without manual. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
-                    return 0;
                 }
+
+                // Apply는 FormMapMatchManual 내부에서 _targetWafer(=wafer.Dies)에 직접 반영됨.
+                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+                // Apply 후 재매칭
+                if (!TryRematchAfterManual(wafer, mapFile, out var retryScore))
+                {
+                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                    Log.Write(UnitName, "MapMatch", "Rematch failed after manual -> abort");
+                    return -1;
+                }
+
+                Log.Write(UnitName, "MapMatch",
+                    $"Rematch after manual. Score={retryScore:F2} Threshold={scoreThreshold:F2}");
+
+                bestScore = retryScore;
+
+                // User가 확인 후 진행하였으므로 진행시킴.
+                //if (bestScore >= scoreThreshold)
+                //    return 0;
+
+                return 0;
+
             }
         }
+
+        private int DecideWithManualRematchLoop_NoMapFile(MaterialWafer wafer, ref double bestScore, double scoreThreshold)
+        {
+            // mapFile이 없더라도 FormMapMatchManual에서 "wafer.Dies를 원본맵(download)"으로 넣어서
+            // Apply 버튼만으로 진행(OK)할 수 있게 만든다.
+            while (true)
+            {
+                bool manualApplied = false;
+
+                using (var dlg = new FormMapMatchManual())
+                {
+                    try
+                    {
+                        dlg.BindTargetWafer(wafer);
+
+                        // [ADD] 다운로드 파일이 없으니, wafer.Dies를 "다운로드 맵"으로 주입
+                        // 이렇게 하면 ApplyManualMatch()가 EnsureDownloadedMapLoaded()에서 막히지 않음.
+                        dlg.SetDownloadedMapFromWaferDies(wafer, infoText: "NO_MAPFILE_USE_WAFER_DIES");
+
+                        dlg.BindEquipmentInStageCamera();
+
+                        dlg.ManualMatchApplied += (s, e) =>
+                        {
+                            //manualApplied = true;
+                            //try { dlg.DialogResult = DialogResult.OK; } catch { }
+                            //try { dlg.Close(); } catch { }
+                        };
+
+                        var dr = dlg.ShowDialog();
+
+                        if (dr != DialogResult.OK )//|| !manualApplied)
+                        {
+                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                            Log.Write(UnitName, "MapMatch", "User cancelled manual map match. (NoMapFile)");
+                            return -1;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+                        Log.Write(UnitName, "MapMatch", "Manual dialog exception (NoMapFile): " + ex.Message);
+                        return -1;
+                    }
+                }
+
+                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+                // mapFile 없으므로 내부 점수(중복/유니크)로만 참고
+                bestScore = ComputeInternalMatchScorePercent(wafer);
+
+                Log.Write(UnitName, "MapMatch",
+                    $"Manual applied (NoMapFile). InternalScore={bestScore:F2} Threshold={scoreThreshold:F2}");
+
+                return 0;
+            }
+        }
+
+
+        //기존 파일
+        //private int DecideWithManualRematchLoop(MaterialWafer wafer, string mapFile, ref double bestScore, double scoreThreshold)
+        //{
+        //    while (true)
+        //    {
+        //        if (bestScore >= scoreThreshold)
+        //            return 0;
+
+        //        using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, mapFile))
+        //        {
+        //            var dr = dlg.ShowDialog();
+        //            if (dr != DialogResult.Yes)
+        //            {
+        //                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //                Log.Write(UnitName, "MapMatch",
+        //                    $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
+        //                return -1;
+        //            }
+
+        //            if (dlg.ManualSettings != null)
+        //            {
+        //                bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
+        //                if (!applied)
+        //                {
+        //                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //                    Log.Write(UnitName, "MapMatch", "Manual settings apply failed -> abort");
+        //                    return -1;
+        //                }
+
+        //                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
+
+        //                if (!TryRematchAfterManual(wafer, mapFile, out var retryScore))
+        //                {
+        //                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
+        //                    Log.Write(UnitName, "MapMatch", "Rematch failed after manual -> abort");
+        //                    return -1;
+        //                }
+
+        //                Log.Write(UnitName, "MapMatch",
+        //                    $"Rematch after manual. Score={retryScore:F2} Threshold={scoreThreshold:F2}");
+
+        //                bestScore = retryScore;
+        //                continue;
+        //            }
+
+        //            Log.Write(UnitName, "MapMatch",
+        //                $"User chose CONTINUE without manual. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
+        //            return 0;
+        //        }
+        //    }
+        //}
         private int PrepareEjectorForMappingOrAlarm()
         {
             int nRet = 0;
@@ -2549,144 +3143,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
-        /// <summary>
-        /// 2) 상위에서 맵 다운로드/비교 후 진행 여부 판단 (MapMatchMode 기준)
-        /// </summary>
-        private int EvaluateMapMatchAndDecide(MaterialWafer wafer, List<PointD> consolidated)
-        {
-            //Sort Start (기존 유지)
-            TrySummaryStartSort();
-
-            try
-            {
-                if (wafer == null)
-                {
-                    Log.Write(UnitName, "MapMatch", "No wafer instance. Skip.");
-                    return 0;
-                }
-                if (wafer.Dies == null || wafer.Dies.Count == 0)
-                {
-                    Log.Write(UnitName, "MapMatch", "No scanned Dies to match. Skip.");
-                    return 0;
-                }
-
-                var eqpConfig = Equipment.Instance.EquipmentConfig;
-                bool bUse = eqpConfig.MapMatchMode;
-                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
-
-                if (!bUse)
-                {
-                    // 기존: 맵핑 완료 후 사용자 확인
-                    if (Config.IsSimulation == false)
-                    {
-                        var ask = new MessageBoxYesNo();
-                        ask.TopMost = true;
-                        if (ask.ShowDialog("진행 유무 확인", $"맵핑 완료. 진행 하시겠습니까?") != DialogResult.Yes)
-                        {
-                            OnStop();
-                            ChipMappingDone = false;
-
-                            var eq = Equipment.Instance;
-                            eq.SequenceStopAllAsync(CancellationToken.None);
-
-                            Log.Write(UnitName, "TryShutdownIfAllCassettesEmpty", "모든 관련 Unit 정지 완료.");
-                            return -1;
-                        }
-                    }
-                    return 0;
-                }
-
-                // MapMatchMode = true 인 경우
-                string mapFilePath = recipe.MapFilePath;
-                string strMapFile = PrepareLocalMapFileOrAlarm(wafer, mapFilePath);
-                if (string.IsNullOrWhiteSpace(strMapFile))
-                    return -1;
-
-                if (Config.IsSimulation || Config.IsDryRun)
-                {
-                    Log.Write(UnitName, "MapMatch", "Simulation/DryRun -> skip file-based map matching.");
-                    return 0;
-                }
-
-                // 원본 맵 파일 선검증
-                var orgPreview = wafer.ReadFileOnline(strMapFile, MaterialWafer.MapTyp.waf);
-                if (orgPreview == null || orgPreview.Count == 0)
-                {
-                    PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                    Log.Write(UnitName, "MapMatch", $"Original map parse failed or empty: {strMapFile}");
-                    return -1;
-                }
-
-                // Summary Total/Scan 반영(기존 유지)
-                TrySummaryUpdateOrgAndScanCount(orgPreview.Count, wafer.Dies != null ? wafer.Dies.Count : 0);
-
-                double bestScore = wafer.Mapmatch(strMapFile, MaterialWafer.MapTyp.waf) * 100.0;
-                Log.Write(UnitName, "MapMatch",
-                    $"Done. Score={bestScore:F3} OrgCount={orgPreview.Count} ScanCount={wafer.Dies.Count} MapFile='{strMapFile}'");
-
-                double scoreThreshold = recipe.WaferMatchLimitPercent;
-
-                while (true)
-                {
-                    if (bestScore >= scoreThreshold)
-                        break;
-
-                    using (var dlg = new MapMatchDecisionDialog(bestScore, scoreThreshold, strMapFile))
-                    {
-                        var dr = dlg.ShowDialog();
-                        if (dr != DialogResult.Yes)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                            Log.Write(UnitName, "MapMatch",
-                                $"User chose STOP. Score={bestScore:F2} < Threshold={scoreThreshold:F2}. Sequence aborted.");
-                            return -1;
-                        }
-
-                        if (dlg.ManualSettings != null)
-                        {
-                            bool applied = ApplyManualMapMatchToWafer(wafer, dlg.ManualSettings);
-                            if (!applied)
-                            {
-                                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                                Log.Write(UnitName, "MapMatch", "Manual settings apply failed -> abort");
-                                return -1;
-                            }
-
-                            EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
-
-                            if (!TryRematchAfterManual(wafer, strMapFile, out var retryScore))
-                            {
-                                PostAlarm((int)AlarmKeys.eInputStageAlignNotCompleted);
-                                Log.Write(UnitName, "MapMatch", "Rematch failed after manual -> abort");
-                                return -1;
-                            }
-
-                            Log.Write(UnitName, "MapMatch",
-                                $"Rematch after manual. Score={retryScore:F2} Threshold={scoreThreshold:F2}");
-
-                            bestScore = retryScore;
-                            continue;
-                        }
-
-                        Log.Write(UnitName, "MapMatch",
-                            $"User chose CONTINUE without manual. Score={bestScore:F2}, Threshold={scoreThreshold:F2}.");
-                        break;
-                    }
-                }
-
-                EventUpdateUIWafer?.BeginInvoke(wafer, null, null);
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                return -1;
-            }
-            finally
-            {
-                TrySummaryStopSort();
-            }
-        }
+        
         private string PrepareLocalMapFileOrAlarm(MaterialWafer wafer, string mapFilePath)
         {
             try
@@ -2700,6 +3157,49 @@ namespace QMC.LCP_280.Process.Unit
 
                 string waferId = wafer.WaferId.Trim();
                 string sourceWaf = ResolveSourceWafPath(mapFilePath, waferId);
+
+                // [User Requirement] If sourceWaf is found (or logic dictates), let user select MASKMAP
+                if (string.IsNullOrWhiteSpace(sourceWaf) == false)
+                {
+                    // Assuming this runs on a non-UI thread, we need to invoke on the main UI thread
+                    var mainForm = System.Windows.Forms.Application.OpenForms.Count > 0
+                        ? System.Windows.Forms.Application.OpenForms[0]
+                        : null;
+
+                    if (mainForm != null && mainForm.InvokeRequired)
+                    {
+                        string selectedFile = null;
+                        mainForm.Invoke((System.Windows.Forms.MethodInvoker)delegate
+                        {
+                            using (var dlg = new System.Windows.Forms.OpenFileDialog())
+                            {
+                                dlg.Title = "Select MASKMAP File";
+                                dlg.Filter = "Map Files (*.waf;*.txt;*.csv)|*.waf;*.txt;*.csv|All files (*.*)|*.*";
+                                dlg.FileName = System.IO.Path.GetFileName(sourceWaf); // Propose the found file name
+                                if (!string.IsNullOrWhiteSpace(sourceWaf))
+                                {
+                                    try
+                                    {
+                                        dlg.InitialDirectory = System.IO.Path.GetDirectoryName(sourceWaf);
+                                    }
+                                    catch { /* ignore invalid paths */ }
+                                }
+
+                                if (dlg.ShowDialog(mainForm) == System.Windows.Forms.DialogResult.OK)
+                                {
+                                    selectedFile = dlg.FileName;
+                                }
+                            }
+                        });
+
+                        // If user selected a file, update sourceWaf
+                        if (!string.IsNullOrWhiteSpace(selectedFile))
+                        {
+                            sourceWaf = selectedFile;
+                            Log.Write(UnitName, "MapMatch", $"User selected MASKMAP: {sourceWaf}");
+                        }
+                    }
+                }
 
                 string localWaf;
                 string dlReason;
@@ -2772,7 +3272,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex) { Log.Write(ex); }
         }
-        private void TrySummaryUpdateScanAndTotalCount(List<PointD> consolidated)
+        private void TrySummaryUpdateScanAndTotalCount(int nCount)
         {
             try
             {
@@ -2781,9 +3281,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (ctx != null && ctx.IsActive && sum != null)
                 {
-                    int scanCount = consolidated != null ? consolidated.Count : 0;
-                    //sum.AddScanCount(scanCount);
-                    //sum.AddTotalCount(scanCount);
+                    int scanCount = nCount; // consolidated != null ? consolidated.Count : 0;
                     sum.SetScanCount(scanCount);
                     sum.SetTotalCount(scanCount);
                 }
@@ -2797,6 +3295,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
             }
         }
+
         private void TrySummaryUpdateOrgAndScanCount(int orgCount, int scanCount)
         {
             try
@@ -2884,6 +3383,7 @@ namespace QMC.LCP_280.Process.Unit
                     // [ADD] Simulation/DryRun: 확률 기반으로 Rank=1 적용 (테스트용)
                     if (Config.IsSimulation || Config.IsDryRun)
                     {
+                        SimOkRankProbability = 1;
                         double p = SimOkRankProbability;
                         if (p < 0.0) p = 0.0;
                         if (p > 1.0) p = 1.0;
@@ -2892,9 +3392,6 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             if (die == null)
                                 continue;
-
-                            // 기존 값이 남아있을 수 있으니 초기화(선택)
-                            // die.Rank = 0;
 
                             bool makeOk;
                             lock (_simRankRand)
@@ -2933,7 +3430,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, nameof(ApplyOkRankToDies), ex.Message);
             }
         }
-        private void MarkNonRank1DiesAsSkippedOrNg(MaterialWafer wafer, int okRank = 1)
+        private void MarkNonRank1DiesAsSkip(MaterialWafer wafer, int okRank = 1)
         {
             if (wafer?.Dies == null || wafer.Dies.Count == 0)
                 return;
@@ -2957,13 +3454,14 @@ namespace QMC.LCP_280.Process.Unit
                         if (d.Rank == okRank)
                             continue;
 
-                        d.SetReject("MapMapping - Rank!=1");
+                        //d.SetReject("MapMapping - Rank!=1");
+                        d.SetSkip("MapMapping - Rank!=1");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, nameof(MarkNonRank1DiesAsSkippedOrNg), ex.Message);
+                Log.Write(UnitName, nameof(MarkNonRank1DiesAsSkip), ex.Message);
             }
         }
 
@@ -2990,7 +3488,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
+                if (wafer?.Dies == null || wafer.Dies.Count == 0) 
+                    return;
 
                 // 최초 1회만 베이스 경로(코너/주축) 고정
                 LockPathBaseFromRecipeOnce();
@@ -3000,7 +3499,8 @@ namespace QMC.LCP_280.Process.Unit
                     // 0) 셀 기준축(MapX/MapY) 구성
                     var xs = wafer.Dies.Where(d => d != null).Select(d => (int)d.MapX).Distinct().OrderBy(v => v).ToList();
                     var ys = wafer.Dies.Where(d => d != null).Select(d => (int)d.MapY).Distinct().OrderBy(v => v).ToList();
-                    if (xs.Count == 0 || ys.Count == 0) return;
+                    if (xs.Count == 0 || ys.Count == 0) 
+                        return;
 
                     // 1) (ix,iy) -> bucket
                     var grid = new Dictionary<(int ix, int iy), List<MaterialDie>>();
@@ -3185,7 +3685,7 @@ namespace QMC.LCP_280.Process.Unit
             // 폴더 경로이면 waferId.waf로 조합
             if (Directory.Exists(mapFilePath))
             {
-                return Path.Combine(mapFilePath, waferId + ".waf");
+                return Path.Combine(mapFilePath, waferId + ".txt");
             }
 
             // 파일 경로이면 그대로
@@ -3197,8 +3697,9 @@ namespace QMC.LCP_280.Process.Unit
             // 존재하지 않는 폴더/파일이면, "폴더로 가정"하고 조합 시도(UNC 지연 연결 대비)
             // 예: \\server\share\mapfiles (Directory.Exists가 false로 떨어질 수 있음)
             // -> 일단 waferId.waf 경로를 만들어 반환하고, 호출부에서 File.Exists로 최종 체크
-            return Path.Combine(mapFilePath, waferId + ".waf");
+            return Path.Combine(mapFilePath, waferId + ".txt");
         }
+
         // [ADD] 소스 -> 로컬 MapFile 폴더로 복사(다운로드) 후 로컬 경로 반환
         private static int DownloadWafToLocalMapFolder(string sourceWafPath, string waferId, out string localWafPath, out string reason)
         {
@@ -3226,7 +3727,7 @@ namespace QMC.LCP_280.Process.Unit
             string localDir = GetLocalMapFileDir();
             Directory.CreateDirectory(localDir);
 
-            localWafPath = System.IO.Path.Combine(localDir, waferId + ".waf");
+            localWafPath = System.IO.Path.Combine(localDir, waferId + ".txt");
 
             // 동일 파일이면 스킵, 아니면 덮어쓰기
             try
@@ -3285,7 +3786,9 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
-                double score = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf);
+                double score = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.txt);
+                //double score = wafer.Mapmatch(mapFile, MaterialWafer.MapTyp.waf);
+                //double score = wafer.MapmatchFast(mapFile, MaterialWafer.MapTyp.waf);
                 scorePercent = score * 100.0;
                 return true;
             }
@@ -3559,6 +4062,7 @@ namespace QMC.LCP_280.Process.Unit
 
             this.PmRunner.SetSearchMode(PatternMatchingRunner.SearchMode.All);
             var result = this.PmRunner.Search(visionImage);
+
             if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
             {
                 int repIdx = 0;
@@ -3580,22 +4084,6 @@ namespace QMC.LCP_280.Process.Unit
 
             if (result.Success)
             {
-                // [ADD] 캡처 시점의 T를 읽어서 픽셀->mm 변환에 사용
-                // 이거 안됨.! X
-                //double thetaDeg = AxisT != null ? AxisT.GetPosition() : 0.0;
-                //foreach (var v in result.Matches)
-                //{
-                //    lock (points)
-                //    {
-                //        // [FIX] T 보정 포함 오프셋(카메라좌표->스테이지좌표)
-                //        PointD off = PixelToStageOffsetMm(v.X, v.Y, thetaDeg);
-
-                //        double sx = x + off.X;
-                //        double sy = y + off.Y;
-                //        points.Add(new PointD(sx, sy));
-                //    }
-                //}
-
                 // 기존 코드
                 foreach (var v in result.Matches)
                 {
@@ -3605,6 +4093,7 @@ namespace QMC.LCP_280.Process.Unit
                         pt.X += x;
                         pt.Y += y;
                         points.Add(new PointD(pt.X, pt.Y));
+
                     }
                 }
             }
@@ -3615,6 +4104,7 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
+
         private void UpdateChipInfo(List<PointD> chips)
         {
             try
@@ -3623,15 +4113,29 @@ namespace QMC.LCP_280.Process.Unit
                 lock (materialWafer.Dies)
                 {
                     materialWafer.Dies.Clear();
-                    materialWafer.MakeWaferInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
 
-                    if (false)
+                    // 기존 MakeWaferInfo 대신 RegionGrowing 기반 맵 생성 사용
+                    materialWafer.MakeWaferInfoRegionGrowing(
+                        chips,
+                        this.ChipPitchXmm,
+                        this.ChipPitchYmm,
+                        autoEstimatePitch: true);
+
+                    int nIndex = 0;
+                    var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+
+                    TrySummaryUpdateScanAndTotalCount(materialWafer.Dies.Count);
+
+                    //맵서치완료한 다이 정보 로그 출력을 다른 파일에 저장하도록 변경
+                    DateTime now = DateTime.Now;
+                    string logFile = string.Empty;
+                    logFile = string.Format("DieMapLog_{0}", now.ToString("yyyyMMdd_HHmmss"));
+                    Log.Write(logFile, "DieMap", "Index,MapX,MapY,CenterX ,CenterY");
+                    foreach (var c in list)
                     {
-                        var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
-                        foreach (var c in list)
-                        {
-                            Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
-                        }
+                        Log.Write(logFile, "DieMap",
+                            $"{nIndex} ,{c.MapX}, {c.MapY}, {c.CenterX:F3}, {c.CenterY:F3}");
+                        nIndex++;
                     }
                 }
             }
@@ -3645,6 +4149,7 @@ namespace QMC.LCP_280.Process.Unit
                 EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
             }
         }
+
         private void ResetChipMappingState()
         {
             InputDieTransfer.taskPrepareNextDie = null;
@@ -3757,6 +4262,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
+                    //x방향으로 서치
                     for (int iy = 0; iy < nVertCount; iy++)
                     {
                         double y = startY + iy * stepY;
@@ -3933,7 +4439,8 @@ namespace QMC.LCP_280.Process.Unit
             var sums = new List<(double sumX, double sumY, int count)>();
 
 
-            foreach (var p in raw)
+            //foreach (var p in raw)
+            foreach (var p in pts)
             {
                 int found = -1;
 
@@ -4750,7 +5257,37 @@ namespace QMC.LCP_280.Process.Unit
             // 2) -방향 포인트
             //Todo: 
             //step을 wafer 사이즈 기준으로 잡아야함.
-            step = step * 5;
+            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe;
+            int repeatDist = (recipe != null && recipe.AlignRepeatDistance > 0)
+                ? recipe.AlignRepeatDistance
+                : 3;
+
+            step *= repeatDist;
+
+            // Max radius = wafer radius * 0.8
+            // stepMax = floor(maxRadius / pitch)
+            double waferDia = (recipe != null && recipe.WaferDiameter > 0)
+                ? recipe.WaferDiameter
+                : 0.0;
+
+            if (waferDia > 0)
+            {
+                double waferRadius = waferDia * 0.5;
+                double maxRadius = waferRadius * 0.80;
+
+                // useXAxis에 따라 pitch가 다르므로, 여기서는 이동 축 기준 pitch를 사용해야 함.
+                // (본 함수 상단에 pitch 변수가 이미 있음)
+                if (pitch > 0)
+                {
+                    int stepMax = (int)Math.Floor(maxRadius / pitch);
+                    if (stepMax < 1) stepMax = 1;
+
+                    if (step > stepMax)
+                        step = stepMax;
+                }
+            }
+
+
             double negX = baseX + (useXAxis ? -pitch * step : 0.0);
             double negY = baseY + (useXAxis ? 0.0 : -pitch * step);
 
@@ -4791,6 +5328,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 4) 품질 체크: 수직 허용오차
+            DirectionalPerpendicularToleranceMm = 0.4;
             double tol = Math.Max(0.0, DirectionalPerpendicularToleranceMm);
             if (useXAxis)
             {
@@ -5114,5 +5652,476 @@ namespace QMC.LCP_280.Process.Unit
             UpdateUI();
         }
         #endregion
+
+
+        // [ADD] 외곽 N줄(테두리 N셀) 스킵. 0이면 미사용
+        public int OuterBorderSkipRows { get; set; } = 0;
+
+        // InputStage class 내부에 추가 (ApplyOuterBorderSkipOrReject 위/아래 아무 곳)
+        private static double MedianOf(List<double> values)
+        {
+            if (values == null || values.Count == 0)
+                return 0.0;
+
+            values.Sort();
+            int n = values.Count;
+            int mid = n / 2;
+
+            if ((n & 1) == 1)
+                return values[mid];
+
+            return (values[mid - 1] + values[mid]) * 0.5;
+        }
+
+        /// <summary>
+        /// [ADD] 외곽 N줄(테두리 N셀)을 아예 리스트에서 삭제합니다.
+        /// 맵 매칭 시 불필요한 외곽 다이를 제거하여 1:1 매칭 확률을 높일 때 사용합니다.
+        /// </summary>
+        private void RemoveOuterBorderDies(MaterialWafer wafer, int borderRows)
+        {
+            if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
+            if (borderRows <= 0) return;
+
+            lock (wafer.Dies)
+            {
+                // 1. 유효한 다이들만 대상으로 그리드 범위 계산 (기존 로직과 동일)
+                var validDies = wafer.Dies
+                    .Where(d => d != null &&
+                                d.Presence == MaterialPresence.Exist &&
+                                d.State == DieProcessState.Mapped)
+                    .ToList();
+
+                if (validDies.Count == 0) return;
+
+                // 2. 그리드 Bounding Box 계산
+                int minX = validDies.Min(d => (int)d.MapX);
+                int maxX = validDies.Max(d => (int)d.MapX);
+                int minY = validDies.Min(d => (int)d.MapY);
+                int maxY = validDies.Max(d => (int)d.MapY);
+
+                // 중심점
+                double centerMapX = (minX + maxX) * 0.5;
+                double centerMapY = (minY + maxY) * 0.5;
+
+                // 외곽 반경 (Grid 기준)
+                double aOuter = (maxX - minX) * 0.5;
+                double bOuter = (maxY - minY) * 0.5;
+
+                // 방어 코드: 맵이 너무 작을 경우
+                if (aOuter <= 0 || bOuter <= 0)
+                {
+                    Log.Write(UnitName, nameof(RemoveOuterBorderDies),
+                        $"Removal ignored: invalid grid size. rangeX=({minX}~{maxX}), rangeY=({minY}~{maxY})");
+                    return;
+                }
+
+                // 3. 살려둘 내부 타원 반경 계산 (borderRows 만큼 축소)
+                double aInner = aOuter - borderRows;
+                double bInner = bOuter - borderRows;
+
+                // 만약 깎아내고 남는게 없다면 중단 (다 지울 순 없으므로)
+                if (aInner <= 0 || bInner <= 0)
+                {
+                    Log.Write(UnitName, nameof(RemoveOuterBorderDies),
+                        $"Removal ignored: inner radius <= 0. outer=({aOuter:F3},{bOuter:F3}) borderRows={borderRows}");
+                    return;
+                }
+
+                // 4. 리스트에서 조건에 맞지 않는 다이(외곽 다이) 삭제 수행
+                // RemoveAll은 조건이 true인 요소를 삭제합니다.
+                int removedCount = wafer.Dies.RemoveAll(d =>
+                {
+                    if (d == null) return true; // null 객체는 삭제
+
+                    // 존재하지 않거나 맵핑 상태가 아닌 것은 건드리지 않음(혹은 정책에 따라 삭제)
+                    // 여기서는 '존재하는 맵핑 다이' 중에서 외곽인 것만 삭제 대상으로 봅니다.
+                    if (d.Presence != MaterialPresence.Exist || d.State != DieProcessState.Mapped)
+                        return false;
+
+                    // 좌표 정규화 (-1.0 ~ +1.0)
+                    double nx = (d.MapX - centerMapX) / aInner;
+                    double ny = (d.MapY - centerMapY) / bInner;
+
+                    // 타원 방정식: x^2 + y^2 > 1 이면 타원 밖임 -> 삭제 대상(true)
+                    double distSq = (nx * nx) + (ny * ny);
+
+                    // 1.0 보다 크면(약간의 오차 허용 1.0001) 외곽임
+                    return distSq > 1.0001;
+                });
+
+                Log.Write(UnitName, nameof(RemoveOuterBorderDies),
+                    $"Removed {removedCount} dies from outer border (rows={borderRows}). Remaining={wafer.Dies.Count}");
+
+                // 5. 인덱스 재정렬 (중간이 빠졌으므로 인덱스를 다시 0부터 맞춰줍니다)
+                NormalizeIndicesSequential(wafer, startIndex: 0, rename: true);
+            }
+        }
+
+
+        // [ADD] 외곽 N줄(테두리 N셀) 스킵 - Circle/Ellipse 기반 버전
+        private void ApplyOuterBorderSkipOrReject(MaterialWafer wafer, int borderRows)
+        {
+            if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
+            if (borderRows <= 0) return;
+
+            lock (wafer.Dies)
+            {
+                // 기존 공정 조건 유지
+                var dies = wafer.Dies
+                    .Where(d => d != null &&
+                                d.Presence == MaterialPresence.Exist &&
+                                d.State == DieProcessState.Mapped)
+                    .ToList();
+
+                if (dies.Count == 0) return;
+
+                // 1) 그리드 Bounding Box 기반 중심(치우침 방지)
+                int minX = dies.Min(d => (int)d.MapX);
+                int maxX = dies.Max(d => (int)d.MapX);
+                int minY = dies.Min(d => (int)d.MapY);
+                int maxY = dies.Max(d => (int)d.MapY);
+
+                // center: 그리드의 "정중앙"(반셀도 허용)
+                double centerMapX = (minX + maxX) * 0.5;
+                double centerMapY = (minY + maxY) * 0.5;
+
+                // 2) 외곽 타원/원 파라미터(칩 단위)
+                // 반경 a,b는 "그리드 반경"으로 고정 (데이터 분포로 흔들리지 않음)
+                double aOuter = (maxX - minX) * 0.5;
+                double bOuter = (maxY - minY) * 0.5;
+
+                // 너무 작은 맵 방어
+                if (aOuter <= 0 || bOuter <= 0)
+                {
+                    Log.Write(UnitName, nameof(ApplyOuterBorderSkipOrReject),
+                        $"Skip ignored: invalid grid size. rangeX=({minX}~{maxX}), rangeY=({minY}~{maxY})");
+                    return;
+                }
+
+                // 3) borderRows 만큼 안쪽 타원(생존 영역)
+                // borderRows를 축 방향으로 동일하게 감소시키면 "타원 테두리 N줄" 느낌이 가장 균일함
+                double aInner = aOuter - borderRows;
+                double bInner = bOuter - borderRows;
+
+                if (aInner <= 0 || bInner <= 0)
+                {
+                    Log.Write(UnitName, nameof(ApplyOuterBorderSkipOrReject),
+                        $"Skip ignored: inner radius <= 0. outer=({aOuter:F3},{bOuter:F3}) borderRows={borderRows}");
+                    return;
+                }
+
+                // 4) 모드 선택: 원/타원
+                // - 원으로 하고 싶으면 a=b=min(aInner,bInner)
+                // - 타원으로 하고 싶으면 a=aInner, b=bInner
+                bool useCircle = false; // 원이면 true, 타원이면 false (원하는 기본값으로 바꾸면 됨)
+
+                double a = useCircle ? Math.Min(aInner, bInner) : aInner;
+                double b = useCircle ? Math.Min(aInner, bInner) : bInner;
+
+                double invA2 = 1.0 / (a * a);
+                double invB2 = 1.0 / (b * b);
+
+                // 5) 판정: inner 타원 밖이면 Skip
+                int skipped = 0;
+                foreach (var d in dies)
+                {
+                    double dx = d.MapX - centerMapX;
+                    double dy = d.MapY - centerMapY;
+
+                    // normalized radius^2
+                    double n = (dx * dx) * invA2 + (dy * dy) * invB2;
+
+                    // n <= 1 : inner 타원 안쪽(살림)
+                    // n >  1 : inner 타원 밖(외곽) => Skip
+                    if (n > 1.0)
+                    {
+                        d.SetSkip($"OuterBorderSkip(Ellipse) rows={borderRows}");
+                        skipped++;
+                    }
+                }
+
+                Log.Write(UnitName, nameof(ApplyOuterBorderSkipOrReject),
+                    $"Applied outer border skip by {(useCircle ? "Circle" : "Ellipse")}. borderRows={borderRows}, " +
+                    $"centerMap=({centerMapX:F2},{centerMapY:F2}), outer=({aOuter:F3},{bOuter:F3}), inner=({aInner:F3},{bInner:F3}), " +
+                    $"skipped={skipped}, total={dies.Count}");
+            }
+        }
+        // median helper (int list)
+        private static double MedianOfInt(IList<int> sorted)
+        {
+            if (sorted == null || sorted.Count == 0) return 0;
+            int n = sorted.Count;
+            if (n % 2 == 1) return sorted[n / 2];
+            return (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0;
+        }
+
+        /// <summary>
+        /// 프로젝트 상황에 맞게 “CenterPoint 기준 오프셋”을 반환.
+        /// 지금 코드만 보면 AlignXY가 실제로 dx/dy를 계산/적용하지 않아서 0을 반환하게 두고,
+        /// 나중에 AlignXY 구현되면 여기만 고치면 됨.
+        /// </summary>
+        private bool TryGetAlignedCenterOffsetMm(out double dx, out double dy)
+        {
+            dx = 0;
+            dy = 0;
+            return true;
+
+
+            // 후보1) 상태 변수 (현재 클래스에 있음)
+            // AlignXY가 실제로 dx/dy 찾게 되면 이 값을 쓰면 됨
+            if (IsStatus_XYAlignDone)
+            {
+                dx = IsStatus_LastFoundDx;
+                dy = IsStatus_LastFoundDy;
+
+                // 값이 0인 경우가 많을 수 있으니, 의미있는 값일 때만 true 처리하려면 조건 추가
+                if (Math.Abs(dx) > 1e-9 || Math.Abs(dy) > 1e-9)
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        public int RestoreSkippedDiesForRepick(Func<MaterialDie, bool> selector = null)
+        {
+            var wafer = GetMaterialWafer();
+            if (wafer?.Dies == null) return -1;
+
+            lock (wafer.Dies)
+            {
+                foreach (var d in wafer.Dies)
+                {
+                    if (d == null) continue;
+                    if (d.State != DieProcessState.Skip) continue;
+
+                    if (selector != null && !selector(d))
+                        continue;
+
+                    d.SkipReason = "";
+                    d.State = DieProcessState.Mapped; // 다시 픽업 후보로 복귀
+                }
+            }
+            return 0;
+        }
+
+        // [ADD] Skip 된 Die를 wafer.Dies 리스트에서 제거 (복구 불가)
+        public int RemoveSkippedDiesFromWafer(string reason = "RemoveSkippedDiesFromWafer")
+        {
+            var wafer = GetMaterialWafer();
+            if (wafer?.Dies == null) return -1;
+
+            lock (wafer.Dies)
+            {
+                int before = wafer.Dies.Count;
+
+                // Skip 상태거나 SkipReason이 있는 것도 같이 제거하고 싶으면 조건 추가 가능
+                wafer.Dies.RemoveAll(d =>
+                    d != null &&
+                    d.Presence == MaterialPresence.Exist &&
+                    d.State == DieProcessState.Skip);
+
+                int after = wafer.Dies.Count;
+                int removed = before - after;
+
+                Log.Write(UnitName, reason, $"Removed Skip dies. before={before}, after={after}, removed={removed}");
+            }
+
+            // UI 갱신
+            try { EventUpdateUIWafer?.BeginInvoke(wafer, null, null); } catch { }
+            return 0;
+        }
+
+
+
+        private void ApplyOuterBorderSkipOrReject_Rect(MaterialWafer wafer, int borderRows)
+        {
+            if (wafer?.Dies == null || wafer.Dies.Count == 0)
+                return;
+
+            if (borderRows <= 0)
+                return;
+
+            // MapX/MapY의 min/max를 기준으로 "테두리 borderRows 셀"을 외곽으로 간주
+            int minX, maxX, minY, maxY;
+            lock (wafer.Dies)
+            {
+                var dies = wafer.Dies.Where(d => d != null).ToList();
+                if (dies.Count == 0)
+                    return;
+
+                minX = dies.Min(d => (int)d.MapX);
+                maxX = dies.Max(d => (int)d.MapX);
+                minY = dies.Min(d => (int)d.MapY);
+                maxY = dies.Max(d => (int)d.MapY);
+
+                // 전체 크기보다 border가 크면 전부 날아가는 사고 방지
+                int width = (maxX - minX + 1);
+                int height = (maxY - minY + 1);
+                if (width <= borderRows * 2 || height <= borderRows * 2)
+                {
+                    Log.Write(UnitName, nameof(ApplyOuterBorderSkipOrReject_Rect),
+                        $"Skip ignored: map size too small. size=({width},{height}) border={borderRows}");
+                    return;
+                }
+
+                int innerMinX = minX + borderRows;
+                int innerMaxX = maxX - borderRows;
+                int innerMinY = minY + borderRows;
+                int innerMaxY = maxY - borderRows;
+
+                int skiped = 0;
+                foreach (var d in dies)
+                {
+                    if (d.Presence != MaterialPresence.Exist)
+                        continue;
+
+                    // 아직 픽업 후보(Mapped)만 스킵 처리
+                    if (d.State != DieProcessState.Mapped)
+                        continue;
+
+                    int mx = (int)d.MapX;
+                    int my = (int)d.MapY;
+
+                    bool isOuter =
+                        (mx < innerMinX) || (mx > innerMaxX) ||
+                        (my < innerMinY) || (my > innerMaxY);
+
+                    if (!isOuter)
+                        continue;
+
+                    d.SetSkip($"OuterBorderSkipCircle({borderRows})");
+                    skiped++;
+                }
+
+                Log.Write(UnitName, nameof(ApplyOuterBorderSkipOrReject_Rect),
+                    $"Applied outer border skip. border={borderRows} Skip={skiped} mapRangeX=({minX}~{maxX}) mapRangeY=({minY}~{maxY})");
+            }
+        }
+
+        private bool TryLoadRawChipsFromFile(string filePath, out List<PointD> chips, int maxCount = 20000)
+        {
+            chips = new List<PointD>();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                    return false;
+
+                foreach (var line in File.ReadLines(filePath))
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    // 헤더/로그 prefix 제거(혹시 "2026-...:rawList>" 같은 prefix가 있으면)
+                    var s = line;
+                    int idx = s.IndexOf('>');
+                    if (idx >= 0) s = s.Substring(idx + 1).Trim();
+
+                    // 헤더 스킵
+                    if (s.StartsWith("Index", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var parts = s.Split(',');
+                    if (parts.Length < 3)
+                        continue;
+
+                    // parts[0] = index (무시 가능)
+                    if (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float,
+                                         System.Globalization.CultureInfo.InvariantCulture, out var x))
+                        continue;
+                    if (!double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float,
+                                         System.Globalization.CultureInfo.InvariantCulture, out var y))
+                        continue;
+
+                    chips.Add(new PointD(x, y));
+
+                    if (maxCount > 0 && chips.Count >= maxCount)
+                        break;
+                }
+
+                return chips.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "TryLoadRawChipsFromFile", ex.Message);
+                chips = new List<PointD>();
+                return false;
+            }
+        }
+
+        
+        public bool SelectSimRawChipFileWithDialog(IWin32Window owner = null)
+        {
+            try
+            {
+                using (var dlg = new OpenFileDialog())
+                {
+                    dlg.Title = "Select Sim Raw Chip File (CSV/TXT)";
+                    dlg.Filter = "CSV (*.csv)|*.csv|Text (*.txt)|*.txt|All files (*.*)|*.*";
+                    dlg.Multiselect = false;
+                    dlg.CheckFileExists = true;
+                    dlg.RestoreDirectory = true;
+
+                    // 기본 폴더(원하면 Log/MapFile 폴더로)
+                    dlg.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+                    var dr = (owner == null) ? dlg.ShowDialog() : dlg.ShowDialog(owner);
+                    if (dr != DialogResult.OK)
+                        return false;
+
+                    SimRawChipFilePath = dlg.FileName;
+                    Log.Write(UnitName, "Sim", $"Selected SimRawChipFilePath='{SimRawChipFilePath}'");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "SelectSimRawChipFileWithDialog", ex.Message);
+                return false;
+            }
+        }
+
+        // InputStage.cs
+        public Task<string> AskSimRawChipFilePathAsync(IWin32Window owner = null)
+        {
+            var tcs = new TaskCompletionSource<string>();
+
+            // UI 스레드로 올릴 대상 Control(폼/메인컨트롤)이 필요합니다.
+            // 보통 Equipment.Instance.MainForm 또는 어떤 UI Control 참조를 갖고 있어야 합니다.
+            var ui = Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null;
+            if (ui == null)
+            {
+                tcs.SetResult(null);
+                return tcs.Task;
+            }
+
+            ui.BeginInvoke((Action)(() =>
+            {
+                try
+                {
+                    using (var dlg = new OpenFileDialog())
+                    {
+                        dlg.Title = "Sim Raw Chip File 선택";
+                        dlg.Filter = "CSV (*.csv)|*.csv|Text (*.txt)|*.txt|All Files (*.*)|*.*";
+                        dlg.Multiselect = false;
+                        dlg.CheckFileExists = true;
+
+                        var dr = (owner != null) ? dlg.ShowDialog(owner) : dlg.ShowDialog(ui);
+                        if (dr == DialogResult.OK)
+                            tcs.SetResult(dlg.FileName);
+                        else
+                            tcs.SetResult(null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(UnitName, "AskSimRawChipFilePathAsync", ex.ToString());
+                    tcs.SetResult(null);
+                }
+            }));
+
+            return tcs.Task;
+        }
+
     }
 }

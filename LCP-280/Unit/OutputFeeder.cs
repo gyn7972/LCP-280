@@ -1,4 +1,5 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -15,6 +16,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 using static QMC.LCP_280.Process.Component.MeasurementRecipe;
 using static System.Windows.Forms.AxHost;
 
@@ -28,227 +30,259 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class OutputFeeder : BaseUnit<OutputFeederConfig>
     {
-        enum AlarmKeys
+        bool _isDryRunEqp = false;
+        private bool IsDryRunEqp
         {
-            Alarm_BinLoadingFailed = 2000,
-            Alarm_BarcodeReadingFailed = 2001,
-            Alarm_StageLoadingFailed = 2002,
-            Alarm_StageUnloadingFailed = 2003,
-            Alarm_BinUnloadingFailed = 2004,
+            get
+            {
+                var eq = Equipment.Instance;
+                bool r = eq.EquipmentConfig.IsDryRun;
+                return r;
+            }
+        }
 
-            Alarm_OutputStageInterlockFailed = 2010,
+        public new enum AlarmKeys
+        {
+            Alarm_BinLoadingFailed = 11201,
+            Alarm_BarcodeReadingFailed,
+            Alarm_StageLoadingFailed,
+            Alarm_StageUnloadingFailed,
+            Alarm_BinUnloadingFailed,
 
-            Alarm_GripperClampFailed = 2020,
-            Alarm_FeederClampUpDown = 2021,
-            Alarm_IsBinReadyForLoading = 2022,
-            Alarm_BinLoadingPosition = 2023,
-            Alarm_OutputFeederNoPosition = 2024,
-            Alarm_OutputFeederInterlockFailed = 2025,
-            Alarm_OutputFeederBinData = 2026,
-            Alarm_PrepareOutputStageUnloadingBin = 2027,
-            Alarm_OutputCassetteLifter_Fail = 2028,
+            Alarm_OutputStageInterlockFailed,
+
+            Alarm_GripperClampFailed,
+            Alarm_FeederClampUpDown,
+            Alarm_IsBinReadyForLoading,
+            Alarm_BinLoadingPosition,
+            Alarm_OutputFeederNoPosition,
+            Alarm_OutputFeederInterlockFailed,
+            Alarm_OutputFeederBinData,
+            Alarm_PrepareOutputStageUnloadingBin,
+            Alarm_OutputCassetteLifter_Fail,
 
             // ===== [ADD] 타임아웃/상태 분리 (InputFeeder 2030~2033와 동일 의미) =====
-            Alarm_FeederLiftUpTimeout = 2030,
-            Alarm_FeederLiftDownTimeout = 2031,
-            Alarm_FeederClampTimeout = 2032,
-            Alarm_FeederUnclampTimeout = 2033,
+            Alarm_FeederLiftUpTimeout,
+            Alarm_FeederLiftDownTimeout,
+            Alarm_FeederClampTimeout,
+            Alarm_FeederUnclampTimeout,
 
             // ===== [ADD] 센서/데이터 불일치 분리 (InputFeeder 2040~2042와 유사) =====
-            Alarm_BinMissingAfterStageToFeeder = 2040,
-            Alarm_BinMissingAfterFeederToCassette = 2041,
-            Alarm_BinSensorDataMismatch = 2042,
+            Alarm_BinMissingAfterStageToFeeder,
+            Alarm_BinMissingAfterFeederToCassette,
+            Alarm_BinSensorDataMismatch,
 
             // ===== [ADD] 언로딩 슬롯/카세트 단계 분리 (InputFeeder 2060~와 유사) =====
-            Alarm_UnloadTargetSlotInvalid = 2060,
-            Alarm_CassetteSlotNotEmptyForUnload = 2061,
-            Alarm_CassetteMoveToSlotFailedForUnload = 2062,
+            Alarm_UnloadTargetSlotInvalid,
+            Alarm_CassetteSlotNotEmptyForUnload,
+            Alarm_CassetteMoveToSlotFailedForUnload,
 
             // ===== [ADD] Feeder->Cassette 상세 알람 (InputFeeder 2070~2074와 동일 스타일) =====
-            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed = 2070,
-            Alarm_UnloadFeederToCassette_UnclampFailed = 2071,
-            Alarm_UnloadFeederToCassette_BinDataInvalid = 2072,
-            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed = 2073,
-            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed = 2074,
+            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
+            Alarm_UnloadFeederToCassette_UnclampFailed,
+            Alarm_UnloadFeederToCassette_BinDataInvalid,
+            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
+            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
 
-            Alarm_ScanBinFailed = 2080,
-            Alarm_MoveToReadyFailed = 2081,
-            Alarm_MoveToCassetteTeachFailed = 2082,
-            Alarm_BinCassetteLoadingFailed = 2083,
+            Alarm_ScanBinFailed,
+            Alarm_MoveToReadyFailed,
+            Alarm_MoveToCassetteTeachFailed,
+            Alarm_BinCassetteLoadingFailed
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Bin_Feeder";
             base.InitAlarm();
-            AlarmRegister((int)AlarmKeys.Alarm_BinLoadingFailed,
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+                AlarmRegister((int)AlarmKeys.Alarm_BinLoadingFailed,
                 "Bin Loading Failed",
                 "Bin 로딩에 실패 하였습니다.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
-                "Barcode Reading Failed",
-                "바코드 읽기에 실패 하였습니다. 바코드 상태를 확인 하여 주십시요",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
-                "Stage Loading Failed",
-                "스테이지 로딩에 실패 하였습니다.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
-                "Stage Unloading Failed",
-                "스테이지 언로딩에 실패 하였습니다.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_BinUnloadingFailed,
-                "Bin Unloading Failed",
-                "Bin 언로딩에 실패 하였습니다.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_OutputStageInterlockFailed,
-                "Output Stage Interlock Failed",
-                "Bin 로딩을 위한 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
-                "Gripper Clamp Failed",
-                "그리퍼 클램프에 실패 하였습니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_FeederClampUpDown,
-                "Feeder Clamp Up Failed",
-                "피더 클램프 업 상태가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
+                source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
+                    "Barcode Reading Failed",
+                    "바코드 읽기에 실패 하였습니다. 바코드 상태를 확인 하여 주십시요",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
+                    "Stage Loading Failed",
+                    "스테이지 로딩에 실패 하였습니다.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
+                    "Stage Unloading Failed",
+                    "스테이지 언로딩에 실패 하였습니다.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BinUnloadingFailed,
+                    "Bin Unloading Failed",
+                    "Bin 언로딩에 실패 하였습니다.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_OutputStageInterlockFailed,
+                    "Output Stage Interlock Failed",
+                    "Bin 로딩을 위한 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
+                    "Gripper Clamp Failed",
+                    "그리퍼 클램프에 실패 하였습니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederClampUpDown,
+                    "Feeder Clamp Up Failed",
+                    "피더 클램프 업 상태가 아닙니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
 
-            // = 2022,
-            AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
-                "Bin ReadyForLoading Failed",
-                "Ready for Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            // = 2023,
-            AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
-                "Bin Loading Position Failed",
-                "Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            // = 2024,
-            AlarmRegister((int)AlarmKeys.Alarm_OutputFeederNoPosition,
-                "Output Feeder No Position",
-                "Output Feeder 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            // = 2025,
-            AlarmRegister((int)AlarmKeys.Alarm_OutputFeederInterlockFailed,
-                "Output Feeder Interlock Failed",
-                "Output Feeder 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            // = 2026,
-            AlarmRegister((int)AlarmKeys.Alarm_OutputFeederBinData,
-                "Output Feeder Bin Data Error",
-                "Output Feeder Bin Data 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
-            AlarmRegister((int)AlarmKeys.Alarm_PrepareOutputStageUnloadingBin,
-                "Output Feeder PrepareOutputStageUnloadingBin Error",
-                "Output Feeder PrepareOutputStageUnloadingBin 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
+                // = 2022,
+                AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
+                    "Bin ReadyForLoading Failed",
+                    "Ready for Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                // = 2023,
+                AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
+                    "Bin Loading Position Failed",
+                    "Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                // = 2024,
+                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederNoPosition,
+                    "Output Feeder No Position",
+                    "Output Feeder 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                // = 2025,
+                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederInterlockFailed,
+                    "Output Feeder Interlock Failed",
+                    "Output Feeder 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                // = 2026,
+                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederBinData,
+                    "Output Feeder Bin Data Error",
+                    "Output Feeder Bin Data 오류입니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_PrepareOutputStageUnloadingBin,
+                    "Output Feeder PrepareOutputStageUnloadingBin Error",
+                    "Output Feeder PrepareOutputStageUnloadingBin 오류입니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
 
-            //Alarm_OutputCassetteLifter_Fail
-            AlarmRegister((int)AlarmKeys.Alarm_OutputCassetteLifter_Fail,
-                "Output Feeder OutputCassetteLifter Slot Error",
-                "Output Feeder OutputCassetteLifter Slot 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                "Error");
+                //Alarm_OutputCassetteLifter_Fail
+                AlarmRegister((int)AlarmKeys.Alarm_OutputCassetteLifter_Fail,
+                    "Output Feeder OutputCassetteLifter Slot Error",
+                    "Output Feeder OutputCassetteLifter Slot 오류입니다. 장비 상태를 확인 하여 주십시요.",
+                    source, "Error");
 
-            // ===== 2030~ 타임아웃 =====
-            AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
-                "Feeder Lift Up Timeout",
-                "Feeder Lift UP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                "Error");
+                // ===== 2030~ 타임아웃 =====
+                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
+                    "Feeder Lift Up Timeout",
+                    "Feeder Lift UP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
-                "Feeder Lift Down Timeout",
-                "Feeder Lift DOWN 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
+                    "Feeder Lift Down Timeout",
+                    "Feeder Lift DOWN 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
-                "Feeder Clamp Timeout",
-                "Gripper CLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
+                    "Feeder Clamp Timeout",
+                    "Gripper CLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
-                "Feeder Unclamp Timeout",
-                "Gripper UNCLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
+                    "Feeder Unclamp Timeout",
+                    "Gripper UNCLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
+                    source, "Error");
 
-            // ===== 2040~ 데이터/센서 =====
-            AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterStageToFeeder,
-                "Bin Missing After Stage -> Feeder",
-                "Stage->Feeder 이송 후 Feeder에서 Bin 존재가 확인되지 않습니다. (센서/클램프/이송 시퀀스 확인)",
-                "Error");
+                // ===== 2040~ 데이터/센서 =====
+                AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterStageToFeeder,
+                    "Bin Missing After Stage -> Feeder",
+                    "Stage->Feeder 이송 후 Feeder에서 Bin 존재가 확인되지 않습니다. (센서/클램프/이송 시퀀스 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterFeederToCassette,
-                "Bin Missing After Feeder -> Cassette",
-                "Feeder->Cassette 배출 후 Feeder에 Bin이 남아있거나 불일치 상태입니다. (센서/데이터/간섭 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterFeederToCassette,
+                    "Bin Missing After Feeder -> Cassette",
+                    "Feeder->Cassette 배출 후 Feeder에 Bin이 남아있거나 불일치 상태입니다. (센서/데이터/간섭 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_BinSensorDataMismatch,
-                "Bin Sensor/Data Inconsistency",
-                "Bin 센서 상태와 Material 데이터가 불일치합니다. (센서 ON인데 객체 null, 또는 반대)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BinSensorDataMismatch,
+                    "Bin Sensor/Data Inconsistency",
+                    "Bin 센서 상태와 Material 데이터가 불일치합니다. (센서 ON인데 객체 null, 또는 반대)",
+                    source, "Error");
 
-            // ===== 2060~ 슬롯/카세트 =====
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
-                "Unload Target Slot Invalid",
-                "언로딩 대상 SlotIndex가 유효하지 않습니다. (Feeder/Stage/Lifter SlotIndex 확인)",
-                "Error");
+                // ===== 2060~ 슬롯/카세트 =====
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
+                    "Unload Target Slot Invalid",
+                    "언로딩 대상 SlotIndex가 유효하지 않습니다. (Feeder/Stage/Lifter SlotIndex 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
-                "Cassette Slot Not Empty",
-                "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot 상태 확인 필요)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
+                    "Cassette Slot Not Empty",
+                    "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot 상태 확인 필요)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
-                "Cassette MoveToSlot Failed",
-                "언로딩 대상 Slot으로 Cassette 이동 실패. (축 알람/인터락/Teaching 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
+                    "Cassette MoveToSlot Failed",
+                    "언로딩 대상 Slot으로 Cassette 이동 실패. (축 알람/인터락/Teaching 확인)",
+                    source, "Error");
 
-            // ===== 2070~ Feeder->Cassette 상세 =====
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
-                "Unload Feeder->Cassette Failed - Move Position Cassette",
-                "Feeder->Cassette 배출 중 Cassette Teaching Position 이동 실패.",
-                "Error");
+                // ===== 2070~ Feeder->Cassette 상세 =====
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
+                    "Unload Feeder->Cassette Failed - Move Position Cassette",
+                    "Feeder->Cassette 배출 중 Cassette Teaching Position 이동 실패.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
-                "Unload Feeder->Cassette Failed - Unclamp",
-                "Feeder->Cassette 배출 중 Unclamp 실패/타임아웃.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
+                    "Unload Feeder->Cassette Failed - Unclamp",
+                    "Feeder->Cassette 배출 중 Unclamp 실패/타임아웃.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_BinDataInvalid,
-                "Unload Feeder->Cassette Failed - Bin Data Invalid",
-                "Feeder에 Bin 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette 반영 불가.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_BinDataInvalid,
+                    "Unload Feeder->Cassette Failed - Bin Data Invalid",
+                    "Feeder에 Bin 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette 반영 불가.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
-                "Unload Feeder->Cassette Failed - Move Standby Barcode",
-                "배출 후 Barcode 대기 위치 이동 실패.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
+                    "Unload Feeder->Cassette Failed - Move Standby Barcode",
+                    "배출 후 Barcode 대기 위치 이동 실패.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
-                "Unload Feeder->Cassette Failed - Move Standby Ready",
-                "배출 후 Ready 대기 위치 이동 실패.",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
+                    "Unload Feeder->Cassette Failed - Move Standby Ready",
+                    "배출 후 Ready 대기 위치 이동 실패.",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_ScanBinFailed,
-                "Scan Bin Failed",
-                "OutputCassetteLifter ScanBin 실패. (Cassette 존재/센서/축 알람/슬롯 상태 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_ScanBinFailed,
+                    "Scan Bin Failed",
+                    "OutputCassetteLifter ScanBin 실패. (Cassette 존재/센서/축 알람/슬롯 상태 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_MoveToReadyFailed,
-                "Move To Ready Failed",
-                "Ready 대기 위치 이동/상승 동작 실패. (Teaching/축 알람/인터락/실린더 상태 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_MoveToReadyFailed,
+                    "Move To Ready Failed",
+                    "Ready 대기 위치 이동/상승 동작 실패. (Teaching/축 알람/인터락/실린더 상태 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_MoveToCassetteTeachFailed,
-                "Move To Cassette Teaching Failed",
-                "Cassette Teaching Position 이동 실패. (Teaching/축 알람/인터락 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_MoveToCassetteTeachFailed,
+                    "Move To Cassette Teaching Failed",
+                    "Cassette Teaching Position 이동 실패. (Teaching/축 알람/인터락 확인)",
+                    source, "Error");
 
-            AlarmRegister((int)AlarmKeys.Alarm_BinCassetteLoadingFailed,
-                "Bin Cassette Loading Failed",
-                "Cassette에서 Bin 픽업/바코드/이동 시퀀스에 실패했습니다. (상세 로그 확인)",
-                "Error");
+                AlarmRegister((int)AlarmKeys.Alarm_BinCassetteLoadingFailed,
+                    "Bin Cassette Loading Failed",
+                    "Cassette에서 Bin 픽업/바코드/이동 시퀀스에 실패했습니다. (상세 로그 확인)",
+                    source, "Error");
 
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
+            
 
         }
         #endregion
@@ -489,7 +523,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 실기에서만 센서 불일치 엄격 적용(시뮬/드라이런은 GetMaterial 기반)
-            if (feederObj != null && !feederSensor && !(Config.IsSimulation || Config.IsDryRun))
+            if (feederObj != null && !feederSensor && !(Config.IsSimulation || (Config.IsDryRun|| IsDryRunEqp)))
             {
                 Log.Write(UnitName, "[Unload] Feeder object exists but feeder sensor off");
                 PostAlarm((int)AlarmKeys.Alarm_BinSensorDataMismatch);          // 2042
@@ -1073,17 +1107,19 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsRingPresent()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            bool bRet = false;
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 // 시뮬레이션: 실제 보유 머티리얼로 판단
-                return this.GetMaterial() is MaterialWafer;
-                //return true;
+                bRet = this.GetMaterial() is MaterialWafer;
+                return bRet;
             }
-            return this.ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+            bRet = this.ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+            return bRet;
         }
         public bool IsOverload()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 return true;
             }
@@ -1093,7 +1129,7 @@ namespace QMC.LCP_280.Process.Unit
         // === Cylinder 완료 대기 Helpers ===
         private int WaitClampStateOrAlarm(bool expectClamp, int timeoutMs = 1500, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -1118,7 +1154,7 @@ namespace QMC.LCP_280.Process.Unit
         // Lift: expectUp=true(UP 기대), false(DOWN 기대)
         private int WaitLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -1365,7 +1401,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else if (this.OutputStage.IsWorking() == false)
                 {
-                    bool sim = (Config.IsSimulation || Config.IsDryRun);
+                    bool sim = (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp));
                     if (sim == false)
                     {
                         if (BinStage != null && BinStage.SlotIndex != -1)
@@ -1434,220 +1470,168 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork()
         {
             int nRet = 0;
-
             MaterialWafer wafer = this.OutputStage.GetMaterialWafer();
 
-            // 0) Stage에 제품이 있으면 "언로딩 먼저"
-            if (NeedUnloadFirst)
+            try
             {
-                // 재개 시작 단계 보정
-                if (_unloadStep == UnloadFlowStep.None || _unloadStep == UnloadFlowStep.Completed)
-                    _unloadStep = DetermineNextUnloadStep();
-
-                switch (_unloadStep)
+                // 0) Stage에 제품이 있으면 "언로딩 먼저"
+                if (NeedUnloadFirst)
                 {
-                    case UnloadFlowStep.Step01:
-                        
-                        nRet = BinUnloading_Step01(true);
+                    // 재개 시작 단계 보정
+                    if (_unloadStep == UnloadFlowStep.None || _unloadStep == UnloadFlowStep.Completed)
+                        _unloadStep = DetermineNextUnloadStep();
 
-                        // [ADD] 대기(Blocked)면 Step01 성공처리/Step02 진행 금지. 다음 싸이클에 다시 Step01.
-                        if (nRet == 1)
-                            return 0;
+                    nRet = RunUnloadWaferFlowStep(true);
 
-                        // [ADD] 웨이퍼 종료 시점 업로드
-                        //try
-                        //{
-                        //    var Bin = OutputStage.GetMaterial() as MaterialWafer;
-                        //    string IDBinForUpload = Bin.WaferId;
-                        //    if (!string.IsNullOrWhiteSpace(IDBinForUpload))
-                        //        Equipment.Instance.ResultWriterManager.FlushWaferResultToNetwork(IDBinForUpload);
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    Log.Write(ex);
-                        //}
-
-                        if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step01);
-                        goto case UnloadFlowStep.Step02;
-
-                    case UnloadFlowStep.Step02:
-                        nRet = BinUnloading_Step02(true);
-                        if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return nRet; }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return 0; }
-
-                        if (_unloadTargetSlot < 0)
-                            _unloadTargetSlot = ComputeUnloadTargetSlot();
-
-                        if (_unloadTargetSlot < 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            PostAlarm((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid); // 2060 (기존 2004 수정)
-                            this.State = ProcessState.Error;
-                            Log.Write(UnitName, "OnRunWork", "Unload target slot invalid");
-                            return -1;
-                        }
-
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step02);
-                        goto case UnloadFlowStep.Step03;
-
-                    case UnloadFlowStep.Step03:
-                        nRet = this.OutputCassetteLifter.MoveToSlot(_unloadTargetSlot);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            PostAlarm((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload); // 2062 (기존 2004 수정)
-                            this.State = ProcessState.Error;
-                            Log.Write(UnitName, "OnRunWork", "OutputCassetteLifter.MoveToSlot Failed");
-                            MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
-                            return nRet;
-                        }
-
-                        nRet = UnloadOnlyFeederToCassette(true);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            // 여기서 2004로 덮지 않음:
-                            // UnloadOnlyFeederToCassette 내부가 2070~2074/2041을 이미 올림
-                            this.State = ProcessState.Error;
-                            MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
-                            return nRet;
-                        }
-                        if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return 0; }
-                        AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step03);
-
-                        break;
-
-                    case UnloadFlowStep.Completed:
-                    default:
-                        break;
-                }
-
-                _unloadStep = UnloadFlowStep.Completed;
-                _unloadTargetSlot = -1;
-                NeedUnloadFirst = false;
-                this.State = ProcessState.Complete;
-                return 0;
-            }
-            else
-            {
-                // 1) Feeder -> Cassette: Scan
-                if (this.OutputCassetteLifter.IsScanCompleted() == false)
-                {
-                    nRet = this.OutputCassetteLifter.ScanBin(true);
-                    if (nRet != 0)
+                    if (_unloadStep == UnloadFlowStep.Completed)
                     {
-                        AxisOutputFeederY.EmgStop();
-                        PostAlarm((int)AlarmKeys.Alarm_ScanBinFailed); // [FIX] 2000 -> 2080
-                        return nRet;
+                        _unloadStep = UnloadFlowStep.Completed;
+                        _unloadTargetSlot = -1;
+                        NeedUnloadFirst = false;
+                        this.State = ProcessState.Complete;
                     }
-                    if (IsStop)
+                    return nRet;
+                }
+                else
+                {
+
+                    // 1) Feeder -> Cassette: Scan 확인
+                    if (this.OutputCassetteLifter.IsScanCompleted() == false)
                     {
-                        Log.Write(UnitName, "OnRunWork", "IsScanCompleted");
+                        nRet = this.OutputCassetteLifter.ScanBin(true);
+                        if (nRet != 0)
+                        {
+                            AxisOutputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_ScanBinFailed); // 2080
+                            return nRet;
+                        }
+                        if (IsStop)
+                        {
+                            Log.Write(UnitName, "RunLoadWaferFlowStep", "IsScanCompleted Check -> Stop");
+                            return 0;
+                        }
+                    }
+
+                    bool hasMore = this.OutputCassetteLifter.IsHaveMoreProcessWafer();
+                    bool feederHasWafer = GetMaterial() is MaterialWafer;
+
+                    // 2) 더 진행할 것이 전혀 없으면 Ready 복귀 후 종료 판단
+                    if (!hasMore && !feederHasWafer)
+                    {
+                        if (!IsPositionReady())
+                        {
+                            nRet = MoveToReady();
+                            if (nRet != 0)
+                            {
+                                AxisOutputFeederY.EmgStop();
+                                PostAlarm((int)AlarmKeys.Alarm_MoveToReadyFailed); // 2081
+                                this.State = ProcessState.Error;
+                                return nRet;
+                            }
+                        }
+
+                        TryShutdownIfAllCassettesEmpty();
+                        this.State = ProcessState.Ready;
                         return 0;
                     }
-                }
 
-                bool hasMore = this.OutputCassetteLifter.IsHaveMoreProcessWafer();
-                bool feederHasWafer = GetMaterial() is MaterialWafer;
-
-                // 2) 더 진행할 것이 전혀 없으면 Ready 복귀
-                if (!hasMore && !feederHasWafer)
-                {
-                    if (!IsPositionReady())
+                    // ===== Load 플로우 (항상 FSM로 진입) =====
+                    bool didLoad = false;
+                    if (_loadStep == LoadFlowStep.None || _loadStep == LoadFlowStep.Completed)
                     {
-                        nRet = MoveToReady();
+                        _loadStep = DetermineNextLoadStep();
+                    }
+
+                    nRet = RunLoadWaferFlowStep(out didLoad, true);
+                    if (nRet != 0
+                        || (_loadStep != LoadFlowStep.Completed))
+                    {
+                        Log.Write(UnitName, "OnRunWork", "Load flow not completed, continue work.");
+                        return nRet;
+                    }
+
+                    // [FIX] 로드 수행 없으면 위치 복귀(Ready 이동) 자체를 하지 않음
+                    if (didLoad == false)
+                    {
+                        this.State = ProcessState.Complete;
+                        Log.Write(UnitName, "OnRunWork", "No wafer to load.");
+                        return 0;
+                    }
+
+                    // 3) 아무 것도 할 웨이퍼가 없으면 대기 안전 위치로.
+                    // 대기 위치인지 한번 더 확인하는거지.
+                    if (IsPositionReady() == false)
+                    {
+                        if (OutputStage.IsPositionBinLoading() == false
+                           && OutputStage.IsPositionBinUnloading() == false)
+                        {
+                            AxisOutputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                            Log.Write(UnitName, "OnRunWork", "Fail - IsPositionWaferLoading() == false");
+                            return nRet;
+                        }
+
+                        // wafer 가지고 있는지 유/무 판단 필요.
+                        bool hasWafer = HasBinOnFeeder();
+                        // Ready로 복귀할 때, 현재 로직은 "Unclamp 상태"를 요구함.
+                        // 그런데 웨이퍼를 잡고 있는 상태(클램프 가능성)라면 Ready 복귀 자체가 위험/불가할 수 있음.
+                        if (hasWafer == true)
+                        {
+                            // 1) 클램프가 닫혀 있으면(=웨이퍼를 잡고 있을 가능성) Ready 이동 금지
+                            //    -> 여기서 무조건 Unclamp 해버리면 웨이퍼 낙하 가능하니, 정책을 확실히 해야 함.
+                            //    안전 우선: 알람/에러로 보내고 사용자가 "언로드" 버튼을 누르게 유도.
+                            if (IsSafeToMoveReady() == false)
+                            {
+                                AxisOutputFeederY.EmgStop();
+                                PostAlarm((int)AlarmKeys.Alarm_OutputFeederInterlockFailed);
+                                Log.Write(UnitName, "OnRunWork",
+                                    "Blocked MoveToReady: Feeder has wafer and is not unclamped. Run unload flow first.");
+                                return -1;
+                            }
+
+                            // 2) (선택) 웨이퍼는 있는데 Unclamp 상태로 판단되는 경우(데이터/센서 불일치 가능)
+                            //    -> 이 경우도 위험하므로 막는 방향 권장
+                            if (!(Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp)))
+                            {
+                                // 센서 OFF + 객체만 남은 케이스 등을 포함해 강하게 막고 싶으면 아래로 처리
+                                // AxisInputFeederY.EmgStop();
+                                // PostAlarm((int)AlarmKeys.Alarm_WaferSensorDataMismatch);
+                                // Log.Write(UnitName, "OnRunWork", "Blocked MoveToReady: wafer data/sensor mismatch");
+                                // return -1;
+                            }
+                        }
+
+                        nRet = MovePositionReady();
                         if (nRet != 0)
                         {
                             AxisOutputFeederY.EmgStop();
-                            PostAlarm((int)AlarmKeys.Alarm_MoveToReadyFailed); // [FIX] 2000 -> 2081
+                            PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
                             this.State = ProcessState.Error;
+                            Log.Write(UnitName, "OnRunWork", "Fail - MovePositionReady");
+                            return nRet;
+                        }
+                        nRet = UpFeeder();
+                        if (nRet != 0)
+                        {
+                            AxisOutputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                            this.State = ProcessState.Error;
+                            Log.Write(UnitName, "OnRunWork", "Fail - UpFeeder");
                             return nRet;
                         }
                     }
 
-                    TryShutdownIfAllCassettesEmpty();
-                    this.State = ProcessState.Ready;
+                    _loadStep = LoadFlowStep.Completed;
+                    this.State = ProcessState.Complete;
+                    Log.Write(UnitName, "OnRunWork", "LoadFlowStep.StageLoadingAfter completed.");
+
                     return 0;
                 }
-
-                // 3) 재개 시작 단계 보정
-                if (_loadStep == LoadFlowStep.None || _loadStep == LoadFlowStep.Completed)
-                {
-                    _loadStep = DetermineNextLoadStep();
-                }
-
-                switch (_loadStep)
-                {
-                    case LoadFlowStep.Step01:
-                        nRet = BinLoading_Step01(true);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            // Step01 내부에서 이미 OutputStageInterlockFailed(2010) 등을 올림.
-                            // 여기서는 2000으로 덮지 않도록 제거.
-                            this.State = ProcessState.Error;
-                            MarkStepOnFailure(LoadFlowStep.Step01);
-                            return nRet;
-                        }
-                        if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step01); return 0; }
-                        AdvanceLoadStepOnSuccess(LoadFlowStep.Step01);
-                        goto case LoadFlowStep.Step02;
-
-                    case LoadFlowStep.Step02:
-                        nRet = BinLoading_Step02(true);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            // Step02 내부에서 바코드/이동/실린더 관련 알람이 이미 발생 가능하므로 2000으로 덮지 않음
-                            this.State = ProcessState.Error;
-                            MarkStepOnFailure(LoadFlowStep.Step02);
-                            return nRet;
-                        }
-                        if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step02); return 0; }
-                        AdvanceLoadStepOnSuccess(LoadFlowStep.Step02);
-                        goto case LoadFlowStep.Step03;
-
-                    case LoadFlowStep.Step03:
-                        nRet = BinLoading_Step03(true);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            // Step03 내부에서 StageLoadingFailed(2002)/2000 등 세부 알람이 이미 발생 가능
-                            // 여기서 2000으로 덮지 않음
-                            this.State = ProcessState.Error;
-                            MarkStepOnFailure(LoadFlowStep.Step03);
-                            return nRet;
-                        }
-                        if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step03); return 0; }
-                        AdvanceLoadStepOnSuccess(LoadFlowStep.Step03);
-                        goto case LoadFlowStep.Step04;
-
-                    case LoadFlowStep.Step04:
-                        nRet = BinLoading_Step04(true);
-                        if (nRet != 0)
-                        {
-                            AxisOutputFeederY.EmgStop();
-                            // Step04는 SetMappingData 실패 -> 내부에서 StageLoadingFailed(2002)가 맞음(이미 올리고 있음)
-                            this.State = ProcessState.Error;
-                            MarkStepOnFailure(LoadFlowStep.Step04);
-                            return nRet;
-                        }
-                        if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step04); return 0; }
-                        AdvanceLoadStepOnSuccess(LoadFlowStep.Step04);
-                        break;
-
-                    case LoadFlowStep.Completed:
-                    default:
-                        break;
-                }
-
-                _loadStep = LoadFlowStep.Completed;
-                this.State = ProcessState.Complete;
-                Log.Write(UnitName, "OnRunWork", "LoadFlowStep.StageLoadingAfter completed.");
-                return 0;
-
+            }
+            catch(Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
             }
         }
         protected override int OnRunComplete()
@@ -1685,7 +1669,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         private int BinLoading_Step02(bool isFine = false)
         {
             int nRet = 0;
@@ -1701,7 +1684,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         private int BinLoading_Step03(bool isFine = false)
         {
             int nRet = 0;
@@ -1750,7 +1732,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         private int BinLoading_Step04(bool isFine = false)
         {
             int nRet = 0;
@@ -1862,45 +1843,52 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            // [PATCH] 무한 대기 방지: timeout 추가 (Stop만으로는 현장 멈춤처럼 보임)
-            const int waitTimeoutMs = 120000 * 5;
-            var swWait = System.Diagnostics.Stopwatch.StartNew();
-
-            var srcWafer = inputStage.GetMaterialWafer();
-            while (true)
+            if (RunUnitStatus != UnitStatus.ManualRunning)
             {
-                if(IsStop)
+                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                if (recipe.UseSameAsWafer == true)
                 {
-                    Log.Write(UnitName, "BinStageMapping", "IsStop detected during waiting for InputStage wafer.");
-                    return 0;
-                }
-
-                if (swWait.ElapsedMilliseconds > waitTimeoutMs)
-                {
-                    AxisOutputFeederY.EmgStop();
-                    PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
-                    Log.Write(UnitName, "BinStageMapping", $"Timeout waiting for InputStage wafer (>{waitTimeoutMs}ms).");
-                    return -1;
-                }
-
-                srcWafer = inputStage.GetMaterialWafer();
-                if (srcWafer != null)
-                {
-                    lock (srcWafer.Dies)
+                    // [PATCH] 무한 대기 방지: timeout 추가 (Stop만으로는 현장 멈춤처럼 보임)
+                    const int waitTimeoutMs = 60000 * 15; //15분안에는 로드쪽이 마무리 되어야지. Auto진행시. //1시간?
+                    var swWait = System.Diagnostics.Stopwatch.StartNew();
+                    var srcWafer = inputStage.GetMaterialWafer();
+                    while (true)
                     {
-                        if (srcWafer.Dies == null 
-                            || srcWafer.Dies.Count == 0
-                            || srcWafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
+                        if (IsStop)
                         {
-                            //Log?
+                            Log.Write(UnitName, "BinStageMapping", "IsStop detected during waiting for InputStage wafer.");
+                            return 0;
                         }
-                        else
+
+                        if (swWait.ElapsedMilliseconds > waitTimeoutMs)
                         {
-                            break;
+                            AxisOutputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                            Log.Write(UnitName, "BinStageMapping", $"Timeout waiting for InputStage wafer (>{waitTimeoutMs}ms).");
+                            return -1;
+                        }
+
+                        srcWafer = inputStage.GetMaterialWafer();
+                        if (srcWafer != null && inputStage.ChipMappingDone == true)
+                        {
+                            lock (srcWafer.Dies)
+                            {
+                                if (srcWafer.Dies == null
+                                    || srcWafer.Dies.Count == 0
+                                    || srcWafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
+                                {
+                                    //Log?
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
             }
+
             var BinWafer = GetMaterial() as MaterialWafer;
             // 픽업 직후 재선택 방지: Processing 전환 + SlotIndex 보정 + 경로 준비
             if (BinWafer != null)
@@ -1945,6 +1933,12 @@ namespace QMC.LCP_280.Process.Unit
             //VA1VPRO16
             //추 후 전체 장비 통합 검토.
             Equipment.Instance.ResultWriterManager.ResultLogData_BeginWaferSummary(waferOnStage?.WaferId, "VA1VPRO16");
+            // 웨이퍼의 전체 칩 개수 계산
+            int totalDieCount = waferOnStage.Dies.Count;
+            // 또는 실제 작업해야 할 칩 개수 (Skip 제외 등 조건에 따라)
+            // int totalDieCount = wafer.Dies.Count(d => d.State != DieProcessState.Skip);
+            // [핵심] ResultWriterManager에 전체 개수 설정
+            Equipment.Instance.ResultWriterManager.SetWaferTotalCount(totalDieCount);
             Log.Write(UnitName, "OnRunWork", "LoadFlowStep.BinStageMapping completed.");
             return nRet;
         }
@@ -1954,14 +1948,135 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
-            this.SequencePlayers.Add(BinCassetteLoading);
-            this.SequencePlayers.Add(StageLoading);
-            this.SequencePlayers.Add(MoveToReady);
-            this.SequencePlayers.Add(BinUnloading);
+            //this.SequencePlayers.Add(BinCassetteLoading);
+            //this.SequencePlayers.Add(StageLoading);
+            //this.SequencePlayers.Add(MoveToReady);
+            //this.SequencePlayers.Add(BinUnloading);
+
+            // Manual Sequences(New)
+            this.SequencePlayers.Add(Manual_StandbyReady);
+            this.SequencePlayers.Add(Manual_Unload_Batch);
+            this.SequencePlayers.Add(Manual_Load_Batch);
+            
         }
 
 
         #region Seq 단위 동작 함수
+        /// <summary>
+        /// Manually triggers the full Loading Sequence (Cassette -> Feeder -> Stage -> Ready)
+        /// </summary>
+        public int Manual_Load_Batch(bool isFine = false)
+        {
+            // Reset Step state for fresh start
+            _loadStep = LoadFlowStep.Step01;
+
+            // Just loop until completion or error, simulating the FSM behavior in OnRunWork
+            while (_loadStep != LoadFlowStep.Completed)
+            {
+                if (IsStop) return 0;
+
+                bool didLoad = false;
+                int nRet = RunLoadWaferFlowStep(out didLoad, isFine);
+
+                if (nRet != 0)
+                {
+                    // Error occurred
+                    return nRet;
+                }
+
+                Thread.Sleep(10); // Yield slightly
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Manually triggers the full Unloading Sequence (Stage -> Feeder -> Cassette)
+        /// </summary>
+        public int Manual_Unload_Batch(bool isFine = false)
+        {
+            // Determine start step based on sensor/material status
+            _unloadStep = DetermineNextUnloadStep();
+
+            // If nothing to unload, exit
+            if (_unloadStep == UnloadFlowStep.Completed || _unloadStep == UnloadFlowStep.None)
+            {
+                Log.Write(UnitName, "Manual_Unload_Batch", "Nothing to unload (Sensor/Data check).");
+                return 0;
+            }
+
+            // Loop until completion
+            while (_unloadStep != UnloadFlowStep.Completed)
+            {
+                if (IsStop) return 0;
+
+                int nRet = RunUnloadWaferFlowStep(isFine);
+
+                if (nRet != 0)
+                {
+                    // Error occurred
+                    return nRet;
+                }
+
+                Thread.Sleep(10);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Manually moves to Safe/Ready Position
+        /// </summary>
+        public int Manual_StandbyReady(bool isFine = false)
+        {
+            if (IsStop) return 0;
+
+            // 1. Check Interlocks (Safety)
+            if (IsPositionReady())
+            {
+                // Already there, just ensure Up
+                return UpFeeder();
+            }
+
+            // 2. Logic similar to OnRunWork standby logic
+            // Ensure we don't crash into Stage
+            if (OutputStage.IsPositionBinLoading() == false &&
+                OutputStage.IsPositionBinUnloading() == false)
+            {
+                // If stage is unsafe, we cannot move Y
+                Log.Write(UnitName, "Manual_StandbyReady", "OutputStage not in safe position.");
+                PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
+                return -1;
+            }
+
+            int nRet = 0;
+            nRet = UnClampGripper();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "Manual_StandbyReady", "UnClampGripper failed.");
+                return nRet;
+            }
+
+            // 3. Move
+            nRet = MovePositionReady(isFine);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "Manual_StandbyReady", "MovePositionReady failed.");
+                return nRet;
+            }
+
+            // 4. Lift Up
+            nRet = UpFeeder();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "Manual_StandbyReady", "UpFeeder failed.");
+                return nRet;
+            }
+
+            Log.Write(UnitName, "Manual_StandbyReady", "Completed.");
+            return 0;
+        }
+
         // [ADD] WaferExchangeDecision 로그 쓰로틀/변화 감지용(간단 버전)
         private int _lastWEDStateMask = -1;
         private int _lastWEDTick = 0;
@@ -1996,8 +2111,9 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             noNextDieByStateOnly = !waferBin.Dies.Any
                                 (d => d != null &&
-                                d.State != DieProcessState.Placed &&
-                                d.State != DieProcessState.Rejected);
+                                d.State != DieProcessState.Placed 
+                                && d.State != DieProcessState.Rejected
+                                && d.State != DieProcessState.Skip);
                         }
                         // 임시 우회: State-only가 남아있으면 '없다'로 보지 않음
                         noNextDie = noNextDie && noNextDieByStateOnly;
@@ -2092,7 +2208,6 @@ namespace QMC.LCP_280.Process.Unit
                 TryShutdownIfAllCassettesEmpty();
                 return false;
             }
-
             return false;
         }
 
@@ -2273,10 +2388,15 @@ namespace QMC.LCP_280.Process.Unit
                 var c = this.OutputCassetteLifter.GetMaterialCassette();
                 int nIndex = this.OutputCassetteLifter.GetCurrectSlotID();
                 MaterialWafer Bin = c.GetWafer(nIndex);
+                if (Bin == null)
+                {
+                    Log.Write(UnitName, "BinLoading Complete", "Bin == null");
+                    return -1;
+                }
 
                 Bin.CarrierId = c.CarrierId;
 
-                if (Config.IsSimulation || Config.IsDryRun)
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 {
                     strBarcode = string.Format("{0}_{1}", strBarcode, Bin.CarrierId);
                 }
@@ -2373,6 +2493,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                var wafer = this.OutputStage.GetMaterialWafer();
+                if(wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                {
+                    return true;
+                }
+
                 // Stage 쪽 die place가 아직 남아있고/진행 중이면 언로드 금지.
                 // (ODT가 die를 들고 있으면 "곧 Place할 가능성"이 있으니 막아야 함)
                 var odtDie = OutputDieTransfer?.GetMaterial() as MaterialDie;
@@ -2427,14 +2553,18 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            // [ADD] ODT/Rotary 버퍼가 비기 전에는 Stage 언로딩 시작 금지
-            if (!IsSafeToStartStageUnloading())
+            if(RunUnitStatus == UnitStatus.AutoRunning)
             {
-                // 여기서는 알람을 올리지 말고 "대기"가 안전합니다.
-                // Ready에서 다시 돌면서 자연스럽게 비면 언로딩 진행.
-                Log.Write(UnitName, "BinUnloading_Step01", "Blocked: OutputDieTransfer/Rotary still has die.");
-                return 1; // [IMPORTANT] 0이 아닌 '대기' 코드
+                // [ADD] ODT/Rotary 버퍼가 비기 전에는 Stage 언로딩 시작 금지
+                if (!IsSafeToStartStageUnloading())
+                {
+                    // 여기서는 알람을 올리지 말고 "대기"가 안전합니다.
+                    // Ready에서 다시 돌면서 자연스럽게 비면 언로딩 진행.
+                    Log.Write(UnitName, "BinUnloading_Step01", "Blocked: OutputDieTransfer/Rotary still has die.");
+                    return 1; // [IMPORTANT] 0이 아닌 '대기' 코드
+                }
             }
+            
 
             bool bBinInStage = this.OutputStage.IsRingPresent();
             bool bBinInFeeder = IsRingPresent();
@@ -2471,7 +2601,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         public int BinUnloading_Step02(bool isFine = false)
         {
             int nRet = 0;
@@ -2531,7 +2660,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         public int BinUnloading_Step03(bool isFine = false)
         {
             int nRet = 0;
@@ -2672,7 +2800,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         public int BinUnloading(MaterialWafer wafer, bool isFine = false)
         {
             int nRet = 0;
@@ -2740,8 +2867,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(this, "BinUnloading Complete");
             return nRet;
         }
-
-
         private int UnloadOnlyFeederToCassette(bool isFine = false)
         {
             int nRet = 0;
@@ -3112,8 +3237,7 @@ namespace QMC.LCP_280.Process.Unit
             // Barcode Reading Logic
             bool isRead = true; // TODO: Barcode Reading Logic
 
-            if (Config.IsSimulation
-                || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 strBarcode = "TestBin";
             }
@@ -3414,11 +3538,25 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     else
                     {
+                        nRet = UnClampGripper();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "CheckReady Fail - UnClampGripper");
+                            return nRet;
+                        }
+                        nRet = MovePositionReady();
+                        if (nRet != 0)
+                        {
+                            AxisOutputFeederY.EmgStop();
+                            PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
+                            Log.Write(UnitName, "CheckReady Fail - OutputStage.IsStageInterLockOK");
+                            return -1;
+                        }
 
-                        AxisOutputFeederY.EmgStop();
-                        PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
-                        Log.Write(UnitName, "CheckReady Fail - OutputStage.IsStageInterLockOK");
-                        return -1;
+                        //AxisOutputFeederY.EmgStop();
+                        //PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
+                        //Log.Write(UnitName, "CheckReady Fail - OutputStage.IsStageInterLockOK");
+                        //return -1;
                     }
                 }
                 else
@@ -3467,7 +3605,7 @@ namespace QMC.LCP_280.Process.Unit
             // 재시작 시 잔류 센서와 객체 불일치 강제 정리
             try
             {
-                if (!Config.IsSimulation && !Config.IsDryRun)
+                if (Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     if (!IsRingPresent() && GetMaterial() is MaterialWafer)
                     {
@@ -3576,22 +3714,12 @@ namespace QMC.LCP_280.Process.Unit
         private MapPathStartCorner _binPathBaseCorner = MapPathStartCorner.BottomLeft;
         private MapPathPrimaryAxis _binPathBaseAxis = MapPathPrimaryAxis.XFirst;
 
-        private void LockBinPathBaseFromRecipeOnce()
-        {
-            if (_binPathBaseLocked) return;
-            var recipe = Equipment.Instance?.EquipmentRecipe?.CurrentRecipe as MeasurementRecipe;
-            if (recipe == null) return;
-
-            _binPathBaseCorner = recipe.BinPathStartCorner; //MapPathStartCorner.BottomLeft;
-            _binPathBaseAxis = recipe.BinPathPrimaryAxis;
-            _binPathBaseLocked = true;
-        }
-
-        // [UPDATED] InputStage 맵 복제: 회전/미러만 적용, 이후 베이스 코너/주축으로 순서 고정
+        // LCP-280\Unit\OutputFeeder.cs 내부
+        // [수정] InputStage의 Map 정보를 복사하되, 
+        // 1) 기본 장비 축 매핑(X:정방향, Y:역방향)을 먼저 적용한 뒤
+        // 2) Recipe의 Rotate/Mirror 설정을 추가 반영함
         private int CopyInputMapRotate180(MaterialWafer srcWafer,
-                                          MaterialWafer dstWafer,
-                                          MeasurementRecipe.MapRotateOption rotate,
-                                          MeasurementRecipe.MapMirrorOption mirror)
+                                          MaterialWafer dstWafer)
         {
             try
             {
@@ -3600,88 +3728,86 @@ namespace QMC.LCP_280.Process.Unit
                 if (dstWafer == null)
                     return -2;
 
-                // 최초 1회만 베이스 경로 고정
-                LockBinPathBaseFromRecipeOnce();
-
                 lock (srcWafer.Dies)
                 {
                     lock (dstWafer.Dies)
                     {
-                        var sourceDies = srcWafer.Dies.Where(d => d != null).ToList();
+                        // 1. 소스 다이 가져오기 (Index 순서대로 정렬)
+                        var sourceDies = srcWafer.Dies.OrderBy(d => d.Index).ToList();
                         if (sourceDies.Count == 0)
                             return -3;
 
+                        // 2. Grid Index 계산 준비 (BinX, BinY 매핑용)
                         const double tol = 1e-6;
-                        var xs = sourceDies.Select(d => (double)d.MapX).OrderBy(v => v).Aggregate(new List<double>(), (acc, v) =>
-                        {
-                            if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol) acc.Add(v);
-                            return acc;
-                        });
-                        var ys = sourceDies.Select(d => (double)d.MapY).OrderBy(v => v).Aggregate(new List<double>(), (acc, v) =>
-                        {
-                            if (acc.Count == 0 || Math.Abs(acc[acc.Count - 1] - v) > tol) acc.Add(v);
-                            return acc;
-                        });
-                        if (xs.Count == 0 || ys.Count == 0)
-                            return -3;
+                        // 좌표값 목록 추출 (오름차순 정렬)
+                        var xs = sourceDies.Select(d => (double)d.MapX).Distinct().OrderBy(v => v).ToList();
+                        var ys = sourceDies.Select(d => (double)d.MapY).Distinct().OrderBy(v => v).ToList();
 
-                        int nx = xs.Count, ny = ys.Count;
+                        // 좌표값 -> 그리드 인덱스 변환 로컬 함수
                         int FindIndex(List<double> list, double value)
                         {
-                            int lo = 0, hi = list.Count - 1;
-                            while (lo <= hi)
-                            {
-                                int mid = (lo + hi) / 2;
-                                double diff = list[mid] - value;
-                                if (Math.Abs(diff) <= tol) return mid;
-                                if (diff < 0) lo = mid + 1; else hi = mid - 1;
-                            }
                             for (int i = 0; i < list.Count; i++)
-                                if (Math.Abs(list[i] - value) <= tol)
-                                    return i;
+                            {
+                                if (Math.Abs(list[i] - value) <= tol) return i;
+                            }
                             return -1;
                         }
 
                         if (dstWafer.Dies != null) dstWafer.Dies.Clear();
                         dstWafer.Dies = new List<MaterialDie>(sourceDies.Count);
 
-                        // 좌표는 회전/미러 반영, BinX/Y는 인덱스 변환만 반영
-                        // MapX/MapY는 원본 유지. BinX/BinY는 회전/미러 반영.
-                        int newIndex = 0;
+                        // 그리드 전체 크기
+                        int nx = xs.Count;
+                        int ny = ys.Count;
+
+                        // 3. InputStage의 Die를 순회하며 좌표 변환 수행
                         foreach (var s in sourceDies)
                         {
+                            // 원본에서의 그리드 인덱스 찾기
                             int ix = FindIndex(xs, s.MapX);
                             int iy = FindIndex(ys, s.MapY);
-                            if (ix < 0 || iy < 0) 
-                                continue;
 
-                            var rxy = ApplyRotateToIndex(ix, iy, nx, ny, rotate);
-                            var mxy = ApplyMirrorToIndex(rxy.tx, rxy.ty, nx, ny, mirror);
+                            int binX = 0, binY = 0;
+                            if (ix >= 0 && iy >= 0)
+                            {
+                                // [Step 1] 장비 기본 좌표계 보정 (사용자 확인 사항: X정방향, Y역방향)
+                                // 이 상태가 Rotate=None, Mirror=None 일 때의 기준이 됩니다.
+                                int baseX = ix;
+                                int baseY = ny - 1 - iy; // LCP-280 기준 Y역방향 → 그리드 인덱스는 Y역방향으로 계산
 
-                            // 실제 좌표 회전/미러는 간단히 인덱스 변환 결과를 MapX/MapY에 반영(그리드 기반)
-                            //double newMapX = xs[mxy.tx];
-                            //double newMapY = ys[mxy.ty];
+                                // [Step 2] Recipe Rotate 적용 (기본 보정된 좌표 기준)
+                                // ApplyRotateToIndex는 내부적으로 0,0 기준 회전을 수행한다고 가정
+                                int rotatedX = baseX;
+                                int rotatedY = baseY;
 
+                                // 회전 후의 그리드 차원 (90/270도 회전 시 가로세로 바뀜)
+                                int currentNx = nx;
+                                int currentNy = ny;
+
+                                // 무조건 180도 회전.
+                                // (x, y) -> (nx-1-x, ny-1-y)
+                                rotatedX = currentNx - 1 - baseX;
+                                rotatedY = currentNy - 1 - baseY;
+                                binX = rotatedX;
+                                binY = rotatedY;
+                            }
+
+                            // 결과 추가
+                            // Index는 InputStage 순서(작업 순서)를 유지하기 위해 s.Index 그대로 사용
                             dstWafer.Dies.Add(new MaterialDie
                             {
-                                Index = newIndex++,
-                                Presence = Material.MaterialPresence.NotExist,
-                                ProcessSatate = Material.MaterialProcessSatate.Unknown,
+                                Index = s.Index,
+                                Presence = Material.MaterialPresence.Exist,
+                                ProcessSatate = Material.MaterialProcessSatate.Ready,
+                                BinX = binX,
+                                BinY = binY,
 
-                                // 출력 배치 키(회전/미러 적용)
-                                BinX = mxy.tx,
-                                BinY = mxy.ty,
-
-                                // ★ 정책 확정: 입력 맵 좌표(원본 유지)
-                                MapX = s.MapX,
-                                MapY = s.MapY
-
-                                //BinX = mxy.tx,
-                                //BinY = mxy.ty,
-                                //MapX = (int)Math.Round(newMapX),
-                                //MapY = (int)Math.Round(newMapY)
+                                // MapX, MapY는 그리드 인덱스(BinX, BinY)를 따르도록 설정
+                                MapX = binX,
+                                MapY = binY
                             });
                         }
+
                         return 0;
                     }
                 }
@@ -3693,7 +3819,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // [NEW] Rotate/Mirror만 반영해 격자 방향 변환 (인덱스 키 조회용)
         private static (int tx, int ty) ApplyRotateToIndex(int ix, int iy, int nx, int ny, MapRotateOption r)
         {
             switch (r)
@@ -3715,94 +3840,8 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-
-        // [UPDATED] 순서 재정렬: 회전/미러는 버킷 키 변환에만 반영, 순회 방향은 베이스 코너/주축으로만 결정
-        private void OrderDiesByMode(MaterialWafer wafer)
-        {
-            if (wafer?.Dies == null || wafer.Dies.Count == 0) return;
-
-            LockBinPathBaseFromRecipeOnce();
-
-            lock (wafer.Dies)
-            {
-                var items = wafer.Dies.Select(d => new { Die = d, BX = (int)Math.Round(d.BinX), BY = (int)Math.Round(d.BinY) }).ToList();
-                var xs = items.Select(i => i.BX).Distinct().OrderBy(v => v).ToList();
-                var ys = items.Select(i => i.BY).Distinct().OrderBy(v => v).ToList();
-                if (xs.Count == 0 || ys.Count == 0) { Log.Write(UnitName, "OrderDiesByMode", "No valid BinX/BinY values."); return; }
-
-                // 회전/미러 읽기
-                var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe as MeasurementRecipe;
-                var rotate = recipe?.BinRotate ?? MapRotateOption.None;
-                var mirror = recipe?.BinMirror ?? MapMirrorOption.None;
-
-                // 버킷: 회전/미러를 적용한 키로 구성
-                var buckets = new Dictionary<(int bx, int by), List<MaterialDie>>();
-                foreach (var it in items)
-                {
-                    var rxy = ApplyRotateToIndex(xs.IndexOf(it.BX), ys.IndexOf(it.BY), xs.Count, ys.Count, rotate);
-                    var mxy = ApplyMirrorToIndex(rxy.tx, rxy.ty, xs.Count, ys.Count, mirror);
-                    var key = (xs[mxy.tx], ys[mxy.ty]);
-                    if (!buckets.TryGetValue(key, out var list))
-                    {
-                        list = new List<MaterialDie>();
-                        buckets[key] = list;
-                    }
-                    list.Add(it.Die);
-                }
-
-                // 순회 방향은 “베이스 코너/주축”으로만 결정
-                List<int> xBase, yBase;
-                switch (_binPathBaseCorner)
-                {
-                    default:
-                    case MapPathStartCorner.BottomLeft: xBase = xs; yBase = ys; break;
-                    case MapPathStartCorner.BottomRight: xBase = xs.AsEnumerable().Reverse().ToList(); yBase = ys; break;
-                    case MapPathStartCorner.TopLeft: xBase = xs; yBase = ys.AsEnumerable().Reverse().ToList(); break;
-                    case MapPathStartCorner.TopRight: xBase = xs.AsEnumerable().Reverse().ToList(); yBase = ys.AsEnumerable().Reverse().ToList(); break;
-                }
-
-                var newList = new List<MaterialDie>(wafer.Dies.Count);
-                var traversal = recipe?.BinPathTraversalMode ?? MapPathTraversalMode.Serpentine;
-
-                if (_binPathBaseAxis == MapPathPrimaryAxis.XFirst)
-                {
-                    for (int row = 0; row < yBase.Count; row++)
-                    {
-                        int by = yBase[row];
-                        IEnumerable<int> xSeq = xBase;
-                        if (traversal == MapPathTraversalMode.Serpentine && (row % 2 == 1))
-                            xSeq = xBase.AsEnumerable().Reverse();
-
-                        foreach (int bx in xSeq)
-                        {
-                            if (buckets.TryGetValue((bx, by), out var list))
-                                newList.AddRange(list.OrderBy(d => d.Index));
-                        }
-                    }
-                }
-                else
-                {
-                    for (int col = 0; col < xBase.Count; col++)
-                    {
-                        int bx = xBase[col];
-                        IEnumerable<int> ySeq = yBase;
-                        if (traversal == MapPathTraversalMode.Serpentine && (col % 2 == 1))
-                            ySeq = yBase.AsEnumerable().Reverse();
-
-                        foreach (int by in ySeq)
-                        {
-                            if (buckets.TryGetValue((bx, by), out var list))
-                                newList.AddRange(list.OrderBy(d => d.Index));
-                        }
-                    }
-                }
-
-                wafer.Dies = newList;
-            }
-        }
-
         // [UPDATED] TryCloneMapFromInputStage: 복제 → 순서 재정렬(베이스 코너/주축) → Index 재설정
-        private bool TryCloneMapFromInputStage(MaterialWafer dstWafer)
+        private bool TryCloneMapFromInputStage(MaterialWafer dstBin)
         {
             try
             {
@@ -3816,28 +3855,18 @@ namespace QMC.LCP_280.Process.Unit
 
                 lock (srcWafer.Dies)
                 {
-                    lock (dstWafer.Dies)
+                    lock (dstBin.Dies)
                     {
-                        if (dstWafer.Dies != null) dstWafer.Dies.Clear();
-                        dstWafer.Dies = new List<MaterialDie>(srcWafer.Dies.Count);
-
-                        var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe as MeasurementRecipe;
-                        var rotate = recipe?.BinRotate ?? MapRotateOption.None;
-                        var mirror = recipe?.BinMirror ?? MapMirrorOption.None;
-
-                        int rc = CopyInputMapRotate180(srcWafer, dstWafer, rotate, mirror);
+                        if (dstBin.Dies != null) dstBin.Dies.Clear();
+                        dstBin.Dies = new List<MaterialDie>(srcWafer.Dies.Count);
+                        int rc = CopyInputMapRotate180(srcWafer, dstBin);
                         if (rc != 0)
                         {
                             Log.Write(UnitName, "MakePath", $"Clone failed rc={rc}");
                             return false;
                         }
 
-                        // 순서 고정(베이스) 적용 후 Index 재설정
-                        OrderDiesByMode(dstWafer);
-                        for (int i = 0; i < dstWafer.Dies.Count; i++)
-                            dstWafer.Dies[i].Index = i;
-
-                        Log.Write(UnitName, "MakePath", $"Cloned from InputStage. Count={dstWafer.Dies.Count} Rotate={rotate} Mirror={mirror}");
+                        Log.Write(UnitName, "MakePath", $"Cloned from InputStage. Count={dstBin.Dies.Count}");
                     }
                 }
                 return true;
@@ -3882,7 +3911,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 var eq = Equipment.Instance;
                 var r = eq.EquipmentRecipe.CurrentRecipe;
-                return (r.WaferDiameter > 0) ? r.WaferDiameter : 0.0;
+                return (r.BinDiameter > 0) ? r.BinDiameter : 0.0;
             }
         }
 
@@ -3916,156 +3945,192 @@ namespace QMC.LCP_280.Process.Unit
                 Bin.Dies = new List<MaterialDie>();
                 try
                 {
-                    Equipment.Instance.bIndexCal = true;
-                    if (Equipment.Instance.bIndexCal == true)
+                    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
+                    if (recipe.UseSameAsWafer == true)
                     {
                         // 0) InputStage 맵을 우선 그대로 복제(개수/격자/좌표 일치 보장)
                         if (PreferCloneMapFromInputStage && TryCloneMapFromInputStage(Bin))
                         {
                             // 복제 성공 시 여기서 종료 → InputStage에서 도출된 칩 개수와 완전 동일
+                            Log.Write(UnitName, "MakePath", "bIndexCal = true");
                             return 0;
                         }
                     }
-
                     // 1) (Fallback) ChipPitch + 웨이퍼 지름 기반 원형 맵 생성
-                    var recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe;
-                    double pitchX = ChipPitchXmm;
-                    double pitchY = ChipPitchYmm;
-                    if (pitchX <= 0) pitchX = 0.5;
-                    if (pitchY <= 0) pitchY = 0.5;
-
-                    double diameterMm = BinDiameterMm;
-                    int nCoutX = 5;
-                    int nCoutY = 5;
-                    //if (diameterMm <= 0 && (recipe.BinCountX > 0 || recipe.BinCountY > 0))
-                    //{
-                    //    double spanX = Math.Max(1, recipe.BinCountX) * pitchX;
-                    //    double spanY = Math.Max(1, recipe.BinCountY) * pitchY;
-                    //    diameterMm = Math.Min(spanX, spanY);
-                    //}
-                    if (diameterMm <= 0 && (nCoutX > 0 || nCoutY > 0))
+                    // [수정] UseSameAsWafer == false 일 때 레시피 기준 생성 로직 (물리적 순서 방식)
+                    else
                     {
-                        double spanX = Math.Max(1, nCoutX) * pitchX;
-                        double spanY = Math.Max(1, nCoutY) * pitchY;
-                        diameterMm = Math.Min(spanX, spanY);
-                    }
-                    if (diameterMm <= 0)
-                    {
-                        diameterMm = Math.Min(20 * pitchX, 20 * pitchY);
-                    }
+                        double pitchX = ChipPitchXmm;
+                        double pitchY = ChipPitchYmm;
+                        if (pitchX <= 0) pitchX = 0.55;
+                        if (pitchY <= 0) pitchY = 0.55;
 
-                    double radiusMm = Math.Max(0.0, diameterMm / 2.0 - Math.Max(0.0, BinCircleMarginMm));
+                        double diameterMm = BinDiameterMm;
 
-                    int halfCellsX = (int)Math.Floor(radiusMm / pitchX);
-                    int halfCellsY = (int)Math.Floor(radiusMm / pitchY);
-                    int cntX = Math.Max(1, halfCellsX * 2 + 1);
-                    int cntY = Math.Max(1, halfCellsY * 2 + 1);
-
-                    double centerX = (cntX - 1) / 2.0;
-                    double centerY = (cntY - 1) / 2.0;
-                    int xStart, yStart, xDir, yDir;
-
-                    var Recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe as MeasurementRecipe;
-                    var StartCorner = Recipe != null ? Recipe.BinPathStartCorner : MapPathStartCorner.BottomLeft;
-                    var PrimaryAxis = Recipe != null ? Recipe.BinPathPrimaryAxis : MapPathPrimaryAxis.XFirst;
-                    var Traversal = Recipe != null ? Recipe.BinPathTraversalMode : MapPathTraversalMode.Serpentine;
-                    switch (StartCorner)
-                    {
-                        default:
-                        case MapPathStartCorner.BottomLeft: xStart = 0; yStart = 0; xDir = +1; yDir = +1; break;
-                        case MapPathStartCorner.BottomRight: xStart = cntX - 1; yStart = 0; xDir = -1; yDir = +1; break;
-                        case MapPathStartCorner.TopLeft: xStart = 0; yStart = cntY - 1; xDir = +1; yDir = -1; break;
-                        case MapPathStartCorner.TopRight: xStart = cntX - 1; yStart = cntY - 1; xDir = -1; yDir = -1; break;
-                    }
-
-                    IEnumerable<int> RangeDir(int start, int count, int dir)
-                    {
-                        if (dir > 0) { for (int i = 0; i < count; i++) yield return start + i; }
-                        else { for (int i = 0; i < count; i++) yield return start - i; }
-                    }
-
-                    var xLineForward = RangeDir(xStart, cntX, xDir).ToList();
-                    var xLineReverse = xLineForward.AsEnumerable().Reverse().ToList();
-                    var yLineForward = RangeDir(yStart, cntY, yDir).ToList();
-                    var yLineReverse = yLineForward.AsEnumerable().Reverse().ToList();
-
-                    var list = new List<MaterialDie>();
-                    Action<int, int> tryAdd = (rawX, rawY) =>
-                    {
-                        int bx, by;
-                        ToBinCoord(rawX, rawY, cntX, cntY, out bx, out by);
-
-                        double relCellX = bx - centerX;
-                        double relCellY = by - centerY;
-
-                        double dxMm = relCellX * pitchX;
-                        double dyMm = relCellY * pitchY;
-                        double dist2 = dxMm * dxMm + dyMm * dyMm;
-                        bool inside = !UseCircularBinMap ? true : (dist2 <= radiusMm * radiusMm);
-
-                        if (!inside)
+                        // 직경 설정이 없으면 기본 5x5 혹은 Pitch 기준 계산
+                        if (diameterMm <= 0)
                         {
-                            Log.Write(UnitName, "MakePath",
-                                $"Skip outside cell: Bin=({bx},{by}) " +
-                                $"Map=({(int)relCellX},{(int)relCellY}) " +
-                                $"Dist2={dist2:F3}mm² " +
-                                $"Radius²={radiusMm * radiusMm:F3}mm²");
-                            return;
+                            // 20개 정도 들어가는 크기로 임의 설정 (기존 로직 유지)
+                            diameterMm = Math.Min(20 * pitchX, 20 * pitchY);
                         }
 
-                        list.Add(new MaterialDie
-                        {
-                            Index = -1,
-                            Presence = Material.MaterialPresence.NotExist,
-                            ProcessSatate = Material.MaterialProcessSatate.Unknown,
-                            BinX = bx,
-                            BinY = by,
-                            MapX = (int)relCellX,
-                            MapY = (int)relCellY
-                        });
-                    };
+                        double radiusMm = Math.Max(0.0, diameterMm / 2.0 - Math.Max(0.0, BinCircleMarginMm));
 
-                    if (PrimaryAxis == MapPathPrimaryAxis.XFirst)
-                    {
-                        for (int row = 0; row < cntY; row++)
-                        {
-                            int rawY = yLineForward[row];
-                            var xSeq = (Traversal == MapPathTraversalMode.Serpentine && (row % 2 == 1))
-                                ? xLineReverse
-                                : xLineForward;
+                        // 반지름 기준 Grid Cell 개수 계산 (중심 0,0 기준)
+                        int halfCellsX = (int)Math.Floor(radiusMm / pitchX);
+                        int halfCellsY = (int)Math.Floor(radiusMm / pitchY);
 
-                            foreach (int rawX in xSeq)
-                                tryAdd(rawX, rawY);
-                        }
-                    }
-                    else if (PrimaryAxis == MapPathPrimaryAxis.YFirst)
-                    {
-                        for (int col = 0; col < cntX; col++)
-                        {
-                            int rawX = xLineForward[col];
-                            var ySeq = (Traversal == MapPathTraversalMode.Serpentine && (col % 2 == 1))
-                                ? yLineReverse
-                                : yLineForward;
+                        // 전체 Grid 크기 (항상 홀수로 만들어 중심을 0,0으로 맞춤)
+                        int nCols = Math.Max(1, halfCellsX * 2 + 1); // Width count (X축 개수)
+                        int nRows = Math.Max(1, halfCellsY * 2 + 1); // Height count (Y축 개수)
 
-                            foreach (int rawY in ySeq)
+                        // 중심 인덱스 (Floating point center)
+                        double centerX = (nCols - 1) / 2.0;
+                        double centerY = (nRows - 1) / 2.0;
+
+                        // 레시피 설정 가져오기
+                        var Recipe = Equipment.Instance.EquipmentRecipe.CurrentRecipe as MeasurementRecipe;
+                        var StartCorner = Recipe != null ? Recipe.BinPathStartCorner : MapPathStartCorner.BottomLeft;
+                        var PrimaryAxis = Recipe != null ? Recipe.BinPathPrimaryAxis : MapPathPrimaryAxis.XFirst;
+                        var Traversal = Recipe != null ? Recipe.BinPathTraversalMode : MapPathTraversalMode.Serpentine;
+
+                        var list = new List<MaterialDie>();
+
+                        // --- [로직 변경] Start Corner, Axis, Serpentine 적용하여 순서대로 생성 ---
+                        // 좌표계 기준: (0,0) = Bottom-Left
+                        // X 증가: 오른쪽으로 이동
+                        // Y 증가: 위쪽으로 이동
+
+                        // 1. 루프 범위 및 방향 결정 (StartCorner 기준)
+                        int xStart, xEnd, xStep;
+                        int yStart, yEnd, yStep;
+
+                        // X축 설정
+                        // Left 시작(BottomLeft, TopLeft): 0 -> nCols (증가)
+                        // Right 시작(BottomRight, TopRight): nCols-1 -> -1 (감소)
+                        bool isLeftStart = (StartCorner == MapPathStartCorner.BottomLeft || StartCorner == MapPathStartCorner.TopLeft);
+                        //if (isLeftStart) { xStart = 0; xEnd = nCols; xStep = 1; }
+                        //else { xStart = nCols - 1; xEnd = -1; xStep = -1; }
+                        // X축: LeftStart일 때 큰 값(nCols-1)부터 시작해야 함
+                        if (isLeftStart) { xStart = nCols - 1; xEnd = -1; xStep = -1; }
+                        else { xStart = 0; xEnd = nCols; xStep = 1; }
+
+                        // Y축 설정
+                        // Bottom 시작(BottomLeft, BottomRight): 0 -> nRows (증가)
+                        // Top 시작(TopLeft, TopRight): nRows-1 -> -1 (감소)
+                        bool isBottomStart = (StartCorner == MapPathStartCorner.BottomLeft || StartCorner == MapPathStartCorner.BottomRight);
+                        //if (isBottomStart) { yStart = 0; yEnd = nRows; yStep = 1; }
+                        //else { yStart = nRows - 1; yEnd = -1; yStep = -1; }
+                        // Y축: BottomStart일 때 큰 값(nRows-1)부터 시작해야 함
+                        if (isBottomStart) { yStart = nRows - 1; yEnd = -1; yStep = -1; }
+                        else { yStart = 0; yEnd = nRows; yStep = 1; }
+                        // 다이 추가 내부 함수
+                        void CheckAndAddDie(int cx, int cy)
+                        {
+                            // 중심 기준 상대 좌표 계산 (물리 거리 계산용)
+                            double relX = cx - centerX;
+                            double relY = cy - centerY;
+
+                            double dxMm = relX * pitchX;
+                            double dyMm = relY * pitchY;
+                            double dist2 = dxMm * dxMm + dyMm * dyMm;
+
+                            // 원형 맵 사용 시 반경 체크
+                            bool inside = !UseCircularBinMap ? true : (dist2 <= radiusMm * radiusMm);
+                            if (!inside)
                             {
-                                tryAdd(rawX, rawY);
+                                return;
+                            }
+
+                            list.Add(new MaterialDie
+                            {
+                                Index = list.Count, // 생성 순서대로 Index 부여 (0, 1, 2...)
+                                Presence = Material.MaterialPresence.NotExist, // 초기 상태
+                                ProcessSatate = Material.MaterialProcessSatate.Unknown,
+                                BinX = cx,          // Grid 상의 절대 좌표 (0 ~ nCols-1)
+                                BinY = cy,          // Grid 상의 절대 좌표 (0 ~ nRows-1)
+                                MapX = (int)relX,   // 중심 기준 상대 좌표 (물리적 위치 계산용)
+                                MapY = (int)relY
+                            });
+                        }
+
+                        // 2. Primary Axis에 따른 이중 루프 실행
+                        if (PrimaryAxis == MapPathPrimaryAxis.XFirst)
+                        {
+                            // [X-First]: Y(Row) 고정 후 X(Col) 이동 (가로 방향 우선)
+                            // 바깥 루프: Y (StartCorner 기준 방향)
+                            for (int y = yStart; y != yEnd; y += yStep)
+                            {
+                                // 안쪽 루프: X
+                                // 몇 번째 라인인지 계산 (0, 1, 2...)
+                                int rowCount = Math.Abs(y - yStart);
+
+                                // 지그재그(Serpentine) 체크: 홀수 번째 라인(1, 3...)은 반대 방향
+                                bool reverse = (Traversal == MapPathTraversalMode.Serpentine) && (rowCount % 2 != 0);
+
+                                if (!reverse)
+                                {
+                                    // 정방향 (StartCorner 기준 X방향)
+                                    for (int x = xStart; x != xEnd; x += xStep)
+                                        CheckAndAddDie(x, y);
+                                }
+                                else
+                                {
+                                    // 역방향 (StartCorner 반대 X방향)
+                                    // xStart가 0(증가)이면 역방향은 Max->0(감소)
+                                    // xStart가 Max(감소)이면 역방향은 0->Max(증가)
+                                    int revStart = (xStep > 0) ? (nCols - 1) : 0;
+                                    int revEnd = (xStep > 0) ? -1 : nCols;
+                                    int revStep = -xStep;
+
+                                    for (int x = revStart; x != revEnd; x += revStep)
+                                        CheckAndAddDie(x, y);
+                                }
                             }
                         }
-                    }
+                        else // YFirst
+                        {
+                            // [Y-First]: X(Col) 고정 후 Y(Row) 이동 (세로 방향 우선)
+                            // 바깥 루프: X (StartCorner 기준 방향)
+                            for (int x = xStart; x != xEnd; x += xStep)
+                            {
+                                // 안쪽 루프: Y
+                                int colCount = Math.Abs(x - xStart); // 0, 1, 2...
 
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        list[i].Index = i;
-                    }
-                    Bin.Dies.AddRange(list);
+                                // 지그재그(Serpentine) 체크: 홀수 번째 라인(1, 3...)은 반대 방향
+                                bool reverse = (Traversal == MapPathTraversalMode.Serpentine) && (colCount % 2 != 0);
 
-                    Log.Write(UnitName, "MakePath",
-                        $"Circular(Fallback)={UseCircularBinMap} " +
-                        $"Dies={Bin.Dies.Count} " +
-                        $"Grid=({cntX}x{cntY}) " +
-                        $"Pitch=({pitchX:F3},{pitchY:F3})mm " +
-                        $"Radius={radiusMm:F3}mm");
+                                if (!reverse)
+                                {
+                                    // 정방향 (StartCorner 기준 Y방향)
+                                    for (int y = yStart; y != yEnd; y += yStep)
+                                        CheckAndAddDie(x, y);
+                                }
+                                else
+                                {
+                                    // 역방향
+                                    int revStart = (yStep > 0) ? (nRows - 1) : 0;
+                                    int revEnd = (yStep > 0) ? -1 : nRows;
+                                    int revStep = -yStep;
+
+                                    for (int y = revStart; y != revEnd; y += revStep)
+                                        CheckAndAddDie(x, y);
+                                }
+                            }
+                        }
+
+                        // 리스트 반영
+                        Bin.Dies.Clear();
+                        Bin.Dies.AddRange(list);
+
+                        Log.Write(UnitName, "MakePath",
+                            $"Circular(Fallback)={UseCircularBinMap} " +
+                            $"StartCorner={StartCorner} Primary={PrimaryAxis} Zigzag={Traversal} " +
+                            $"Dies={Bin.Dies.Count} " +
+                            $"Grid=({nCols}x{nRows}) " +
+                            $"Pitch=({pitchX:F3},{pitchY:F3})mm " +
+                            $"Radius={radiusMm:F3}mm");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -4092,7 +4157,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 시뮬/드라이런은 기존 GetBarcode() 로직 그대로 사용
-                if (Config.IsSimulation || Config.IsDryRun)
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 {
                     return GetBarcode(out barcode);
                 }
@@ -4388,5 +4453,252 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
+        /// <summary>
+        /// [ADD] 통합 언로딩 시퀀스 함수
+        /// Auto / Manual 모드를 모두 지원하며 상태머신(Step)으로 동작
+        /// </summary>
+        private int RunUnloadWaferFlowStep(bool isFine)
+        {
+            int nRet = 0;
+
+            // [ADD] Manual 모드일 경우 재시작/정지(Resume/Stop)를 위해 CurrentFunc 등록
+            if (this.RunMode == UnitRunMode.Manual)
+            {
+                CurrentFunc = RunUnloadWaferFlowStep;
+            }
+
+            // 1. 단계 초기화 및 결정
+            if (_unloadStep == UnloadFlowStep.None || _unloadStep == UnloadFlowStep.Completed)
+            {
+                _unloadStep = DetermineNextUnloadStep();
+            }
+
+            // 2. 단계별 실행
+            switch (_unloadStep)
+            {
+                case UnloadFlowStep.Step01:
+                    // Stage Unloading Prepare & Check
+                    nRet = BinUnloading_Step01(isFine);
+
+                    // [대기] Blocked 상태면 0 리턴하여 대기 (다음 사이클에 재진입)
+                    if (nRet == 1)
+                        return 0;
+
+                    if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return nRet; }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step01); return 0; }
+
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step01);
+
+                    // Auto 모드이거나, Manual이어도 연속 동작을 원하면 goto 사용
+                    // (여기서는 흐름 끊기지 않게 바로 다음 스텝 진행)
+                    goto case UnloadFlowStep.Step02;
+
+                case UnloadFlowStep.Step02:
+                    // Stage -> Feeder
+                    nRet = BinUnloading_Step02(isFine);
+                    if (nRet != 0) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return nRet; }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step02); return 0; }
+
+                    // 다음 타겟 슬롯 계산
+                    if (_unloadTargetSlot < 0)
+                        _unloadTargetSlot = ComputeUnloadTargetSlot();
+
+                    if (_unloadTargetSlot < 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid); // 2060
+                        this.State = ProcessState.Error;
+                        Log.Write(UnitName, "RunUnloadWaferFlowStep", "Unload target slot invalid");
+                        return -1;
+                    }
+
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step02);
+                    goto case UnloadFlowStep.Step03;
+
+                case UnloadFlowStep.Step03:
+                    // Feeder -> Cassette
+                    nRet = this.OutputCassetteLifter.MoveToSlot(_unloadTargetSlot);
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload); // 2062
+                        this.State = ProcessState.Error;
+                        Log.Write(UnitName, "RunUnloadWaferFlowStep", "OutputCassetteLifter.MoveToSlot Failed");
+                        MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
+                        return nRet;
+                    }
+
+                    nRet = UnloadOnlyFeederToCassette(true);
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        // UnloadOnlyFeederToCassette 내부에서 이미 알람 발생함
+                        this.State = ProcessState.Error;
+                        MarkUnloadStepOnFailure(UnloadFlowStep.Step03);
+                        return nRet;
+                    }
+                    if (IsStop) { MarkUnloadStepOnFailure(UnloadFlowStep.Step03); return 0; }
+
+                    AdvanceUnloadStepOnSuccess(UnloadFlowStep.Step03);
+                    break;
+
+                case UnloadFlowStep.Completed:
+                default:
+                    break;
+            }
+
+            // 3. 완료 처리
+            _unloadStep = UnloadFlowStep.Completed;
+            _unloadTargetSlot = -1;
+            NeedUnloadFirst = false;
+
+            // Auto 모드일 때만 상태 변경 (Manual에서는 호출자가 제어할 수 있음)
+            if (this.RunMode == UnitRunMode.Auto)
+            {
+                this.State = ProcessState.Complete;
+            }
+            else
+            {
+                // Manual 모드 완료 로그
+                Log.Write(UnitName, "RunUnloadWaferFlowStep", "Manual Unloading Sequence Completed.");
+            }
+
+            return 0;
+        }
+
+        private int RunLoadWaferFlowStep(out bool didLoad, bool isFine)
+        {
+            int nRet = 0;
+            didLoad = false;
+
+            // 4) 스텝 머신 실행
+            switch (_loadStep)
+            {
+                case LoadFlowStep.Step01:
+                    didLoad = true;
+                    // [Step 1] Cassette Next Slot 이동 + Stage 로딩 준비
+                    nRet = BinLoading_Step01(true);
+
+                    // [ADD] 대기(Blocked) 상태 등 0이 아닌 특수 리턴 처리 필요시 여기에 추가
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        // Step01 내부에서 이미 알람 발생함
+                        this.State = ProcessState.Error;
+                        MarkStepOnFailure(LoadFlowStep.Step01);
+                        return nRet;
+                    }
+                    if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step01); return 0; }
+
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step01);
+                    goto case LoadFlowStep.Step02;
+
+                case LoadFlowStep.Step02:
+                    didLoad = true;
+                    // [Step 2] Feeder가 Cassette에서 Bin 픽업 (바코드 포함)
+                    nRet = BinLoading_Step02(true);
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        this.State = ProcessState.Error;
+                        MarkStepOnFailure(LoadFlowStep.Step02);
+                        return nRet;
+                    }
+                    if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step02); return 0; }
+
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step02);
+                    goto case LoadFlowStep.Step03;
+
+                case LoadFlowStep.Step03:
+                    didLoad = true;
+                    // [Step 3] Feeder -> Stage 로딩 + Ready 복귀
+                    nRet = BinLoading_Step03(true);
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        this.State = ProcessState.Error;
+                        MarkStepOnFailure(LoadFlowStep.Step03);
+                        return nRet;
+                    }
+                    if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step03); return 0; }
+
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step03);
+                    goto case LoadFlowStep.Step04;
+
+                case LoadFlowStep.Step04:
+                    didLoad = true;
+                    // [Step 4] 데이터 매핑 (SetMappingData)
+                    nRet = BinLoading_Step04(true);
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        this.State = ProcessState.Error;
+                        MarkStepOnFailure(LoadFlowStep.Step04);
+                        return nRet;
+                    }
+                    if (IsStop) { MarkStepOnFailure(LoadFlowStep.Step04); return 0; }
+
+                    AdvanceLoadStepOnSuccess(LoadFlowStep.Step04);
+                    break;
+
+                case LoadFlowStep.Completed:
+                default:
+                    break;
+            }
+
+            // 모든 스텝 완료 시
+            _loadStep = LoadFlowStep.Completed;
+            return 0;
+        }
+
+        // Feeder가 wafer를 "잡고 있다/보유 중"인지 판단
+        // - 실기: RingPresent 센서 + (클램프 상태/객체) 조합
+        // - 시뮬/드라이런: Material 객체 기준이 더 신뢰됨
+        private bool HasBinOnFeeder()
+        {
+            try
+            {
+                // 시뮬/드라이런이면 센서보다 Material이 기준
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
+                    return (GetMaterial() is MaterialWafer);
+
+                bool sensor = false;
+                try { sensor = IsRingPresent(); } catch { sensor = false; }
+
+                bool obj = (GetMaterial() is MaterialWafer);
+
+                // 센서가 ON이면 우선 wafer 있다고 판단
+                if (sensor) return true;
+
+                // 센서 OFF인데 객체가 있으면 데이터만 남은 상태일 수 있으니 "보유"로 간주(안전 우선)
+                if (obj) return true;
+
+                return false;
+            }
+            catch
+            {
+                // 예외 시 안전측: 있다고 간주하면 이동을 막는 방향이 안전함
+                return true;
+            }
+        }
+
+        // Ready 이동이 가능한 "안전 상태"인지 판단
+        // 현재 코드 기준: Ready로 갈 때 UnClamp 상태를 요구하므로 그 조건을 명확히 둠
+        private bool IsSafeToMoveReady()
+        {
+            try
+            {
+                // 시뮬/드라이런이면 UnClamp 체크가 의미 약함
+                if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
+                    return true;
+
+                // MovePositionReady() 내부가 IsUnClamped()를 강제하므로 여기서도 동일 조건 사용
+                return IsUnClamped();
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

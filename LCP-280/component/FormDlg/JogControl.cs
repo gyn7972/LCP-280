@@ -631,9 +631,6 @@ namespace QMC.LCP_280.Process.Unit
         // ★ 스텝조그(1회 이동) — jerk 포함!
         private void DoStepMove(MotionAxis axis, JogCommand jc, double stepUnit)
         {
-            // (선택) 장비 설정에 따른 수동조그 방향 반전이 있으면 곱해줌 (없으면 dir = +1)
-            int dir = 1;// (axis.Config?.ManualJogDir ?? +1); // +1 또는 -1
-
             double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity;
             double acc = axis.Config.JogAcc;
             double dec = axis.Config.JogDec;

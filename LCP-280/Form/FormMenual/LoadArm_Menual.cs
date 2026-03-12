@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;
@@ -21,7 +22,7 @@ using Timer = System.Windows.Forms.Timer;
 namespace QMC.LCP_280.Process.Unit
 {
     [FormOrder(1)]
-    public partial class LoadArm_Menual : Form
+    public partial class LoadArm_Menual : Form, ITabActivationAware
     {
         private Equipment Equipment => Equipment.Instance;
 
@@ -33,9 +34,6 @@ namespace QMC.LCP_280.Process.Unit
         private bool _initialized;
         private bool _preloadRequested;
         private bool _deferredInitDone; // 지연 초기화 완료 여부
-        private bool _isLayoutEditMode;
-
-        private CancellationTokenSource _ctsPickUp;
 
         private volatile bool _pendingTeachingReload;
 
@@ -88,6 +86,97 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Preload / Init
+
+        // [추가] 탭 활성화 인터페이스 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
+        }
+
+        // [추가] 폼 이벤트 오버라이드
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+                if (this.Visible) ResumeCamera();
+                else PauseCamera();
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try { PauseCamera(); } catch { }
+            base.OnFormClosing(e);
+        }
+
+        // [추가] 카메라 제어 헬퍼 (_ChipLoadingCameraviewer 사용)
+        private void PauseCamera()
+        {
+            if (_ChipLoadingCameraviewer == null || _ChipLoadingCameraviewer.IsDisposed) return;
+
+            try { _ChipLoadingCameraviewer.SuspendDisplay(); } catch { }
+
+            var cam = _ChipLoadingCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            try
+            {
+                var method = _ChipLoadingCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_ChipLoadingCameraviewer, null);
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_ChipLoadingCameraviewer == null || _ChipLoadingCameraviewer.IsDisposed) return;
+
+            var cam = _ChipLoadingCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _ChipLoadingCameraviewer.ResumeDisplay(); } catch { }
+
+            try
+            {
+                var method = _ChipLoadingCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_ChipLoadingCameraviewer, null);
+                else _ChipLoadingCameraviewer.StartUpdateTask();
+            }
+            catch { }
+        }
+
         public void PreloadUI()
         {
             if (IsDisposed || Disposing) return;
@@ -415,7 +504,7 @@ namespace QMC.LCP_280.Process.Unit
                 //}
 
                 teachingPositionControl.SetUnitAbbreviation("InputStage", "Stage", reload: false);
-                teachingPositionControl.SetUnitAbbreviation("InputStageEjector", "Niddle", reload: false);
+                teachingPositionControl.SetUnitAbbreviation("InputStageEjector", "Needle", reload: false);
                 teachingPositionControl.SetUnitAbbreviation("InputDieTransfer", "Arm", reload: false);
 
                 teachingPositionControl.SetSaveCancelVisible(false, false);
@@ -684,6 +773,15 @@ namespace QMC.LCP_280.Process.Unit
 
         private  async void btnDiePickUp_Click(object sender, EventArgs e)
         {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+            }
+
             var ask = new MessageBoxYesNo();
             if(ask.ShowDialog("Question", "Die PickUp?") != DialogResult.Yes)
                 return;
@@ -724,7 +822,6 @@ namespace QMC.LCP_280.Process.Unit
             var form = new ProgressForm("Manual Running", "DiePickUp", t, null);
             try
             {
-                var mb = new MessageBoxOk();
                 form.ShowDialog();
                 if (t.IsFaulted)
                 {
@@ -772,6 +869,15 @@ namespace QMC.LCP_280.Process.Unit
 
         private async void btnDiePlaceDown_Click(object sender, EventArgs e)
         {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                return;
+
+            }
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("Question", "Die PlaceDown?") != DialogResult.Yes)
             {
@@ -829,7 +935,6 @@ namespace QMC.LCP_280.Process.Unit
             var form = new ProgressForm("Manual Running", "DiePlaceDown", t, null);
             try
             {
-                var mb = new MessageBoxOk();
                 form.ShowDialog();
                 if (t.IsFaulted)
                 {
@@ -960,17 +1065,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 int nRet = 0;
 
-                //흠
-                //nRet = InputDieTransfer.IsVacuumOK(0) ? 0 : -1;
-                //if (nRet == 0)
-                //{
-                //    MessageBoxOk mb = new MessageBoxOk();
-                //    mb.ShowDialog("VacuumOn", "Already have die on arm.");
-                //    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "Vacuum OK");
-                //    return -1;
-                //}
-
-
                 nRet = InputDieTransfer.MovePositionReady();
                 if (nRet != 0)
                 {
@@ -995,9 +1089,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 nRet = InputDieTransfer.RaiseEjectorForPick(); if (nRet != 0) return -1;
-                nRet = InputDieTransfer.ChipPickDown(); if (nRet != 0) return -1;
-                nRet = InputDieTransfer.SyncPickPinUp(); if (nRet != 0) return -1;
-                nRet = InputDieTransfer.SyncPickPinRetreat(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.PickDownDie(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.SyncPickUpDie(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.SyncPickDieRetreat(); if (nRet != 0) return -1;
                 nRet = InputDieTransfer.CommitPickedDie(); if (nRet != 0) return -1;
                 return 0;
             }, ct).ConfigureAwait(false);
@@ -1019,9 +1113,9 @@ namespace QMC.LCP_280.Process.Unit
                 //    return -1;
                 //}
 
-                nRet = InputDieTransfer.RotateToolTForPlace_AsyncWait(); if (nRet != 0) return -1;
-                nRet = InputDieTransfer.PlaceChipDown(); if (nRet != 0) return -1;
-                nRet = InputDieTransfer.ReleaseVacuumAndPlaceUp(); if (nRet != 0) return -1; // 암 Off, 로터리 Vac On
+                nRet = InputDieTransfer.PlaceDie_ToolT(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.PlaceDownDie(); if (nRet != 0) return -1;
+                nRet = InputDieTransfer.PlaceUp(); if (nRet != 0) return -1; // 암 Off, 로터리 Vac On
                 return 0;
             }, ct).ConfigureAwait(false);
         }

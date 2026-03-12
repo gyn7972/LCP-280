@@ -6,6 +6,7 @@ using QMC.LCP_280.Process.Work;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -18,11 +19,10 @@ using System.Threading.Tasks;
 namespace QMC.LCP_280.Process.Component.ProcessData
 {
     /// <summary>
-    /// ResultWriterManager (B안 정리본)
-    /// - 프로그램 동작 중에는 로컬 결과 파일을 계속 갱신(기존 방식 유지)
-    /// - 네트워크 업로드는 "직접 copy" 대신 Outbox(로컬 스풀)로 스냅샷을 1초 단위로 생성
-    /// - 백그라운드 업로더가 Outbox의 "최신 스냅샷 1개"만 네트워크 목적지에 덮어쓰기 업로드
-    /// - 강제 종료되어도 Outbox가 남아 있고, 다음 실행 시 이어서 업로드
+    /// ResultWriterManager (B안 Improved)
+    /// - 1. Local Writing: Always performed immediately (synchronous).
+    /// - 2. Network Upload: Always performed in Background (asynchronous/outbox).
+    /// - Even if Wafer ends, the background thread continues to process the queue.
     /// </summary>
     public class ResultWriterManager
     {
@@ -69,9 +69,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
         private Equipment Equipment = Equipment.Instance;
 
-        public PRDContext PrdContext { get; private set; } = new PRDContext();
-        public SUMContext SumContext { get; private set; } = new SUMContext();
-        public WAFContext WafContext { get; private set; } = new WAFContext();
+        public PRDContext PrdContext { get; set; } = new PRDContext();
+        public SUMContext SumContext { get; set; } = new SUMContext();
+        public WAFContext WafContext { get; set; } = new WAFContext();
 
         public TestConditionSet CurrentTestConditionSet { get; set; }
 
@@ -122,7 +122,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         #region Paths / Helpers (Local Result + Network)
         private string GetLocalResultRoot()
         {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
+            // [수정] 프로그램 시작 시 고정된 _runDate 대신, 현재 시점의 날짜를 사용하여 자정이 지나면 폴더가 변경되도록 수정
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", DateTime.Now.ToString("yyyyMMdd"));
+            //return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate);
         }
 
         private string GetLocalResultDir(string waferId)
@@ -191,13 +193,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         private readonly Dictionary<string, DateTime> _lastEnqueueUtcByDest =
             new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
 
+        // [수정 1] 제한 시간에 걸려 대기 중인 파일들을 추적하기 위한 Dictionary 추가
+        // Key: DestFile (목적지 경로), Value: LocalFile (원본 경로)
+        private readonly Dictionary<string, string> _pendingUploads =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         private CancellationTokenSource _uploaderCts;
         private Task _uploaderTask;
         private readonly AutoResetEvent _uploaderWake = new AutoResetEvent(false);
 
         private string GetOutboxRoot()
         {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate, "_outbox");
+            //return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", _runDate, "_outbox");
+            // 기존: Path.Combine(..., "ResultData", _runDate, "_outbox");  <-- 날짜 종속적 (위험)
+            // 변경: Path.Combine(..., "ResultData", "_outbox");            <-- 날짜 독립적 (안전)
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ResultData", "_outbox");
         }
 
         private string GetOutboxQueueDir()
@@ -216,9 +226,49 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             return IsLargeFile(localFile) ? LargeFileMinInterval : DefaultMinInterval;
         }
 
+        // [수정 2] ShouldEnqueueNow 로직 변경 (여기서는 단순히 시간 체크만 수행)
+        private bool IsRateLimited(string destKey, TimeSpan interval)
+        {
+            try
+            {
+                lock (_outboxLock) // Dictionary 접근 시 lock 필요
+                {
+                    if (_lastEnqueueUtcByDest.TryGetValue(destKey, out var lastUtc))
+                    {
+                        if ((DateTime.UtcNow - lastUtc) < interval)
+                            return true; // 제한 걸림
+                    }
+                    return false; // 제한 안 걸림
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        private void MarkEnqueued(string destKey)
+        {
+            try
+            {
+                lock (_outboxLock)
+                {
+                    _lastEnqueueUtcByDest[destKey] = DateTime.UtcNow;
+                    // 큐에 들어갔으므로 대기 목록에서는 제거
+                    if (_pendingUploads.ContainsKey(destKey))
+                        _pendingUploads.Remove(destKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
         private bool ShouldEnqueueNow(string destKey, TimeSpan interval)
         {
-            lock (_outboxLock)
+            try
             {
                 if (_lastEnqueueUtcByDest.TryGetValue(destKey, out var lastUtc))
                 {
@@ -228,12 +278,19 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 _lastEnqueueUtcByDest[destKey] = DateTime.UtcNow;
                 return true;
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
         }
 
         /// <summary>
-        /// 기존의 "스냅샷 복사" 대신, 업로드 작업 지시만 Outbox 큐에 넣는다(rename-only).
+        /// This method simply queues the upload job. 
+        /// It does NOT copy files immediately. It delegates everything to the background thread.
         /// </summary>
-        private void MirrorLocalToNetworkIfNeeded(string waferId, string localFile, string networkFileForSmb)
+        // [수정 3] QueueNetworkUpload 로직 전면 수정
+        private void QueueNetworkUpload(string waferId, string localFile, string networkFileForSmb)
         {
             if (string.IsNullOrWhiteSpace(localFile))
                 return;
@@ -247,24 +304,41 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 case RemoteUploadMode.Sftp:
                     dest = BuildSftpRemotePath(waferId, localFile);
                     break;
-
                 case RemoteUploadMode.SmbShare:
                     dest = networkFileForSmb;
                     break;
-
                 default:
                     return;
             }
 
-            if (string.IsNullOrWhiteSpace(dest))
-                return;
+            if (string.IsNullOrWhiteSpace(dest)) return;
 
-            // 파일 타입별 최소 enqueue 간격 적용 (실시간/부하 균형)
             var interval = GetMinIntervalForFile(localFile);
-            if (!ShouldEnqueueNow(dest, interval))
-                return;
+            bool executeNow = false;
 
-            EnqueueUploadJob(localFile, dest);
+            lock (_outboxLock)
+            {
+                // 1. 속도 제한에 걸리는지 확인
+                if (IsRateLimited(dest, interval))
+                {
+                    // 2-A. 제한에 걸리면 "Pending(보류)" 상태로 등록만 하고 리턴.
+                    //      나중에 백그라운드 스레드가 시간이 되면 큐에 넣음.
+                    _pendingUploads[dest] = localFile;
+                    // 백그라운드 스레드가 Pending 목록을 체크하도록 깨움
+                    _uploaderWake.Set();
+                    return;
+                }
+
+                // 2-B. 제한이 없으면 즉시 큐에 넣음
+                MarkEnqueued(dest);
+                executeNow = true;
+            }
+
+            // Lock 밖에서 파일 생성 (I/O)
+            if (executeNow)
+            {
+                EnqueueUploadJob(localFile, dest);
+            }
         }
 
         private sealed class UploadJob
@@ -282,10 +356,8 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         {
             try
             {
-                if (!File.Exists(localFile))
-                    return;
-
-                Directory.CreateDirectory(GetOutboxQueueDir());
+                //생성자에서 1회 호출.
+                //Directory.CreateDirectory(GetOutboxQueueDir());
 
                 var job = new UploadJob
                 {
@@ -295,11 +367,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                     Utc = DateTime.UtcNow
                 };
 
-                // job 파일 내용은 단순 텍스트로 (닷넷프레임워크에서 JSON 의존성 피함)
-                // 1) Mode
-                // 2) LocalFile
-                // 3) DestFile
-                // 4) UtcTicks
+                // Job format: Mode \n LocalFile \n DestFile \n Ticks
                 string body = string.Join("\n",
                     ((int)job.Mode).ToString(CultureInfo.InvariantCulture),
                     job.LocalFile ?? "",
@@ -312,12 +380,19 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 string final = Path.Combine(GetOutboxQueueDir(), name);
 
                 File.WriteAllText(tmp, body, Encoding.UTF8);
-                File.Move(tmp, final); // 원자적으로 큐에 투입
+                File.Move(tmp, final); // Atomic move
 
+                // Signal the background thread
                 _uploaderWake.Set();
             }
             catch (Exception ex)
             {
+                // [안전장치] 만약 디렉터리가 없어서 에러난 경우라면 여기서 생성 시도 (선택 사항)
+                if (ex is DirectoryNotFoundException)
+                {
+                    try { Directory.CreateDirectory(GetOutboxQueueDir()); } catch { }
+                }
+
                 try { Log.Write("ResultWriterManager", nameof(EnqueueUploadJob), ex.Message); } catch { }
             }
         }
@@ -395,6 +470,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             }
         }
 
+        // [수정] UploadLoop에서 MarkEnqueued 호출 시 Lock 확인
         private void UploadLoop(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -403,82 +479,108 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
                 try
                 {
-                    string q = GetOutboxQueueDir();
-                    if (!Directory.Exists(q))
+                    // === [추가된 부분] Pending(보류)된 파일들 체크 ===
+                    // 제한 시간이 풀린 항목이 있으면 큐에 집어넣음
+                    List<KeyValuePair<string, string>> toEnqueue = null;
+                    lock (_outboxLock)
                     {
-                        _uploaderWake.WaitOne(500);
-                        continue;
-                    }
-
-                    // 오래된 job부터 처리
-                    var jobs = Directory.EnumerateFiles(q, "*.job")
-                                        .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
-                                        .ToList();
-
-                    foreach (var jobPath in jobs)
-                    {
-                        if (token.IsCancellationRequested) break;
-
-                        // 처리중 락: .job -> .job.working (rename-only)
-                        string working = jobPath + ".working";
-                        try
+                        if (_pendingUploads.Count > 0)
                         {
-                            if (File.Exists(working))
-                                continue;
-
-                            File.Move(jobPath, working);
-                        }
-                        catch
-                        {
-                            continue; // 다른 스레드/프로세스가 잡았거나 잠김
-                        }
-
-                        didWork = true;
-
-                        var job = TryParseJobFile(working);
-                        if (job == null || string.IsNullOrWhiteSpace(job.LocalFile) || string.IsNullOrWhiteSpace(job.DestFile))
-                        {
-                            TryDeleteFileQuietly(working);
-                            continue;
-                        }
-
-                        // 최신 상태만 올리고 싶으면 여기서 “중복/구버전 job” 제거 로직도 가능.
-                        // (필요시 추가해드릴게요)
-
-                        bool ok = false;
-
-                        if (job.Mode == RemoteUploadMode.SmbShare)
-                        {
-                            ok = TryUploadLatestViaSmb_RenameOnly(job.LocalFile, job.DestFile);
-                        }
-                        else if (job.Mode == RemoteUploadMode.Sftp)
-                        {
-                            // SFTP도 tmpRemote 업로드 후 rename(이미 구현돼 있음)
-                            ok = TryUploadSnapshotViaSftp(job.LocalFile, job.DestFile);
-                        }
-
-                        if (ok)
-                        {
-                            TryDeleteFileQuietly(working);
-                        }
-                        else
-                        {
-                            // 실패 시 재시도 위해 되돌림
-                            try
+                            var now = DateTime.UtcNow;
+                            foreach (var kvp in _pendingUploads)
                             {
-                                if (File.Exists(working))
+                                string dest = kvp.Key;
+                                string src = kvp.Value;
+                                var interval = GetMinIntervalForFile(src);
+
+                                bool ready = false;
+                                if (_lastEnqueueUtcByDest.TryGetValue(dest, out var lastUtc))
                                 {
-                                    // 너무 빠른 재시도를 막고 싶으면 .retryAt 같은 정책을 넣을 수 있음
-                                    File.Move(working, working.Replace(".working", ".job"));
+                                    if ((now - lastUtc) >= interval) ready = true;
+                                }
+                                else
+                                {
+                                    ready = true;
+                                }
+
+                                if (ready)
+                                {
+                                    if (toEnqueue == null) toEnqueue = new List<KeyValuePair<string, string>>();
+                                    toEnqueue.Add(kvp);
                                 }
                             }
-                            catch
+                        }
+
+                        // [중요] 상태 변경도 Lock 안에서 수행해야 안전함
+                        if (toEnqueue != null)
+                        {
+                            foreach (var item in toEnqueue)
                             {
-                                // 최악의 경우 .working이 남아도 다음 실행 때 정리/재시도 처리 가능
+                                // 이제 MarkEnqueued 내부에는 Lock이 없으므로 안전하게 호출됨
+                                MarkEnqueued(item.Key);
+                            }
+                        }
+                    }
+
+                    // Lock 밖에서 실제 파일 I/O 수행
+                    if (toEnqueue != null)
+                    {
+                        foreach (var item in toEnqueue)
+                        {
+                            EnqueueUploadJob(item.Value, item.Key);
+                            didWork = true;
+                        }
+                    }
+                    // ===============================================
+
+                    string q = GetOutboxQueueDir();
+                    if (Directory.Exists(q))
+                    {
+                        var jobs = Directory.EnumerateFiles(q, "*.job")
+                                            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                                            .ToList();
+
+                        foreach (var jobPath in jobs)
+                        {
+                            if (token.IsCancellationRequested) break;
+
+                            string working = jobPath + ".working";
+                            try
+                            {
+                                if (File.Exists(working)) continue;
+                                File.Move(jobPath, working);
+                            }
+                            catch { continue; }
+
+                            didWork = true;
+
+                            var job = TryParseJobFile(working);
+                            if (job == null || string.IsNullOrWhiteSpace(job.LocalFile) || string.IsNullOrWhiteSpace(job.DestFile))
+                            {
+                                TryDeleteFileQuietly(working);
+                                continue;
                             }
 
-                            // 잠깐 쉬었다가 재시도
-                            Thread.Sleep(200);
+                            bool ok = false;
+                            if (job.Mode == RemoteUploadMode.SmbShare)
+                                ok = TryUploadLatestViaSmb_RenameOnly(job.LocalFile, job.DestFile);
+                            else if (job.Mode == RemoteUploadMode.Sftp)
+                                ok = TryUploadSnapshotViaSftp(job.LocalFile, job.DestFile);
+
+                            if (ok)
+                            {
+                                TryDeleteFileQuietly(working);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    if (File.Exists(working))
+                                        File.Move(working, working.Replace(".working", ".job"));
+                                }
+                                catch { }
+                                Thread.Sleep(500);
+                            }
                         }
                     }
                 }
@@ -487,26 +589,31 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                     try { Log.Write("ResultWriterManager", nameof(UploadLoop), ex.Message); } catch { }
                 }
 
+                // 할 일이 없으면 대기 (Pending 체크를 위해 타임아웃을 짧게 가져감)
                 if (!didWork)
-                    _uploaderWake.WaitOne(300);
+                {
+                    // [중요] Pending 항목이 있다면 100ms마다 깨어나서 시간 체크
+                    // Pending 항목이 없다면 500ms~1000ms 대기
+                    int waitTime = 1000;
+                    lock (_outboxLock)
+                    {
+                        if (_pendingUploads.Count > 0) waitTime = 100;
+                    }
+                    _uploaderWake.WaitOne(waitTime);
+                }
             }
         }
 
-        /// <summary>
-        /// SMB 업로드: tmp로 COPY 후 마지막에 Rename(=Move)로 최종 반영.
-        /// - 실제 “rename-only”는 최종 단계만 rename을 의미 (네트워크로의 데이터 전송은 copy가 필요)
-        /// - 중요한 점: 웨이퍼 배출 스레드에서는 절대 이 함수가 호출되지 않음(백그라운드 전용)
-        /// </summary>
         private bool TryUploadLatestViaSmb_RenameOnly(string localFile, string networkFile)
         {
-            const int retry = 10;
+            const int retry = 3;
 
             for (int i = 0; i < retry; i++)
             {
                 try
                 {
                     if (!File.Exists(localFile))
-                        return false;
+                        return true; // 원본 파일이 없으면 성공으로 간주
 
                     string ndir = Path.GetDirectoryName(networkFile);
                     if (!string.IsNullOrWhiteSpace(ndir))
@@ -514,28 +621,75 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
                     string tmp = networkFile + ".tmp";
 
-                    // 네트워크 전송 자체는 Copy가 필요 (SMB는 rename만으로 로컬->원격 전송 불가)
-                    // 대신 최종 반영은 rename으로 원자적 교체
-                    File.Copy(localFile, tmp, true);
-
-                    // 최종 파일을 원자적으로 교체
-                    // .NET Framework에서도 File.Replace가 가능하지만, SMB에서 정책/권한에 따라 실패할 수 있어 Move 기반으로 구성
-                    if (File.Exists(networkFile))
+                    // [수정] File.Copy 대신 FileStream을 사용하여 FileShare.ReadWrite로 읽기 시도
+                    // 메인 스레드가 쓰고 있는 중이어도 읽을 수 있도록 허용
+                    using (var sourceStream = new FileStream(localFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var destStream = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
-                        try { File.Delete(networkFile); } catch { /* ignore */ }
+                        sourceStream.CopyTo(destStream);
                     }
 
+                    // Atomic Swap (기존 파일 삭제 후 이름 변경)
+                    if (File.Exists(networkFile))
+                    {
+                        try { File.Delete(networkFile); } catch { }
+                    }
                     File.Move(tmp, networkFile);
                     return true;
                 }
-                catch
+                catch (IOException ioEx)
                 {
-                    Thread.Sleep(200 * (i + 1));
+                    // 파일이 잠겨있어서 읽지 못하는 경우 (잠시 대기 후 재시도)
+                    // 로그에 남기되 너무 자주 남기지 않도록 주의
+                    Log.Write("ResultWriterManager", "SmbUpload_Retry", ioEx.Message); 
+                    Thread.Sleep(500);
+                }
+                catch (Exception ex)
+                {
+                    // 기타 에러
+                    try { Log.Write(ex); } catch { }
+                    return false; // 재시도 하지 않고 실패 처리 (혹은 상황에 따라 continue)
                 }
             }
 
             return false;
         }
+        //private bool TryUploadLatestViaSmb_RenameOnly(string localFile, string networkFile)
+        //{
+        //    const int retry = 3;
+
+        //    for (int i = 0; i < retry; i++)
+        //    {
+        //        try
+        //        {
+        //            if (!File.Exists(localFile))
+        //                return true; // If local file is gone, we consider it "done" or invalid.
+
+        //            string ndir = Path.GetDirectoryName(networkFile);
+        //            if (!string.IsNullOrWhiteSpace(ndir))
+        //                Directory.CreateDirectory(ndir);
+
+        //            string tmp = networkFile + ".tmp";
+
+        //            // Copy to temp
+        //            File.Copy(localFile, tmp, true);
+
+        //            // Atomic Swap
+        //            if (File.Exists(networkFile))
+        //            {
+        //                try { File.Delete(networkFile); } catch { }
+        //            }
+        //            File.Move(tmp, networkFile);
+        //            return true;
+        //        }
+        //        catch
+        //        {
+        //            Thread.Sleep(500);
+        //        }
+        //    }
+
+        //    return false;
+        //}
 
         private static void TryDeleteFileQuietly(string path)
         {
@@ -552,10 +706,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         private Dictionary<string, double> _sumSq = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private bool _summaryFinalized = false;
 
-        // 3) 다이 누적시 BinLabel 유지
         private readonly Dictionary<int, string> _binLabelMap = new Dictionary<int, string>();
-
-        // ===== WaferTotalSummary 중복 기록 방지 =====
         private readonly object _waferTotalSummaryOnceLock = new object();
         private readonly HashSet<string> _waferTotalSummaryWritten = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -569,7 +720,13 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 if (!string.IsNullOrWhiteSpace(logDir))
                     Directory.CreateDirectory(logDir);
 
-                // B안: 프로그램 시작 시 Outbox 업로더 실행 (이전 Outbox 있으면 이어서 업로드)
+                // [수정] 생성 시 Outbox Queue 폴더 미리 생성 (I/O 부하 감소)
+                Directory.CreateDirectory(GetOutboxQueueDir());
+
+                // [ADD] Start the Local File Save Worker
+                InitializeSaveWorker();
+
+                // Start the background uploader immediately on startup.
                 StartOutboxUploader();
             }
             catch { }
@@ -587,6 +744,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             var eqpConfig = Equipment.Instance.EquipmentConfig;
 
+            // 1. Local Write
             string localDir = GetLocalResultDir(waferId);
             Directory.CreateDirectory(localDir);
             string localFile = Path.Combine(localDir, waferId + ".txt");
@@ -596,10 +754,14 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             string strBinFileName = die.SourceBinFileName;
 
+            // [수정] 네트워크 업로드 큐 등록을 lock 밖으로 빼기 위해 플래그 사용
+            bool needUpload = false;
+
             lock (_ioLock)
             {
                 bool exists = File.Exists(localFile);
-                using (var w = new StreamWriter(localFile, true, Encoding.UTF8))
+                using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var w = new StreamWriter(fs, Encoding.UTF8))
                 {
                     if (!exists)
                     {
@@ -618,8 +780,17 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                     w.WriteLine();
                 }
 
+                // 파일 쓰기가 성공했으면 업로드 플래그 설정
                 if (!string.IsNullOrWhiteSpace(networkFile))
-                    MirrorLocalToNetworkIfNeeded(waferId, localFile, networkFile);
+                {
+                    needUpload = true;
+                }
+            }
+
+            // 2. Queue for Background Upload (Lock 밖에서 실행하여 멈춤 방지)
+            if (needUpload)
+            {
+                QueueNetworkUpload(waferId, localFile, networkFile);
             }
 
             return 0;
@@ -653,12 +824,15 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             string waferId = SafeWaferId(die.SourceWaferId);
             var eqpConfig = Equipment.Instance.EquipmentConfig;
 
+            // 1. Local Write
             string localDir = GetLocalResultDir(waferId);
             Directory.CreateDirectory(localDir);
             string localFile = Path.Combine(localDir, waferId + ".bin");
 
             string networkDir = ShouldUploadToNetwork() ? GetNetworkResultDir(waferId, eqpConfig.BinResultPath) : null;
             string networkFile = !string.IsNullOrWhiteSpace(networkDir) ? Path.Combine(networkDir, waferId + ".bin") : null;
+
+            bool needUpload = false;
 
             lock (_ioLock)
             {
@@ -691,74 +865,229 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 }
 
                 if (!string.IsNullOrWhiteSpace(networkFile))
-                    MirrorLocalToNetworkIfNeeded(waferId, localFile, networkFile);
+                {
+                    needUpload = true;
+                }
+            }
+
+            // 2. Queue for Background Upload (Lock 밖에서 실행)
+            if (needUpload)
+            {
+                QueueNetworkUpload(waferId, localFile, networkFile);
             }
 
             return 0;
         }
 
-        public int WriteSumFile(MaterialDie die)
+        // [수정 1] SumContext의 Deep Copy(복사본)를 생성하는 메서드 추가
+        public SUMContext GetSumContextSnapshot()
         {
-            FinalizeSummary();
+            lock (_summaryLock)
+            {
+                var snapshot = new SUMContext
+                {
+                    EqpName = this.SumContext.EqpName,
+                    StartTime = this.SumContext.StartTime,
+                    EndTime = this.SumContext.EndTime,
+                    WaferID = this.SumContext.WaferID,
+                    TotalCount = this.SumContext.TotalCount,
+                    GoodCount = this.SumContext.GoodCount,
+                    NGCount = this.SumContext.NGCount,
+                    ItemNames = new List<string>(this.SumContext.ItemNames),
+                    ParameterBlock = new List<string>(this.SumContext.ParameterBlock),
+                    ZeroBlock = new List<string>(this.SumContext.ZeroBlock),
+                    // 딕셔너리 복사
+                    Min = new Dictionary<string, double>(this.SumContext.Min),
+                    Max = new Dictionary<string, double>(this.SumContext.Max),
+                    Avg = new Dictionary<string, double>(this.SumContext.Avg),
+                    Std = new Dictionary<string, double>(this.SumContext.Std),
+                    BinCounts = new Dictionary<int, int>(this.SumContext.BinCounts)
+                };
+                return snapshot;
+            }
+        }
+
+        // [수정 2] WriteSumFile이 '특정 시점의 스냅샷'을 받아서 쓰도록 오버로딩 혹은 수정
+        // 기존 메서드는 유지하되 내부에서 스냅샷을 사용하거나, 외부에서 스냅샷을 넘겨받아야 함.
+        // 여기서는 외부(OutputStage)에서 스냅샷을 넘겨주는 방식(WriteSumFileFromSnapshot)을 권장합니다.
+
+        public int WriteSumFileFromSnapshot(MaterialDie die, SUMContext snapshotContext)
+        {
+            if (snapshotContext == null) return -1;
 
             string waferId = SafeWaferId(die.SourceWaferId);
-            SyncSumContextFromEquipmentSummaryIfPossible(waferId);
-
             var eqpConfig = Equipment.Instance.EquipmentConfig;
 
+            // 1. Local Write
             string localDir = GetLocalResultDir(waferId);
-            Directory.CreateDirectory(localDir);
+            try { Directory.CreateDirectory(localDir); } catch { return -1; }
+
             string localFile = Path.Combine(localDir, waferId + ".sum");
 
+            // Network Path
             string networkDir = ShouldUploadToNetwork() ? GetNetworkResultDir(waferId, eqpConfig.SUMResultPath) : null;
             string networkFile = !string.IsNullOrWhiteSpace(networkDir) ? Path.Combine(networkDir, waferId + ".sum") : null;
 
+            bool needUpload = false;
+
             lock (_ioLock)
             {
-                using (var w = new StreamWriter(localFile, false, Encoding.UTF8))
+                try
                 {
-                    w.WriteLine("EQPName," + SumContext.EqpName);
-                    w.WriteLine();
-                    w.WriteLine("StartTime," + SumContext.StartTime);
-                    w.WriteLine("EndTime," + SumContext.EndTime);
-                    w.WriteLine();
-                    w.WriteLine("WaferID," + SumContext.WaferID);
-                    w.WriteLine();
-                    w.WriteLine("TotalCount," + SumContext.TotalCount);
-                    w.WriteLine("GoodCount," + SumContext.GoodCount);
-                    w.WriteLine("NGCount," + SumContext.NGCount);
-                    w.WriteLine();
+                    // [핵심 변경] FileMode.Append -> FileMode.Create (덮어쓰기)
+                    // Summary 파일은 누적 데이터의 최종본이므로 계속 뒤에 붙이는게 아니라 갱신해야 합니다.
+                    using (var fs = new FileStream(localFile, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    using (var w = new StreamWriter(fs, Encoding.UTF8))
+                    {
+                        w.WriteLine("EQPName," + snapshotContext.EqpName);
+                        w.WriteLine();
+                        w.WriteLine("StartTime," + snapshotContext.StartTime);
+                        w.WriteLine("EndTime," + snapshotContext.EndTime);
+                        w.WriteLine();
+                        w.WriteLine("WaferID," + snapshotContext.WaferID);
+                        w.WriteLine();
+                        w.WriteLine("TotalCount," + snapshotContext.TotalCount);
+                        w.WriteLine("GoodCount," + snapshotContext.GoodCount);
+                        w.WriteLine("NGCount," + snapshotContext.NGCount);
+                        w.WriteLine();
 
-                    w.Write("Item");
-                    foreach (var it in SumContext.ItemNames) w.Write("," + it);
-                    w.WriteLine();
+                        w.Write("Item");
+                        foreach (var it in snapshotContext.ItemNames) w.Write("," + it);
+                        w.WriteLine();
 
-                    WriteSummaryLine(w, "Min", SumContext.ItemNames, SumContext.Min);
-                    WriteSummaryLine(w, "Max", SumContext.ItemNames, SumContext.Max);
-                    WriteSummaryLine(w, "Avg", SumContext.ItemNames, SumContext.Avg);
-                    WriteSummaryLine(w, "Std", SumContext.ItemNames, SumContext.Std);
+                        WriteSummaryLine(w, "Min", snapshotContext.ItemNames, snapshotContext.Min);
+                        WriteSummaryLine(w, "Max", snapshotContext.ItemNames, snapshotContext.Max);
+                        WriteSummaryLine(w, "Avg", snapshotContext.ItemNames, snapshotContext.Avg);
+                        WriteSummaryLine(w, "Std", snapshotContext.ItemNames, snapshotContext.Std);
 
-                    w.WriteLine();
-                    w.WriteLine("BinNo,BinCount");
-                    foreach (var kv in SumContext.BinCounts)
-                        w.WriteLine(kv.Key + "," + kv.Value);
+                        w.WriteLine();
+                        w.WriteLine("BinNo,BinCount");
+                        foreach (var kv in snapshotContext.BinCounts)
+                            w.WriteLine(kv.Key + "," + kv.Value);
 
-                    w.WriteLine();
+                        w.WriteLine();
 
-                    foreach (var line in SumContext.ParameterBlock)
-                        w.WriteLine(line);
+                        foreach (var line in snapshotContext.ParameterBlock)
+                            w.WriteLine(line);
 
-                    foreach (var line in SumContext.ZeroBlock)
-                        w.WriteLine(line);
+                        foreach (var line in snapshotContext.ZeroBlock)
+                            w.WriteLine(line);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(networkFile))
+                    {
+                        needUpload = true;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Log.Write("ResultWriterManager", "WriteSumFile", ex.Message);
+                    return -1;
+                }
+            }
 
-                if (!string.IsNullOrWhiteSpace(networkFile))
-                    MirrorLocalToNetworkIfNeeded(waferId, localFile, networkFile);
+            // 2. Queue for Background Upload
+            if (needUpload)
+            {
+                QueueNetworkUpload(waferId, localFile, networkFile);
             }
 
             return 0;
         }
 
+        // [수정] WriteSumFile: Lock 범위 축소 및 안전장치 강화
+        public int WriteSumFile(MaterialDie die)
+        {
+
+            // 현재 시점의 SumContext 스냅샷 생성
+            SUMContext currentSnapshot = GetSumContextSnapshot();
+            return WriteSumFileFromSnapshot(die, currentSnapshot);
+
+
+            //// Lock이 필요 없는 준비 작업
+            //FinalizeSummary();
+
+            //string waferId = SafeWaferId(die.SourceWaferId);
+            //SyncSumContextFromEquipmentSummaryIfPossible(waferId);
+
+            //var eqpConfig = Equipment.Instance.EquipmentConfig;
+
+            //// 1. Local Write
+            //string localDir = GetLocalResultDir(waferId);
+            //try { Directory.CreateDirectory(localDir); } catch { return -1; } // 안전장치
+
+            //string localFile = Path.Combine(localDir, waferId + ".sum");
+
+            //string networkDir = ShouldUploadToNetwork() ? GetNetworkResultDir(waferId, eqpConfig.SUMResultPath) : null;
+            //string networkFile = !string.IsNullOrWhiteSpace(networkDir) ? Path.Combine(networkDir, waferId + ".sum") : null;
+
+            //bool needUpload = false;
+
+            //lock (_ioLock)
+            //{
+            //    try
+            //    {
+            //        using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+            //        using (var w = new StreamWriter(fs, Encoding.UTF8))
+            //        //using (var w = new StreamWriter(localFile, false, Encoding.UTF8))
+            //        {
+            //            w.WriteLine("EQPName," + SumContext.EqpName);
+            //            w.WriteLine();
+            //            w.WriteLine("StartTime," + SumContext.StartTime);
+            //            w.WriteLine("EndTime," + SumContext.EndTime);
+            //            w.WriteLine();
+            //            w.WriteLine("WaferID," + SumContext.WaferID);
+            //            w.WriteLine();
+            //            w.WriteLine("TotalCount," + SumContext.TotalCount);
+            //            w.WriteLine("GoodCount," + SumContext.GoodCount);
+            //            w.WriteLine("NGCount," + SumContext.NGCount);
+            //            w.WriteLine();
+
+            //            w.Write("Item");
+            //            foreach (var it in SumContext.ItemNames) w.Write("," + it);
+            //            w.WriteLine();
+
+            //            WriteSummaryLine(w, "Min", SumContext.ItemNames, SumContext.Min);
+            //            WriteSummaryLine(w, "Max", SumContext.ItemNames, SumContext.Max);
+            //            WriteSummaryLine(w, "Avg", SumContext.ItemNames, SumContext.Avg);
+            //            WriteSummaryLine(w, "Std", SumContext.ItemNames, SumContext.Std);
+
+            //            w.WriteLine();
+            //            w.WriteLine("BinNo,BinCount");
+            //            foreach (var kv in SumContext.BinCounts)
+            //                w.WriteLine(kv.Key + "," + kv.Value);
+
+            //            w.WriteLine();
+
+            //            foreach (var line in SumContext.ParameterBlock)
+            //                w.WriteLine(line);
+
+            //            foreach (var line in SumContext.ZeroBlock)
+            //                w.WriteLine(line);
+            //        }
+
+            //        if (!string.IsNullOrWhiteSpace(networkFile))
+            //        {
+            //            needUpload = true;
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Log.Write("ResultWriterManager", "WriteSumFile", ex.Message);
+            //        return -1; // 파일 쓰기 실패 시 중단
+            //    }
+            //}
+
+            //// 2. Queue for Background Upload (Lock 밖에서 실행)
+            //if (needUpload)
+            //{
+            //    QueueNetworkUpload(waferId, localFile, networkFile);
+            //}
+
+            //return 0;
+        }
+
+        // [수정] BuildPrdHeader: ZeroBlock1 제거 및 ParameterBlock 30줄 적용
         private void BuildPrdHeader(MaterialDie die)
         {
             if (die == null || die.TesterResult == null)
@@ -786,9 +1115,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             var waferId = die.SourceWaferId ?? "UNKNOWN";
             var binFile = StripExtension(die.SourceBinFileName);
 
-            string loginId = (AccountManager.CurrentAccount != null)
-                ? (AccountManager.CurrentAccount.UserID?.ToString() ?? "OPERATOR")
-                : "OPERATOR";
+            string loginId = !string.IsNullOrWhiteSpace(Equipment.Instance.UserId)
+                ? Equipment.Instance.UserId
+                : ((AccountManager.CurrentAccount != null) ? (AccountManager.CurrentAccount.UserID?.ToString() ?? "OPERATOR") : "OPERATOR");
 
             PrdContext.HeaderLines.Clear();
             PrdContext.HeaderLines.Add("Filecreationtime," + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -798,7 +1127,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             PrdContext.HeaderLines.Add("-75");
             PrdContext.HeaderLines.Add("1");
             PrdContext.HeaderLines.Add("1");
-            PrdContext.HeaderLines.Add("13089"); // TotalCount 자리(파일 내부에서 계속 업데이트)
+            PrdContext.HeaderLines.Add("13089");
             PrdContext.HeaderLines.Add(binFile);
             PrdContext.HeaderLines.Add(binFile);
             PrdContext.HeaderLines.Add(waferId);
@@ -806,17 +1135,11 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             PrdContext.HeaderLines.Add(loginId);
             PrdContext.HeaderLines.Add(SumContext.EqpName);
 
+            // 여기서 ParameterBlock을 30줄로 생성
             BuildTestConditionParameterBlock();
 
-            if (PrdContext.ZeroBlock1.Count == 0)
-            {
-                const string zeroLine = "0 0 0 0 0 0.00 0.00 0 0.00";
-                for (int i = 0; i < 20; i++)
-                {
-                    PrdContext.ZeroBlock1.Add(zeroLine);
-                    SumContext.ZeroBlock.Add(zeroLine);
-                }
-            }
+            // [삭제] ZeroBlock1 생성 로직 제거 (ParameterBlock에 통합됨)
+            // if (PrdContext.ZeroBlock1.Count == 0) { ... } -> 삭제
 
             if (PrdContext.ZeroBlock2.Count == 0)
             {
@@ -848,6 +1171,21 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             catch { }
         }
 
+        // [추가] 웨이퍼 전체 칩 개수를 설정하는 메서드
+        public void SetWaferTotalCount(int totalCount)
+        {
+            lock (_summaryLock)
+            {
+                // 0보다 클 때만 설정 (혹시 모를 초기화 방지)
+                if (totalCount > 0)
+                {
+                    SumContext.TotalCount = totalCount;
+                }
+            }
+        }
+
+
+        // [수정] AppendPrdDie: Lock 범위 축소
         public int AppendPrdDie(MaterialDie die)
         {
             if (die == null || die.TesterResult == null)
@@ -864,11 +1202,13 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             string networkFile = !string.IsNullOrWhiteSpace(networkDir) ? Path.Combine(networkDir, waferId + ".prd") : null;
 
             var r = die.TesterResult;
+            bool needUpload = false;
 
             lock (_ioLock)
             {
                 bool exists = File.Exists(localFile);
-                using (var w = new StreamWriter(localFile, true, Encoding.UTF8))
+                using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var w = new StreamWriter(fs, Encoding.UTF8))
                 {
                     if (!exists)
                     {
@@ -876,7 +1216,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
                         foreach (var line in PrdContext.HeaderLines) w.WriteLine(line);
                         foreach (var line in PrdContext.ParameterBlock) w.WriteLine(line);
-                        foreach (var line in PrdContext.ZeroBlock1) w.WriteLine(line);
                         foreach (var line in PrdContext.ZeroBlock2) w.WriteLine(line);
 
                         w.WriteLine(string.Join(",", PrdContext.DataColumns));
@@ -919,7 +1258,15 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 }
 
                 if (!string.IsNullOrWhiteSpace(networkFile))
-                    MirrorLocalToNetworkIfNeeded(waferId, localFile, networkFile);
+                {
+                    needUpload = true;
+                }
+            }
+
+            // 2. Queue for Background Upload (Lock 밖에서 실행)
+            if (needUpload)
+            {
+                QueueNetworkUpload(waferId, localFile, networkFile);
             }
 
             return 0;
@@ -932,6 +1279,12 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             if (WafContext.HeaderInitialized)
                 return;
+
+            // [추가] 안전장치: PRD보다 먼저 불릴 경우 ParameterBlock 생성
+            if (WafContext.ParameterBlock.Count == 0)
+            {
+                BuildTestConditionParameterBlock();
+            }
 
             var dict = GetInternalItemDict(die.TesterResult);
             if (dict != null)
@@ -955,7 +1308,11 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             string productName = StripExtension(die.SourceBinFileName);
             string waferId = SafeWaferId(die.SourceWaferId);
-            string loginId = (AccountManager.CurrentAccount?.UserID ?? "OPERATOR").ToString();
+
+            string loginId = !string.IsNullOrWhiteSpace(Equipment.Instance.UserId)
+                ? Equipment.Instance.UserId
+                : ((AccountManager.CurrentAccount?.UserID ?? "OPERATOR").ToString());
+
             string eqpName = (SumContext.EqpName ?? "LPC-280").Replace("EqpName,", "");
 
             WafContext.HeaderLines.Add(productName);
@@ -965,23 +1322,20 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             WafContext.HeaderLines.Add(loginId);
             WafContext.HeaderLines.Add(eqpName);
 
-            if (WafContext.ZeroBlock1.Count == 0)
-            {
-                const string zeroLine = "0 0 0 0 0 0.00 0.00 0 0.00";
-                for (int i = 0; i < 20; i++)
-                    WafContext.ZeroBlock1.Add(zeroLine);
-            }
+            // [삭제] ZeroBlock1 생성 로직 제거
+            // if (WafContext.ZeroBlock1.Count == 0) { ... } -> 삭제
 
             if (WafContext.ZeroBlock2.Count == 0)
             {
                 WafContext.ZeroBlock2.Add("1");
-                for (int i = 0; i < 31; i++)
+                for (int i = 0; i < 30; i++)
                     WafContext.ZeroBlock2.Add("0");
             }
 
             WafContext.HeaderInitialized = true;
         }
 
+        // [수정] AppendWafDie: Lock 범위 축소
         public int AppendWafDie(MaterialDie die)
         {
             if (die == null || die.TesterResult == null)
@@ -1000,6 +1354,8 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             PKGTesterResult r = die.TesterResult;
             double height = die.GetMeasure("Height").HasValue ? die.GetMeasure("Height").Value : 0.0;
 
+            bool needUpload = false;
+
             lock (_ioLock)
             {
                 bool exists = File.Exists(localFile);
@@ -1007,13 +1363,13 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 if (!WafContext.HeaderInitialized)
                     BuildWafHeader(die);
 
-                using (var w = new StreamWriter(localFile, true, Encoding.UTF8))
+                using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var w = new StreamWriter(fs, Encoding.UTF8))
                 {
                     if (!exists)
                     {
                         foreach (var line in WafContext.HeaderLines) w.WriteLine(line);
                         foreach (var line in WafContext.ParameterBlock) w.WriteLine(line);
-                        foreach (var line in WafContext.ZeroBlock1) w.WriteLine(line);
                         foreach (var line in WafContext.ZeroBlock2) w.WriteLine(line);
                     }
 
@@ -1042,11 +1398,20 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 }
 
                 if (!string.IsNullOrWhiteSpace(networkFile))
-                    MirrorLocalToNetworkIfNeeded(waferId, localFile, networkFile);
+                {
+                    needUpload = true;
+                }
+            }
+
+            // 2. Queue for Background Upload (Lock 밖에서 실행)
+            if (needUpload)
+            {
+                QueueNetworkUpload(waferId, localFile, networkFile);
             }
 
             return 0;
         }
+
 
         #endregion
 
@@ -1239,14 +1604,23 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
         public void AccumulateDie(MaterialDie die)
         {
-            if (die == null || die.TesterResult == null) return;
+            if (die == null || die.TesterResult == null) 
+                return;
 
             lock (_summaryLock)
             {
                 var itemsDict = GetInternalItemDict(die.TesterResult);
-                if (itemsDict == null) return;
+                if (itemsDict == null) 
+                    return;
 
-                if (die.IsPass) SumContext.GoodCount++; else SumContext.NGCount++;
+                if (die.IsPass)
+                {
+                    SumContext.GoodCount++; 
+                }
+                else
+                {
+                    SumContext.NGCount++;
+                }
 
                 int rawBinNo = -1;
                 string rawLabel = null;
@@ -1335,38 +1709,94 @@ namespace QMC.LCP_280.Process.Component.ProcessData
         private void BuildTestConditionParameterBlock()
         {
             PrdContext.ParameterBlock.Clear();
-
-            if (CurrentTestConditionSet == null || CurrentTestConditionSet.Items == null || CurrentTestConditionSet.Items.Count == 0)
-                return;
+            WafContext.ParameterBlock.Clear();
+            SumContext.ParameterBlock.Clear();
 
             int seq = 1;
-            foreach (var it in CurrentTestConditionSet.Items)
+            int addedCount = 0;
+
+            // 1. 실제 아이템 추가
+            if (CurrentTestConditionSet != null && CurrentTestConditionSet.Items != null)
             {
-                double srcVal = it.SourceValue;
-                double srcTime = it.SourceTime;
+                foreach (var it in CurrentTestConditionSet.Items)
+                {
+                    double srcVal = it.SourceValue;
+                    double srcTime = it.SourceTime;
 
-                (double low, double high) = TryExtractRange(it.Expression);
-                double gain0 = (it.Gain != null && it.Gain.Length > 0) ? it.Gain[0] : 0.0;
-                double offset0 = (it.Offset != null && it.Offset.Length > 0) ? it.Offset[0] : 0.0;
-                int typeCode = (int)it.Type;
+                    (double low, double high) = TryExtractRange(it.Expression);
+                    double gain0 = (it.Gain != null && it.Gain.Length > 0) ? it.Gain[0] : 0.0;
+                    double offset0 = (it.Offset != null && it.Offset.Length > 0) ? it.Offset[0] : 0.0;
+                    int typeCode = (int)it.Type;
 
-                string line =
-                    seq.ToString(CultureInfo.InvariantCulture) + " " +
-                    typeCode.ToString(CultureInfo.InvariantCulture) + " " +
-                    srcVal.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-                    srcTime.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-                    "0" + " " +
-                    low.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-                    high.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-                    gain0.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-                    offset0.ToString("0.#####", CultureInfo.InvariantCulture);
+                    string line =
+                        seq.ToString(CultureInfo.InvariantCulture) + " " +
+                        typeCode.ToString(CultureInfo.InvariantCulture) + " " +
+                        srcVal.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+                        srcTime.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+                        "0" + " " +
+                        low.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+                        high.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+                        gain0.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+                        offset0.ToString("0.#####", CultureInfo.InvariantCulture);
 
-                PrdContext.ParameterBlock.Add(line);
-                WafContext.ParameterBlock.Add(line);
-                SumContext.ParameterBlock.Add(line);
+                    PrdContext.ParameterBlock.Add(line);
+                    WafContext.ParameterBlock.Add(line);
+                    SumContext.ParameterBlock.Add(line);
 
-                seq++;
+                    seq++;
+                    addedCount++;
+                }
             }
+
+            // 2. [변경] 총 30줄이 될 때까지 더미 라인 채우기 (기존 ZeroBlock1 영역 통합)
+            const int TARGET_PARAM_LINES = 30;
+            // 빈 줄 포맷 (기존 ZeroBlock1과 동일한 포맷 사용)
+            const string DUMMY_LINE = "0 0 0 0 0 0.00 0.00 0 0.00";
+
+            while (addedCount < TARGET_PARAM_LINES)
+            {
+                PrdContext.ParameterBlock.Add(DUMMY_LINE);
+                WafContext.ParameterBlock.Add(DUMMY_LINE);
+                SumContext.ParameterBlock.Add(DUMMY_LINE);
+                addedCount++;
+            }
+
+
+
+
+            //PrdContext.ParameterBlock.Clear();
+
+            //if (CurrentTestConditionSet == null || CurrentTestConditionSet.Items == null || CurrentTestConditionSet.Items.Count == 0)
+            //    return;
+
+            //int seq = 1;
+            //foreach (var it in CurrentTestConditionSet.Items)
+            //{
+            //    double srcVal = it.SourceValue;
+            //    double srcTime = it.SourceTime;
+
+            //    (double low, double high) = TryExtractRange(it.Expression);
+            //    double gain0 = (it.Gain != null && it.Gain.Length > 0) ? it.Gain[0] : 0.0;
+            //    double offset0 = (it.Offset != null && it.Offset.Length > 0) ? it.Offset[0] : 0.0;
+            //    int typeCode = (int)it.Type;
+
+            //    string line =
+            //        seq.ToString(CultureInfo.InvariantCulture) + " " +
+            //        typeCode.ToString(CultureInfo.InvariantCulture) + " " +
+            //        srcVal.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+            //        srcTime.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+            //        "0" + " " +
+            //        low.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+            //        high.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+            //        gain0.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
+            //        offset0.ToString("0.#####", CultureInfo.InvariantCulture);
+
+            //    PrdContext.ParameterBlock.Add(line);
+            //    WafContext.ParameterBlock.Add(line);
+            //    SumContext.ParameterBlock.Add(line);
+
+            //    seq++;
+            //}
         }
 
         private (double low, double high) TryExtractRange(string expr)
@@ -1479,7 +1909,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 var cfg = Equipment.Instance?.EquipmentConfig;
                 string path = cfg?.ProductionInfoPath;
 
-                if(cfg.NetworkMode == 0)
+                if (cfg.NetworkMode == 0)
                 {
                     //BaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProductionInfo", _runDate);
                     FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProductionInfo", fileName);
@@ -1539,7 +1969,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             string file = GetProductionInfoFilePath();
             string dir = Path.GetDirectoryName(file);
-            if (string.IsNullOrWhiteSpace(dir)) 
+            if (string.IsNullOrWhiteSpace(dir))
                 dir = BaseDir;
             Directory.CreateDirectory(dir);
 
@@ -1726,7 +2156,8 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             lock (_ioLock)
             {
                 bool exists = File.Exists(localFile);
-                using (var w = new StreamWriter(localFile, true, Encoding.UTF8))
+                using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
+                using (var w = new StreamWriter(fs, Encoding.UTF8))
                 {
                     if (!exists)
                     {
@@ -1793,7 +2224,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 string networkFile = GetWaferTotalSummaryNetworkFilePath();
                 if (!string.IsNullOrWhiteSpace(networkFile))
                 {
-                    MirrorLocalToNetworkIfNeeded(row.WaferId, localFile, networkFile);
+                    QueueNetworkUpload(row.WaferId, localFile, networkFile);
                 }
             }
 
@@ -1961,5 +2392,139 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             return false;
         }
 
+        // =========================================================
+        // ================== (C) Async Save Worker ================
+        // =========================================================
+        #region Async Save Worker (High Performance Logging)
+
+        // =========================================================
+        // [ADD] Async Save Worker Implementation
+        // =========================================================
+        private BlockingCollection<MaterialDie> _saveQueue;
+        private Task _saveWorkerTask;
+        private CancellationTokenSource _saveCts;
+
+        private void InitializeSaveWorker()
+        {
+            _saveQueue = new BlockingCollection<MaterialDie>(new ConcurrentQueue<MaterialDie>());
+            _saveCts = new CancellationTokenSource();
+
+            // LongRunning 옵션을 주어 전용 스레드를 할당받도록 함
+            _saveWorkerTask = Task.Factory.StartNew(SaveWorkerLoop,
+                                                    _saveCts.Token,
+                                                    TaskCreationOptions.LongRunning,
+                                                    TaskScheduler.Default);
+        }
+
+        public void StopSaveWorker()
+        {
+            if (_saveQueue != null)
+            {
+                _saveQueue.CompleteAdding();
+                try { _saveWorkerTask?.Wait(5000); } catch { }
+                _saveCts?.Cancel();
+                _saveQueue.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 외부(OutputStage)에서 호출하는 진입점.
+        /// 데이터를 복제(Clone)하여 큐에 넣고 즉시 리턴함.
+        /// </summary>
+        public void EnqueueDieSave(MaterialDie die, TestConditionSet currentCondition)
+        {
+            if (die == null) return;
+
+            // 1. 데이터 오염 방지를 위한 Deep Copy (스냅샷 생성)
+            MaterialDie snapshot = CloneMaterialDieForSave(die);
+
+            // 2. TestConditionSet도 메인 스레드 시점의 것을 함께 넘겨주는 것이 안전함
+            // (구조상 복잡하면 Worker 내부에서 참조하되, 변경 빈도가 낮으면 괜찮음)
+            // 여기서는 튜플이나 별도 클래스로 묶어 보내는 대신,
+            // WorkerLoop 안에서 전역 설정을 갱신하도록 처리 (기존 로직 호환성 유지)
+
+            if (_saveQueue != null && !_saveQueue.IsAddingCompleted)
+            {
+                _saveQueue.Add(snapshot);
+            }
+        }
+
+        private void SaveWorkerLoop()
+        {
+            foreach (var die in _saveQueue.GetConsumingEnumerable())
+            {
+                try
+                {
+                    // [중요] I/O 작업 수행
+
+                    // 1. Condition Set 갱신 (메인 스레드 객체 참조 주의: 읽기 전용이면 무방)
+                    // 필요하다면 Enqueue 시점에 ConditionSet도 복사해서 넘겨야 함.
+                    this.CurrentTestConditionSet = Equipment.Instance.Tester.ConditionSet;
+
+                    // 2. 통계 누적
+                    AccumulateDie(die);
+
+                    // 3. 파일 저장 (기존 메서드 재사용)
+                    // 주의: 아래 메서드들 내부의 lock(_ioLock) 덕분에 스레드 안전함
+                    AppendTxTDie(die);
+                    AppendPrdDie(die);
+                    AppendWafDie(die);
+                    AppendBinDie(die);
+
+                    FinalizeSummary();
+                    WriteSumFile(die);
+
+                    Log.Write("ResultWriterManager", "SaveWorker", $"[Saved] Index: {die.Index}, Map:({die.MapX},{die.MapY})");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("ResultWriterManager", "SaveWorker_Error", $"Index: {die?.Index} - {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 저장 시점의 데이터 스냅샷을 만들기 위한 복제 함수
+        /// </summary>
+        private MaterialDie CloneMaterialDieForSave(MaterialDie org)
+        {
+            MaterialDie newDie = new MaterialDie();
+
+            // 기본 값 타입 복사
+            newDie.Index = org.Index;
+            newDie.MapX = org.MapX;
+            newDie.MapY = org.MapY;
+            newDie.BinX = org.BinX;
+            newDie.BinY = org.BinY;
+            newDie.State = org.State;
+            //newDie.Result = org.Result; // Enum or struct
+            newDie.Rank = org.Rank;
+            newDie.RankName = org.RankName;
+            //newDie.IsCell = org.IsCell;
+            newDie.SourceWaferId = org.SourceWaferId;
+            newDie.SourceBinFileName = org.SourceBinFileName;
+            newDie.SocketIndex = org.SocketIndex;
+
+            // 참조 타입: TesterResult (가장 중요)
+            if (org.TesterResult != null)
+            {
+                // PKGTesterResult가 DeepClone을 지원하면 좋으나, 없다면 새 객체 생성 후 값 복사
+                // 여기서는 참조만 넘기면 위험하므로, 최소한의 얕은 복사라도 수행해야 함.
+                // *TesterResult 내부 데이터가 메인 로직에서 변경되지 않는다면 참조도 가능하지만*,
+                // 안전을 위해 TesterResult도 복제하는 로직을 PKGTesterResult 클래스에 추가하는 것을 권장.
+                // 여기서는 일단 참조를 넘기되, 메인 로직에서 이 객체를 재사용하지 않는다는 전제가 필요함.
+                newDie.TesterResult = org.TesterResult;
+            }
+
+            // 참조 타입: MeasureValues (Dictionary)
+            if (org.MeasureValues != null)
+            {
+                newDie.MeasureValues = new Dictionary<string, double>(org.MeasureValues);
+            }
+
+            return newDie;
+        }
+
+        #endregion
     }
 }

@@ -24,7 +24,12 @@ namespace SP_MapGenerator
         public double PitchY { get; set; } = 0.5540;
 
         // 검색 반경 (Pitch의 약 1.5배, 대각선 포함 넉넉하게 잡음)
-        private double SearchRadius => Math.Max(PitchX, PitchY) * 1.5;
+        public double _SearchRadius { get; set; } = 1;
+        private double SearchRadius()
+        {
+            _SearchRadius = Math.Max(PitchX, PitchY) * 1.5;
+            return _SearchRadius;
+        }
 
         public List<DieData> GenerateMap(List<(double x, double y)> rawPoints)
         {
@@ -34,7 +39,14 @@ namespace SP_MapGenerator
             // 1. 공간 해싱 (Spatial Hash) 구축
             // KDTree 대신 C# Dictionary를 이용하여 주변 이웃을 O(1)로 찾습니다.
             // 격자 크기는 검색 반경으로 설정
-            double cellSize = SearchRadius;
+
+            double cellSize = Math.Max(PitchX, PitchY) * 1.5;
+
+            //TEST :: 전체영역 서치하면 엄청 느리고...
+            //        영역을 작게하면 거리가 먼 쪽에 있는 Die를 누락하고...
+            _SearchRadius = Math.Max(PitchX, PitchY) * 10;
+            cellSize = _SearchRadius;
+            
             var grid = new Dictionary<(int, int), List<int>>();
 
             for (int i = 0; i < n; i++)
@@ -94,7 +106,10 @@ namespace SP_MapGenerator
                             
                             // 실제 거리 체크 (원형 검색)
                             double dSq = DistSq(currPos, neighborPos);
-                            if (dSq > SearchRadius * SearchRadius) continue;
+                            //if (dSq > SearchRadius() * SearchRadius()) 
+                            //    continue;
+                            if (dSq > cellSize * cellSize)
+                                continue;
 
                             // 5. 상대적 인덱스 계산 (핵심 로직)
                             double diffX = neighborPos.x - currPos.x;

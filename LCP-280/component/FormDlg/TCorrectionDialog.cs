@@ -486,7 +486,6 @@ namespace QMC.LCP_280.Process.Component
             public double StepDeg;
             public readonly Dictionary<int, (double X, double Y)> Marks = new Dictionary<int, (double X, double Y)>(4);
         }
-        private TCorrectionMeta _loadedMeta; // 로드된 메타 (StartTCorrection에서 사용 가능)
 
         // ===== CSV + 메타 저장 =====
         // 포맷:

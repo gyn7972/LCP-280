@@ -11,7 +11,7 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
+    <Deterministic>false</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>게시\</PublishUrl>
     <Install>true</Install>
@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>D:\LCP-280\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -79,7 +79,7 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\LCP-280\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -87,6 +87,7 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -106,6 +107,13 @@
     <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Win32Resource>
+    </Win32Resource>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>QMC.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Cryptography, Version=2.0.0.0, Culture=neutral, PublicKeyToken=072edcf4a5328938, processorArchitecture=MSIL">
@@ -219,6 +227,12 @@
     <Compile Include="Component\FormDlg\FormMapMatchManual.Designer.cs">
       <DependentUpon>FormMapMatchManual.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormDlg\TaktMonitorAllDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\TaktMonitorAllDialog.Designer.cs">
+      <DependentUpon>TaktMonitorAllDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\FormDlg\WaferTotalSummaryViewerController.cs" />
     <Compile Include="Component\FormDlg\WaferTotalSummaryViewerForm.cs">
       <SubType>Form</SubType>
@@ -226,6 +240,15 @@
     <Compile Include="Component\FormDlg\WaferTotalSummaryViewerForm.Designer.cs">
       <DependentUpon>WaferTotalSummaryViewerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormGemClient.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormGemClient.Designer.cs">
+      <DependentUpon>FormGemClient.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\GemClient.cs" />
+    <Compile Include="Component\GemMessageRouter.cs" />
+    <Compile Include="Component\GemProtocol.cs" />
     <Compile Include="Component\Gem_SecsMsgDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -239,6 +262,7 @@
     <Compile Include="Component\FormDlg\IndexCalibrationDialog.Designer.cs">
       <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\IGemMessageHandler.cs" />
     <Compile Include="Component\InterlockManager.cs" />
     <Compile Include="Component\MachineHomeCoordinator.cs" />
     <Compile Include="Component\ManualSeqReproTestRunner.cs" />
@@ -463,6 +487,9 @@
     </Compile>
     <Compile Include="EquipmentManagers.cs" />
     <Compile Include="EquipmentRecipe.cs" />
+    <Compile Include="LanguageSetupForm.Designer.cs">
+      <DependentUpon>LanguageSetupForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Form\FormMain\Sequence_Main.Designer.cs">
@@ -767,7 +794,6 @@
     <Compile Include="Form\FormMain\Page\DieIndexSelectControl.Designer.cs">
       <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\UiUpdateWaferArgs.cs" />
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />
@@ -816,6 +842,9 @@
       <DependentUpon>PatternMatchingControl.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\TaktMonitorAllDialog.resx">
+      <DependentUpon>TaktMonitorAllDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\FormDlg\WaferMapView.resx">
       <DependentUpon>WaferMapView.cs</DependentUpon>
     </EmbeddedResource>
@@ -824,6 +853,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Component\FormDlg\TCorrectionDialog.resx">
       <DependentUpon>TCorrectionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\WaferTotalSummaryViewerForm.resx">
+      <DependentUpon>WaferTotalSummaryViewerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormGemClient.resx">
+      <DependentUpon>FormGemClient.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\Gem_SecsMsgDialog.resx">
       <DependentUpon>Gem_SecsMsgDialog.cs</DependentUpon>
@@ -882,6 +917,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form\FormSetup\Gem_Setup.resx">
       <DependentUpon>Gem_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LanguageSetupForm.resx">
+      <DependentUpon>LanguageSetupForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -1051,6 +1089,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="Unit\3D Objects\desktop.ini" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -1074,6 +1113,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="QMC.ico" />
     <Content Include="Resources\JogPanel_ico.ico" />
     <Content Include="Resources\JogPanel.png" />
     <None Include="Resources\megaphone_80px.png" />

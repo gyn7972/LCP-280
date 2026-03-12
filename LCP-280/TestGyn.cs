@@ -14,9 +14,6 @@ namespace QMC.LCP_280.Process
 {
     public partial class TestGyn : Form
     {
-        private readonly MotionAxisManager _axisManager;   // 기존 매니저를 받아서 사용
-
-
         public TestGyn()
         {
             InitializeComponent();
@@ -84,57 +81,14 @@ namespace QMC.LCP_280.Process
         // ★ 여기서 '축 하나 가져오기'
         private MotionAxis GetSelectedAxis()
         {
-            var unit = comboUnit.SelectedItem as string;
-            var axis = comboAxis.SelectedItem as string;
-            if (string.IsNullOrWhiteSpace(unit) || string.IsNullOrWhiteSpace(axis))
-                return null;
+            //var unit = comboUnit.SelectedItem as string;
+            //var axis = comboAxis.SelectedItem as string;
+            //if (string.IsNullOrWhiteSpace(unit) || string.IsNullOrWhiteSpace(axis))
+            //    return null;
 
-            // 복합키 기반 공식 조회 API
-            return _axisManager.Get(unit, axis);
-        }
-
-        // 테스트 버튼: +d 이동 → -d 복귀 (왕복)
-        private async void button_TestGyn_Test_Click(object sender, EventArgs e)
-        {
-            //if (_axisManager == null)
-            //{
-            //    var mb = new MessageBoxOk();
-            //    mb.ShowDialog("Notification!", $"AxisManager가 없습니다.");
-            //    return;
-            //}
-
-            //var axis = GetSelectedAxis();
-            //if (axis == null)
-            //{
-            //    var mb = new MessageBoxOk();
-            //    mb.ShowDialog("Notification!", $"유닛/축을 올바르게 선택하세요.");
-            //    return;
-            //}
-
-            //var dist = (double)numDist.Value;
-
-            //button_TestGyn_Test.Enabled = false;
-            //try
-            //{
-            //    // ⚠️ 실제 프로젝트의 메서드명으로 치환하세요:
-            //    // ServoOn / MoveRelative / IsBusy / Stop
-            //    axis.Servo(true);
-            //    axis.MoveAbs(dist, false);
-            //    while (axis.InPosition(dist)) await Task.Delay(20);
-            //    axis.MoveAbs(-dist, false);
-            //    while (axis.InPosition(-dist)) await Task.Delay(20);
-            //    var mb = new MessageBoxOk();
-            //    mb.ShowDialog("Complete!", $"[{axis.Name}] ({comboUnit.SelectedItem})  ±{dist:F3} mm 이동 완료.");
-            //}
-            //catch (Exception ex)
-            //{
-            //    var mb = new MessageBoxOk();
-            //    mb.ShowDialog("Error!", $"축 테스트 중 오류:\n{ex.Message}");
-            //}
-            //finally
-            //{
-            //    button_TestGyn_Test.Enabled = true;
-            //}
+            //// 복합키 기반 공식 조회 API
+            //return _axisManager.Get(unit, axis);
+            return null;
         }
 
         private void button_TestGyn_Alarm_Click(object sender, EventArgs e)

@@ -162,7 +162,7 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public new TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         public int Saveconfig()
         {
@@ -252,6 +252,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "Interlock", 2 },
+                { "TCorrection", 3 },
+                { "TCorrectionFile", 4 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)

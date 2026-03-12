@@ -78,7 +78,6 @@ namespace QMC.LCP_280.Process.Component
             // 단계별 훅: 전역 인터락과 축 사전 체크만 유지 (축/유닛별 조건은 PreAxis로 이동)
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
-                string reason;
                 var il = InterlockManager.Instance;
                 il.Start();
 
@@ -101,7 +100,6 @@ namespace QMC.LCP_280.Process.Component
                 if (axis == null) return (false, "Axis null");
 
                 // InterlockManager 축 규칙 빠른 검사
-                string reason;
                 var il = InterlockManager.Instance;
                 //if (!il.ValidateAxisForHome(axis, out reason))
                 //    return (false, reason);
@@ -266,7 +264,9 @@ namespace QMC.LCP_280.Process.Component
                                     return (false, "Wafer Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
-                                if(inFeeder.Config.IsDryRun == false)
+                                var equipment = Equipment.Instance;
+                                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                                if (inFeeder.Config.IsDryRun == false && IsDryRunEqp == false)
                                 {
                                     try
                                     {
@@ -348,7 +348,10 @@ namespace QMC.LCP_280.Process.Component
                                 if (!outFeeder.IsUnClamped())
                                     return (false, "Bin Feeder Unclamp Sensor Not Detected");
 
-                                if(outFeeder.Config.IsDryRun == false)
+
+                                var equipment = Equipment.Instance;
+                                bool IsDryRunEqp= equipment.EquipmentConfig.IsDryRun;
+                                if (outFeeder.Config.IsDryRun == false && IsDryRunEqp == false)
                                 {
                                     // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
                                     try
@@ -413,7 +416,7 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("InputCassetteLifter", out var uL) && uL is InputCassetteLifter lifter)
                             {
-                                if (lifter.Config.IsSimulation == false || lifter.Config.IsDryRun == false)
+                                if (lifter.Config.IsSimulation == false)
                                 {
                                     if (lifter.IsWaferProtrusionDetectionSensor())
                                         return (false, "InputCassetteLifter Ring JUT Detected");
@@ -432,10 +435,12 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("OutputCassetteLifter", out var uOL) && uOL is OutputCassetteLifter outLifter)
                             {
-                                if(outLifter.Config.IsSimulation == false || outLifter.Config.IsDryRun == false)
+                                if (outLifter.Config.IsSimulation == false)
                                 {
                                     if (outLifter.IsBinProtrusionDetectionSensor())
+                                    {
                                         return (false, "OutputCassetteLifter Ring JUT Detected");
+                                    }
                                 }
                                 
                             }

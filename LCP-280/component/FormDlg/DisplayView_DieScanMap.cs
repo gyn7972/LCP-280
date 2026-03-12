@@ -19,7 +19,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
 
         public class DisplayItem
         {
-            public Point Position { get; set; }   // 중심 (0,0) 기준 좌표
+            public PointD Position { get; set; }   // 중심 (0,0) 기준 좌표
             public Point DieMap { get; set; }   // 다이 맵 좌표 (MapX, MapY)
             public ItemState State { get; set; }  // 상태
             public string Info { get; set; } = "";  // 추가 정보 (BinCode, Test결과 등)
@@ -371,24 +371,24 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                     }
                 }
                 //칩 원으로 그리기.
-                if (false)
-                {
-                    // 아이템 그리기
-                    g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
-                    // 테두리 그리기 (확대 시에만)
-                    if (itemSize > 4)
-                    {
-                        g.DrawEllipse(pen, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
-                    }
-                    // 호버된 아이템 하이라이트
-                    if (item == _hoveredItem && itemSize > 2)
-                    {
-                        using (Pen highlightPen = new Pen(Color.Red, 2))
-                        {
-                            g.DrawEllipse(highlightPen, x - itemSize / 2 - 2, y - itemSize / 2 - 2, itemSize + 4, itemSize + 4);
-                        }
-                    }
-                }
+                //if (false)
+                //{
+                //    // 아이템 그리기
+                //    g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                //    // 테두리 그리기 (확대 시에만)
+                //    if (itemSize > 4)
+                //    {
+                //        g.DrawEllipse(pen, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                //    }
+                //    // 호버된 아이템 하이라이트
+                //    if (item == _hoveredItem && itemSize > 2)
+                //    {
+                //        using (Pen highlightPen = new Pen(Color.Red, 2))
+                //        {
+                //            g.DrawEllipse(highlightPen, x - itemSize / 2 - 2, y - itemSize / 2 - 2, itemSize + 4, itemSize + 4);
+                //        }
+                //    }
+                //}
             }
         }
 

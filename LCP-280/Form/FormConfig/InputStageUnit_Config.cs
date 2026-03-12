@@ -37,9 +37,6 @@ namespace QMC.LCP_280.Process.Unit
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
-        private Timer _axisPosTimer; // reserved
-        private Timer _ioTimer;      // reserved
-
         public InputStageUnit_Config()
         {
             InitializeComponent();

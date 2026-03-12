@@ -128,6 +128,15 @@ namespace QMC.LCP_280.Process.Unit
         {
             dataGrid.Font = new Font("맑은 고딕", 8);
 
+            // [추가] 다중 선택 및 키보드 입력 허용
+            dataGrid.MultiSelect = true;
+            dataGrid.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText;
+
+            // 키보드 이벤트 연결 (기존에 연결되어 있지 않다면 추가)
+            dataGrid.KeyDown -= DataGrid_KeyDown; // 중복 방지
+            dataGrid.KeyDown += DataGrid_KeyDown;
+
+
             dataGrid.Columns.Clear();
             var pdcol = TypeDescriptor.GetProperties(new TestConditionItem(""));
             
@@ -158,6 +167,126 @@ namespace QMC.LCP_280.Process.Unit
                 col.ReadOnly = true;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGrid.Columns.Add(col);
+            }
+        }
+
+        private void DataGrid_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Ctrl + A : 전체 선택
+            if (e.Control && e.KeyCode == Keys.A)
+            {
+                dataGrid.SelectAll();
+                e.Handled = true;
+            }
+            // Ctrl + C : 복사
+            else if (e.Control && e.KeyCode == Keys.C)
+            {
+                CopyToClipboard();
+                e.Handled = true;
+            }
+            // Ctrl + V : 붙여넣기
+            else if (e.Control && e.KeyCode == Keys.V)
+            {
+                PasteFromClipboard();
+                e.Handled = true;
+            }
+        }
+
+        private void CopyToClipboard()
+        {
+            DataObject dataObj = dataGrid.GetClipboardContent();
+            if (dataObj != null)
+                Clipboard.SetDataObject(dataObj);
+        }
+
+        private void PasteFromClipboard()
+        {
+            try
+            {
+                string s = Clipboard.GetText();
+                if (string.IsNullOrEmpty(s)) return;
+
+                // 엑셀 데이터는 탭(\t)과 줄바꿈(\r\n)으로 구분됨
+                string[] lines = s.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length == 0) return;
+
+                int startRow = 0;
+                int startCol = 0;
+
+                // 현재 선택된 셀이 있다면 거기서부터 시작, 아니면 (0,0)
+                if (dataGrid.CurrentCell != null)
+                {
+                    startRow = dataGrid.CurrentCell.RowIndex;
+                    startCol = dataGrid.CurrentCell.ColumnIndex;
+                }
+
+                // 데이터 변경 여부 플래그
+                bool localModified = false;
+
+                // 붙여넣을 데이터 루프
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    int targetRowIndex = startRow + i;
+
+                    // [수정됨] 행이 모자라면 추가하지 않고 중단하거나 건너뜀
+                    if (targetRowIndex >= tempSet.Items.Count)
+                        break; // 더 이상 붙여넣을 행이 없으므로 루프 종료
+
+                    string[] cells = lines[i].Split('\t');
+                    var item = tempSet.Items[targetRowIndex];
+                    var props = TypeDescriptor.GetProperties(item);
+
+                    for (int j = 0; j < cells.Length; j++)
+                    {
+                        int targetColIndex = startCol + j;
+
+                        // 컬럼 인덱스가 그리드 범위를 벗어나면 해당 행의 나머지 데이터는 무시
+                        if (targetColIndex >= dataGrid.Columns.Count) break;
+
+                        // 그리드 컬럼 이름으로 프로퍼티 찾기
+                        string colName = dataGrid.Columns[targetColIndex].Name;
+                        string valueStr = cells[j].Trim();
+
+                        // Name 컬럼은 보통 Key이므로 변경을 막고 싶다면 아래 주석 해제
+                        // if (colName == "Name") continue;
+
+                        PropertyDescriptor pd = props.Find(colName, false);
+
+                        // ReadOnly가 아니면 값 설정 시도
+                        if (pd != null && !pd.IsReadOnly)
+                        {
+                            try
+                            {
+                                // "-" 나 빈 값 등은 무시
+                                if (valueStr == "-" || string.IsNullOrEmpty(valueStr))
+                                    continue;
+
+                                // 타입 변환 (String -> Target Type)
+                                var converter = TypeDescriptor.GetConverter(pd.PropertyType);
+                                if (converter != null && converter.CanConvertFrom(typeof(string)))
+                                {
+                                    object newValue = converter.ConvertFrom(valueStr);
+                                    pd.SetValue(item, newValue);
+                                    localModified = true;
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                // 변환 실패 시 무시 (ex: 숫자가 와야 하는데 문자열 옴)
+                            }
+                        }
+                    }
+                }
+
+                if (localModified)
+                {
+                    isModified = true;
+                    UpdateConditionSetGrid(); // 그리드 UI 갱신
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Paste Error: {ex.Message}");
             }
         }
 

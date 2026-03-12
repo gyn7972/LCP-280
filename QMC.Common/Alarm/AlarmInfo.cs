@@ -28,7 +28,6 @@ namespace QMC.Common.Alarm
         {
             get 
             {
-                
                 return m_StateImage; }
             set { m_StateImage = value; }
         }

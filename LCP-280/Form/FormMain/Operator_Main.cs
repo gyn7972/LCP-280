@@ -1,14 +1,11 @@
 ﻿using QMC.Common;
-using QMC.Common.Controls;
 using QMC.Common.Motions;
 using QMC.Common.UI;
-using QMC.Common.Unit;
 using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -16,7 +13,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.FormMain;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
-using static QMC.LCP_280.Process.Unit.InputStage;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
@@ -44,11 +40,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _initialized;
         private bool _preloadRequested;
         private bool _deferredInitDone;
-        private bool _isLayoutEditMode;
-
-        // Auto Sequence 상태
-        private bool _autoReady = false;
-        private bool _autoStarting = false;
 
         // 기존 Form 내부 상태 HashSet은 더 이상 “진짜 상태”가 아니므로 제거/최소화
         // UI 토글 처리를 위해서만 유지(권장: Equipment Snapshot 기반으로 UI 갱신)
@@ -784,14 +775,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-
-
-
-
-
         #region 비즈니스 로직
         private CancellationTokenSource _readyCts;
-        private bool _readyBusy;
         #endregion
 
         // Jog Popup
@@ -1252,6 +1237,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             try
             {
                 var mb = new MessageBoxOk();
+                if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.Starting)
+                {
+                    mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
 
                 // [ADD] 장비(보드/축 목록) 초기화가 안 됐으면 Home 자체도 불가
                 if (_Equipment == null || !_Equipment.IsEquipmentInitialized)

@@ -65,13 +65,30 @@ namespace QMC.LCP_280.Process.Unit
         //[DefaultValue(false)]
         //public bool ContectTopMode { get; set; } = false;
 
-        [Category("SetupConfig"), DisplayName("InspectTimeOut (ms)")]
+        [Category("SetupConfig"), DisplayName("InspectTimeOut(ms)")]
         [DefaultValue(0)]
         public int ProbeInspectTimeOutms { get; set; } = 60000;
 
-        [Category("SetupConfig"), DisplayName("Upper WaitTime (ms)")]
+        [Category("SetupConfig"), DisplayName("Upper WaitTime(ms)")]
         [DefaultValue(0)]
         public int UpperWaitTime { get; set; } = 0;
+
+        [Category("SetupConfig"), DisplayName("SyncProbeCardZ(mm)")]
+        [DefaultValue(0)]
+        public double SyncProbeCardZReady { get; set; } = 0; // 단위: m (예: 0.0005 for 0.5mm)
+
+        [Category("SetupConfig"), DisplayName("Use Overdrive")]
+        [DefaultValue(false)]
+        public bool overdriveUse { get; set; } = false; // 단위: m (예: 0.0005 for 0.5mm)
+
+        [Category("SetupConfig"), DisplayName("Overdrive(mm)")]
+        [DefaultValue(0)]
+        public double overdriveDist { get; set; } = 0; // 단위: m (예: 0.0005 for 0.5mm)
+
+        //ClampX safeMoveDist
+        [Category("SetupConfig"), DisplayName("ClampXMoveDist(%)")]
+        [DefaultValue(0)]
+        public double ClampXMoveDist { get; set; } = 50; // 단위: %
 
         //ViewMode
         [Category("SetupConfig"), DisplayName("View Mode")]
@@ -153,7 +170,7 @@ namespace QMC.LCP_280.Process.Unit
         public void SetTeachingPosition(TeachingPosition tp)
             => TeachingRecipe.UpsertFiltered(tp, save: true);
 
-        public TeachingPosition GetTeachingPosition(string name)
+        public new TeachingPosition GetTeachingPosition(string name)
             => TeachingRecipe.Get(name);
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
@@ -191,6 +208,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "SetupConfig", 2 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -201,8 +219,16 @@ namespace QMC.LCP_280.Process.Unit
             {
                 "Name",
                 "Simulation",
-                "SlotPitch (mm)",
-                "SlotCount (ea)"
+                "DryRun",
+                "IndexOfProbe",
+                "InspectTimeOut(ms)",
+                "Gripper Mode",
+                "View Mode",
+                "Use Overdrive",
+                "Overdrive(mm)",
+                "SyncProbeCardZ(mm)",
+                "ClampXMoveDist(%)",
+                "Upper WaitTime(ms)",
             };
         #endregion
     }

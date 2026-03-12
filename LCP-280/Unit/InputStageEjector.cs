@@ -23,22 +23,43 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStageEjector : BaseUnit<InputStageEjectorConfig>
     {
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
-            eInputStageAxesMoving = 4301,
+            eInputStageAxesMoving = 10301,
 
         }
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Wafer_Ejector";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
-            alarm.Title = "InputStage Not safety Pos.";
-            alarm.Cause = "InputStage가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
+                alarm.Title = "InputStage Not safety Pos.";
+                alarm.Cause = "InputStage가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+           
 
         }
 
@@ -1135,6 +1156,7 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = MovePositionEjectBlockSafety(isFine);
                 if (nRet != 0) 
                     return nRet;
+
                 nRet = MovePositionEjectPinReady(isFine);
                 if (nRet != 0) 
                     return nRet;
@@ -1181,7 +1203,6 @@ namespace QMC.LCP_280.Process.Unit
             if (!Enum.TryParse(tpName, out en))
                 return -1;
 
-            int nIndex = -1;
             switch (en)
             {
                 case InputStageEjectorConfig.TeachingPositionName.EjectBlockUp:

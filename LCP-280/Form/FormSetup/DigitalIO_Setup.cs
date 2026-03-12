@@ -27,7 +27,6 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Equipment equipment = Equipment.Instance;
         private DIOUnit _unit;                 // Equipment에서 만든 _unitIO 참조
         private QMC.Common.DIO.DioScanService _scan;          // Equipment에서 만든 _dioScan 참조 (전체 한정명)
-        private DIOModuleSetup _selected;      // 현재 선택된 모듈 (Mixed 사용 시)
         private string _setupPath;             // Unit.dio.setup.json 경로
         private List<ModuleListItem> _moduleListItems = new List<ModuleListItem>();
         private DIOModuleSetup _lastDiModule;

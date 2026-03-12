@@ -5,6 +5,7 @@ using QMC.Common.IO;
 using QMC.Common.Unit;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq; // 여러 물리 DIO 모듈 순회용
 using System.Threading; // [ADD] CancellationToken.None
 
@@ -20,13 +21,13 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class EquipmentStatus : BaseUnit<EquipmentConfig>
     {
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
             eAlarmEMO = 20001,
-            eAlarm_WaferFeederOverload,
-            eAlarm_BinFeederOverload,
-            eAlarm_MAinCDA,
-            eAlarm_MainEjector,
+            eAlarm_WaferFeederOverload = 20002,
+            eAlarm_BinFeederOverload = 20003,
+            eAlarm_MAinCDA = 20004,
+            eAlarm_MainEjector = 20005,
         }
 
         private readonly object _gate = new object();                // 스냅샷 보호
@@ -98,7 +99,7 @@ namespace QMC.LCP_280.Process.Unit
         private const int BlinkPeriodMs_Warning = 500; // Yellow
         private const int BlinkPeriodMs_Alarm = 400;   // Red + Buzzer
 
-        EquipmentConfig Config 
+        public new EquipmentConfig Config 
         { 
             get 
             {
@@ -119,19 +120,39 @@ namespace QMC.LCP_280.Process.Unit
         #region Lifecycle
         protected override void InitAlarm()
         {
+            string source = "EquipmentStatus";
             base.InitAlarm();
-            AlarmRegister((int)AlarmKeys.eAlarmEMO, 
-                "EMERGENCY PRESSED", "EMG_SW(X003) 입력", "Error");
-            AlarmRegister((int)AlarmKeys.eAlarm_WaferFeederOverload,
-                "Wafer Feeder Overload", "wafer feeder 확인 바랍니다.!", "Error");
-            AlarmRegister((int)AlarmKeys.eAlarm_BinFeederOverload,
-               "Bin Feeder Overload", "Bin feeder 확인 바랍니다.!", "Error");
-            //eAlarm_MAinCDA
-            AlarmRegister((int)AlarmKeys.eAlarm_MAinCDA,
-               "Main CDA", "Main CAD 확인 바랍니다.!", "Error");
-            //eAlarm_MainEjector
-            AlarmRegister((int)AlarmKeys.eAlarm_MainEjector,
-              "Main Ejector", "Main Ejector 확인 바랍니다.!", "Error");
+
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if(loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+            
+                AlarmRegister((int)AlarmKeys.eAlarmEMO, 
+                    "EMERGENCY PRESSED", "EMG_SW(X003) 입력", source,"Error");
+                AlarmRegister((int)AlarmKeys.eAlarm_WaferFeederOverload,
+                    "Wafer Feeder Overload", "wafer feeder 확인 바랍니다.!", source, "Error");
+                AlarmRegister((int)AlarmKeys.eAlarm_BinFeederOverload,
+                   "Bin Feeder Overload", "Bin feeder 확인 바랍니다.!", source, "Error");
+                //eAlarm_MAinCDA
+                AlarmRegister((int)AlarmKeys.eAlarm_MAinCDA,
+                   "Main CDA", "Main CAD 확인 바랍니다.!", source, "Error");
+                //eAlarm_MainEjector
+                AlarmRegister((int)AlarmKeys.eAlarm_MainEjector,
+                  "Main Ejector", "Main Ejector 확인 바랍니다.!", source, "Error");
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
         }
 
         public override int OnRun()

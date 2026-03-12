@@ -28,7 +28,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             public string JsonPath;
             public string RecipeName;
         }
-        private RecipeClipboard _clipboard;
 
         // [ADD] UI 읽기전용 타이틀 모음 + 로그인 레벨 규칙
         private readonly HashSet<string> _uiReadOnlyTitles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -83,6 +82,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             InitializeComponent();
 
             // hook events
+            this.Load -= Main_Recipe_Load;
             this.Load += Main_Recipe_Load;
             
             //string name = Equipment._CurrentRecipeName;
@@ -130,9 +130,17 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             _current = eq.EquipmentRecipe.GetRecipe();
             BuildPropertyFromRecipe(_current);
 
+            // [추가] 값 변경 시 UI 갱신을 위한 이벤트 연결
+            // 주의: propertyCollectionView에 해당 이벤트가 있는지 확인하세요.
+            //this.propertyCollectionView.ValueChanged -= PropertyCollectionView_ValueChanged;
+            //this.propertyCollectionView.ValueChanged += PropertyCollectionView_ValueChanged;
+
             // 전역 변경 이벤트 구독 (폼 닫힐 때 해제 권장)
+            EquipmentRecipe.CurrentRecipeChanged -= Equipment_CurrentRecipeChanged;
             EquipmentRecipe.CurrentRecipeChanged += Equipment_CurrentRecipeChanged;
             SelectRecipeInList(_current.Name);
+
+
         }
 
         private void Main_Recipe_FormClosed(object sender, FormClosedEventArgs e)
@@ -140,6 +148,26 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             base.OnFormClosed(e);
             var eq = Equipment.Instance;
             EquipmentRecipe.CurrentRecipeChanged -= Equipment_CurrentRecipeChanged;
+        }
+
+        private void PropertyCollectionView_ValueChanged(object sender, EventArgs e)
+        {
+            // 이벤트 인자(e)나 sender를 통해 변경된 항목의 이름을 알 수 있다면 
+            // "UseSameAsWafer"일 때만 동작하도록 최적화 가능합니다.
+            // 여기서는 안전하게 전체 갱신 방식을 사용합니다.
+
+            if (_current == null) 
+                return;
+
+            try
+            {
+                // 1. 현재 UI의 변경된 값(UseSameAsWafer 등)을 실제 객체(_current)에 반영
+                propertyCollectionView.Apply();
+
+                // 2. 변경된 값을 바탕으로 다시 UI 빌드 (여기서 ReadOnly 로직이 다시 수행됨)
+                BuildPropertyFromRecipe(_current);
+            }
+            catch { }
         }
 
         private void Main_Recipe_VisibleChanged(object sender, EventArgs e)
@@ -230,55 +258,115 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
             if (r == null) { propertyCollectionView.SetProperties(_pc); return; }
 
-            // Header: Recipe Name
+            // [변경 1] Header: Recipe Name (원하면 주석 처리하거나 "General" 그룹 안으로 포함 가능)
+            // 여기서는 최상단 타이틀로 유지합니다.
             _pc.Add(new TitleOnlyProperty(r.Name ?? "Recipe"));
 
+            // 1. 모든 속성 가져오기
             var props = r.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                  .Where(p => p.CanRead) // set 없이도 표시는 가능
-                  .ToList();
+                    .Where(p => p.CanRead)
+                    .ToList();
 
-            var groups = new SortedDictionary<string, List<PropertyInfo>>(StringComparer.OrdinalIgnoreCase);
+            // 2. 그룹화 (정렬 전 임시 저장소)
+            var rawGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.OrdinalIgnoreCase);
+
+            // "General" 그룹이 항상 존재하게 하려면 미리 추가
+            if (!rawGroups.ContainsKey("General")) rawGroups["General"] = new List<PropertyInfo>();
+
             foreach (var p in props)
             {
                 var cat = p.GetCustomAttributes(typeof(CategoryAttribute), true).FirstOrDefault() as CategoryAttribute;
                 var groupName = cat != null && !string.IsNullOrEmpty(cat.Category) ? cat.Category : "General";
-                if (!groups.TryGetValue(groupName, out var list))
+
+                if (!rawGroups.TryGetValue(groupName, out var list))
                 {
                     list = new List<PropertyInfo>();
-                    groups[groupName] = list;
+                    rawGroups[groupName] = list;
                 }
                 list.Add(p);
             }
 
-            foreach (var kv in groups)
+            // [변경 2] 카테고리 정렬 (정의된 순서 -> 그 외 알파벳순)
+            var sortedGroupNames = rawGroups.Keys
+                .OrderBy(k => GetCategorySortIndex(k))
+                .ThenBy(k => k)
+                .ToList();
+
+            // [추가] 0. UseSameAsWafer 값 미리 확인 (속성 제어용)
+            bool isSameAsWafer = false;
+            var propUseSame = r.GetType().GetProperty("UseSameAsWafer");
+            if (propUseSame != null)
             {
-                _pc.Add(new TitleOnlyProperty(kv.Key));
-                foreach (var p in kv.Value)
+                var val = propUseSame.GetValue(r);
+                if (val is bool b) isSameAsWafer = b;
+            }
+
+            // 3. 정렬된 그룹 순회 및 속성 추가
+            foreach (var groupName in sortedGroupNames)
+            {
+                var propList = rawGroups[groupName];
+                if (propList.Count == 0) continue;
+
+                // 그룹 헤더 추가
+                _pc.Add(new TitleOnlyProperty(groupName));
+
+                // [변경 3] 속성 내부 정렬 (정의된 리스트 순서 -> 그 외 DisplayName/이름 순)
+                var sortedProps = propList.OrderBy(p =>
                 {
-                    if (!IsSupportedPropertyType(p.PropertyType)) continue;
+                    var dn = p.GetCustomAttributes(typeof(DisplayNameAttribute), true).FirstOrDefault() as DisplayNameAttribute;
+                    string title = dn != null && !string.IsNullOrEmpty(dn.DisplayName) ? dn.DisplayName : p.Name;
+
+                    int index = _propertyOrder.IndexOf(title);
+                    // 리스트에 있으면 해당 인덱스, 없으면 큰 값(뒤로 보냄)
+                    return index >= 0 ? index : 9999;
+                })
+                .ThenBy(p =>
+                {
+                    // 리스트에 없는 항목끼리는 이름순 정렬
+                    var dn = p.GetCustomAttributes(typeof(DisplayNameAttribute), true).FirstOrDefault() as DisplayNameAttribute;
+                    return dn != null && !string.IsNullOrEmpty(dn.DisplayName) ? dn.DisplayName : p.Name;
+                });
+
+                foreach (var p in sortedProps)
+                {
+                    if (!IsSupportedPropertyType(p.PropertyType)) 
+                        continue;
 
                     var dn = p.GetCustomAttributes(typeof(DisplayNameAttribute), true).FirstOrDefault() as DisplayNameAttribute;
                     string title = dn != null && !string.IsNullOrEmpty(dn.DisplayName) ? dn.DisplayName : p.Name;
 
                     var val = p.GetValue(r, null);
 
-                    // 편집 가능 여부 판단:
-                    //  - ReadOnly 특성
-                    //  - setter 없음
-                    //  - 로그인 레벨 미충족
+                    // 편집 가능 여부 판단
                     var ro = p.GetCustomAttributes(typeof(ReadOnlyAttribute), true).FirstOrDefault() as ReadOnlyAttribute;
                     bool readOnlyAttr = ro?.IsReadOnly == true;
                     bool noSetter = !p.CanWrite;
                     bool loginDenied = !IsEditableByLogin(title);
 
-                    bool isReadOnly = readOnlyAttr || noSetter || loginDenied;
+                    // [추가] UseSameAsWafer가 true일 때 특정 항목 잠금
+                    bool isLockedByWaferOption = false;
+                    if (isSameAsWafer)
+                    {
+                        // 실제 화면에 표시되는 이름(DisplayName)과 정확히 일치해야 합니다.
+                        if (title == "Bin Path StartCorner" ||
+                            title == "Bin Path PrimaryAxis" || // 띄어쓰기 주의 (DisplayName 확인 필요)
+                            title == "Bin Path TraversalMode" ||
+                            title == "Bin Diameter (mm)" )          // 필요시 추가
+                            //title == "Bin Pitch X (mm)" ||
+                            //title == "Bin Pitch Y (mm)" )
+                        {
+                            isLockedByWaferOption = true;
+                        }
+                    }
+
+                    // [변경] isLockedByWaferOption 조건 추가
+                    bool isReadOnly = readOnlyAttr || noSetter || loginDenied || isLockedByWaferOption;
 
                     _pc.Add(title, "", val);
 
                     if (isReadOnly)
                     {
                         _uiReadOnlyTitles.Add(title);
-                        // 저장 대상에서 제외
                     }
                     else
                     {
@@ -293,9 +381,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
             // [중요] UI 편집 컨트롤 비활성화 적용
             ApplyUiReadOnly(_uiReadOnlyTitles);
-
         }
-
+        
         private void ApplyUiReadOnly(IEnumerable<string> readOnlyTitles)
         {
             try
@@ -837,5 +924,44 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 this.ResumeLayout(true);
             }
         }
+
+        #region Ordering Definitions
+        // 1. 카테고리 표시 순서 정의
+        private readonly Dictionary<string, int> _categoryOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "General", 0 },      // 최상단
+            { "Common", 1 },       // 그 다음
+            { "TAlgin", 2 },
+            { "Wafer Map", 3 },    // 예시: 실제 사용되는 카테고리 이름
+            { "Bin Array", 4 },
+            { "Measurement", 5 },
+                   
+            // 필요 시 추가...
+        };
+
+        // 2. 속성 표시 순서 정의 (DisplayName 또는 PropertyName)
+        private readonly List<string> _propertyOrder = new List<string>
+        {
+            // General
+            "Name",
+    
+            // Common / Simulation
+            "Simulation",
+            "DryRun",
+
+            // Wafer Map
+            "Wafer Diameter (mm)",
+            "Wafer Chip PitchX (mm)",
+            "Wafer Chip PitchY (mm)",
+    
+            // ... 원하는 순서대로 계속 추가
+        };
+
+        // 3. 카테고리 정렬 도우미 메서드
+        private int GetCategorySortIndex(string category)
+        {
+            return _categoryOrder.ContainsKey(category) ? _categoryOrder[category] : 999; // 정의되지 않은 항목은 맨 뒤로
+        }
+        #endregion
     }
 }

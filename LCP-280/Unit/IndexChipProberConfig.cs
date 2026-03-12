@@ -103,7 +103,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public new TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
         public int Saveconfig()

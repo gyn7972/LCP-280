@@ -15,14 +15,14 @@ namespace QMC.LCP_280.Process.Component
         /// <summary> 
         /// 사용 중인 리소스 정리
         /// </summary>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+        //protected override void Dispose(bool disposing)
+        //{
+        //    if (disposing && (components != null))
+        //    {
+        //        components.Dispose();
+        //    }
+        //    base.Dispose(disposing);
+        //}
 
         #region 컴포넌트 디자이너 생성 코드
 

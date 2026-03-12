@@ -70,9 +70,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             }
         }
 
-        public string ActiveWaferId { get; private set; }
-        public string ActiveBinId { get; private set; }
-        public string ActiveMachineName { get; private set; }
+        public string ActiveWaferId { get; set; }
+        public string ActiveBinId { get; set; }
+        public string ActiveMachineName { get; set; }
 
         public void Begin(string waferId, string binId, string machineName)
         {

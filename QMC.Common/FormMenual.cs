@@ -8,8 +8,17 @@ namespace QMC.Common
 {
     public partial class FormMenual : Form
     {
+        public interface ITabActivationAware
+        {
+            void OnActivatedInTab();
+            void OnDeactivatedInTab();
+        }
+
         private TabControl ManualTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
+
+        // [추가] 현재 활성화된 자식 폼을 추적하기 위한 변수
+        private Form _currentActiveForm = null;
 
         // Theme fields
         private int _tabHeight = 32;
@@ -100,6 +109,17 @@ namespace QMC.Common
                 {
                     Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행(Working)");
                     LoadFormIntoTab(first, info);
+
+                    // [추가] 첫 탭 로드 시 즉시 Activation 호출
+                    if (_tabFormInstances.TryGetValue(first, out Form firstForm))
+                    {
+                        _currentActiveForm = firstForm;
+                        if (firstForm is ITabActivationAware aware)
+                        {
+                            try { aware.OnActivatedInTab(); } catch { }
+                        }
+                    }
+
                 }
             }
             catch (Exception ex)
@@ -228,13 +248,62 @@ namespace QMC.Common
 
         private void workingTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
+            // 1. 기존 활성 폼이 있다면 비활성화(Deactivate) 알림
+            if (_currentActiveForm != null)
+            {
+                if (_currentActiveForm is ITabActivationAware oldAware)
+                {
+                    try { oldAware.OnDeactivatedInTab(); } catch { }
+                }
+            }
+
             TabPage selectedTab = ManualTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
+                // 폼 로드 (없으면 생성)
                 LoadFormIntoTab(selectedTab, formInfo);
-                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
-                if (_hostSized)
-                    UpdateActiveChildSize();
+
+                // 로드된 폼 가져오기
+                if (_tabFormInstances.TryGetValue(selectedTab, out Form newForm))
+                {
+                    // 2. 현재 활성 폼 갱신
+                    _currentActiveForm = newForm;
+
+                    // 3. 새 폼에 활성화(Activate) 알림
+                    if (newForm is ITabActivationAware newAware)
+                    {
+                        try { newAware.OnActivatedInTab(); } catch { }
+                    }
+
+                    // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+                    if (_hostSized)
+                        UpdateActiveChildSize();
+                }
+            }
+            //TabPage selectedTab = ManualTabControl.SelectedTab;
+            //if (selectedTab?.Tag is FormInfo formInfo)
+            //{
+            //    LoadFormIntoTab(selectedTab, formInfo);
+            //    // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+            //    if (_hostSized)
+            //        UpdateActiveChildSize();
+            //}
+        }
+
+        // [추가 권장] 메인 폼 전체가 숨겨지거나 닫힐 때도 Deactivate를 호출해주면 좋습니다.
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+
+            // 이 폼(FormMenual) 자체가 안 보이게 되면 현재 활성 탭도 멈춤
+            if (!this.Visible && _currentActiveForm is ITabActivationAware aware)
+            {
+                try { aware.OnDeactivatedInTab(); } catch { }
+            }
+            // 다시 보이게 되면 현재 활성 탭 재개
+            else if (this.Visible && _currentActiveForm is ITabActivationAware resumeAware)
+            {
+                try { resumeAware.OnActivatedInTab(); } catch { }
             }
         }
 

@@ -86,6 +86,17 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int IndexOfEnd { get; set; } = 0;
 
+        [Category("PickUp"), DisplayName("PickUpWaitTime (ms)")]
+        [DefaultValue(50)]
+        public int PickUpWaitTime { get; set; } = 50;
+
+        //PlaceUp
+        [Category("PlaceUp"), DisplayName("PlaceUpWaitTime (ms)")]
+        [DefaultValue(50)]
+        public int PlaceUpWaitTime { get; set; } = 50;
+
+
+
         [JsonIgnore]
         public new List<TeachingPosition> TeachingPositions
         {
@@ -180,7 +191,7 @@ namespace QMC.LCP_280.Process.Unit
         public void SetTeachingPosition(TeachingPosition tp)
             => TeachingRecipe.UpsertFiltered(tp, save: true);
 
-        public TeachingPosition GetTeachingPosition(string name)
+        public new TeachingPosition GetTeachingPosition(string name)
             => TeachingRecipe.Get(name);
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
@@ -217,6 +228,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "SetupConfig", 2 },
+                { "PickUp", 3 },
+                { "PlaceUp", 4 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -227,8 +241,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 "Name",
                 "Simulation",
-                "SlotPitch (mm)",
-                "SlotCount (ea)"
+                "IndexOfEnd",
+                "PickUpWaitTime"
             };
         #endregion
     }

@@ -40,7 +40,10 @@ namespace QMC.LCP_280.Process.Component
         }
 
         private MaterialCassette _materialCassette;
-        private int _cellSize = 20;
+
+        // [변경] 고정 셀 높이 사용 (ID 표시를 위해 키움)
+        private int _fixedCellHeight = 25;
+        private int _currentCellSize = 25; // 실제 그리기 계산용
 
         // 선택 관련
         private readonly HashSet<int> _selectedSlots = new HashSet<int>();
@@ -52,20 +55,10 @@ namespace QMC.LCP_280.Process.Component
         private Timer _hoverTimer;
         private int _hoveredSlot = -1;
 
-        // 테스트 버튼들
-        //private Button btnAll;
-        //private Button btnResetAll;
-
-        //private Label lblSelectedCount;
-        //private Label lblSelectedCountValue;
-        //private Label lblNextOrder;
-        //private Label lblNextOrderValue;
-        //private ListBox listSelectedSlots;
-        //private Label lblSelectedList;
-
         private readonly object _selectionLock = new object();
 
         public bool IsEditEnabled { get; set; } = true;
+        public bool EnableSelectionOnClick { get; set; } = false; // 기본 false
 
         // 렌더링 타이머 (실시간 갱신용)
         private Timer _renderTimer;
@@ -75,54 +68,49 @@ namespace QMC.LCP_280.Process.Component
         {
             InitializeComponent();
 
+            // [변경] 스크롤 활성화
+            this.AutoScroll = false;
+
             // 더블 버퍼링 설정
             SetupDoubleBuffering();
-
             // 툴팁 초기화
             InitializeToolTip();
-
-            // 우측 패널/버튼 초기화
+            // 우측 패널/버튼 초기화 (필요시 사용)
             InitializeTestButtons();
 
             if (pWaferImage != null)
             {
+                // [중요 변경] 패널 내부 스크롤만 활성화
+                pWaferImage.AutoScroll = true;
+
+                // pWaferImage 패널 제거 혹은 숨김 처리 권장 (UserControl 자체 스크롤 사용)
+                // 만약 디자이너에 있다면 아래처럼 이벤트 연결
                 pWaferImage.Paint -= WaferImage_Paint;
                 pWaferImage.Paint += WaferImage_Paint;
 
-                // 마우스 이벤트 추가
                 pWaferImage.MouseClick += WaferImage_MouseClick;
                 pWaferImage.MouseMove += WaferImage_MouseMove;
                 pWaferImage.MouseLeave += WaferImage_MouseLeave;
 
-                // 사이즈 변경 시 셀 크기 재계산 + 다시 그리기
+                // [변경] 리사이즈 이벤트에서 스크롤 사이즈 갱신
                 pWaferImage.Resize += (s, e) =>
                 {
-                    AdjustCellSize();
+                    UpdateScrollSize();
                     SafeInvalidate();
                 };
 
-                // pWaferImage 패널의 더블 버퍼링 활성화
                 EnablePanelDoubleBuffering(pWaferImage);
             }
 
-            // 실시간 렌더링 타이머 설정 (기본 30 FPS)
+            // 실시간 렌더링 타이머 설정
             _renderTimer = new Timer { Interval = 33 };
             _renderTimer.Tick += (s, e) =>
             {
                 if (!_liveRenderEnabled) return;
                 if (!Visible) return;
-
-                if (pWaferImage != null && pWaferImage.IsHandleCreated)
-                {
-                    pWaferImage.Invalidate();
-                }
-                else
-                {
-                    Invalidate();
-                }
+                SafeInvalidate();
             };
 
-            // 기본적으로 실시간 갱신 활성화
             EnableLiveRender(true, 30);
         }
 
@@ -136,7 +124,6 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        // 실시간 렌더링 on/off 및 FPS 설정
         public void EnableLiveRender(bool enabled, int fps = 30)
         {
             _liveRenderEnabled = enabled;
@@ -145,7 +132,6 @@ namespace QMC.LCP_280.Process.Component
             _renderTimer.Enabled = enabled;
         }
 
-        // 더블 버퍼링 설정 메서드
         private void SetupDoubleBuffering()
         {
             this.DoubleBuffered = true;
@@ -157,11 +143,9 @@ namespace QMC.LCP_280.Process.Component
             this.UpdateStyles();
         }
 
-        // Panel의 더블 버퍼링 활성화
         private void EnablePanelDoubleBuffering(Control control)
         {
             if (control == null) return;
-
             typeof(Control).InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.SetProperty |
                 System.Reflection.BindingFlags.Instance |
@@ -171,121 +155,8 @@ namespace QMC.LCP_280.Process.Component
 
         private void InitializeTestButtons()
         {
-            if (tableLayoutPanel1.ColumnCount < 2) return;
-
-            // 오른쪽 패널 (30% 영역)에 버튼들 추가
-            var rightPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(248, 249, 250),
-                Padding = new Padding(5)
-            };
-
-            // 더블 버퍼링
-            EnablePanelDoubleBuffering(rightPanel);
-
-            //int yPos = 10;
-            //int buttonHeight = 25;
-            //int spacing = 30;
-            //int buttonWidth = 80;
-
-            //// 전체 선택 버튼 (현재 데이터 기준 선택만, Presence 변경 없음)
-            //btnAll = new Button
-            //{
-            //    Text = "전체 선택",
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(buttonWidth, buttonHeight),
-            //    BackColor = Color.DarkGray,
-            //    ForeColor = Color.White,
-            //    FlatStyle = FlatStyle.Flat,
-            //    Font = new Font("Arial", 8)
-            //};
-
-            //btnAll.Click += BtnAll_Click;
-            //rightPanel.Controls.Add(btnAll);
-            //yPos += spacing;
-
-            //// 전체 초기화 버튼 (슬롯 Presence를 NotExist로 초기화)
-            //btnResetAll = new Button
-            //{
-            //    Text = "전체 초기화",
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(buttonWidth, buttonHeight),
-            //    BackColor = Color.DarkGray,
-            //    ForeColor = Color.White,
-            //    FlatStyle = FlatStyle.Flat,
-            //    Font = new Font("Arial", 8)
-            //};
-            //btnResetAll.Click += BtnResetAll_Click;
-            //rightPanel.Controls.Add(btnResetAll);
-            //yPos += spacing;
-
-            //// 선택된 슬롯 수 라벨
-            //lblSelectedCount = new Label
-            //{
-            //    Text = "선택:",
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(35, 15),
-            //    Font = new Font("Arial", 7, FontStyle.Bold)
-            //};
-            //rightPanel.Controls.Add(lblSelectedCount);
-
-            //lblSelectedCountValue = new Label
-            //{
-            //    Text = "0",
-            //    Location = new Point(45, yPos),
-            //    Size = new Size(30, 15),
-            //    Font = new Font("Arial", 7),
-            //    ForeColor = Color.Blue
-            //};
-            //rightPanel.Controls.Add(lblSelectedCountValue);
-            //yPos += 20;
-
-            //// 다음 순서 라벨
-            //lblNextOrder = new Label
-            //{
-            //    Text = "순서:",
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(35, 15),
-            //    Font = new Font("Arial", 7, FontStyle.Bold)
-            //};
-            //rightPanel.Controls.Add(lblNextOrder);
-
-            //lblNextOrderValue = new Label
-            //{
-            //    Text = "1",
-            //    Location = new Point(45, yPos),
-            //    Size = new Size(30, 15),
-            //    Font = new Font("Arial", 7),
-            //    ForeColor = Color.Blue
-            //};
-            //rightPanel.Controls.Add(lblNextOrderValue);
-            //yPos += 25;
-
-            //// 선택목록 라벨
-            //lblSelectedList = new Label
-            //{
-            //    Text = "선택목록:",
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(buttonWidth, 15),
-            //    Font = new Font("Arial", 7, FontStyle.Bold)
-            //};
-            //rightPanel.Controls.Add(lblSelectedList);
-            //yPos += 15;
-
-            //// 선택목록 리스트박스
-            //listSelectedSlots = new ListBox
-            //{
-            //    Location = new Point(5, yPos),
-            //    Size = new Size(buttonWidth, 60),
-            //    Font = new Font("Consolas", 6),
-            //    BackColor = Color.White,
-            //    BorderStyle = BorderStyle.FixedSingle
-            //};
-            //rightPanel.Controls.Add(listSelectedSlots);
-
-            //// 테이블 레이아웃의 두 번째 열에 추가
-            //tableLayoutPanel1.Controls.Add(rightPanel, 1, 0);
+            // (기존 코드 유지)
+            // 필요 시 UI 요소 추가
         }
 
         private void InitializeToolTip()
@@ -305,93 +176,37 @@ namespace QMC.LCP_280.Process.Component
         {
             if (!IsEditEnabled) return;
             AllApplyRequested?.Invoke(this, EventArgs.Empty);
-
-            //if (_materialCassette == null) return;
-            //if (!IsEditEnabled) return;
-
-            //// 선택 UI 때문에 색이 바뀌는 걸 원치 않으면 "선택" 로직은 빼는게 안전
-            //ClearSelection();
-
-            //for (int i = 0; i < _materialCassette.SlotCount; i++)
-            //{
-            //    EnsureSlotInitialized(i);
-
-            //    var wafer = _materialCassette.GetWafer(i);
-
-            //    // "빈 슬롯"만 채우기 (null은 위에서 생성됨)
-            //    if (wafer.Presence != MaterialPresence.Exist)
-            //    {
-            //        wafer.Presence = MaterialPresence.Exist;
-            //        wafer.ProcessSatate = MaterialProcessSatate.Ready;
-
-            //        // 필요 시 ID도 초기값
-            //        if (string.IsNullOrWhiteSpace(wafer.WaferId))
-            //            wafer.WaferId = string.Empty;
-            //    }
-            //}
-
-            //NotifyCassetteChanged();
         }
 
         private void btn_ResetAll_Click(object sender, EventArgs e)
         {
             if (!IsEditEnabled) return;
             ResetCassetteRequested?.Invoke(this, EventArgs.Empty);
-
-            //if (_materialCassette == null) return;
-            //if (!IsEditEnabled) return;
-
-            //ClearSelection();
-
-            //// CarrierId도 초기화 (요구사항 B)
-            //_materialCassette.CarrierId = string.Empty;
-
-            //// 슬롯 전부 삭제 상태로
-            //for (int i = 0; i < _materialCassette.SlotCount; i++)
-            //{
-            //    EnsureSlotInitialized(i);
-
-            //    var wafer = _materialCassette.GetWafer(i);
-            //    wafer.Presence = MaterialPresence.NotExist;
-            //    wafer.ProcessSatate = MaterialProcessSatate.Unknown;
-            //    wafer.WaferId = string.Empty;
-            //    wafer.CarrierId = string.Empty;
-            //    // wafer.SlotIndex는 유지하는 게 보통 안전(인덱스 자체는 슬롯 위치 의미)
-            //}
-
-            //NotifyCassetteChanged();
         }
         #endregion
 
         #region Cassette 바인딩/갱신
 
-        /// <summary>
-        /// MaterialCassette 데이터를 설정합니다.
-        /// </summary>
         public void SetMaterialCassette(MaterialCassette materialCassette)
         {
-            if (materialCassette == null) 
+            if (materialCassette == null)
                 throw new ArgumentNullException(nameof(materialCassette));
 
             _materialCassette = materialCassette;
 
-            // Slots 리스트와 SlotCount 불일치 방어
             if (_materialCassette.Slots == null || _materialCassette.Slots.Count != _materialCassette.SlotCount)
             {
                 _materialCassette.Slots = Enumerable.Repeat<MaterialWafer>(null, _materialCassette.SlotCount).ToList();
             }
 
-            // 기존 선택 상태 초기화
             ClearSelection();
-
-            AdjustCellSize();
+            UpdateScrollSize();
             SafeInvalidate();
         }
 
         public void NotifyCassetteChanged()
         {
-            // 외부에서 내부 슬롯 상태가 바뀐 후 호출
-            AdjustCellSize();
+            UpdateScrollSize();
             SafeInvalidate();
         }
 
@@ -402,20 +217,10 @@ namespace QMC.LCP_280.Process.Component
                 try { BeginInvoke((Action)RefreshMapImmediate); } catch { }
                 return;
             }
-            AdjustCellSize();
-            if (pWaferImage != null)
-            {
-                pWaferImage.Invalidate();
-                pWaferImage.Update();
-            }
-            else
-            {
-                Invalidate();
-                Update();
-            }
+            UpdateScrollSize();
+            SafeInvalidate();
         }
 
-        /// <summary>슬롯 리스트가 null이면 NotExist 상태로 초기화</summary>
         private void EnsureSlotInitialized(int index)
         {
             if (_materialCassette == null) return;
@@ -435,56 +240,54 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        /// <summary>셀이 표시될 픽셀 크기 조정</summary>
-        private void AdjustCellSize()
+        /// <summary>
+        /// [변경] pWaferImage 패널의 가상 크기 설정
+        /// </summary>
+        private void UpdateScrollSize()
         {
-            if (_materialCassette == null || _materialCassette.SlotCount <= 0)
-                return;
-            int h = (pWaferImage?.ClientSize.Height ?? ClientSize.Height);
-            if (h <= 0)
-                return;
+            if (_materialCassette == null || _materialCassette.SlotCount <= 0) return;
+            if (pWaferImage == null) return;
 
-            // groupBox 상단 텍스트 영역 유사 마진 적용(=14)
-            _cellSize = Math.Max(1, (h - 14 - 2) / _materialCassette.SlotCount);
+            _currentCellSize = _fixedCellHeight;
+
+            int topMargin = 14;
+            int totalHeight = topMargin + (_currentCellSize * _materialCassette.SlotCount) + 10;
+
+            // [핵심] pWaferImage의 AutoScrollMinSize를 설정하여 스크롤바 생성
+            pWaferImage.AutoScrollMinSize = new Size(0, totalHeight);
         }
 
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            AdjustCellSize();
+            UpdateScrollSize();
             SafeInvalidate();
         }
 
         private void SafeInvalidate()
         {
-            if (!IsHandleCreated)
+            if (!IsHandleCreated) 
                 return;
+            if (InvokeRequired) { try { BeginInvoke((Action)SafeInvalidate); } catch { } return; }
 
-            if (InvokeRequired)
-            {
-                try { BeginInvoke((Action)SafeInvalidate); } catch { }
-                return;
-            }
-
+            // 패널만 갱신
             if (pWaferImage != null)
             {
                 pWaferImage.Invalidate();
-                pWaferImage.Refresh();
-            }
-            else
-            {
-                Invalidate();
-                Refresh();
+                pWaferImage.Update();
             }
         }
         #endregion
 
-        #region 마우스 이벤트 처리
+        #region 마우스 이벤트 처리 (스크롤 고려)
+
         private void WaferImage_MouseClick(object sender, MouseEventArgs e)
         {
-            if (_materialCassette == null) return;
+            if (_materialCassette == null) 
+                return;
 
-            if (!IsEditEnabled) return;
+            if (!IsEditEnabled) 
+                return;
 
             if (e.Button == MouseButtons.Left)
             {
@@ -509,7 +312,8 @@ namespace QMC.LCP_280.Process.Component
                 }
                 else
                 {
-                    _toolTip.Hide(pWaferImage);
+                    // [수정] 캐스팅 오류 해결: 명시적 (Control) 캐스팅 사용
+                    _toolTip.Hide((Control)pWaferImage ?? (Control)this);
                 }
             }
         }
@@ -517,46 +321,56 @@ namespace QMC.LCP_280.Process.Component
         private void WaferImage_MouseLeave(object sender, EventArgs e)
         {
             _hoveredSlot = -1;
-            _toolTip.Hide(pWaferImage);
+            // [수정] 캐스팅 오류 해결: 명시적 (Control) 캐스팅 사용
+            _toolTip.Hide((Control)pWaferImage ?? (Control)this);
             _hoverTimer.Stop();
         }
 
-        /// <summary>마우스 위치에서 슬롯 번호 계산 (아래부터 1번)</summary>
+        /// <summary>
+        /// 마우스 위치에서 슬롯 번호 계산 (스크롤 오프셋 반영)
+        /// </summary>
         private int GetSlotNumberAtPosition(Point mousePos)
         {
             if (_materialCassette == null || _materialCassette.SlotCount <= 0) return -1;
+            if (pWaferImage == null) return -1;
 
-            var bounds = pWaferImage?.ClientRectangle ?? ClientRectangle;
+            // [중요] pWaferImage의 스크롤 위치 가져오기
+            // Panel의 AutoScrollPosition은 음수로 반환되므로 부호를 뒤집거나 그대로 더합니다.
+            // e.Location은 클라이언트 기준(보이는 화면 좌상단 0,0) 좌표입니다.
+            // 논리 좌표 = 마우스Y - AutoScrollPosition.Y (음수) => 마우스Y + 스크롤된만큼
+
+            int scrollY = pWaferImage.AutoScrollPosition.Y;
+
             int topMargin = 14;
-            var drawRect = new Rectangle(bounds.X + 2, bounds.Y + topMargin, bounds.Width - 4, bounds.Height - topMargin - 2);
+            int totalHeight = (_currentCellSize * _materialCassette.SlotCount);
 
-            if (!drawRect.Contains(mousePos)) return -1;
+            // 논리 Y좌표 (스크롤 위쪽 숨겨진 영역 포함)
+            int logicalY = mousePos.Y - scrollY;
 
-            // Y 좌표를 기반으로 슬롯 번호 계산 (아래부터 1번)
-            int relativeY = drawRect.Bottom - mousePos.Y;
-            int slotIndex = relativeY / _cellSize;
+            if (logicalY < topMargin) return -1;
+            if (logicalY > topMargin + totalHeight) return -1;
 
+            // 바닥부터 1번
+            int drawBottom = topMargin + totalHeight;
+            int fromBottom = drawBottom - logicalY;
+
+            if (fromBottom < 0) return -1;
+
+            int slotIndex = fromBottom / _currentCellSize;
             if (slotIndex >= 0 && slotIndex < _materialCassette.SlotCount)
-            {
-                return slotIndex + 1; // 1-based numbering
-            }
+                return slotIndex + 1;
 
             return -1;
         }
 
-        public bool EnableSelectionOnClick { get; set; } = false; // 기본 false 권장
-
-
         private void HandleSlotClick(int slotNumber, Point clickPosition)
         {
             if (_materialCassette == null) return;
-
             if (!IsEditEnabled) return;
 
-            var wafer = _materialCassette.GetWafer(slotNumber - 1); // 0-based
+            var wafer = _materialCassette.GetWafer(slotNumber - 1);
             var state = GetSlotDisplayState(wafer);
 
-            // 슬롯 클릭 이벤트 발생
             SlotClicked?.Invoke(this, new SlotClickedEventArgs
             {
                 SlotNumber = slotNumber,
@@ -565,25 +379,16 @@ namespace QMC.LCP_280.Process.Component
                 State = state
             });
 
-            // 선택 상태 토글 (데이터는 외부 로직에서 변경)
-            if (EnableSelectionOnClick)
-            {
+            if (EnableSelectionOnClick) 
                 ToggleSlotSelection(slotNumber, state);
-            }
         }
 
         private void ToggleSlotSelection(int slotNumber, SlotDisplayState state)
         {
-            if (_selectedSlots.Contains(slotNumber))
-            {
-                // 선택 해제
+            if (_selectedSlots.Contains(slotNumber)) 
                 DeselectSlot(slotNumber, state);
-            }
-            else
-            {
-                // 선택
-                SelectSlot(slotNumber, state);
-            }
+
+            else SelectSlot(slotNumber, state);
         }
 
         private void SelectSlot(int slotNumber, SlotDisplayState state)
@@ -592,67 +397,47 @@ namespace QMC.LCP_280.Process.Component
             {
                 if (_selectedSlots.Contains(slotNumber)) return;
                 _selectedSlots.Add(slotNumber);
-                _selectionOrder[slotNumber] = _nextSelectionNumber;
-                _nextSelectionNumber++;
+                _selectionOrder[slotNumber] = _nextSelectionNumber++;
             }
-
             SafeInvalidate();
             RunOnUI(UpdateUI);
-
-            // 선택 변경 이벤트 발생
-            SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs
-            {
-                SlotNumber = slotNumber,
-                IsSelected = true,
-                SelectionOrder = GetSlotSelectionOrder(slotNumber),
-                State = state
-            });
+            SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs { SlotNumber = slotNumber, IsSelected = true, SelectionOrder = GetSlotSelectionOrder(slotNumber), State = state });
         }
 
         private void DeselectSlot(int slotNumber, SlotDisplayState state)
         {
-            int currentOrder;
             lock (_selectionLock)
             {
                 if (!_selectionOrder.ContainsKey(slotNumber)) return;
-
-                currentOrder = _selectionOrder[slotNumber];
+                int currentOrder = _selectionOrder[slotNumber];
                 _selectedSlots.Remove(slotNumber);
                 _selectionOrder.Remove(slotNumber);
-
                 var toUpdate = _selectionOrder.Where(kvp => kvp.Value > currentOrder).ToList();
-                foreach (var kvp in toUpdate)
-                    _selectionOrder[kvp.Key] = kvp.Value - 1;
-
+                foreach (var kvp in toUpdate) _selectionOrder[kvp.Key] = kvp.Value - 1;
                 _nextSelectionNumber = _selectionOrder.Count > 0 ? _selectionOrder.Values.Max() + 1 : 1;
             }
-
             SafeInvalidate();
             RunOnUI(UpdateUI);
-
-            // 선택 변경 이벤트 발생
-            SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs
-            {
-                SlotNumber = slotNumber,
-                IsSelected = false,
-                SelectionOrder = 0,
-                State = state
-            });
+            SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs { SlotNumber = slotNumber, IsSelected = false, SelectionOrder = 0, State = state });
         }
 
         private Rectangle GetSlotBounds(int slotNumber)
         {
-            if (_materialCassette == null || slotNumber <= 0 || slotNumber > _materialCassette.SlotCount)
+            if (_materialCassette == null || slotNumber <= 0 || slotNumber > _materialCassette.SlotCount || pWaferImage == null)
                 return Rectangle.Empty;
 
-            var bounds = pWaferImage?.ClientRectangle ?? ClientRectangle;
+            int width = pWaferImage.ClientSize.Width - 4;
             int topMargin = 14;
-            var drawRect = new Rectangle(bounds.X + 2, bounds.Y + topMargin, bounds.Width - 4, bounds.Height - topMargin - 2);
+            int totalHeight = (_currentCellSize * _materialCassette.SlotCount);
+            int slotIndex = slotNumber - 1;
 
-            int slotIndex = slotNumber - 1; // 0-based
-            int y = drawRect.Bottom - (slotIndex + 1) * _cellSize;
+            // 논리 Y
+            int yFromTop = topMargin + totalHeight - ((slotIndex + 1) * _currentCellSize);
 
-            return new Rectangle(drawRect.Left, y, drawRect.Width, _cellSize);
+            // 화면 Y (스크롤 적용)
+            int screenY = yFromTop + pWaferImage.AutoScrollPosition.Y;
+
+            return new Rectangle(2, screenY, width, _currentCellSize);
         }
         #endregion
 
@@ -660,144 +445,114 @@ namespace QMC.LCP_280.Process.Component
         private void HoverTimer_Tick(object sender, EventArgs e)
         {
             _hoverTimer.Stop();
-
             if (_hoveredSlot > 0 && _materialCassette != null)
             {
                 var wafer = _materialCassette.GetWafer(_hoveredSlot - 1);
-                SlotDisplayState state = GetSlotDisplayState(wafer);
 
-                string tooltipText = $"Slot {_hoveredSlot}\n";
-                //tooltipText += $"State: {(state == SlotDisplayState.Present ? "있음" : "없음")}\n";
-                if (_selectedSlots.Contains(_hoveredSlot))
-                {
-                    lock (_selectionLock)
-                    {
-                        if (_selectionOrder.ContainsKey(_hoveredSlot))
-                            tooltipText += $"Selection Order: {_selectionOrder[_hoveredSlot]}\n";
-                    }
-                }
-                else
-                {
-                    tooltipText += "Selection Order: ---\n";
-                }
+                string tooltipText = $"Slot {_hoveredSlot}";
+                if (!string.IsNullOrEmpty(wafer?.WaferId))
+                    tooltipText += $"\nID: {wafer.WaferId}";
 
-                if(wafer != null)
-                {
-                    tooltipText += $"Status: {(wafer.ProcessSatate.ToString())}\n";
-                }
-                else
-                {
-                    tooltipText += $"Status: ---\n";
-                }
-
-                    Point mousePos = pWaferImage?.PointToClient(Cursor.Position) ?? PointToClient(Cursor.Position);
+                // [수정] 캐스팅 오류 해결: 명시적 (Control) 캐스팅 사용
+                Point mousePos = ((Control)pWaferImage ?? (Control)this).PointToClient(Cursor.Position);
                 _toolTip.Show(tooltipText, this, mousePos.X + 10, mousePos.Y - 10);
             }
         }
         #endregion
 
         #region 그리기
+
         private void WaferImage_Paint(object sender, PaintEventArgs e)
         {
-            DrawMap(e.Graphics, ((Control)sender).ClientRectangle);
+            // Panel의 Paint 이벤트 핸들러
+            DrawMap(e.Graphics, pWaferImage.ClientRectangle);
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            if (pWaferImage == null) 
+            if (pWaferImage == null)
                 DrawMap(e.Graphics, ClientRectangle);
-
         }
 
         private void DrawMap(Graphics g, Rectangle bounds)
         {
-            int topMargin = 14;
-            var drawRect = new Rectangle(bounds.X + 2, bounds.Y + topMargin, bounds.Width - 4, bounds.Height - topMargin - 2);
-            if (drawRect.Width <= 0 || drawRect.Height <= 0)
-            {
-                return;
-            }
-
             g.Clear(Color.Black);
 
             if (_materialCassette == null || _materialCassette.SlotCount <= 0)
             {
-                DrawCenterMessage(g, drawRect, "No Data");
+                g.ResetTransform();
+                DrawCenterMessage(g, bounds, "No Data");
                 return;
             }
 
-            int total = _materialCassette.SlotCount;
-            if (_cellSize <= 0) 
-                return;
-
-            int width = drawRect.Width;
-
-            for (int i = 0; i < total; i++)
+            // [중요] pWaferImage의 AutoScrollPosition 적용
+            // Panel 내부에서는 이미 스크롤 오프셋만큼 좌표계가 이동되어 있지 않음 (UserPaint 방식일 때)
+            // 따라서 직접 TranslateTransform을 해야 함.
+            if (pWaferImage != null)
             {
-                int slotNumber = i + 1;
-                var wafer = _materialCassette.GetWafer(i);
-
-                // 슬롯 상태 색상 (WaferMapView와 동일 정책)
-                Color cellColor = GetSlotColor(wafer);
-
-                // 선택된 슬롯이면 오버레이(밝은 초록)
-                //if (_selectedSlots.Contains(slotNumber))
-                //{
-                //    cellColor = Color.LimeGreen;
-                //}
-
-                int y = drawRect.Bottom - (i + 1) * _cellSize;
-                var rect = new Rectangle(drawRect.Left, y, width, _cellSize);
-
-                // 슬롯 배경
-                using (var brush = new SolidBrush(cellColor))
-                {
-                    g.FillRectangle(brush, rect);
-                }
-
-                // 테두리
-                using (var pen = new Pen(Color.Black))
-                {
-                    g.DrawRectangle(pen, rect);
-                }
-
-                // 선택 순서 표시
-                if (_selectedSlots.Contains(slotNumber) && _selectionOrder.ContainsKey(slotNumber))
-                {
-                    DrawSelectionOrder(g, rect, _selectionOrder[slotNumber]);
-                }
-
-                // 슬롯 번호 표시 (작게)
-                DrawSlotNumber(g, rect, slotNumber);
+                g.TranslateTransform(pWaferImage.AutoScrollPosition.X, pWaferImage.AutoScrollPosition.Y);
             }
-        }
 
+            int topMargin = 14;
+            int totalHeight = (_currentCellSize * _materialCassette.SlotCount);
+            // 스크롤바 너비를 고려하지 않고 ClientRectangle 너비 사용 (이미 스크롤바 제외된 크기임)
+            int width = bounds.Width - 4;
+            int total = _materialCassette.SlotCount;
+
+            using (var textBrush = new SolidBrush(Color.Black))
+            using (var font = new Font("Arial", 10f, FontStyle.Bold))
+            using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    int slotNumber = i + 1;
+                    var wafer = _materialCassette.GetWafer(i);
+                    Color cellColor = GetSlotColor(wafer);
+
+                    // 논리적 Y 좌표 계산
+                    int y = topMargin + totalHeight - (slotNumber * _currentCellSize);
+                    var rect = new Rectangle(2, y, width, _currentCellSize);
+
+                    // 그리기
+                    using (var brush = new SolidBrush(cellColor)) g.FillRectangle(brush, rect);
+                    using (var pen = new Pen(Color.Black)) g.DrawRectangle(pen, rect);
+
+                    if (wafer != null && !string.IsNullOrEmpty(wafer.WaferId))
+                    {
+                        var state = g.Save();
+                        g.SetClip(rect);
+                        g.DrawString(wafer.WaferId, font, textBrush, rect, sf);
+                        g.Restore(state);
+                    }
+
+                    if (_selectedSlots.Contains(slotNumber) && _selectionOrder.ContainsKey(slotNumber))
+                        DrawSelectionOrder(g, rect, _selectionOrder[slotNumber]);
+
+                    DrawSlotNumber(g, rect, slotNumber);
+                }
+            }
+            g.ResetTransform();
+        }
         private Color GetSlotColor(MaterialWafer wafer)
         {
-            if (wafer == null)
-                return Color.Gray; // 없음 - 회색
+            if (wafer == null) return Color.Gray;
 
-            // Presence 기준 기본 색상
             Color cellColor;
             switch (wafer.Presence)
             {
                 case MaterialPresence.Exist: cellColor = Color.LimeGreen; break;
                 case MaterialPresence.NotExist: cellColor = Color.Gray; break;
-                case MaterialPresence.Unknown:
-                default: cellColor = Color.Yellow; break;
+                default: cellColor = Color.Gray; break;
             }
 
-            // ProcessSatate가 명확하면 그 색으로 override (WaferMapView와 동일)
             switch (wafer.ProcessSatate)
             {
-                case MaterialProcessSatate.Ready: cellColor = Color.Blue; break;
+                case MaterialProcessSatate.Ready: cellColor = Color.LightSkyBlue; break; // [변경] 가독성 위해 밝은 파랑
                 case MaterialProcessSatate.Processing: cellColor = Color.Orange; break;
                 case MaterialProcessSatate.Completed: cellColor = Color.Green; break;
-                case MaterialProcessSatate.Unknown:
                 default: break;
             }
-
             return cellColor;
         }
 
@@ -809,24 +564,17 @@ namespace QMC.LCP_280.Process.Component
 
         private void DrawSelectionOrder(Graphics g, Rectangle rect, int order)
         {
-            // 원형 배경
-            int circleSize = Math.Min(rect.Width, rect.Height) / 3;
-            int circleX = rect.Right - circleSize - 2;
+            int circleSize = Math.Min(20, rect.Height - 4); // [변경] 크기 제한
+            int circleX = rect.Right - circleSize - 4;
             int circleY = rect.Top + 2;
             var circleRect = new Rectangle(circleX, circleY, circleSize, circleSize);
 
             using (var brush = new SolidBrush(Color.White))
-            {
                 g.FillEllipse(brush, circleRect);
-            }
-
             using (var pen = new Pen(Color.Black))
-            {
                 g.DrawEllipse(pen, circleRect);
-            }
 
-            // 순서 번호 텍스트
-            using (var font = new Font("Arial", circleSize * 0.4f, FontStyle.Bold))
+            using (var font = new Font("Arial", 8f, FontStyle.Bold))
             using (var brush = new SolidBrush(Color.Black))
             using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
             {
@@ -836,27 +584,20 @@ namespace QMC.LCP_280.Process.Component
 
         private void DrawSlotNumber(Graphics g, Rectangle rect, int slotNumber)
         {
-            using (var font = new Font("Arial", Math.Max(6, _cellSize * 0.3f), FontStyle.Bold))
+            using (var font = new Font("Arial", 7f, FontStyle.Bold))
             using (var path = new GraphicsPath())
-            using (var outlinePen = new Pen(Color.White, 3f)) // 외곽선 두께
+            using (var outlinePen = new Pen(Color.White, 3f))
             using (var fillBrush = new SolidBrush(Color.Black))
             {
                 string text = slotNumber.ToString();
-                float x = rect.Left + 2;
+                float x = rect.Left + 4;
                 float y = rect.Top + 2;
 
-                // GraphicsPath에 텍스트 추가
-                path.AddString(text, font.FontFamily, (int)font.Style, font.Size,
-                               new PointF(x, y), StringFormat.GenericDefault);
-
-                // 안티앨리어싱 활성화
+                path.AddString(text, font.FontFamily, (int)font.Style, font.Size, new PointF(x, y), StringFormat.GenericDefault);
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-
-                // 1. 흰색 외곽선 그리기
                 g.DrawPath(outlinePen, path);
-
-                // 2. 검은색 텍스트 채우기
                 g.FillPath(fillBrush, path);
+                g.SmoothingMode = SmoothingMode.Default;
             }
         }
 
@@ -871,81 +612,22 @@ namespace QMC.LCP_280.Process.Component
         }
         #endregion
 
-        #region UI 업데이트
-        // UI 스레드 실행 헬퍼
+        #region UI 업데이트 / 공개 메서드
         private void RunOnUI(Action action)
         {
             if (action == null) return;
             if (!IsHandleCreated || IsDisposed) return;
             if (InvokeRequired)
-            {
-                try { BeginInvoke(action); } catch { /* 컨트롤 dispose 중 */ }
-            }
+                try { BeginInvoke(action); } catch { }
             else
-            {
                 action();
-            }
         }
 
         private void UpdateUI()
         {
-            if (!IsHandleCreated || IsDisposed) return;
-            if (InvokeRequired)
-            {
-                RunOnUI(UpdateUI);
-                return;
-            }
-
-            //if (lbl_SelectedCountValue == null || lbl_NextOrderValue == null || list_SelectedSlots == null || list_SelectedSlots.IsDisposed)
-            //    return;
-
-            List<int> selectedSlots;
-            List<int> selectedInOrder;
-            int nextSel;
-
-            lock (_selectionLock)
-            {
-                selectedSlots = _selectedSlots.ToList();
-                selectedInOrder = _selectionOrder.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
-                nextSel = _nextSelectionNumber;
-            }
-
-            //string countText = selectedSlots.Count.ToString();
-            //if (lbl_SelectedCountValue.Text != countText)
-            //    lbl_SelectedCountValue.Text = countText;
-
-            //string nextOrderText = (_materialCassette != null && nextSel > _materialCassette.SlotCount) ? "1" : nextSel.ToString();
-            //if (lbl_NextOrderValue.Text != nextOrderText)
-            //    lbl_NextOrderValue.Text = nextOrderText;
-
-            //list_SelectedSlots.BeginUpdate();
-            //try
-            //{
-            //    list_SelectedSlots.Items.Clear();
-            //    if (selectedInOrder.Count == 0)
-            //    {
-            //        list_SelectedSlots.Items.Add("None");
-            //    }
-            //    else
-            //    {
-            //        foreach (var slotNumber in selectedInOrder)
-            //        {
-            //            int order;
-            //            lock (_selectionLock)
-            //                order = _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
-            //            list_SelectedSlots.Items.Add($"{order}: Slot{slotNumber}");
-            //        }
-            //    }
-            //}
-            //finally
-            //{
-            //    list_SelectedSlots.EndUpdate();
-            //}
+            // 필요 시 우측 정보 패널 업데이트 로직 복원
         }
-        #endregion
 
-        #region 공개 메서드 (외부 제어 API)
-        /// <summary>모든 선택 해제</summary>
         public void ClearSelection()
         {
             lock (_selectionLock)
@@ -958,31 +640,26 @@ namespace QMC.LCP_280.Process.Component
             RunOnUI(UpdateUI);
         }
 
-        /// <summary>선택된 슬롯 번호들 반환</summary>
         public List<int> GetSelectedSlots()
         {
             lock (_selectionLock) return _selectedSlots.ToList();
         }
 
-        /// <summary>선택 순서대로 슬롯 번호들 반환</summary>
         public List<int> GetSelectedSlotsInOrder()
         {
             lock (_selectionLock) return _selectionOrder.OrderBy(k => k.Value).Select(k => k.Key).ToList();
         }
 
-        /// <summary>특정 슬롯의 선택 순서 반환</summary>
         public int GetSlotSelectionOrder(int slotNumber)
         {
             lock (_selectionLock) return _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
         }
 
-        /// <summary>선택된 슬롯 개수 반환</summary>
         public int GetSelectedCount()
         {
             lock (_selectionLock) return _selectedSlots.Count;
         }
 
-        /// <summary>지정 슬롯 Presence 설정 (1-based)</summary>
         public void SetSlotPresent(int slotNumber, bool present)
         {
             if (_materialCassette == null) return;
@@ -992,11 +669,9 @@ namespace QMC.LCP_280.Process.Component
             EnsureSlotInitialized(idx);
             var wafer = _materialCassette.GetWafer(idx);
             wafer.Presence = present ? MaterialPresence.Exist : MaterialPresence.NotExist;
-
             NotifyCassetteChanged();
         }
 
-        /// <summary>지정 슬롯 Presence 토글 (1-based)</summary>
         public void ToggleSlotPresent(int slotNumber)
         {
             if (_materialCassette == null) return;
@@ -1006,11 +681,9 @@ namespace QMC.LCP_280.Process.Component
             EnsureSlotInitialized(idx);
             var wafer = _materialCassette.GetWafer(idx);
             wafer.Presence = wafer.Presence == MaterialPresence.Exist ? MaterialPresence.NotExist : MaterialPresence.Exist;
-
             NotifyCassetteChanged();
         }
 
-        /// <summary>테스트용 카세트 생성</summary>
         public void CreateTestCassette(int slotCount = 25)
         {
             var testCassette = new MaterialCassette
@@ -1018,22 +691,18 @@ namespace QMC.LCP_280.Process.Component
                 SlotCount = slotCount,
                 Slots = Enumerable.Repeat<MaterialWafer>(null, slotCount).ToList()
             };
-
-            // 교대로 있음/없음
             for (int i = 0; i < slotCount; i++)
             {
                 var wafer = new MaterialWafer()
                 {
                     Presence = (i % 2 == 0) ? MaterialPresence.Exist : MaterialPresence.NotExist,
-                    SlotIndex = i
+                    SlotIndex = i,
+                    WaferId = $"TEST_WAFER_{i + 1:00}" // 테스트용 ID
                 };
                 testCassette.SetWafer(i, wafer);
             }
-
             SetMaterialCassette(testCassette);
         }
         #endregion
-
-
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -296,5 +297,145 @@ namespace QMC.Common
 		}
 
 
+        // [추가] 오래된 로그 삭제 기능 구현
+        // [수정] 기존 로그 삭제 함수는 범용 함수를 호출하도록 변경 (하위 호환성 유지)
+        public void DeleteOldLogs(int keepDays)
+        {
+            // 기본 로그 경로, .log 파일 대상
+            DeleteOldFiles(m_strLogPath, keepDays, "*.log");
+        }
+
+        // [추가] 폴더 경로와 파일 패턴을 지정하여 오래된 파일 삭제 (이미지 등 다른 파일 정리에 사용 가능)
+        public void DeleteOldFiles(string folderPath, int keepDays, string searchPattern = "*.*")
+        {
+            // 백그라운드 태스크로 실행
+            Task.Run(() =>
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+                        return;
+
+                    // 기준 날짜 계산 (오늘 - 보관일수)
+                    DateTime limitDate = DateTime.Today.AddDays(-keepDays);
+
+                    // 해당 폴더에서 패턴에 맞는 파일 목록 조회
+                    string[] files = Directory.GetFiles(folderPath, searchPattern);
+
+                    // 날짜 패턴 (YYYY-MM-DD) 찾기 위한 정규식
+                    Regex dateRegex = new Regex(@"(\d{4}-\d{2}-\d{2})");
+
+                    foreach (string file in files)
+                    {
+                        try
+                        {
+                            bool bDelete = false;
+                            string fileName = Path.GetFileName(file);
+                            Match match = dateRegex.Match(fileName);
+
+                            if (match.Success)
+                            {
+                                // 1. 파일명에 날짜가 있는 경우 (예: Image_2026-02-04.jpg)
+                                if (DateTime.TryParse(match.Value, out DateTime fileDate))
+                                {
+                                    if (fileDate < limitDate)
+                                        bDelete = true;
+                                }
+                            }
+                            else
+                            {
+                                // 2. 파일명에 날짜가 없는 경우 -> 파일의 수정 날짜(LastWriteTime) 기준
+                                FileInfo fi = new FileInfo(file);
+                                if (fi.LastWriteTime.Date < limitDate)
+                                    bDelete = true;
+                            }
+
+                            if (bDelete)
+                            {
+                                File.Delete(file);
+                                // System.Diagnostics.Debug.WriteLine($"Deleted: {file}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // 개별 파일 삭제 실패(사용중 등) 시 로그만 남기고 계속 진행
+                            System.Diagnostics.Debug.WriteLine($"Failed to delete {file}: {ex.Message}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 폴더 접근 권한 등 전체 에러
+                    System.Diagnostics.Debug.WriteLine($"File cleanup failed: {ex.Message}");
+                }
+            });
+        }
+
+        // [추가] 오래된 폴더 삭제 기능 (하위 폴더 포함 삭제)
+        public void DeleteOldFolders(string rootPath, int keepDays)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(rootPath) || !Directory.Exists(rootPath))
+                        return;
+
+                    DateTime limitDate = DateTime.Today.AddDays(-keepDays);
+                    string[] directories = Directory.GetDirectories(rootPath);
+                    Regex dateRegex = new Regex(@"(\d{4}-\d{2}-\d{2})|(\d{8})"); // YYYY-MM-DD 또는 YYYYMMDD
+
+                    foreach (string dir in directories)
+                    {
+                        try
+                        {
+                            bool bDelete = false;
+                            string dirName = new DirectoryInfo(dir).Name;
+                            Match match = dateRegex.Match(dirName);
+
+                            if (match.Success)
+                            {
+                                // 1. 폴더명에 날짜가 있는 경우 (예: 2024-02-04 또는 20240204)
+                                string dateStr = match.Value;
+
+                                // YYYYMMDD 형식이면 YYYY-MM-DD로 변환 시도
+                                if (dateStr.Length == 8 && !dateStr.Contains("-"))
+                                {
+                                    dateStr = dateStr.Insert(4, "-").Insert(7, "-");
+                                }
+
+                                if (DateTime.TryParse(dateStr, out DateTime folderDate))
+                                {
+                                    if (folderDate < limitDate)
+                                        bDelete = true;
+                                }
+                            }
+                            else
+                            {
+                                // 2. 폴더명에 날짜가 없는 경우 -> 폴더 생성일(CreationTime) 기준
+                                DirectoryInfo di = new DirectoryInfo(dir);
+                                if (di.CreationTime.Date < limitDate)
+                                    bDelete = true;
+                            }
+
+                            if (bDelete)
+                            {
+                                // recursive: true -> 하위 파일/폴더까지 모두 삭제
+                                Directory.Delete(dir, true);
+                                // System.Diagnostics.Debug.WriteLine($"Deleted folder: {dir}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Failed to delete folder {dir}: {ex.Message}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Folder cleanup failed: {ex.Message}");
+                }
+            });
+        }
     }
 }

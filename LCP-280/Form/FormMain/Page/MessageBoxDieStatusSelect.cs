@@ -143,8 +143,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             //}
         }
 
-        private void btn_Skip_Click(object sender, EventArgs e)
+        private void btn_Close_Click(object sender, EventArgs e)
         {
+            RotateStatus = (int)Rotary.RotarySocketState.None;
             this.DialogResult = DialogResult.OK;
             this.Close();
         }

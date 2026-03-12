@@ -749,13 +749,11 @@ namespace QMC.Common.Cameras
                 if (this.ImageRotate == ImageRotateInfo.None)
                 {
                     Marshal.Copy(pointer, bytes, 0, bytes.Length);
-
                 }
                 else
                 {
                     byte[] bytesOrg = new byte[resolution.Width * resolution.Height];
                     Marshal.Copy(pointer, bytesOrg, 0, bytes.Length);
-
 
                     if (this.ImageRotate == ImageRotateInfo.RotateCW)
                     {
@@ -770,7 +768,6 @@ namespace QMC.Common.Cameras
                             nStartIndex = iter * resolution.Width;
                             nEndIndex = (iter+ resolution.Height / nDiv) * resolution.Width;
                             
-
                             if (nEndIndex > nSize)
                             {
                                 nEndIndex = nSize;
@@ -1099,7 +1096,7 @@ namespace QMC.Common.Cameras
         #region Close()
 
         //public override void Close()
-        public void Close()
+        public override void Close()
         {
             //base.Close();
             CloseProcedure();

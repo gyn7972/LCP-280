@@ -2415,6 +2415,26 @@ namespace QMC.Common.Vision
             this.SuspendDisplay();
         }
 
+        // 외부에서 호출하기 쉬운 Fit 함수
+        public void FitImageToScreen()
+        {
+            if (this.InputImage == null) 
+                return;
+
+            // 줌 배율 1.0으로 초기화
+            this.Scale.Wheel = 1.0;
+
+            // 이미지 센터로 정렬
+            this.Scale.SetMousePoint(new Point(this.InputImage.Header.Width / 2, this.InputImage.Header.Height / 2));
+            this.Scale.MoveCenter(new Size(this.InputImage.Header.Width, this.InputImage.Header.Height));
+
+            // 변경 사항 적용 플래그 설정
+            this.m_IsChanged = true;
+
+            // 즉시 다시 그리기 (Task 방식이면 자동 갱신되겠지만, 강제 호출)
+            ForceRedraw();
+        }
+
         public Camera CurrentCamera =>
                 (this.m_CameraSwitch != null && this.m_CameraSwitch.SelectCameraIndex != -1)
                 ? this.m_CameraSwitch.Cameras[this.m_CameraSwitch.SelectCameraIndex]

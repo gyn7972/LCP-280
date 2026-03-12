@@ -153,7 +153,6 @@ namespace QMC.Common.Vision.Tools
                 {
                     if ((ret = this.CheckedLicense()) != 0)
                     {
-                        //MessageBox()
                         return ret;
                     }
                 }
@@ -509,12 +508,12 @@ namespace QMC.Common.Vision.Tools
         public static void Write(VisionTool tool, Library library, string message)
         {
             //Log.Write(VisionToolLog.FileName, string.Format("{0}_{1} -> {2}", library, tool.Name, message));
-            Console.WriteLine(string.Format("{0}_{1} -> {2}", library, tool.Name, message));
+            //Console.WriteLine(string.Format("{0}_{1} -> {2}", library, tool.Name, message));
         }
         public static void Write(VisionTool tool, string message)
         {
             //Log.Write(VisionToolLog.FileName, string.Format("{0} -> {1}", tool.Name, message));
-            Console.WriteLine(string.Format("{0} -> {1}", tool.Name, message));
+            //Console.WriteLine(string.Format("{0} -> {1}", tool.Name, message));
         }
         //public static void Write(VisionToolExecutor executer, string message)
         //{

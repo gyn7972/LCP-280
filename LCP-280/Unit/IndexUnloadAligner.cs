@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
+using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
@@ -26,31 +27,53 @@ namespace QMC.LCP_280.Process.Unit
     {
         public event EventHandler<PatternMarksFoundEventArgs> MarksFound;
 
-        public enum AlarmKeys
+        public new enum AlarmKeys
         {
-            eRotaryNotSafe = 4001,
-            eVisionSearch = 4002,
+            eRotaryNotSafe = 10901,
+            eVisionSearch,
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
+            string source = "Index_UnloadAlign";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
-            alarm.Title = "Rotary Not Safe";
-            alarm.Cause = "Rotary axis is not in safe position.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eVisionSearch;
-            alarm.Title = "Vision Search Fail";
-            alarm.Cause = "Vision pattern search failed.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+                alarm.Title = "Rotary Not Safe";
+                alarm.Cause = "Rotary axis is not in safe position.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eVisionSearch;
+                alarm.Title = "Vision Search Fail";
+                alarm.Cause = "Vision pattern search failed.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+
+            
         }
         #endregion
 
@@ -123,6 +146,12 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnStart()
         {
+            try
+            {
+                PmRunner.LoadRecipe(); // 시작할 때 한 번만 로드
+            }
+            catch (Exception ex) { Log.Write(ex); }
+
             return base.OnStart();
         }
         public override int OnStop()
@@ -178,8 +207,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public int AlignXY(bool bFineSpeed = false)
         {
-            int nRet = 0;
-
             IsStatus_AlignDoneXY = false;
             IsAlignResult = false;
             dLastFoundX = 0.0;
@@ -193,7 +220,9 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
-            if (Config.IsSimulation || this.Config.IsDryRun)
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (Config.IsSimulation || (this.Config.IsDryRun || IsDryRunEqp))
             {
                 IsAlignResult = true;
                 IsStatus_AlignDoneXY = true;
@@ -210,27 +239,25 @@ namespace QMC.LCP_280.Process.Unit
             if (IndexOutCamera.IsLiveOn)
             {
                 IndexOutCamera.StopLive();
-                Thread.Sleep(50);
+                Thread.Sleep(50); // <- 처음 한 번만 대기하기 때문에 택타임 영향 미비.
             }
 
+            VisionImage img = null; // [Patch] 리소스 해제를 위해 외부 선언
             try
             {
-                // 1) Recipe 보장 (InputStage 쪽 스타일)
-                //    - VisionRunnerHub.GetOrCreate(key)로 얻은 러너는 내부적으로 카메라별 재사용함
-                //    - LoadRecipe 실패해도 Search는 실행될 수 있으나 실패율이 큼
-                try
-                {
-                    PmRunner.LoadRecipe();
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(UnitName, "AlignXY", "LoadRecipe error: " + ex.Message);
-                }
+                //AutoStart 할때 한 번만 불어오도록 처리. 택타임 단축.
+                //// 1) Recipe 보장 
+                //try
+                //{
+                //    PmRunner.LoadRecipe();
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log.Write(ex);
+                //}
 
                 // 2) Grab
-                VisionImage img = null;
                 IndexOutCamera.SuspendedImageDisplay = true;
-
                 int rcGrab = IndexOutCamera.GrabSync(out img);
                 if (rcGrab != 0 || img == null || img.GetImage() == null)
                 {
@@ -240,18 +267,20 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 3) Search
                 var result = PmRunner.Search(img, save: false);
+                // 4) 결과 표시 
+                var matches = (result != null && result.Matches != null)
+                                ? result.Matches.ToArray()
+                                : null;
 
-                // 4) 성공시 overlay 이벤트 (InputStage와 동일 컨셉)
-                if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
+                int repIdx = 0;
+                if (result != null && result.Matches != null &&
+                    result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count)
                 {
-                    int repIdx =
-                        (result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count)
-                            ? result.ReferenceIndex
-                            : 0;
-
-                    RaiseMarks(img, result.Matches.ToArray(), repIdx);
+                    repIdx = result.ReferenceIndex;
                 }
 
+                // 기존의 if (result.Success ...) 조건을 제거하고 바로 호출
+                RaiseMarks(img, matches, repIdx);
                 // 5) 결과값 반영 (기존 로직 유지하되 안전하게)
                 if (result != null && result.Success)
                 {
@@ -272,14 +301,43 @@ namespace QMC.LCP_280.Process.Unit
                 else
                 {
                     IsAlignResult = false;
+                    string reason = (result != null ? result.FailReason : "result null");
+                    Log.Write(UnitName, "AlignXY", $"Vision Search Fail. reason={reason}");
+                    // ==========================================================
+                    // [추가됨] 실패 시 이미지 저장 (날짜시간_밀리초.bmp)
+                    // ==========================================================
+                    try
+                    {
+                        // 1. 저장 경로 설정 (D:\Log\Image\{UnitName}\Fail)
+                        string saveFolder = $@"D:\LCP-280\Log\Image\{UnitName}\Fail";
 
-                    Log.Write(UnitName, "AlignXY",
-                        $"Vision Search Fail. reason={(result != null ? result.FailReason : "result null")}");
+                        // 2. 폴더 없으면 생성
+                        if (!System.IO.Directory.Exists(saveFolder))
+                        {
+                            System.IO.Directory.CreateDirectory(saveFolder);
+                        }
+
+                        // 3. 파일명 생성 (년월일_시분초_밀리초)
+                        string fileName = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".bmp";
+                        string fullPath = System.IO.Path.Combine(saveFolder, fileName);
+
+                        // 4. 저장 실행
+                        if (img != null)
+                        {
+                            img.Save(fullPath, VisionImage.FileFilter.bmp);
+                            Log.Write(UnitName, "AlignXY", $"Saved Fail Image: {fileName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                    // ==========================================================
+
+                    // 필요 시 알람:
+                    // PostAlarm((int)AlarmKeys.eVisionSearch);
+                    //return -1; // ← 실패를 상위에서 감지하고 싶으면 -1 유지, "그냥 진행"이면 0으로 바꿔도 됨
                 }
-
-                // (선택) 이미지 저장은 필요할 때만 하거나 try-catch로 보호 권장
-                // try { img?.Save(VisionImage.FileFilter.bmp); } catch { }
-
                 return 0;
             }
             catch (Exception ex)
@@ -289,10 +347,16 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
+                // [Patch] 이미지 리소스 해제
+                if (img != null)
+                {
+                    img.Dispose();
+                    img = null;
+                }
+
                 IsStatus_AlignDoneXY = true;
                 try { IndexOutCamera.SuspendedImageDisplay = false; } catch { }
             }
-
         }
 
         public int RunAlignSocketOnceReady(bool bFineSpeed = false)
@@ -324,11 +388,8 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-                this.CurrentFunc = RunAlignSocketOnce;
-             
-           
+            this.CurrentFunc = RunAlignSocketOnce;
             Log.Write(UnitName, "Align Start");
-
 
             int nIndex = this.GetUnloaderAlignIndexNo();
             bool bUseSocket  = this.Rotary.Config.GetUseSocket(nIndex);
@@ -337,10 +398,18 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Align", "Skip: No socket at unload align position");
                 return 0;
             }
+
             MaterialDie die = this.Rotary.GetUnloadSocketMaterial();
             if (die == null || die.Presence != Material.MaterialPresence.Exist)
             {
                 Log.Write(UnitName, "Align", "Skip: No die on unload socket");
+                return 0;
+            }
+
+            if ( die.State == DieProcessState.Skip
+                || die.ProcessSatate == MaterialProcessSatate.Skipped)
+            {
+                Log.Write(UnitName, "Align", "die.State == DieProcessState.Skip");
                 return 0;
             }
 
@@ -370,16 +439,17 @@ namespace QMC.LCP_280.Process.Unit
                 //return -1;
                 nRet = 0;
             }
+            else
+            {
+                //pixel Data
+                die.UnloadAlignOffsetX = dLastFoundX;
+                die.UnloadAlignOffsetY = dLastFoundY;
+                die.UnloadAlignOffsetT = dLastFoundAngle;
+            }
 
-            //pixel Data
-            die.UnloadAlignOffsetX = dLastFoundX;
-            die.UnloadAlignOffsetY = dLastFoundY;
-            die.UnloadAlignOffsetT = dLastFoundAngle;
-            
             die.State = DieProcessState.Inspected;
             SetMaterial(die);
             socket.SetState(Rotary.RotarySocketState.VAligned);
-
             return nRet;
         }
 
@@ -511,7 +581,6 @@ namespace QMC.LCP_280.Process.Unit
             if (!Enum.TryParse(tpName, out en))
                 return -1;
 
-            int nIndex = -1;
             switch (en)
             {
                 //case IndexUnloadAlignerConfig.TeachingPositionName.AlignZ_Index1_Up: 
@@ -522,7 +591,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
             }
 
-            return 0;
+            //return 0;
         }
 
 

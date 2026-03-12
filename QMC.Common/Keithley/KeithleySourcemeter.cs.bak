@@ -388,7 +388,7 @@ namespace QMC.Common.Keithley
                                 }
 
                                 //VF1은 단뒤가 다른디.. 
-                                if (item.Name == "VF1") //VF1은 uA 인데.
+                                if (item.Name == "VF1" || item.Name == "VF5") //VF1은 uA 인데.
                                 {
                                     dUnit = dUnit / 1000 / 1000;
                                 }
@@ -407,7 +407,6 @@ namespace QMC.Common.Keithley
                                 command.MeasureTime = item.MeasureTime;
                                 command.MeasureRange = GetVMeasureRange(command.MeasureLimit);
                                 channel.AddCommand(command);
-
                             }
                             break;
                         case TestItemType.VR: //uA

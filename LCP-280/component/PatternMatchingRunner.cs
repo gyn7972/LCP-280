@@ -509,22 +509,36 @@ namespace QMC.LCP_280.Process
             var sb = new StringBuilder();
             foreach (var vi in _parameters.TrainImages)
             {
-                if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
-                try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
+                // [최적화] GetImage() 호출은 Bitmap 변환 등 무거운 작업을 유발할 수 있으므로,
+                // 가벼운 Header 속성(Width/Height 등)만 검사하여 변경 여부를 확인합니다.
+                if (vi == null || vi.Header == null || vi.Header.Width <= 0 || vi.Header.Height <= 0)
+                {
+                    sb.Append("NULL;");
+                    continue;
+                }
+
+                sb.Append(vi.Header.Width).Append('x').Append(vi.Header.Height).Append(';');
             }
             return ComputeSha1(sb.ToString()) != _lastTemplateHash;
         }
+
         private void UpdateTemplateHash()
         {
             if (_parameters?.TrainImages == null) { _lastTemplateHash = string.Empty; return; }
             var sb = new StringBuilder();
             foreach (var vi in _parameters.TrainImages)
             {
-                if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
-                try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
+                if (vi == null || vi.Header == null || vi.Header.Width <= 0 || vi.Header.Height <= 0)
+                {
+                    sb.Append("NULL;");
+                    continue;
+                }
+
+                sb.Append(vi.Header.Width).Append('x').Append(vi.Header.Height).Append(';');
             }
             _lastTemplateHash = ComputeSha1(sb.ToString());
         }
+
         private string ComputeSha1(string text)
         {
             using (var sha1 = SHA1.Create())
@@ -533,6 +547,41 @@ namespace QMC.LCP_280.Process
                 return BitConverter.ToString(sha1.ComputeHash(bytes)).Replace("-", "");
             }
         }
+
+
+
+        //private bool IsTemplateModified()
+        //{
+        //    if (_parameters?.TrainImages == null) 
+        //        return false;
+
+        //    var sb = new StringBuilder();
+        //    foreach (var vi in _parameters.TrainImages)
+        //    {
+        //        if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
+        //        try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
+        //    }
+        //    return ComputeSha1(sb.ToString()) != _lastTemplateHash;
+        //}
+        //private void UpdateTemplateHash()
+        //{
+        //    if (_parameters?.TrainImages == null) { _lastTemplateHash = string.Empty; return; }
+        //    var sb = new StringBuilder();
+        //    foreach (var vi in _parameters.TrainImages)
+        //    {
+        //        if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
+        //        try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
+        //    }
+        //    _lastTemplateHash = ComputeSha1(sb.ToString());
+        //}
+        //private string ComputeSha1(string text)
+        //{
+        //    using (var sha1 = SHA1.Create())
+        //    {
+        //        var bytes = Encoding.UTF8.GetBytes(text ?? string.Empty);
+        //        return BitConverter.ToString(sha1.ComputeHash(bytes)).Replace("-", "");
+        //    }
+        //}
         private int EnsureTemplatesTrained()
         {
             int count = 0; if (_parameters?.TrainImages == null) return 0;
@@ -924,123 +973,228 @@ namespace QMC.LCP_280.Process
 
             foreach (var vw in targets)
             {
-                try
+                // [최적화] UI 컨트롤 갱신은 무조건 비동기로 던져서 Search 스레드(연산)가 대기하지 않게 합니다.
+                if (vw.IsHandleCreated)
                 {
-                    vw.ResultOverlays?.Clear();
+                    vw.BeginInvoke(new Action(() => ApplyOverlayToViewer(vw, raw)));
+                }
+            }
+        }
 
-                    // 1) Tool에서 생성한 Overlay 복사
-                    foreach (var ov in raw.ResultOverlays)
+        // [추가] 실제 오버레이 그리기 로직 분리
+        private void ApplyOverlayToViewer(VisionImageViewer vw, PatternMatchingResult raw)
+        {
+            try
+            {
+                vw.ResultOverlays?.Clear();
+
+                // 1) Tool에서 생성한 Overlay 복사
+                foreach (var ov in raw.ResultOverlays)
+                {
+                    if (ov == null) continue;
+                    ov.Visible = true;
+                    vw.ResultOverlays.Add(ov);
+                }
+
+                // 2) Cross / Index 표시 (Values는 항상 절대좌표로 확정됨)
+                if (_lastRawResult != null && _lastRawResult.Values != null && _lastRawResult.Values.Count > 0)
+                {
+                    int repIdx = (_lastReferenceIndex >= 0 && _lastReferenceIndex < _lastRawResult.Values.Count) ? _lastReferenceIndex : 0;
+                    int crossLenBase = Math.Max(2, _opt.CrossHalfLength);
+
+                    for (int i = 0; i < _lastRawResult.Values.Count; i++)
                     {
-                        if (ov == null) continue;
-                        ov.Visible = true;
-                        vw.ResultOverlays.Add(ov);
-                    }
+                        var v = _lastRawResult.Values[i];
+                        double absX = v.X;
+                        double absY = v.Y;
+                        bool isRep = (i == repIdx);
+                        int len = isRep ? (int)(crossLenBase * 1.4) : crossLenBase;
 
-                    // 2) Cross / Index 표시 (Values는 항상 절대좌표로 확정됨)
-                    if (_lastRawResult != null && _lastRawResult.Values != null && _lastRawResult.Values.Count > 0)
-                    {
-                        int repIdx = (_lastReferenceIndex >= 0 && _lastReferenceIndex < _lastRawResult.Values.Count) ? _lastReferenceIndex : 0;
-                        int crossLenBase = Math.Max(2, _opt.CrossHalfLength);
-
-                        for (int i = 0; i < _lastRawResult.Values.Count; i++)
-                        {
-                            var v = _lastRawResult.Values[i];
-                            double absX = v.X;
-                            double absY = v.Y;
-
-                            bool isRep = (i == repIdx);
-                            int len = isRep ? (int)(crossLenBase * 1.4) : crossLenBase;
-                            int thickness = isRep ? 2 : 1;
-                            Color crossColor = _opt.CrossColor;
-
-                            // 안해도됨. (지우지는마)
-                            //try
-                            //{
-                            //    var h = new LineFrameVisionImageOverlay($"PM_M{i}_H")
-                            //    {
-                            //        StartLocation = new Point((int)Math.Round(absX) - len, (int)Math.Round(absY)),
-                            //        EndLocation = new Point((int)Math.Round(absX) + len, (int)Math.Round(absY)),
-                            //        Color = crossColor,
-                            //        DashStyle = DashStyle.Solid,
-                            //        Thickness = thickness,
-                            //        Visible = true
-                            //    };
-                            //    vw.ResultOverlays.Add(h);
-                            //}
-                            //catch { }
-
-                            //try
-                            //{
-                            //    var vert = new LineFrameVisionImageOverlay($"PM_M{i}_V")
-                            //    {
-                            //        StartLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) - len),
-                            //        EndLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) + len),
-                            //        Color = crossColor,
-                            //        DashStyle = DashStyle.Solid,
-                            //        Thickness = thickness,
-                            //        Visible = true
-                            //    };
-                            //    vw.ResultOverlays.Add(vert);
-                            //}
-                            //catch { }
-
-                            if (_opt.ShowMatchIndexes)
-                            {
-                                try
-                                {
-                                    // 기본 위치 (우측상단) 계산
-                                    int tx = (int)Math.Round(absX) + (len + 3);
-                                    int ty = (int)Math.Round(absY) - (len + 3);
-
-                                    // 이미지 경계 안으로 클램프 (viewer 이미지 기준 절대좌표)
-                                    // raw.ResultOverlays 는 원본 이미지 좌표계이므로 간단히 0 이상만 보정
-                                    if (ty < 0) ty = (int)Math.Round(absY) + (len + 3); // 위로 벗어나면 아래쪽으로 배치
-                                    if (tx < 0) tx = (int)Math.Round(absX) + 2;         // 왼쪽으로 벗어나면 살짝 오른쪽
-
-                                    var startPt = new Point(tx, ty);
-                                    var txtOv = new TextVisionImageOverlay($"PM_M{i}_IDX", startPt)
-                                    {
-                                        FontStyle = _indexFont,
-                                        BrushColor = new SolidBrush(_opt.IndexTextColor),
-                                        Text = i.ToString(),
-                                        Color = _opt.IndexTextColor,
-                                        Visible = true
-                                    };
-                                    vw.ResultOverlays.Add(txtOv);
-                                }
-                                catch { }
-                            }
-                        }
-
-                        if (_opt.HighlightReferenceMatch && repIdx >= 0 && repIdx < _lastRawResult.Values.Count)
+                        if (_opt.ShowMatchIndexes)
                         {
                             try
                             {
-                                var rep = _lastRawResult.Values[repIdx];
-                                double absX = rep.X;
-                                double absY = rep.Y;
+                                int tx = (int)Math.Round(absX) + (len + 3);
+                                int ty = (int)Math.Round(absY) - (len + 3);
 
-                                int rad = Math.Max(5, _opt.ReferenceMarkRadius);
-                                var rectOv = new RectangleFrameVisionImageOverlay("PM_REF_RING")
+                                if (ty < 0) ty = (int)Math.Round(absY) + (len + 3);
+                                if (tx < 0) tx = (int)Math.Round(absX) + 2;
+
+                                var startPt = new Point(tx, ty);
+                                var txtOv = new TextVisionImageOverlay($"PM_M{i}_IDX", startPt)
                                 {
-                                    StartLocation = new Point((int)Math.Round(absX) - rad, (int)Math.Round(absY) - rad),
-                                    EndLocation = new Point((int)Math.Round(absX) + rad, (int)Math.Round(absY) + rad),
-                                    Color = _opt.ReferenceMarkColor,
-                                    DashStyle = DashStyle.Dash,
-                                    Thickness = 2,
+                                    FontStyle = _indexFont,
+                                    BrushColor = new SolidBrush(_opt.IndexTextColor),
+                                    Text = i.ToString(),
+                                    Color = _opt.IndexTextColor,
                                     Visible = true
                                 };
-                                vw.ResultOverlays.Add(rectOv);
+                                vw.ResultOverlays.Add(txtOv);
                             }
                             catch { }
                         }
                     }
 
-                    vw.Invalidate();
+                    if (_opt.HighlightReferenceMatch && repIdx >= 0 && repIdx < _lastRawResult.Values.Count)
+                    {
+                        try
+                        {
+                            var rep = _lastRawResult.Values[repIdx];
+                            double absX = rep.X;
+                            double absY = rep.Y;
+
+                            int rad = Math.Max(5, _opt.ReferenceMarkRadius);
+                            var rectOv = new RectangleFrameVisionImageOverlay("PM_REF_RING")
+                            {
+                                StartLocation = new Point((int)Math.Round(absX) - rad, (int)Math.Round(absY) - rad),
+                                EndLocation = new Point((int)Math.Round(absX) + rad, (int)Math.Round(absY) + rad),
+                                Color = _opt.ReferenceMarkColor,
+                                DashStyle = DashStyle.Dash,
+                                Thickness = 2,
+                                Visible = true
+                            };
+                            vw.ResultOverlays.Add(rectOv);
+                        }
+                        catch { }
+                    }
                 }
-                catch { }
+
+                vw.Invalidate();
             }
+            catch { }
         }
+
+        //private void UpdateViewerOverlays(PatternMatchingResult raw, VisionImageViewer viewerOnly = null)
+        //{
+        //    if (raw == null) return;
+        //    List<VisionImageViewer> targets;
+        //    lock (_viewersLock)
+        //    {
+        //        if (viewerOnly != null)
+        //            targets = _viewers.Contains(viewerOnly) ? new List<VisionImageViewer> { viewerOnly } : new List<VisionImageViewer>();
+        //        else
+        //            targets = _viewers.ToList();
+        //    }
+
+        //    foreach (var vw in targets)
+        //    {
+        //        try
+        //        {
+        //            vw.ResultOverlays?.Clear();
+
+        //            // 1) Tool에서 생성한 Overlay 복사
+        //            foreach (var ov in raw.ResultOverlays)
+        //            {
+        //                if (ov == null) continue;
+        //                ov.Visible = true;
+        //                vw.ResultOverlays.Add(ov);
+        //            }
+
+        //            // 2) Cross / Index 표시 (Values는 항상 절대좌표로 확정됨)
+        //            if (_lastRawResult != null && _lastRawResult.Values != null && _lastRawResult.Values.Count > 0)
+        //            {
+        //                int repIdx = (_lastReferenceIndex >= 0 && _lastReferenceIndex < _lastRawResult.Values.Count) ? _lastReferenceIndex : 0;
+        //                int crossLenBase = Math.Max(2, _opt.CrossHalfLength);
+
+        //                for (int i = 0; i < _lastRawResult.Values.Count; i++)
+        //                {
+        //                    var v = _lastRawResult.Values[i];
+        //                    double absX = v.X;
+        //                    double absY = v.Y;
+
+        //                    bool isRep = (i == repIdx);
+        //                    int len = isRep ? (int)(crossLenBase * 1.4) : crossLenBase;
+        //                    int thickness = isRep ? 2 : 1;
+        //                    Color crossColor = _opt.CrossColor;
+
+        //                    // 안해도됨. (지우지는마)
+        //                    //try
+        //                    //{
+        //                    //    var h = new LineFrameVisionImageOverlay($"PM_M{i}_H")
+        //                    //    {
+        //                    //        StartLocation = new Point((int)Math.Round(absX) - len, (int)Math.Round(absY)),
+        //                    //        EndLocation = new Point((int)Math.Round(absX) + len, (int)Math.Round(absY)),
+        //                    //        Color = crossColor,
+        //                    //        DashStyle = DashStyle.Solid,
+        //                    //        Thickness = thickness,
+        //                    //        Visible = true
+        //                    //    };
+        //                    //    vw.ResultOverlays.Add(h);
+        //                    //}
+        //                    //catch { }
+
+        //                    //try
+        //                    //{
+        //                    //    var vert = new LineFrameVisionImageOverlay($"PM_M{i}_V")
+        //                    //    {
+        //                    //        StartLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) - len),
+        //                    //        EndLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) + len),
+        //                    //        Color = crossColor,
+        //                    //        DashStyle = DashStyle.Solid,
+        //                    //        Thickness = thickness,
+        //                    //        Visible = true
+        //                    //    };
+        //                    //    vw.ResultOverlays.Add(vert);
+        //                    //}
+        //                    //catch { }
+
+        //                    if (_opt.ShowMatchIndexes)
+        //                    {
+        //                        try
+        //                        {
+        //                            // 기본 위치 (우측상단) 계산
+        //                            int tx = (int)Math.Round(absX) + (len + 3);
+        //                            int ty = (int)Math.Round(absY) - (len + 3);
+
+        //                            // 이미지 경계 안으로 클램프 (viewer 이미지 기준 절대좌표)
+        //                            // raw.ResultOverlays 는 원본 이미지 좌표계이므로 간단히 0 이상만 보정
+        //                            if (ty < 0) ty = (int)Math.Round(absY) + (len + 3); // 위로 벗어나면 아래쪽으로 배치
+        //                            if (tx < 0) tx = (int)Math.Round(absX) + 2;         // 왼쪽으로 벗어나면 살짝 오른쪽
+
+        //                            var startPt = new Point(tx, ty);
+        //                            var txtOv = new TextVisionImageOverlay($"PM_M{i}_IDX", startPt)
+        //                            {
+        //                                FontStyle = _indexFont,
+        //                                BrushColor = new SolidBrush(_opt.IndexTextColor),
+        //                                Text = i.ToString(),
+        //                                Color = _opt.IndexTextColor,
+        //                                Visible = true
+        //                            };
+        //                            vw.ResultOverlays.Add(txtOv);
+        //                        }
+        //                        catch { }
+        //                    }
+        //                }
+
+        //                if (_opt.HighlightReferenceMatch && repIdx >= 0 && repIdx < _lastRawResult.Values.Count)
+        //                {
+        //                    try
+        //                    {
+        //                        var rep = _lastRawResult.Values[repIdx];
+        //                        double absX = rep.X;
+        //                        double absY = rep.Y;
+
+        //                        int rad = Math.Max(5, _opt.ReferenceMarkRadius);
+        //                        var rectOv = new RectangleFrameVisionImageOverlay("PM_REF_RING")
+        //                        {
+        //                            StartLocation = new Point((int)Math.Round(absX) - rad, (int)Math.Round(absY) - rad),
+        //                            EndLocation = new Point((int)Math.Round(absX) + rad, (int)Math.Round(absY) + rad),
+        //                            Color = _opt.ReferenceMarkColor,
+        //                            DashStyle = DashStyle.Dash,
+        //                            Thickness = 2,
+        //                            Visible = true
+        //                        };
+        //                        vw.ResultOverlays.Add(rectOv);
+        //                    }
+        //                    catch { }
+        //                }
+        //            }
+
+        //            vw.Invalidate();
+        //        }
+        //        catch { }
+        //    }
+        //}
         #endregion
 
         #region Dispose

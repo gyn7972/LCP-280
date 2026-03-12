@@ -155,6 +155,15 @@ namespace QMC.Common.Alarm
                                 {
                                     baseDataGridViewAlarm.Rows[0].Cells[1].Selected = true;
                                 }
+                                else
+                                {
+                                    // [MOD] 모든 알람이 해제되면 상태를 Stopped로 변경 (EquipmentLocator.Instance.EqState = Stopped 수행됨)
+                                    AlarmManager.Instance.ClearAllAlarms();
+
+                                    // 모든 알람이 해결되었으므로 창 닫기 (선택 사항)
+                                    this.DialogResult = DialogResult.OK;
+                                    this.Close();
+                                }
                                 break;
                             }
                         }

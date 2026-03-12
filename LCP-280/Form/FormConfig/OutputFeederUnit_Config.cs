@@ -1,12 +1,7 @@
 ﻿using QMC.Common;
 using QMC.Common.Component;
-using QMC.Common.CustomControl;
-using QMC.Common.DIO;
-using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Motions;
-using QMC.Common.UI;
-using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component; // Added for TeachingPosition
 using QMC.LCP_280.Process.Unit.FormConfig;
 using System;
@@ -14,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -36,9 +30,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
-
-        private Timer _axisPosTimer; // reserved
-        private Timer _ioTimer;      // reserved
 
         public OutputFeederUnit_Config()
         {

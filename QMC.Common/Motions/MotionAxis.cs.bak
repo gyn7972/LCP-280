@@ -1,4 +1,5 @@
-﻿using QMC.Common.Alarm;
+﻿using NPOI.SS.Formula.Functions;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion.Ajin;
 // CKD
@@ -40,17 +41,303 @@ namespace QMC.Common.Motions
     public sealed class MotionAxis : BaseComponent
     {
         #region Alarm
+        //public enum AlarmKey
+        //{
+        //    //1000~1999 범위로 Axis 관련 알람 정의 (필요시 확장)
+        //    //1000 규칙: 첫번째 자리: 축
+        //    //0110 규칙: 두번째, 세번째 자리: 축번호
+        //    //0001 규칙: 네번째 알람
+        //    AxisHomeTimeout = 1001,
+        //    AxisServoOff = 1002,
+        //    AxisDriverAlarm = 1003,
+        //    AxisPositiveLimit = 1004,
+        //    AxisNegativeLimit = 1005,
+        //    AxisSoftLimit = 1006,
+        //}
         public enum AlarmKey
         {
-            FirstAlarm = 1000,
-            Axis_XXXXXXXXX1_Fail,
-            Axis_XXXXXXXXX2_Fail,
-            Axis_XXXXXXXXX3_Fail,
-            AxisHomeTimeout // 홈 타임아웃 추가
+            // ===== Alarm Type (BB) =====
+            // 01: HomeTimeout
+            // 02: ServoOff
+            // 03: DriverAlarm
+            // 04: PositiveLimit
+            // 05: NegativeLimit
+            // 06: SoftLimit
+
+            // 00 Eject Pin Z Axis
+            EjectPinZ_HomeTimeout = 0001,
+            EjectPinZ_ServoOff = 0002,
+            EjectPinZ_DriverAlarm = 0003,
+            EjectPinZ_PositiveLimit = 0004,
+            EjectPinZ_NegativeLimit = 0005,
+            EjectPinZ_SoftLimit = 0006,
+
+            // 01 Left Tool T Axis
+            LeftToolT_HomeTimeout = 0101,
+            LeftToolT_ServoOff = 0102,
+            LeftToolT_DriverAlarm = 0103,
+            LeftToolT_PositiveLimit = 0104,
+            LeftToolT_NegativeLimit = 0105,
+            LeftToolT_SoftLimit = 0106,
+
+            // 02 Right Tool T Axis
+            RightToolT_HomeTimeout = 0201,
+            RightToolT_ServoOff = 0202,
+            RightToolT_DriverAlarm = 0203,
+            RightToolT_PositiveLimit = 0204,
+            RightToolT_NegativeLimit = 0205,
+            RightToolT_SoftLimit = 0206,
+
+            // 03 Wafer Stage X Axis
+            WaferStageX_HomeTimeout = 0301,
+            WaferStageX_ServoOff = 0302,
+            WaferStageX_DriverAlarm = 0303,
+            WaferStageX_PositiveLimit = 0304,
+            WaferStageX_NegativeLimit = 0305,
+            WaferStageX_SoftLimit = 0306,
+
+            // 04 Wafer Stage Y Axis
+            WaferStageY_HomeTimeout = 0401,
+            WaferStageY_ServoOff = 0402,
+            WaferStageY_DriverAlarm = 0403,
+            WaferStageY_PositiveLimit = 0404,
+            WaferStageY_NegativeLimit = 0405,
+            WaferStageY_SoftLimit = 0406,
+
+            // 05 Wafer Stage T Axis
+            WaferStageT_HomeTimeout = 0501,
+            WaferStageT_ServoOff = 0502,
+            WaferStageT_DriverAlarm = 0503,
+            WaferStageT_PositiveLimit = 0504,
+            WaferStageT_NegativeLimit = 0505,
+            WaferStageT_SoftLimit = 0506,
+
+            // 06 Left Pick Z Axis
+            LeftPickZ_HomeTimeout = 0601,
+            LeftPickZ_ServoOff = 0602,
+            LeftPickZ_DriverAlarm = 0603,
+            LeftPickZ_PositiveLimit = 0604,
+            LeftPickZ_NegativeLimit = 0605,
+            LeftPickZ_SoftLimit = 0606,
+
+            // 07 Left Place Z Axis
+            LeftPlaceZ_HomeTimeout = 0701,
+            LeftPlaceZ_ServoOff = 0702,
+            LeftPlaceZ_DriverAlarm = 0703,
+            LeftPlaceZ_PositiveLimit = 0704,
+            LeftPlaceZ_NegativeLimit = 0705,
+            LeftPlaceZ_SoftLimit = 0706,
+
+            // 08 Index Z Axis
+            IndexZ_HomeTimeout = 0801,
+            IndexZ_ServoOff = 0802,
+            IndexZ_DriverAlarm = 0803,
+            IndexZ_PositiveLimit = 0804,
+            IndexZ_NegativeLimit = 0805,
+            IndexZ_SoftLimit = 0806,
+
+            // 09 Align T Axis
+            AlignT_HomeTimeout = 0901,
+            AlignT_ServoOff = 0902,
+            AlignT_DriverAlarm = 0903,
+            AlignT_PositiveLimit = 0904,
+            AlignT_NegativeLimit = 0905,
+            AlignT_SoftLimit = 0906,
+
+            // 10 Sphere Z Axis
+            SphereZ_HomeTimeout = 1001,
+            SphereZ_ServoOff = 1002,
+            SphereZ_DriverAlarm = 1003,
+            SphereZ_PositiveLimit = 1004,
+            SphereZ_NegativeLimit = 1005,
+            SphereZ_SoftLimit = 1006,
+
+            // 11 Probe Z Axis
+            ProbeZ_HomeTimeout = 1101,
+            ProbeZ_ServoOff = 1102,
+            ProbeZ_DriverAlarm = 1103,
+            ProbeZ_PositiveLimit = 1104,
+            ProbeZ_NegativeLimit = 1105,
+            ProbeZ_SoftLimit = 1106,
+
+            // 12 Probe Card X Axis
+            ProbeCardX_HomeTimeout = 1201,
+            ProbeCardX_ServoOff = 1202,
+            ProbeCardX_DriverAlarm = 1203,
+            ProbeCardX_PositiveLimit = 1204,
+            ProbeCardX_NegativeLimit = 1205,
+            ProbeCardX_SoftLimit = 1206,
+
+            // 13 Probe Card Y Axis
+            ProbeCardY_HomeTimeout = 1301,
+            ProbeCardY_ServoOff = 1302,
+            ProbeCardY_DriverAlarm = 1303,
+            ProbeCardY_PositiveLimit = 1304,
+            ProbeCardY_NegativeLimit = 1305,
+            ProbeCardY_SoftLimit = 1306,
+
+            // 14 Probe Card Z Axis
+            ProbeCardZ_HomeTimeout = 1401,
+            ProbeCardZ_ServoOff = 1402,
+            ProbeCardZ_DriverAlarm = 1403,
+            ProbeCardZ_PositiveLimit = 1404,
+            ProbeCardZ_NegativeLimit = 1405,
+            ProbeCardZ_SoftLimit = 1406,
+
+            // 15 Right Pick Z Axis
+            RightPickZ_HomeTimeout = 1501,
+            RightPickZ_ServoOff = 1502,
+            RightPickZ_DriverAlarm = 1503,
+            RightPickZ_PositiveLimit = 1504,
+            RightPickZ_NegativeLimit = 1505,
+            RightPickZ_SoftLimit = 1506,
+
+            // 16 Right Place Z Axis
+            RightPlaceZ_HomeTimeout = 1601,
+            RightPlaceZ_ServoOff = 1602,
+            RightPlaceZ_DriverAlarm = 1603,
+            RightPlaceZ_PositiveLimit = 1604,
+            RightPlaceZ_NegativeLimit = 1605,
+            RightPlaceZ_SoftLimit = 1606,
+
+            // 17 Bin Stage X Axis
+            BinStageX_HomeTimeout = 1701,
+            BinStageX_ServoOff = 1702,
+            BinStageX_DriverAlarm = 1703,
+            BinStageX_PositiveLimit = 1704,
+            BinStageX_NegativeLimit = 1705,
+            BinStageX_SoftLimit = 1706,
+
+            // 18 Bin Stage Y Axis
+            BinStageY_HomeTimeout = 1801,
+            BinStageY_ServoOff = 1802,
+            BinStageY_DriverAlarm = 1803,
+            BinStageY_PositiveLimit = 1804,
+            BinStageY_NegativeLimit = 1805,
+            BinStageY_SoftLimit = 1806,
+
+            // 19 Bin Stage T Axis
+            BinStageT_HomeTimeout = 1901,
+            BinStageT_ServoOff = 1902,
+            BinStageT_DriverAlarm = 1903,
+            BinStageT_PositiveLimit = 1904,
+            BinStageT_NegativeLimit = 1905,
+            BinStageT_SoftLimit = 1906,
+
+            // 20 Wafer Lifter Z Axis
+            WaferLifterZ_HomeTimeout = 2001,
+            WaferLifterZ_ServoOff = 2002,
+            WaferLifterZ_DriverAlarm = 2003,
+            WaferLifterZ_PositiveLimit = 2004,
+            WaferLifterZ_NegativeLimit = 2005,
+            WaferLifterZ_SoftLimit = 2006,
+
+            // 21 Wafer Feeder Y Axis
+            WaferFeederY_HomeTimeout = 2101,
+            WaferFeederY_ServoOff = 2102,
+            WaferFeederY_DriverAlarm = 2103,
+            WaferFeederY_PositiveLimit = 2104,
+            WaferFeederY_NegativeLimit = 2105,
+            WaferFeederY_SoftLimit = 2106,
+
+            // 22 Ejector Z Axis
+            EjectorZ_HomeTimeout = 2201,
+            EjectorZ_ServoOff = 2202,
+            EjectorZ_DriverAlarm = 2203,
+            EjectorZ_PositiveLimit = 2204,
+            EjectorZ_NegativeLimit = 2205,
+            EjectorZ_SoftLimit = 2206,
+
+            // 23 Bin Feeder Y Axis
+            BinFeederY_HomeTimeout = 2301,
+            BinFeederY_ServoOff = 2302,
+            BinFeederY_DriverAlarm = 2303,
+            BinFeederY_PositiveLimit = 2304,
+            BinFeederY_NegativeLimit = 2305,
+            BinFeederY_SoftLimit = 2306,
+
+            // 24 Bin Lifter Z Axis
+            BinLifterZ_HomeTimeout = 2401,
+            BinLifterZ_ServoOff = 2402,
+            BinLifterZ_DriverAlarm = 2403,
+            BinLifterZ_PositiveLimit = 2404,
+            BinLifterZ_NegativeLimit = 2405,
+            BinLifterZ_SoftLimit = 2406,
+
+            // 25 Index Place Z Axis
+            IndexPlaceZ_HomeTimeout = 2501,
+            IndexPlaceZ_ServoOff = 2502,
+            IndexPlaceZ_DriverAlarm = 2503,
+            IndexPlaceZ_PositiveLimit = 2504,
+            IndexPlaceZ_NegativeLimit = 2505,
+            IndexPlaceZ_SoftLimit = 2506,
+
+            // 26 Gripper X Axis
+            GripperX_HomeTimeout = 2601,
+            GripperX_ServoOff = 2602,
+            GripperX_DriverAlarm = 2603,
+            GripperX_PositiveLimit = 2604,
+            GripperX_NegativeLimit = 2605,
+            GripperX_SoftLimit = 2606,
+
+            // 27 Index T Axis
+            IndexT_HomeTimeout = 2701,
+            IndexT_ServoOff = 2702,
+            IndexT_DriverAlarm = 2703,
+            IndexT_PositiveLimit = 2704,
+            IndexT_NegativeLimit = 2705,
+            IndexT_SoftLimit = 2706,
         }
+
+        // ===== 공용 알람 코드 상수 (enum을 수정하지 않고 사용) =====
+        private const int BASE_ALARM_HOME_TIMEOUT = 1;
+        private const int BASE_ALARM_SERVO_OFF = 2;
+        private const int BASE_ALARM_DRIVER_ALARM = 3;
+        private const int BASE_ALARM_POSITIVE_LIMIT = 4;
+        private const int BASE_ALARM_NEGATIVE_LIMIT = 5;
+        private const int BASE_ALARM_SOFT_LIMIT = 6;
+
+        // ===== 축 번호(AxisNo)로 실제 AlarmKey를 동적 계산하는 오버로드 =====
+        public int AlarmPost(int baseAlarmType)
+        {
+            // 예: AxisNo = 27, baseAlarmType = 1 이면 2701 (IndexT_HomeTimeout)
+            AlarmKey specificKey = (AlarmKey)(this.AxisNo * 100 + baseAlarmType);
+            return AlarmPost(specificKey);
+        }
+        protected override void InitAlarm()
+        {
+            string source = string.Empty;
+            base.InitAlarm();
+
+            source = string.Format(Name);
+
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+
+
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
+        }
+
+        // ===== 추가: 감시 알람 중복 방지 래치 =====
+        private readonly object _alarmLatchLock = new object();
+        private readonly HashSet<AlarmKey> _postedMonitorAlarms = new HashSet<AlarmKey>();
         #endregion
 
-        
 
         // === 홈 성공 알림 이벤트(글로벌) ===
         public static event Action<MotionAxis> HomeSucceeded;
@@ -66,6 +353,8 @@ namespace QMC.Common.Motions
 
         public string Name { get { return Setup.Name; } }
         public int AxisNo { get { return Setup.AxisNo; } }
+
+        private readonly object _lock = new object();
 
         // Homed 래치(성공 시 true, 필요 시 ClearHomeLatch로 초기화)
         public bool IsHomedLatched { get; private set; }
@@ -130,43 +419,6 @@ namespace QMC.Common.Motions
             lock (_gate) { _correction = correction; }
         }
 
-        // ===== 장비 내부 알람 =====
-        protected override void InitAlarm()
-        {
-            string strTemp = string.Empty;
-            strTemp = string.Format(Name + "Axis Error");
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX1_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX2_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX3_Fail;
-            alarm.Title = "strTemp";
-            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            // 홈 타임아웃 알람 등록
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKey.AxisHomeTimeout;
-            alarm.Title = Name + " Home Timeout";
-            alarm.Cause = Name + " home operation timed out";
-            alarm.Source = Name;
-            alarm.Grade = "Error";
-            m_dicAlarms.Add(alarm.Code, alarm);
-        }
-
         public int AlarmPost(AlarmKey AlarmCode)
         {
             try
@@ -217,17 +469,24 @@ namespace QMC.Common.Motions
         {
             if (IsSim)
             {
+                //return _simPosition;
                 lock (_simLock) return _simPosition;
             }
             if (_driver != null)
             {
-                var pulse = _driver.ReadActualPulse(AxisNo);
-                return _correction.ToLogical(pulse);
+                lock (_lock)
+                {
+                    var pulse = _driver.ReadActualPulse(AxisNo);
+                    return _correction.ToLogical(pulse);
+                }
             }
             else if (_ckdDriver != null)
             {
-                var degree = _ckdDriver.GetPositionDegree() / 1000.0;
-                return degree;
+                lock (_lock)
+                {
+                    var degree = _ckdDriver.GetPositionDegree() / 1000.0;
+                    return degree;
+                } 
             }
             else
             {
@@ -292,7 +551,7 @@ namespace QMC.Common.Motions
                         _simIsMoving = true;
                         _simCurrentVelocity = 0;
                     }
-                    Thread.Sleep(500);
+                    Thread.Sleep(5);
 
                     lock (_simLock)
                     {
@@ -347,7 +606,8 @@ namespace QMC.Common.Motions
                 }
 
                 try { _driver.Stop(AxisNo); } catch { }
-                try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
+                try { AlarmPost(BASE_ALARM_HOME_TIMEOUT); } catch { }
+                //try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
             else if (_ckdDriver != null) //Index
             {
@@ -381,11 +641,12 @@ namespace QMC.Common.Motions
                     {
                         stable = 0;
                     }
-                    Thread.Sleep(10);
+                    Thread.Sleep(5);
                 }
 
                 try { _ckdDriver.EmergencyStop(); } catch { }
-                try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
+                try { AlarmPost(BASE_ALARM_HOME_TIMEOUT); } catch { }
+                //try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
             else
             {
@@ -606,7 +867,7 @@ namespace QMC.Common.Motions
                 throw new InvalidOperationException("This axis does not support MovePrevIndex.");
             }
         }
-
+        
         public int WaitMoveDone(int timeoutMs)
         {
             if (IsSim)
@@ -634,8 +895,14 @@ namespace QMC.Common.Motions
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
-                    if (_driver.IsMoveDone(AxisNo)) 
-                        return 0;
+                    if (_driver.IsMoveDone(AxisNo))
+                    {
+                        Thread.Sleep(1);
+                        if (_driver.IsMoveDone(AxisNo))
+                        {
+                            return 0;
+                        }
+                    }
                     Thread.Sleep(2);
                 }
             }
@@ -645,8 +912,18 @@ namespace QMC.Common.Motions
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
-                    if (_ckdDriver.IsInPosition() && _ckdDriver.IsRunWait()) 
+                    if (_ckdDriver.IsInPosition() 
+                        && _ckdDriver.IsRunWait())
+                    {
                         return 0;
+                    }
+                    double dCurPos = this.GetPosition() * 1000;
+                    double dRemainPos = dCurPos % 45;
+                    if(dRemainPos >(45 - this.Config.InposTolerance))
+                    {
+                        //Log.Write("KKKKK", "End First _ " + dRemainPos.ToString());
+                        return 0;
+                    }
                     Thread.Sleep(2);
                 }
             }
@@ -925,8 +1202,13 @@ namespace QMC.Common.Motions
             if (!Setup.SoftLimitEnable) 
                 return;
             if (logicalTarget < Setup.SoftLimitMin || logicalTarget > Setup.SoftLimitMax)
+            {
+                AlarmPost(BASE_ALARM_SOFT_LIMIT);
+                //AlarmPost(AlarmKey.AxisSoftLimit);
+                Log.Write("MotionAxis", $"SoftLimit violation: Target {logicalTarget} ∉ [{Setup.SoftLimitMin}, {Setup.SoftLimitMax}]");
                 throw new InvalidOperationException(
                     "[" + Name + "] SoftLimit violation: " + logicalTarget + " ∉ [" + Setup.SoftLimitMin + ", " + Setup.SoftLimitMax + "]");
+            }
         }
 
         // 드라이버가 사용하는 jerk 스케일로 매핑(보드별로 교체하세요)
@@ -1340,33 +1622,36 @@ namespace QMC.Common.Motions
             }
             else if (_driver != null)
             {
-                //return _driver.ReadDone(AxisNo);
-                bool b1 = Status.State.InpositionDone;
-                bool b2 = Status.State.Inposition;
-                bool b3 = Status.State.Done;
-                if (b1 && b2 && b3)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return _driver.ReadDone(AxisNo);
+                //bool b1 = Status.State.InpositionDone; //아진 이거없다!!!
+                //bool b2 = Status.State.Inposition;
+                //bool b3 = Status.State.Done;
+                //if (b2 && b3)
+                //{
+                //    return true;
+                //}
+                //else
+                //{
+                //    return false;
+                //}
             }
             else if (_ckdDriver != null)
             {
                 // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
                 //return _ckdDriver.IsRunWait();
-                bool b1 = Status.State.InpositionDone;
-                bool b2 = Status.State.Inposition;
-                if (b1 && b2)
-                {
+                if (_ckdDriver.IsInPosition() && _ckdDriver.IsRunWait())
                     return true;
-                }
-                else
-                {
-                    return false;
-                }
+
+                //bool b1 = Status.State.InpositionDone;
+                //bool b2 = Status.State.Inposition;
+                //if (b1 && b2)
+                //{
+                //    return true;
+                //}
+                //else
+                //{
+                //    return false;
+                //}
             }
             return false;
         }
@@ -1557,36 +1842,102 @@ namespace QMC.Common.Motions
             }
         }
 
-        public bool IsMoveDone()
+        // ===== 수정: 조건이 true일 때 1회만 AlarmPost (동적 Key 매핑 적용) =====
+        private void PostOnceWhenTrue(int baseAlarmType, bool condition)
         {
-            if(IsSim)
+            // 축 번호를 이용해 실제 Enum 값 도출
+            AlarmKey key = (AlarmKey)(this.AxisNo * 100 + baseAlarmType);
+
+            if (!condition)
             {
-                lock(_simLock)
+                // 조건이 해제되면 래치 해제(다음에 다시 발생 가능하도록)
+                lock (_alarmLatchLock) { _postedMonitorAlarms.Remove(key); }
+                return;
+            }
+
+            bool alreadyPosted;
+            lock (_alarmLatchLock) { alreadyPosted = !_postedMonitorAlarms.Add(key); }
+            if (alreadyPosted) return;
+
+            try { AlarmPost(key); }
+            catch (Exception ex) { Log.Write(ex); }
+        }
+        //private void PostOnceWhenTrue(AlarmKey key, bool condition)
+        //{
+        //    if (!condition)
+        //    {
+        //        // 조건이 해제되면 래치 해제(다음에 다시 발생 가능하도록)
+        //        lock (_alarmLatchLock) { _postedMonitorAlarms.Remove(key); }
+        //        return;
+        //    }
+
+        //    bool alreadyPosted;
+        //    lock (_alarmLatchLock) { alreadyPosted = !_postedMonitorAlarms.Add(key); }
+        //    if (alreadyPosted) return;
+
+        //    try { AlarmPost(key); }
+        //    catch (Exception ex) { Log.Write(ex); }
+        //}
+
+        /// <summary>
+        /// 서버오프(Servo OFF), 드라이버 알람, 리밋 상태를 점검하고 필요 시 알람을 발생시킵니다.
+        /// - 주기적으로(예: 타이머 100~500ms) 호출하는 용도
+        /// - 기존 AlarmPost/AlarmManager 인프라 그대로 사용
+        /// </summary>
+        public void CheckAndPostSafetyAlarms()
+        {
+            try
+            {
+                bool servoOn = true;
+                bool alarmOn = false;
+                bool posLimit = false;
+                bool negLimit = false;
+
+                if (IsSim)
                 {
-                    return !_simIsMoving;
+                    lock (_simLock)
+                    {
+                        servoOn = _simServoOn;
+                        alarmOn = _simAlarm;
+                        // 시뮬은 리밋 센서 개념이 없으므로 false 유지
+                    }
                 }
-            }
-            else if(_driver != null)
-            {
-                return _driver.ReadDone(AxisNo);
-            }
-            else if(_ckdDriver != null)
-            {
-                // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
-                //return _ckdDriver.IsRunWait();
-                bool b1 = Status.State.InpositionDone;
-                bool b2 = Status.State.Inposition;
-                if( b1 && b2)
+                else if (_driver != null)
                 {
-                    return true;
+                    servoOn = _driver.ReadServoOn(AxisNo);
+                    alarmOn = _driver.ReadAlarm(AxisNo);
+                    posLimit = _driver.ReadPositiveLimit(AxisNo);
+                    negLimit = _driver.ReadNegativeLimit(AxisNo);
+                }
+                else if (_ckdDriver != null)
+                {
+                    servoOn = _ckdDriver.IsServoOn();
+                    alarmOn = _ckdDriver.IsAlarm();
+                    // CKD는 DD Motor라 별도 +/- limit 없음(현재 Status에서도 false 처리)
                 }
                 else
                 {
-                    return false;
+                    // 드라이버 미할당은 여기서 알람 처리 정책이 애매하므로 우선 무시
+                    return;
                 }
-                    //return b1 & b2;
+
+                // 변경 후: 동적 상수 전달
+                PostOnceWhenTrue(BASE_ALARM_SERVO_OFF, !servoOn);
+                PostOnceWhenTrue(BASE_ALARM_DRIVER_ALARM, alarmOn);
+                PostOnceWhenTrue(BASE_ALARM_POSITIVE_LIMIT, posLimit);
+                PostOnceWhenTrue(BASE_ALARM_NEGATIVE_LIMIT, negLimit);
+                //// 조건별 알람 발생(조건 true일 때 1회만)
+                //PostOnceWhenTrue(AlarmKey.AxisServoOff, !servoOn);
+                //PostOnceWhenTrue(AlarmKey.AxisDriverAlarm, alarmOn);
+                //PostOnceWhenTrue(AlarmKey.AxisPositiveLimit, posLimit);
+                //PostOnceWhenTrue(AlarmKey.AxisNegativeLimit, negLimit);
+
             }
-            return false;
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
+
     }
 }

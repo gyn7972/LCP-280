@@ -30,7 +30,6 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
         public event EventHandler<SavePositionEventArgs> SaveRequested;
         public event EventHandler<MovePositionEventArgs> MoveRequested;
         public event EventHandler<CurrentPosEventArgs> CurrentPosRequested;
-        public event EventHandler<MoveAxisEventArgs> MoveAxisRequested;
 
         public PositionTeachingControl()
         {
@@ -251,6 +250,15 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
                 if (!EnsureAxisReadyOrShowMessage("Teaching.MovePosition"))
                     return;
 
+                var mb = new MessageBoxOk();
+                // 1. 현재 상태가 AutoRunning이면 동작 차단
+                if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.Starting)
+                {
+                    mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                    return;
+                }
+
                 int selIndex = GetSelectedIndex();
                 if (selIndex < 0)
                 {
@@ -259,15 +267,14 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
                     return;
                 }
 
-                var mb = new MessageBoxYesNo();
-                mb.Title = "이동 확인";
-                mb.Message = "선택된 Teaching Position으로 이동하시겠습니까?";
-                var dr = mb.ShowDialog();
+                var mbYesNo = new MessageBoxYesNo();
+                mbYesNo.Title = "이동 확인";
+                mbYesNo.Message = "선택된 Teaching Position으로 이동하시겠습니까?";
+                var dr = mbYesNo.ShowDialog();
                 if (dr != DialogResult.Yes)
                     return;
 
                 bool isFine = GetSelectedMoveModeIsFine();
-
                 MoveRequested?.Invoke(this, new MovePositionEventArgs
                 {
                     Index = selIndex,

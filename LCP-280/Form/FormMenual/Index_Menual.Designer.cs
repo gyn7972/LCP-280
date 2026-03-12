@@ -58,6 +58,9 @@
             this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this._btnVisionSetting = new QMC.Common.IndividualMenuButton();
+            this.buttonDataManual = new QMC.Common.IndividualMenuButton();
             this._ProcessCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
@@ -71,6 +74,7 @@
             this.tabPage3.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -102,13 +106,13 @@
             this.tableLayoutPanel2.Controls.Add(this.labelsocketNumberUnload, 1, 3);
             this.tableLayoutPanel2.Controls.Add(this.label5, 0, 2);
             this.tableLayoutPanel2.Controls.Add(this.label6, 0, 3);
-            this.tableLayoutPanel2.Controls.Add(this.ButtonManualTest, 0, 5);
-            this.tableLayoutPanel2.Controls.Add(this.ButtonClear, 1, 5);
-            this.tableLayoutPanel2.Controls.Add(this.checkBoxIndexCal, 2, 5);
             this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 9);
             this.tableLayoutPanel2.Controls.Add(this.btnInputMAlign, 1, 9);
             this.tableLayoutPanel2.Controls.Add(this.comboBoxIndexSocketNo, 0, 9);
-            this.tableLayoutPanel2.Controls.Add(this.btnManualVision, 0, 7);
+            this.tableLayoutPanel2.Controls.Add(this.checkBoxIndexCal, 2, 8);
+            this.tableLayoutPanel2.Controls.Add(this.ButtonClear, 2, 2);
+            this.tableLayoutPanel2.Controls.Add(this.ButtonManualTest, 2, 4);
+            this.tableLayoutPanel2.Controls.Add(this.btnManualVision, 2, 5);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 30);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
@@ -262,7 +266,7 @@
             this.ButtonManualTest.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.ButtonManualTest.ForeColor = System.Drawing.Color.Black;
             this.ButtonManualTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.ButtonManualTest.Location = new System.Drawing.Point(4, 264);
+            this.ButtonManualTest.Location = new System.Drawing.Point(374, 212);
             this.ButtonManualTest.Margin = new System.Windows.Forms.Padding(4);
             this.ButtonManualTest.Name = "ButtonManualTest";
             this.ButtonManualTest.Size = new System.Drawing.Size(177, 44);
@@ -282,7 +286,7 @@
             this.ButtonClear.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.ButtonClear.ForeColor = System.Drawing.Color.Black;
             this.ButtonClear.ImageSize = new System.Drawing.Size(45, 45);
-            this.ButtonClear.Location = new System.Drawing.Point(189, 264);
+            this.ButtonClear.Location = new System.Drawing.Point(374, 108);
             this.ButtonClear.Margin = new System.Windows.Forms.Padding(4);
             this.ButtonClear.Name = "ButtonClear";
             this.ButtonClear.Size = new System.Drawing.Size(177, 44);
@@ -295,11 +299,10 @@
             // checkBoxIndexCal
             // 
             this.checkBoxIndexCal.AutoSize = true;
-            this.checkBoxIndexCal.Dock = System.Windows.Forms.DockStyle.Fill;
             this.checkBoxIndexCal.Enabled = false;
-            this.checkBoxIndexCal.Location = new System.Drawing.Point(373, 263);
+            this.checkBoxIndexCal.Location = new System.Drawing.Point(373, 419);
             this.checkBoxIndexCal.Name = "checkBoxIndexCal";
-            this.checkBoxIndexCal.Size = new System.Drawing.Size(180, 46);
+            this.checkBoxIndexCal.Size = new System.Drawing.Size(122, 32);
             this.checkBoxIndexCal.TabIndex = 33;
             this.checkBoxIndexCal.Text = "Index Cal";
             this.checkBoxIndexCal.UseVisualStyleBackColor = true;
@@ -361,7 +364,7 @@
             this.btnManualVision.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.btnManualVision.ForeColor = System.Drawing.Color.Black;
             this.btnManualVision.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnManualVision.Location = new System.Drawing.Point(4, 368);
+            this.btnManualVision.Location = new System.Drawing.Point(374, 264);
             this.btnManualVision.Margin = new System.Windows.Forms.Padding(4);
             this.btnManualVision.Name = "btnManualVision";
             this.btnManualVision.Size = new System.Drawing.Size(177, 44);
@@ -435,7 +438,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(556, 514);
+            this.tabPage2.Size = new System.Drawing.Size(461, 514);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Probe";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -448,7 +451,7 @@
             this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
             this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(550, 372);
+            this.manualSequenceControlProbe.Size = new System.Drawing.Size(455, 372);
             this.manualSequenceControlProbe.TabIndex = 15;
             // 
             // tabPage3
@@ -456,7 +459,7 @@
             this.tabPage3.Controls.Add(this.manualSequenceControlOutAlign);
             this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(556, 514);
+            this.tabPage3.Size = new System.Drawing.Size(461, 514);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "OutAlign";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -469,7 +472,7 @@
             this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
             this.manualSequenceControlOutAlign.ParentUnit = null;
-            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(556, 372);
+            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(461, 372);
             this.manualSequenceControlOutAlign.TabIndex = 29;
             // 
             // groupBox1
@@ -488,6 +491,7 @@
             // 
             this.tableLayoutPanel5.ColumnCount = 1;
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel3, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this._ProcessCameraviewer, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 30);
@@ -498,6 +502,67 @@
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel5.TabIndex = 2;
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Controls.Add(this._btnVisionSetting, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.buttonDataManual, 1, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(5, 424);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(5);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 1;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(546, 95);
+            this.tableLayoutPanel3.TabIndex = 16;
+            this.tableLayoutPanel3.Visible = false;
+            // 
+            // _btnVisionSetting
+            // 
+            this._btnVisionSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnVisionSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this._btnVisionSetting.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.CustomForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.ForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.ImageSize = new System.Drawing.Size(45, 45);
+            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
+            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(269, 91);
+            this._btnVisionSetting.TabIndex = 34;
+            this._btnVisionSetting.TabStop = false;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = false;
+            // 
+            // buttonDataManual
+            // 
+            this.buttonDataManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonDataManual.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonDataManual.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.ForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonDataManual.Location = new System.Drawing.Point(275, 2);
+            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonDataManual.Name = "buttonDataManual";
+            this.buttonDataManual.Size = new System.Drawing.Size(269, 91);
+            this.buttonDataManual.TabIndex = 35;
+            this.buttonDataManual.TabStop = false;
+            this.buttonDataManual.Text = "ManualData";
+            this.buttonDataManual.UseVisualStyleBackColor = false;
             // 
             // _ProcessCameraviewer
             // 
@@ -586,6 +651,7 @@
             this.tabPage3.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -626,5 +692,8 @@
         private Common.IndividualMenuButton ButtonClear;
         private System.Windows.Forms.CheckBox checkBoxIndexCal;
         private Common.IndividualMenuButton btnManualVision;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private Common.IndividualMenuButton _btnVisionSetting;
+        private Common.IndividualMenuButton buttonDataManual;
     }
 }

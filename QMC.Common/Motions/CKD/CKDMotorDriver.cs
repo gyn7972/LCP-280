@@ -1,4 +1,5 @@
-﻿using QMC.Common.Component;
+﻿using QMC.Common.Alarm;
+using QMC.Common.Component;
 using QMC.Common.Motion.Ajin;
 using System;
 using System.Collections;
@@ -557,7 +558,27 @@ namespace QMC.Common.Motions.CKD
         #region Base Component Method
         protected override void InitAlarm()
         {
+            string source = this.Name; // 또는 특정 소스 이름
             base.InitAlarm();
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+
+
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
         }
         public override int Initialize()
         {

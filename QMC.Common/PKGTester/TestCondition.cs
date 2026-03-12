@@ -94,6 +94,12 @@ namespace QMC.Common.PKGTester
             if (string.IsNullOrWhiteSpace(Name))
                 return false;
 
+            // Unit에 따른 값 검증 로직 추가
+            if (!ValidateUnit())
+            {
+                return false;
+            }
+
             switch (GetTestItemCategory())
             { 
                 case TestItemCategory.Optical:
@@ -136,6 +142,38 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
+
+        // 단위를 강제로 설정할 수 있는 메서드 추가
+        public void SetUnit(string unit)
+        {
+            this.Unit = unit;
+        }
+
+        // 단위에 따라 입력값들이 적절한지 확인하는 메서드 추가
+        private bool ValidateUnit()
+        {
+            if (string.IsNullOrEmpty(Unit))
+                return true;
+
+            // 예시: 단위별로 값의 범위를 체크하거나 단위 문자열 자체를 검증
+            // 실제 장비 스펙에 맞춰 구체적인 확인 구문을 작성하실 수 있습니다.
+            switch (Unit)
+            {
+                case "uA":
+                case "mA":
+                case "A":
+                    // 전류 단위일 때의 검증 로직 (예: 과전류 입력 방지 등)
+                    // if (SourceValue > SomeLimit) return false;
+                    break;
+                case "mV":
+                case "V":
+                    // 전압 단위일 때의 검증 로직
+                    break;
+            }
+
+            return true;
+        }
+
         public /*override*/ PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
@@ -365,6 +403,10 @@ namespace QMC.Common.PKGTester
         }
         private string GetSourceUnitFromType()
         {
+            // Unit이 이미 설정되어 있다면(코드에서 변경 등) 그 값을 우선 사용
+            //if (!string.IsNullOrEmpty(Unit))
+            //    return Unit;
+
             switch (Type)
             {
                 case TestItemType.VF:
@@ -400,6 +442,10 @@ namespace QMC.Common.PKGTester
         }
         private string GetMeasureUnitFromType()
         {
+            // Unit이 이미 설정되어 있다면(코드에서 변경 등) 그 값을 우선 사용
+            //if (!string.IsNullOrEmpty(Unit))
+            //    return Unit;
+
             switch (Type)
             {
                 case TestItemType.VF:

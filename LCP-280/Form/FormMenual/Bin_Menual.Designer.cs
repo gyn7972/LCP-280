@@ -33,15 +33,22 @@
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.MoveToPositionControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this._btnVisionSetting = new QMC.Common.IndividualMenuButton();
+            this.buttonDataManual = new QMC.Common.IndividualMenuButton();
             this._OutputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.waferMapView_OutputWafer = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.waferMapView_OutputWafer = new QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl();
+            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.btnMapping = new QMC.Common.IndividualMenuButton();
-            this.ButtonMapChange = new QMC.Common.IndividualMenuButton();
+            this.btnTest = new QMC.Common.IndividualMenuButton();
+            this.buttonMoveToSlot = new QMC.Common.IndividualMenuButton();
+            this.comboBoxSlot = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTCorrection = new QMC.Common.IndividualMenuButton();
+            this.ButtonMapChange = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tabControlManualSeqOutputWafer = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -52,10 +59,11 @@
             this.manualSequenceControlOutputBinStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
-            this.tableLayoutPanel4.SuspendLayout();
+            this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tabControlManualSeqOutputWafer.SuspendLayout();
@@ -107,6 +115,7 @@
             // 
             this.tableLayoutPanel5.ColumnCount = 1;
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel4, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this._OutputWaferCameraviewer, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 29);
@@ -117,6 +126,68 @@
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(560, 528);
             this.tableLayoutPanel5.TabIndex = 1;
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 2;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Controls.Add(this._btnVisionSetting, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.buttonDataManual, 1, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(5, 427);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(5);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 1;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(550, 96);
+            this.tableLayoutPanel4.TabIndex = 16;
+            // 
+            // _btnVisionSetting
+            // 
+            this._btnVisionSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnVisionSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this._btnVisionSetting.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.CustomForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.ForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.ImageSize = new System.Drawing.Size(45, 45);
+            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
+            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(271, 92);
+            this._btnVisionSetting.TabIndex = 34;
+            this._btnVisionSetting.TabStop = false;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = false;
+            this._btnVisionSetting.Visible = false;
+            // 
+            // buttonDataManual
+            // 
+            this.buttonDataManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonDataManual.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonDataManual.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.ForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonDataManual.Location = new System.Drawing.Point(277, 2);
+            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonDataManual.Name = "buttonDataManual";
+            this.buttonDataManual.Size = new System.Drawing.Size(271, 92);
+            this.buttonDataManual.TabIndex = 35;
+            this.buttonDataManual.TabStop = false;
+            this.buttonDataManual.Text = "ManualData";
+            this.buttonDataManual.UseVisualStyleBackColor = false;
+            this.buttonDataManual.Visible = false;
             // 
             // _OutputWaferCameraviewer
             // 
@@ -157,47 +228,52 @@
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 2;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel4, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.ButtonMapChange, 1, 0);
-            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 1, 1);
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60.68335F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 39.31664F));
+            this.tableLayoutPanel2.Controls.Add(this.waferMapView_OutputWafer, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel6, 1, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 29);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 2;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel2.RowCount = 1;
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(560, 528);
             this.tableLayoutPanel2.TabIndex = 21;
             // 
-            // tableLayoutPanel4
-            // 
-            this.tableLayoutPanel4.ColumnCount = 1;
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tableLayoutPanel4.Controls.Add(this.waferMapView_OutputWafer, 0, 0);
-            this.tableLayoutPanel4.Controls.Add(this.btnMapping, 0, 1);
-            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(4, 4);
-            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4);
-            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 2;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 87F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(272, 414);
-            this.tableLayoutPanel4.TabIndex = 18;
-            // 
             // waferMapView_OutputWafer
             // 
+            this.waferMapView_OutputWafer.BackColor = System.Drawing.Color.White;
             this.waferMapView_OutputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.waferMapView_OutputWafer.Location = new System.Drawing.Point(2, 4);
-            this.waferMapView_OutputWafer.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.waferMapView_OutputWafer.Location = new System.Drawing.Point(2, 9);
+            this.waferMapView_OutputWafer.Margin = new System.Windows.Forms.Padding(2, 9, 2, 9);
             this.waferMapView_OutputWafer.Name = "waferMapView_OutputWafer";
-            this.waferMapView_OutputWafer.Size = new System.Drawing.Size(268, 352);
-            this.waferMapView_OutputWafer.TabIndex = 16;
+            this.waferMapView_OutputWafer.Size = new System.Drawing.Size(335, 510);
+            this.waferMapView_OutputWafer.TabIndex = 23;
+            // 
+            // tableLayoutPanel6
+            // 
+            this.tableLayoutPanel6.ColumnCount = 1;
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Controls.Add(this.btnMapping, 0, 3);
+            this.tableLayoutPanel6.Controls.Add(this.btnTest, 0, 4);
+            this.tableLayoutPanel6.Controls.Add(this.buttonMoveToSlot, 0, 2);
+            this.tableLayoutPanel6.Controls.Add(this.comboBoxSlot, 0, 1);
+            this.tableLayoutPanel6.Controls.Add(this.label1, 0, 0);
+            this.tableLayoutPanel6.Controls.Add(this.tableLayoutPanel3, 0, 6);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(341, 2);
+            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(2);
+            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
+            this.tableLayoutPanel6.RowCount = 7;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.602151F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10.75269F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.12903F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.12903F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.12903F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.12903F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.12903F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(217, 524);
+            this.tableLayoutPanel6.TabIndex = 22;
             // 
             // btnMapping
             // 
@@ -210,35 +286,107 @@
             this.btnMapping.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMapping.ForeColor = System.Drawing.Color.Black;
             this.btnMapping.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMapping.Location = new System.Drawing.Point(2, 364);
+            this.btnMapping.Location = new System.Drawing.Point(2, 189);
             this.btnMapping.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
             this.btnMapping.Name = "btnMapping";
-            this.btnMapping.Size = new System.Drawing.Size(268, 46);
-            this.btnMapping.TabIndex = 17;
+            this.btnMapping.Size = new System.Drawing.Size(213, 76);
+            this.btnMapping.TabIndex = 22;
             this.btnMapping.TabStop = false;
             this.btnMapping.Text = "Mapping";
             this.btnMapping.UseVisualStyleBackColor = false;
             this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
             // 
-            // ButtonMapChange
+            // btnTest
             // 
-            this.ButtonMapChange.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonMapChange.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.ButtonMapChange.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.ButtonMapChange.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.ButtonMapChange.CustomForeColor = System.Drawing.Color.Black;
-            this.ButtonMapChange.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.ButtonMapChange.ForeColor = System.Drawing.Color.Black;
-            this.ButtonMapChange.ImageSize = new System.Drawing.Size(45, 45);
-            this.ButtonMapChange.Location = new System.Drawing.Point(282, 4);
-            this.ButtonMapChange.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
-            this.ButtonMapChange.Name = "ButtonMapChange";
-            this.ButtonMapChange.Size = new System.Drawing.Size(268, 46);
-            this.ButtonMapChange.TabIndex = 18;
-            this.ButtonMapChange.TabStop = false;
-            this.ButtonMapChange.Text = "StageMap";
-            this.ButtonMapChange.UseVisualStyleBackColor = false;
-            this.ButtonMapChange.Click += new System.EventHandler(this.ButtonMapChange_Click);
+            this.btnTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTest.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTest.CustomForeColor = System.Drawing.Color.Black;
+            this.btnTest.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTest.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTest.ForeColor = System.Drawing.Color.Black;
+            this.btnTest.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnTest.Location = new System.Drawing.Point(2, 274);
+            this.btnTest.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
+            this.btnTest.Name = "btnTest";
+            this.btnTest.Size = new System.Drawing.Size(213, 74);
+            this.btnTest.TabIndex = 20;
+            this.btnTest.TabStop = false;
+            this.btnTest.Text = "Test";
+            this.btnTest.UseVisualStyleBackColor = false;
+            // 
+            // buttonMoveToSlot
+            // 
+            this.buttonMoveToSlot.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToSlot.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonMoveToSlot.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonMoveToSlot.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToSlot.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToSlot.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.buttonMoveToSlot.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonMoveToSlot.ForeColor = System.Drawing.Color.Black;
+            this.buttonMoveToSlot.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonMoveToSlot.Location = new System.Drawing.Point(2, 106);
+            this.buttonMoveToSlot.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
+            this.buttonMoveToSlot.Name = "buttonMoveToSlot";
+            this.buttonMoveToSlot.Size = new System.Drawing.Size(213, 74);
+            this.buttonMoveToSlot.TabIndex = 18;
+            this.buttonMoveToSlot.TabStop = false;
+            this.buttonMoveToSlot.Text = "Move Slot";
+            this.buttonMoveToSlot.UseVisualStyleBackColor = false;
+            this.buttonMoveToSlot.Click += new System.EventHandler(this.buttonMoveToSlot_Click);
+            // 
+            // comboBoxSlot
+            // 
+            this.comboBoxSlot.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.comboBoxSlot.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxSlot.Font = new System.Drawing.Font("맑은 고딕", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.comboBoxSlot.FormattingEnabled = true;
+            this.comboBoxSlot.ItemHeight = 30;
+            this.comboBoxSlot.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "16",
+            "17",
+            "18",
+            "19",
+            "20",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25"});
+            this.comboBoxSlot.Location = new System.Drawing.Point(3, 48);
+            this.comboBoxSlot.Name = "comboBoxSlot";
+            this.comboBoxSlot.Size = new System.Drawing.Size(211, 38);
+            this.comboBoxSlot.TabIndex = 19;
+            this.comboBoxSlot.SelectedIndexChanged += new System.EventHandler(this.comboBoxSlot_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label1.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Location = new System.Drawing.Point(3, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(211, 45);
+            this.label1.TabIndex = 21;
+            this.label1.Text = "Slot";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // tableLayoutPanel3
             // 
@@ -246,12 +394,14 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 79.56204F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20.43796F));
             this.tableLayoutPanel3.Controls.Add(this.btnTCorrection, 0, 0);
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(283, 425);
+            this.tableLayoutPanel3.Controls.Add(this.ButtonMapChange, 0, 1);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 440);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 2;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(274, 100);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(211, 81);
             this.tableLayoutPanel3.TabIndex = 19;
             // 
             // btnTCorrection
@@ -268,12 +418,34 @@
             this.btnTCorrection.Location = new System.Drawing.Point(2, 4);
             this.btnTCorrection.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
             this.btnTCorrection.Name = "btnTCorrection";
-            this.btnTCorrection.Size = new System.Drawing.Size(214, 42);
+            this.btnTCorrection.Size = new System.Drawing.Size(163, 32);
             this.btnTCorrection.TabIndex = 18;
             this.btnTCorrection.TabStop = false;
             this.btnTCorrection.Text = "T-Correction";
             this.btnTCorrection.UseVisualStyleBackColor = false;
             this.btnTCorrection.Click += new System.EventHandler(this.btnTCorrection_Click);
+            // 
+            // ButtonMapChange
+            // 
+            this.ButtonMapChange.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonMapChange.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.ButtonMapChange.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.ButtonMapChange.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.ButtonMapChange.CustomForeColor = System.Drawing.Color.Black;
+            this.ButtonMapChange.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ButtonMapChange.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.ButtonMapChange.ForeColor = System.Drawing.Color.Black;
+            this.ButtonMapChange.ImageSize = new System.Drawing.Size(45, 45);
+            this.ButtonMapChange.Location = new System.Drawing.Point(2, 44);
+            this.ButtonMapChange.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.ButtonMapChange.Name = "ButtonMapChange";
+            this.ButtonMapChange.Size = new System.Drawing.Size(163, 33);
+            this.ButtonMapChange.TabIndex = 18;
+            this.ButtonMapChange.TabStop = false;
+            this.ButtonMapChange.Text = "StageMap";
+            this.ButtonMapChange.UseVisualStyleBackColor = false;
+            this.ButtonMapChange.Visible = false;
+            this.ButtonMapChange.Click += new System.EventHandler(this.ButtonMapChange_Click);
             // 
             // tableLayoutPanel1
             // 
@@ -340,7 +512,7 @@
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage2.Size = new System.Drawing.Size(558, 516);
+            this.tabPage2.Size = new System.Drawing.Size(463, 516);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Feeder";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -353,7 +525,7 @@
             this.manualSequenceControlOutputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlOutputFeeder.Name = "manualSequenceControlOutputFeeder";
             this.manualSequenceControlOutputFeeder.ParentUnit = null;
-            this.manualSequenceControlOutputFeeder.Size = new System.Drawing.Size(554, 512);
+            this.manualSequenceControlOutputFeeder.Size = new System.Drawing.Size(459, 512);
             this.manualSequenceControlOutputFeeder.TabIndex = 15;
             // 
             // tabPage3
@@ -363,7 +535,7 @@
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage3.Size = new System.Drawing.Size(558, 516);
+            this.tabPage3.Size = new System.Drawing.Size(463, 516);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Stage";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -376,7 +548,7 @@
             this.manualSequenceControlOutputBinStage.MinimumSize = new System.Drawing.Size(358, 300);
             this.manualSequenceControlOutputBinStage.Name = "manualSequenceControlOutputBinStage";
             this.manualSequenceControlOutputBinStage.ParentUnit = null;
-            this.manualSequenceControlOutputBinStage.Size = new System.Drawing.Size(554, 512);
+            this.manualSequenceControlOutputBinStage.Size = new System.Drawing.Size(459, 512);
             this.manualSequenceControlOutputBinStage.TabIndex = 16;
             // 
             // Bin_Menual
@@ -390,10 +562,12 @@
             this.Text = "WaferBin_Working";
             this.groupBoxImageView.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
-            this.tableLayoutPanel4.ResumeLayout(false);
+            this.tableLayoutPanel6.ResumeLayout(false);
+            this.tableLayoutPanel6.PerformLayout();
             this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tabControlManualSeqOutputWafer.ResumeLayout(false);
@@ -410,11 +584,8 @@
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _OutputWaferCameraviewer;
         private System.Windows.Forms.GroupBox groupBoxManual;
-        private Component.WaferMapView waferMapView_OutputWafer;
-        private Common.IndividualMenuButton btnMapping;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.TabControl tabControlManualSeqOutputWafer;
         private System.Windows.Forms.TabPage tabPage1;
@@ -423,8 +594,19 @@
         private Component.ManualSequenceControl manualSequenceControlOutputFeeder;
         private System.Windows.Forms.TabPage tabPage3;
         private Component.ManualSequenceControl manualSequenceControlOutputBinStage;
-        private Common.IndividualMenuButton ButtonMapChange;
+        //private Component.WaferMapView waferMapView_OutputWafer;
+        private QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl waferMapView_OutputWafer;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel6;
+        private Common.IndividualMenuButton btnMapping;
+        private Common.IndividualMenuButton btnTest;
+        private Common.IndividualMenuButton buttonMoveToSlot;
+        private System.Windows.Forms.ComboBox comboBoxSlot;
+        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private Common.IndividualMenuButton btnTCorrection;
+        private Common.IndividualMenuButton ButtonMapChange;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
+        private Common.IndividualMenuButton _btnVisionSetting;
+        private Common.IndividualMenuButton buttonDataManual;
     }
 }

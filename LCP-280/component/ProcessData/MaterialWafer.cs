@@ -23,6 +23,7 @@ namespace QMC.LCP_280.Process.Component
         public enum MapTyp
         {
             waf = 0,
+            txt = 1
         }
 
         // ===== Identification =====
@@ -40,6 +41,8 @@ namespace QMC.LCP_280.Process.Component
 
         // ===== Chip Data =====
         public List<MaterialDie> Dies { get; set; } = new List<MaterialDie>();
+        public double DetectedZPosition { get; internal set; }
+
         // NEW: 고정 lock 객체 (절대 바꾸지 않음)
         private readonly object _diesLock = new object();
 
@@ -744,8 +747,8 @@ namespace QMC.LCP_280.Process.Component
                     temp[iter].SourceBinFileName = BinFileName;
                 }
 
-                int MinX = temp.Min(t => t.MapX);
-                int MinY = temp.Min(t => t.MapY);
+                double MinX = temp.Min(t => t.MapX);
+                double MinY = temp.Min(t => t.MapY);
                 var vList = temp.ToList();
                 temp.Clear();
                 foreach (var die in vList)
@@ -906,40 +909,128 @@ namespace QMC.LCP_280.Process.Component
         {
             List<MaterialDie> dies = new List<MaterialDie>();
 
+            if (!System.IO.File.Exists(path))
+                return dies;
+
             string[] strLines = System.IO.File.ReadAllLines(path);
-            if (strLines.Length > 3)
+
+            // TXT 포맷 처리 (MapX, MapY) - 헤더 없음
+            if (mapTyp == MapTyp.txt)
             {
-                for (int iter = 3; iter < strLines.Length; iter++)
+                for (int iter = 0; iter < strLines.Length; iter++)
                 {
-                    string[] strvalues = strLines[iter].Split(' ', ',', '\t');
-                    int nIndexX = 0;
-                    int nIndexY = 0;
-                    int nBinCode = 0;
+                    string line = strLines[iter].Trim();
+                    if (string.IsNullOrEmpty(line)) continue;
 
-                    bool bAllok = int.TryParse(strvalues[0], out nIndexX);
-                    bAllok &= int.TryParse(strvalues[1], out nIndexY);
-                    bAllok &= int.TryParse(strvalues[2], out nBinCode);
+                    string[] strvalues = line.Split(',', '\t'); // 콤마 또는 탭으로 분리
 
-                    if (bAllok)
+                    // 데이터가 2개 이상이어야 함 (MapX, MapY)
+                    if (strvalues.Length >= 2)
                     {
-                        MaterialDie die = new MaterialDie();
-                        die.MapX = nIndexX;
-                        die.MapY = nIndexY;
-                        //die.Rank = nBinCode;
-                        die.PreRank = nBinCode;
-                        dies.Add(die);
+                        int nIndexX = 0;
+                        int nIndexY = 0;
+
+                        bool bAllok = int.TryParse(strvalues[0].Trim(), out nIndexX);
+                        bAllok &= int.TryParse(strvalues[1].Trim(), out nIndexY);
+
+                        if (bAllok)
+                        {
+                            MaterialDie die = new MaterialDie();
+                            die.MapX = nIndexX;
+                            die.MapY = nIndexY;
+                            die.PreRank = 1; // BinCode 정보가 없으므로 기본값(Good) 1로 설정
+
+                            die.Presence = MaterialPresence.Exist;
+                            die.State = DieProcessState.Mapped;
+
+                            dies.Add(die);
+                        }
                     }
                 }
             }
+            // 기존 WAF 포맷 처리 (IndexX, IndexY, BinCode) - 헤더 3줄 스킵
+            else
+            {
+                if (strLines.Length > 3)
+                {
+                    for (int iter = 3; iter < strLines.Length; iter++)
+                    {
+                        string line = strLines[iter].Trim();
+                        if (string.IsNullOrEmpty(line)) continue;
+
+                        string[] strvalues = line.Split(' ', ',', '\t');
+
+                        // 데이터 파싱
+                        if (strvalues.Length >= 3)
+                        {
+                            int nIndexX = 0;
+                            int nIndexY = 0;
+                            int nBinCode = 0;
+
+                            bool bAllok = int.TryParse(strvalues[0], out nIndexX);
+                            bAllok &= int.TryParse(strvalues[1], out nIndexY);
+                            bAllok &= int.TryParse(strvalues[2], out nBinCode);
+
+                            if (bAllok)
+                            {
+                                MaterialDie die = new MaterialDie();
+                                die.MapX = nIndexX;
+                                die.MapY = nIndexY;
+                                die.PreRank = nBinCode;
+
+                                die.Presence = MaterialPresence.Exist;
+                                die.State = DieProcessState.Mapped;
+
+                                dies.Add(die);
+                            }
+                        }
+                    }
+                }
+            }
+
             return dies;
         }
 
-        /// <summary>
-        /// Vision으로 스캔한 Die 데이터와 원본 파일의 Die 데이터를 매칭하여 최적의 Offset을 찾고 BinX, BinY를 업데이트합니다.
-        /// </summary>
-        /// <param name="strFileName">원본 Map 파일 경로</param>
-        /// <param name="mapTyp">Map 타입</param>
-        /// <returns>최고 매칭 스코어</returns>
+        //기존 코드
+        //public List<MaterialDie> ReadFileOnline(string path, MapTyp mapTyp)
+        //{
+        //    List<MaterialDie> dies = new List<MaterialDie>();
+
+        //    string[] strLines = System.IO.File.ReadAllLines(path);
+        //    if (strLines.Length > 3)
+        //    {
+        //        for (int iter = 3; iter < strLines.Length; iter++)
+        //        {
+        //            string[] strvalues = strLines[iter].Split(' ', ',', '\t');
+        //            int nIndexX = 0;
+        //            int nIndexY = 0;
+        //            int nBinCode = 0;
+
+        //            bool bAllok = int.TryParse(strvalues[0], out nIndexX);
+        //            bAllok &= int.TryParse(strvalues[1], out nIndexY);
+        //            bAllok &= int.TryParse(strvalues[2], out nBinCode);
+
+        //            if (bAllok)
+        //            {
+        //                MaterialDie die = new MaterialDie();
+        //                die.MapX = nIndexX;
+        //                die.MapY = nIndexY;
+        //                //die.Rank = nBinCode;
+        //                die.PreRank = nBinCode;
+
+        //                // [FIX] Map 파일에서 읽힌 다이는 존재로 간주
+        //                die.Presence = MaterialPresence.Exist;
+        //                die.State = DieProcessState.Mapped; // 필요하면
+
+        //                dies.Add(die);
+        //            }
+        //        }
+        //    }
+        //    return dies;
+        //}
+
+        // LCP-280\component\ProcessData\MaterialWafer.cs
+
         public double Mapmatch(string strFileName, MapTyp mapTyp)
         {
             // 1. 원본 파일 읽기
@@ -965,16 +1056,30 @@ namespace QMC.LCP_280.Process.Component
             int scanMaxY = (int)diesScan.Max(d => d.MapY);
 
             // 5. 탐색할 Offset 범위 결정
-            int searchOffsetXMin = orgMinX - scanMaxX - 10; // 여유분 10
+            int searchOffsetXMin = orgMinX - scanMaxX - 10;
             int searchOffsetXMax = orgMaxX - scanMinX + 10;
             int searchOffsetYMin = orgMinY - scanMaxY - 10;
             int searchOffsetYMax = orgMaxY - scanMinY + 10;
 
-            // 6. 원본 데이터를 HashSet으로 변환 (빠른 검색)
-            HashSet<(int x, int y)> orgPositions = new HashSet<(int, int)>();
+            // 6. 원본 데이터를 2차원 배열(Grid)로 변환 (빠른 검색)
+            int width = orgMaxX - orgMinX + 1;
+            int height = orgMaxY - orgMinY + 1;
+            bool[,] orgGrid = new bool[width, height];
+            int orgCount = 0; // 실제 존재하는 원본 Die 개수
+
             foreach (var die in diesOrg)
             {
-                orgPositions.Add(((int)die.MapX, (int)die.MapY));
+                // 원본 데이터를 존재한다고 마킹 (좌표 정규화: x - minX, y - minY)
+                int gridX = (int)die.MapX - orgMinX;
+                int gridY = (int)die.MapY - orgMinY;
+                if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
+                {
+                    if (!orgGrid[gridX, gridY])
+                    {
+                        orgGrid[gridX, gridY] = true;
+                        orgCount++;
+                    }
+                }
             }
 
             // 7. 모든 Offset 조합에 대해 스코어 계산
@@ -988,7 +1093,8 @@ namespace QMC.LCP_280.Process.Component
                 for (int offsetY = searchOffsetYMin; offsetY <= searchOffsetYMax; offsetY++)
                 {
                     double NormalScore = 0;
-                    double score = CalculateScore(diesScan, orgPositions, offsetX, offsetY,out NormalScore);
+                    // orgGrid와 orgMinX, orgMinY를 넘겨서 배열 인덱스 계산 가능하게 함
+                    double score = CalculateScore(diesScan, orgGrid, orgMinX, orgMinY, orgCount, offsetX, offsetY, out NormalScore);
 
                     if (score > bestScore)
                     {
@@ -1000,7 +1106,7 @@ namespace QMC.LCP_280.Process.Component
                 }
             }
 
-            // 8. 최적의 Offset으로 스캔 데이터의 BinX, BinY 업데이트
+            // 8. 최적의 Offset으로 스캔 데이터의 MapX, MapY 업데이트
             foreach (var die in diesScan)
             {
                 die.MapX = die.MapX + bestOffsetX;
@@ -1008,59 +1114,251 @@ namespace QMC.LCP_280.Process.Component
             }
 
             // 9. 최고 스코어 반환
-            //return bestScore;
             return BestNormalScore;
         }
 
         /// <summary>
-        /// 주어진 Offset에 대한 매칭 스코어를 계산합니다.
-        /// 스코어 규칙:
-        /// - 원본에도 있고 스캔에도 있음: +1점
-        /// - 원본에만 있고 스캔에 없음: -1점
-        /// - 원본에 없고 스캔에만 있음: -10점
+        /// [ADD] 현재 Dies 위치 그대로 원본 파일과 비교하여 매칭 점수를 계산합니다. (좌표 이동 없음)
+        /// 수동 매칭(Manual Map Match) 화면에서 실시간 점수 확인용으로 사용합니다.
         /// </summary>
-        /// <param name="diesScan">스캔한 Die 리스트</param>
-        /// <param name="orgPositions">원본 Die 위치 HashSet</param>
-        /// <param name="offsetX">X 방향 Offset</param>
-        /// <param name="offsetY">Y 방향 Offset</param>
-        /// <returns>스코어 (높을수록 좋음)</returns>
-        private double CalculateScore(List<MaterialDie> diesScan, HashSet<(int x, int y)> orgPositions, int offsetX, int offsetY, out double NormalScore)
+        public double CalculateCurrentMatchScore(string strFileName, MapTyp mapTyp)
+        {
+            // 1. 원본 파일 읽기
+            List<MaterialDie> diesOrg = ReadFileOnline(strFileName, mapTyp);
+            if (diesOrg == null || diesOrg.Count == 0) return 0;
+
+            // 2. 현재 스캔 데이터
+            List<MaterialDie> diesScan = this.Dies;
+            if (diesScan == null || diesScan.Count == 0) return 0;
+
+            // 3. 원본 데이터 그리드화 (빠른 검색용)
+            int orgMinX = (int)diesOrg.Min(d => d.MapX);
+            int orgMaxX = (int)diesOrg.Max(d => d.MapX);
+            int orgMinY = (int)diesOrg.Min(d => d.MapY);
+            int orgMaxY = (int)diesOrg.Max(d => d.MapY);
+
+            int width = orgMaxX - orgMinX + 1;
+            int height = orgMaxY - orgMinY + 1;
+
+            // 방어 코드: 너무 큰 그리드 생성 방지
+            if (width > 5000 || height > 5000) return 0;
+
+            bool[,] orgGrid = new bool[width, height];
+            int orgCount = 0;
+
+            foreach (var die in diesOrg)
+            {
+                int gridX = (int)die.MapX - orgMinX;
+                int gridY = (int)die.MapY - orgMinY;
+                if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
+                {
+                    if (!orgGrid[gridX, gridY])
+                    {
+                        orgGrid[gridX, gridY] = true;
+                        orgCount++;
+                    }
+                }
+            }
+
+            // 4. 현재 위치 기준 점수 계산 (Offset = 0, 0)
+            double normalScore = 0;
+            CalculateScore(diesScan, orgGrid, orgMinX, orgMinY, orgCount, 0, 0, out normalScore);
+
+            return normalScore * 100.0; // 0.0~1.0 -> 0~100% 변환
+        }
+
+
+        /// <summary>
+        /// 주어진 Offset에 대한 매칭 스코어를 계산합니다. (2차원 배열 버전)
+        /// </summary>
+        private double CalculateScore(List<MaterialDie> diesScan, bool[,] orgGrid, int orgMinX, int orgMinY, int orgCount, int offsetX, int offsetY, out double NormalScore)
         {
             double score = 0;
-            NormalScore = 0;
-            // 스캔 데이터의 위치를 Offset 적용하여 HashSet 생성
-            HashSet<(int x, int y)> scanPositions = new HashSet<(int, int)>();
+            int matchCount = 0;
+            int width = orgGrid.GetLength(0);
+            int height = orgGrid.GetLength(1);
+
+            // 스캔 데이터 루프 (O(N))
             foreach (var scanDie in diesScan)
             {
-                int mapX = (int)(scanDie.MapX + offsetX);
-                int mapY = (int)(scanDie.MapY + offsetY);
-                scanPositions.Add((mapX, mapY));
+                double mapX = scanDie.MapX + offsetX;
+                double mapY = scanDie.MapY + offsetY;
 
-                if (orgPositions.Contains((mapX, mapY)))
+                // 배열 인덱스로 변환
+                int gridX = (int)mapX - orgMinX;
+                int gridY = (int)mapY - orgMinY;
+
+                bool existsInOrg = false;
+                // 원본 범위 내에 있는지 확인
+                if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height)
                 {
-                    // 원본에도 있고 스캔에도 있음: +1점
+                    existsInOrg = orgGrid[gridX, gridY];
+                }
+
+                if (existsInOrg)
+                {
+                    // 원본에도 있고 스캔에도 있음 (Match): +1점
                     score += 1;
-                    NormalScore++;
+                    matchCount++;
                 }
                 else
                 {
-                    // 원본에 없고 스캔에만 있음: -10점
+                    // 원본에 없고 스캔에만 있음 (Mismatch): -10점
                     score -= 10;
                 }
             }
 
-            // 원본에는 있지만 스캔에 없는 경우: -1점
-            foreach (var orgPos in orgPositions)
-            {
-                if (!scanPositions.Contains(orgPos))
-                {
-                    // 원본에는 있지만 스캔에 없음: -1점
-                    score -= 1;
-                }
-            }
-            NormalScore /= orgPositions.Count;
+            // 원본에는 있지만 스캔에 없는 개수 계산
+            // orgOnlyCount = TotalOrg - MatchCount
+            // (원본 전체를 다시 루프 돌 필요 없이 개수로 계산 가능)
+            int orgOnlyCount = orgCount - matchCount;
+
+            // 원본에는 있지만 스캔에 없음: -1점
+            score -= (1 * orgOnlyCount);
+
+            // NormalScore 계산 (Match 비율)
+            NormalScore = (orgCount > 0) ? (double)matchCount / orgCount : 0;
+
+            // 스캔된 다이 총 개수를 분모로 사용하여, "스캔된 것 중 몇 퍼센트가 정상 매칭되었나"를 계산
+            //double totalScanCount = (double)diesScan.Count;
+            //NormalScore = (totalScanCount > 0) ? (double)matchCount / totalScanCount : 0;
+
             return score;
         }
+
+
+        ///// <summary>
+        ///// Vision으로 스캔한 Die 데이터와 원본 파일의 Die 데이터를 매칭하여 최적의 Offset을 찾고 BinX, BinY를 업데이트합니다.
+        ///// </summary>
+        ///// <param name="strFileName">원본 Map 파일 경로</param>
+        ///// <param name="mapTyp">Map 타입</param>
+        ///// <returns>최고 매칭 스코어</returns>
+        //public double Mapmatch(string strFileName, MapTyp mapTyp)
+        //{
+        //    // 1. 원본 파일 읽기
+        //    List<MaterialDie> diesOrg = ReadFileOnline(strFileName, mapTyp);
+        //    if (diesOrg == null || diesOrg.Count == 0)
+        //        return 0;
+
+        //    // 2. 스캔한 데이터 (현재 Dies)
+        //    List<MaterialDie> diesScan = this.Dies;
+        //    if (diesScan == null || diesScan.Count == 0)
+        //        return 0;
+
+        //    // 3. 원본 데이터의 MapX, MapY 범위 계산
+        //    int orgMinX = (int)diesOrg.Min(d => d.MapX);
+        //    int orgMaxX = (int)diesOrg.Max(d => d.MapX);
+        //    int orgMinY = (int)diesOrg.Min(d => d.MapY);
+        //    int orgMaxY = (int)diesOrg.Max(d => d.MapY);
+
+        //    // 4. 스캔 데이터의 MapX, MapY 범위 계산
+        //    int scanMinX = (int)diesScan.Min(d => d.MapX);
+        //    int scanMaxX = (int)diesScan.Max(d => d.MapX);
+        //    int scanMinY = (int)diesScan.Min(d => d.MapY);
+        //    int scanMaxY = (int)diesScan.Max(d => d.MapY);
+
+        //    // 5. 탐색할 Offset 범위 결정
+        //    //int searchOffsetXMin = orgMinX - scanMaxX - 10; // 여유분 10
+        //    //int searchOffsetXMax = orgMaxX - scanMinX + 10;
+        //    //int searchOffsetYMin = orgMinY - scanMaxY - 10;
+        //    //int searchOffsetYMax = orgMaxY - scanMinY + 10;
+
+        //    int searchOffsetXMin = orgMinX - scanMaxX - 1; // 여유분 10
+        //    int searchOffsetXMax = orgMaxX - scanMinX + 1;
+        //    int searchOffsetYMin = orgMinY - scanMaxY - 1;
+        //    int searchOffsetYMax = orgMaxY - scanMinY + 1;
+
+        //    // 6. 원본 데이터를 HashSet으로 변환 (빠른 검색)
+        //    HashSet<(int x, int y)> orgPositions = new HashSet<(int, int)>();
+        //    foreach (var die in diesOrg)
+        //    {
+        //        orgPositions.Add(((int)die.MapX, (int)die.MapY));
+        //    }
+
+        //    // 7. 모든 Offset 조합에 대해 스코어 계산
+        //    double bestScore = double.MinValue;
+        //    double BestNormalScore = 0;
+        //    int bestOffsetX = 0;
+        //    int bestOffsetY = 0;
+
+        //    for (int offsetX = searchOffsetXMin; offsetX <= searchOffsetXMax; offsetX++)
+        //    {
+        //        for (int offsetY = searchOffsetYMin; offsetY <= searchOffsetYMax; offsetY++)
+        //        {
+        //            double NormalScore = 0;
+        //            double score = CalculateScore(diesScan, orgPositions, offsetX, offsetY,out NormalScore);
+
+        //            if (score > bestScore)
+        //            {
+        //                bestScore = score;
+        //                BestNormalScore = NormalScore;
+        //                bestOffsetX = offsetX;
+        //                bestOffsetY = offsetY;
+        //            }
+        //        }
+        //    }
+
+        //    // 8. 최적의 Offset으로 스캔 데이터의 BinX, BinY 업데이트
+        //    foreach (var die in diesScan)
+        //    {
+        //        die.MapX = die.MapX + bestOffsetX;
+        //        die.MapY = die.MapY + bestOffsetY;
+        //    }
+
+        //    // 9. 최고 스코어 반환
+        //    //return bestScore;
+        //    return BestNormalScore;
+        //}
+
+        ///// <summary>
+        ///// 주어진 Offset에 대한 매칭 스코어를 계산합니다.
+        ///// 스코어 규칙:
+        ///// - 원본에도 있고 스캔에도 있음: +1점
+        ///// - 원본에만 있고 스캔에 없음: -1점
+        ///// - 원본에 없고 스캔에만 있음: -10점
+        ///// </summary>
+        ///// <param name="diesScan">스캔한 Die 리스트</param>
+        ///// <param name="orgPositions">원본 Die 위치 HashSet</param>
+        ///// <param name="offsetX">X 방향 Offset</param>
+        ///// <param name="offsetY">Y 방향 Offset</param>
+        ///// <returns>스코어 (높을수록 좋음)</returns>
+        //private double CalculateScore(List<MaterialDie> diesScan, HashSet<(int x, int y)> orgPositions, int offsetX, int offsetY, out double NormalScore)
+        //{
+        //    double score = 0;
+        //    NormalScore = 0;
+        //    // 스캔 데이터의 위치를 Offset 적용하여 HashSet 생성
+        //    HashSet<(int x, int y)> scanPositions = new HashSet<(int, int)>();
+        //    foreach (var scanDie in diesScan)
+        //    {
+        //        int mapX = (int)(scanDie.MapX + offsetX);
+        //        int mapY = (int)(scanDie.MapY + offsetY);
+        //        scanPositions.Add((mapX, mapY));
+
+        //        if (orgPositions.Contains((mapX, mapY)))
+        //        {
+        //            // 원본에도 있고 스캔에도 있음: +1점
+        //            score += 1;
+        //            NormalScore++;
+        //        }
+        //        else
+        //        {
+        //            // 원본에 없고 스캔에만 있음: -10점
+        //            score -= 10;
+        //        }
+        //    }
+
+        //    // 원본에는 있지만 스캔에 없는 경우: -1점
+        //    foreach (var orgPos in orgPositions)
+        //    {
+        //        if (!scanPositions.Contains(orgPos))
+        //        {
+        //            // 원본에는 있지만 스캔에 없음: -1점
+        //            score -= 1;
+        //        }
+        //    }
+        //    NormalScore /= orgPositions.Count;
+        //    return score;
+        //}
 
         /// <summary>
         /// RegionGrowingGenerator를 이용하여 (CenterX/CenterY)->(MapX/MapY) 맵을 생성합니다.
@@ -1086,10 +1384,11 @@ namespace QMC.LCP_280.Process.Component
                 // 여기서는 이미 Consolidate된 centers가 들어온다고 보고 그대로 사용.
                 var rawPoints = new List<(double x, double y)>(centers.Count);
                 for (int i = 0; i < centers.Count; i++)
+                {
                     rawPoints.Add((centers[i].X, centers[i].Y));
+                }
 
                 var gen = new RegionGrowingGenerator();
-
                 if (autoEstimatePitch)
                 {
                     var (px, py) = RegionGrowingGenerator.EstimatePitch(rawPoints);
@@ -1138,17 +1437,18 @@ namespace QMC.LCP_280.Process.Component
                     });
                 }
 
-                // 기존 구현과 동일한 좌표 보정(원점 정렬 + X 반전 등)을 유지
-                int minX = temp.Min(t => t.MapX);
-                int minY = temp.Min(t => t.MapY);
-
+                // 기존 구현: 최소값을 빼서 0부터 시작하게 만듦 (Corner 기준)
+                double minX = temp.Min(t => t.MapX);
+                double minY = temp.Min(t => t.MapY);
+                
                 for (int i = 0; i < temp.Count; i++)
                 {
                     temp[i].MapX -= minX;
                     temp[i].MapY -= minY;
-
-                    temp[i].MapX *= -1;
-                    temp[i].MapY *= 1;
+                    
+                    //Y만 반전시켜야 되는거 같다.
+                    //temp[i].MapX *= -1;
+                    temp[i].MapY *= -1;
                 }
 
                 // Index 부여 규칙도 기존과 동일 유지
@@ -1174,6 +1474,99 @@ namespace QMC.LCP_280.Process.Component
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// [ADD] DieMap 로그 파일(Index, MapX, MapY, CenterX, CenterY)을 읽어서 Dies 리스트를 생성합니다.
+        /// </summary>
+        /// <param name="path">로그 파일 경로</param>
+        /// <returns>생성된 MaterialDie 리스트</returns>
+        public List<MaterialDie> ReadDieMapLogFile(string path)
+        {
+            var dies = new List<MaterialDie>();
+
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                // 로그 기능이 있다면 여기에 추가
+                // Log.Write("MaterialWafer", "ReadDieMapLogFile", $"File not found: {path}");
+                return dies;
+            }
+
+            try
+            {
+                var lines = File.ReadAllLines(path);
+
+                // 헤더가 있는지 확인하고 처리 (첫 줄이 "Index,MapX..." 로 시작하면 스킵)
+                // 실제 로그 예시를 보면 "2026-02-06...:DieMap> Index,MapX..." 형식이므로
+                // 데이터 라인인지 헤더인지 구분하는 로직이 필요합니다.
+
+                foreach (var line in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    // 1. 실제 데이터 부분만 추출 (Timestamp 등 앞부분 제거)
+                    // 예: "2026-02-06 12:35:37.967:DieMap> 0 ,-101, -43, 170.423, 106.809"
+                    string dataPart = line;
+                    int splitIndex = line.IndexOf(">");
+                    if (splitIndex >= 0)
+                    {
+                        dataPart = line.Substring(splitIndex + 1);
+                    }
+
+                    // 2. 쉼표로 분리
+                    var parts = dataPart.Split(',');
+
+                    // 3. 데이터 개수 확인 (Index, MapX, MapY, CenterX, CenterY -> 최소 5개)
+                    if (parts.Length < 5) continue;
+
+                    // 4. 헤더 라인 스킵 ("Index" 문자열이 포함되어 있으면 헤더로 간주)
+                    if (parts[0].IndexOf("Index", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+
+                    // 5. 파싱
+                    int index = 0;
+                    int mapX = 0;
+                    int mapY = 0;
+                    double centerX = 0.0;
+                    double centerY = 0.0;
+
+                    bool isParsed = true;
+                    isParsed &= int.TryParse(parts[0].Trim(), out index);
+                    isParsed &= int.TryParse(parts[1].Trim(), out mapX);
+                    isParsed &= int.TryParse(parts[2].Trim(), out mapY);
+                    isParsed &= double.TryParse(parts[3].Trim(), out centerX);
+                    isParsed &= double.TryParse(parts[4].Trim(), out centerY);
+
+                    if (isParsed)
+                    {
+                        var die = new MaterialDie
+                        {
+                            Index = index,
+                            MapX = mapX,
+                            MapY = mapY,
+                            CenterX = centerX,
+                            CenterY = centerY,
+
+                            // 기본 속성 설정
+                            Presence = MaterialPresence.Exist,
+                            State = DieProcessState.Mapped,
+                            SourceWaferId = this.WaferId, // 현재 웨이퍼 ID 연동
+                            ArrivedTime = DateTime.Now
+                        };
+
+                        // 필요 시 초기 Rank 설정 (기본값 1: OK)
+                        // die.Rank = 1; 
+
+                        dies.Add(die);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 에러 처리
+                Log.Write(ex);
+            }
+
+            return dies;
         }
 
     }

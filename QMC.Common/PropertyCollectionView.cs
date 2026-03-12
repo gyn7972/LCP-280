@@ -13,6 +13,21 @@ namespace QMC.Common
     [DefaultProperty("TextBoxFontSize")]
     public partial class PropertyCollectionView : UserControl
     {
+        // [ADD] 마우스 휠 스크롤 방지용 커스텀 콤보박스(내부 클래스로 정의)
+        private class NoScrollComboBox : ComboBox
+        {
+            private const int WM_MOUSEWHEEL = 0x020A;
+
+            protected override void WndProc(ref Message m)
+            {
+                // 드롭다운 리스트가 열려있지 않을 때 들어오는 휠 메시지는 무시
+                if (m.Msg == WM_MOUSEWHEEL && !this.DroppedDown)
+                {
+                    return;
+                }
+                base.WndProc(ref m);
+            }
+        }
         public static bool GlobalVerboseLogging = false;
         [Browsable(false)] public bool FastBuild { get; set; } = true;
         [Browsable(false)] public bool SuppressResizeInvalidation { get; set; } = true;
@@ -300,7 +315,7 @@ namespace QMC.Common
                         Padding = new Padding(2),
                         Visible = true
                     };
-                    var comboBox = new ComboBox
+                    var comboBox = new NoScrollComboBox     //var comboBox = new ComboBox
                     {
                         Dock = DockStyle.Fill,
                         Margin = new Padding(0),

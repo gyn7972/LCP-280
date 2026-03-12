@@ -232,6 +232,10 @@ namespace QMC.LCP_280.Process.Component
         /// <summary>
         /// 어디서든 OnMarksFound 이벤트에서 호출해서 동일 오버레이를 적용
         /// </summary>
+
+        private static readonly Font _overlayFont = new Font(FontFamily.GenericMonospace, 35f, FontStyle.Bold);
+
+
         public static void ApplyMarksFoundOverlays(
             VisionImageViewer viewer,
             PatternMarksFoundEventArgs e,
@@ -240,12 +244,213 @@ namespace QMC.LCP_280.Process.Component
             if (viewer == null || viewer.IsDisposed) return;
             if (e == null) return;
 
-            options = options ?? new MarksOverlayOptions();
+            // =========================================================================
+            // [최적화 핵심] 
+            // e.Image는 곧 Dispose 될 것이므로 절대 UI 스레드(BeginInvoke)로 넘기지 않습니다.
+            // 대신 그리는 데 필요한 원시 데이터(int, double, List)만 미리 빼냅니다.
+            // 이렇게 하면 Image.Clone() 같은 무거운 작업 없이 즉시 스레드를 풀어줄 수 있습니다.
+            // =========================================================================
+            int imgW = e.Image?.Header?.Width ?? 0;
+            int imgH = e.Image?.Header?.Height ?? 0;
 
-            Action apply = () => ApplyMarksFoundOverlaysCore(viewer, e, options);
+            // Marks 리스트 스냅샷 복사 (얕은 복사라 매우 빠름)
+            var safeMarks = e.Marks?.ToList() ?? new List<PatternMatchInfo>();
+            int repIndex = e.RepresentativeIndex;
+
+            // ROI 정보 미리 추출
+            (Point start, Point end)? roiInfo = null;
+            try { roiInfo = options.RecipeInspectRoiProvider?.Invoke(); } catch { }
+
+            // scale 변수 미리 추출 (dynamic 비용을 백그라운드에서 미리 처리)
+            double scaleX = 0.005;
+            double scaleY = 0.005;
+            try
+            {
+                dynamic cam = viewer.Camera;
+                if (cam != null && cam.CameraConfig != null && cam.CameraConfig.Scale != null)
+                {
+                    scaleX = Math.Abs((double)cam.CameraConfig.Scale.X);
+                    scaleY = Math.Abs((double)cam.CameraConfig.Scale.Y);
+                }
+            }
+            catch { }
+
+            // 추출한 순수 데이터들만 넘깁니다.
+            Action apply = () => ApplyMarksFoundOverlaysCoreFast(
+                viewer, safeMarks, repIndex, imgW, imgH, roiInfo, scaleX, scaleY, options);
+
             if (viewer.InvokeRequired) viewer.BeginInvoke(apply);
             else apply();
+
+
+            //options = options ?? new MarksOverlayOptions();
+            //Action apply = () => ApplyMarksFoundOverlaysCore(viewer, e, options);
+            //if (viewer.InvokeRequired) viewer.BeginInvoke(apply);
+            //else apply();
         }
+
+        // e.Image에 의존하지 않는 Fast Core 함수 새로 작성
+        private static void ApplyMarksFoundOverlaysCoreFast(
+            VisionImageViewer viewer,
+            List<PatternMatchInfo> marks,
+            int rep,
+            int imgW,
+            int imgH,
+            (Point start, Point end)? roi,
+            double scaleX,
+            double scaleY,
+            MarksOverlayOptions options)
+        {
+            try
+            {
+                var list = viewer.ResultOverlays as System.Collections.IList;
+                if (list == null)
+                {
+                    try { viewer.ResumeDisplay(); } catch { }
+                    return;
+                }
+
+                if (rep < 0 || rep >= marks.Count)
+                    rep = (marks.Count > 0) ? 0 : -1;
+
+                // 1) ROI 결정
+                bool hasRecipeRoi = false;
+                Point roiStart = Point.Empty;
+                Point roiEnd = Point.Empty;
+
+                if (roi.HasValue)
+                {
+                    roiStart = roi.Value.start;
+                    roiEnd = roi.Value.end;
+                    hasRecipeRoi = !(roiStart.IsEmpty && roiEnd.IsEmpty);
+                }
+
+                if (hasRecipeRoi && imgW > 0 && imgH > 0)
+                {
+                    roiStart = new Point(
+                        Math.Max(0, Math.Min(imgW - 1, roiStart.X)),
+                        Math.Max(0, Math.Min(imgH - 1, roiStart.Y)));
+
+                    roiEnd = new Point(
+                        Math.Max(0, Math.Min(imgW - 1, roiEnd.X)),
+                        Math.Max(0, Math.Min(imgH - 1, roiEnd.Y)));
+
+                    int sx = Math.Min(roiStart.X, roiEnd.X);
+                    int sy = Math.Min(roiStart.Y, roiEnd.Y);
+                    int ex = Math.Max(roiStart.X, roiEnd.X);
+                    int ey = Math.Max(roiStart.Y, roiEnd.Y);
+                    roiStart = new Point(sx, sy);
+                    roiEnd = new Point(ex, ey);
+
+                    if (ex - sx < 2 || ey - sy < 2)
+                        hasRecipeRoi = false;
+                }
+
+                lock (list)
+                {
+                    list.Clear();
+
+                    // 0) ROI Overlay
+                    if (imgW > 0 && imgH > 0)
+                    {
+                        Point sx0, ex0;
+
+                        if (hasRecipeRoi)
+                        {
+                            sx0 = roiStart;
+                            ex0 = roiEnd;
+                        }
+                        else
+                        {
+                            // fallback: center ROI (mm-based)
+                            double roiWmm = options.UseXAxisRoi ? 5.0 : 1.5;
+                            double roiHmm = options.UseXAxisRoi ? 1.5 : 5.0;
+
+                            if (scaleX <= 0) scaleX = 0.005;
+                            if (scaleY <= 0) scaleY = 0.005;
+
+                            int roiWpx = Math.Max(2, (int)Math.Round(roiWmm / scaleX));
+                            int roiHpx = Math.Max(2, (int)Math.Round(roiHmm / scaleY));
+
+                            int cx = imgW / 2;
+                            int cy = imgH / 2;
+
+                            int halfW = Math.Max(1, roiWpx / 2);
+                            int halfH = Math.Max(1, roiHpx / 2);
+
+                            sx0 = new Point(Math.Max(0, cx - halfW), Math.Max(0, cy - halfH));
+                            ex0 = new Point(Math.Min(imgW - 1, cx + halfW), Math.Min(imgH - 1, cy + halfH));
+                        }
+
+                        list.Add(new QMC.Common.Vision.RectangleFrameVisionImageOverlay("ROI", sx0, ex0)
+                        {
+                            Color = hasRecipeRoi ? options.RecipeRoiColor : options.FallbackRoiColor,
+                            Thickness = 2,
+                            DashStyle = System.Drawing.Drawing2D.DashStyle.Dash,
+                            Visible = true
+                        });
+                    }
+
+                    // 1) Mark overlays
+                    for (int i = 0; i < marks.Count; i++)
+                    {
+                        var m = marks[i];
+                        bool isRep = (i == rep);
+
+                        list.Add(new QMC.Common.Vision.PatternMatchResultOverlay
+                        {
+                            Center = new PointD((float)m.X, (float)m.Y),
+                            PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
+                            PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
+                            AngleDeg = (float)m.AngleDeg,
+                            CrossHalfLenPx = isRep ? 24 : 16,
+                            Highlight = isRep,
+                            Index = i,
+                            Color = isRep ? options.RepresentativeColor : options.NormalColor,
+                            Thickness = isRep ? 2f : 1f,
+                            Visible = true
+                        });
+                    }
+
+                    // 2) Rep info text
+                    if (options.ShowTextInfo && rep >= 0 && rep < marks.Count)
+                    {
+                        var m = marks[rep];
+                        string roiMode = options.UseXAxisRoi ? "ROI:X" : "ROI:Y";
+                        string roiSrc = hasRecipeRoi ? "RecipeROI" : "CenterROI";
+                        string nl = Environment.NewLine;
+
+                        string text =
+                            $"{roiMode} {roiSrc}  REP[{rep}]{nl}" +
+                            $"X : {m.X:0.###}{nl}" +
+                            $"Y : {m.Y:0.###}{nl}" +
+                            $"T : {m.AngleDeg:0.###} deg{nl}" +
+                            $"Score : {m.Score:0.###}";
+
+                        var loc = options.TextLocation;
+                        loc = new Point(loc.X, Math.Max(loc.Y, 50));
+
+                        list.Add(new QMC.Common.Vision.TextVisionImageOverlay(
+                            "REP_INFO",
+                            loc,
+                            _overlayFont) // 매번 Font 객체 생성하지 않고 정적 객체 재사용
+                        {
+                            Text = text,
+                            Color = Color.Yellow,
+                            BrushColor = Brushes.Yellow,
+                            Visible = true
+                        });
+                    }
+                }
+
+                viewer.ResumeDisplay();
+            }
+            catch
+            {
+                try { viewer?.ResumeDisplay(); } catch { }
+            }
+        }
+
 
         private static void ApplyMarksFoundOverlaysCore(
             VisionImageViewer viewer,

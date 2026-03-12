@@ -35,6 +35,7 @@ using static QMC.Common.Unit.BaseUnit;
 using QMC.Common.GEMSecs;
 using System.Diagnostics;
 using System.Drawing;
+using QMC.Common.Alarm;
 
 namespace QMC.LCP_280.Process
 {
@@ -606,65 +607,6 @@ namespace QMC.LCP_280.Process
             _lastBroadcastUnitStatus[unitName] = newState;
 
             OnUnitStateChanged(unitName, newState);
-
-
-            //if (Units != null && Units.TryGetValue(unitName, out var u) && u is BaseUnit bu)
-            //{
-            //    if (bu.RunUnitStatus != newState)
-            //    {
-            //        bu.RunUnitStatus = newState;
-            //    }
-
-            //    switch (newState)
-            //    {
-            //        case UnitStatus.Starting:
-            //            bu.RunUnitStatus = UnitStatus.Starting;
-            //            EqState = EquipmentState.Starting;
-            //            break;
-            //        case UnitStatus.AutoRunning:
-            //            bu.RunUnitStatus = UnitStatus.AutoRunning;
-            //            EqState = EquipmentState.AutoRunning;
-            //            break;
-            //        case UnitStatus.ManualRunning:
-            //            bu.RunUnitStatus = UnitStatus.ManualRunning;
-            //            EqState = EquipmentState.ManualRunning;
-            //            break;
-            //        case UnitStatus.Stopping:
-            //            bu.RunUnitStatus = UnitStatus.Stopping;
-            //            EqState = EquipmentState.Stopping;
-            //            break;
-            //        case UnitStatus.CycleStop:
-            //            bu.RunUnitStatus = UnitStatus.CycleStop;
-            //            EqState = EquipmentState.CycleStop;
-            //            break;
-            //        case UnitStatus.Stopped:
-            //            bu.RunUnitStatus = UnitStatus.Stopped;
-            //            EqState = EquipmentState.Stopped;
-            //            break;
-            //        case UnitStatus.Error:
-            //            bu.RunUnitStatus = UnitStatus.Error;
-            //            EqState = EquipmentState.Error;
-            //            break;
-            //        case UnitStatus.Unknown:
-            //            bu.RunUnitStatus = UnitStatus.Unknown;
-            //            EqState = EquipmentState.Unknown;
-            //            break;
-            //    }
-            //}
-            //if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
-            //{
-            //    bool running = (newState == UnitStatus.AutoRunning || newState == UnitStatus.Starting);
-            //    if (exec.IsRunning != running)
-            //    {
-            //        exec.IsRunning = running;
-            //        if (running) exec.StartTime = DateTime.Now;
-            //        else exec.StopTime = DateTime.Now;
-            //    }
-            //}
-            //if (_lastBroadcastUnitStatus.TryGetValue(unitName, out var last) && last == newState)
-            //    return;
-            //_lastBroadcastUnitStatus[unitName] = newState;
-            //OnUnitStateChanged(unitName, newState);
         }
 
         private void OnUnitStateChanged(string unitName, UnitStatus newState)
@@ -826,7 +768,10 @@ namespace QMC.LCP_280.Process
         public EquipmentConfig EquipmentConfig { get; set; }
         public EquipmentRecipe EquipmentRecipe { get; set; }
         public string ICurrentRecipe { get; set; }
-        
+
+        // [ADD] 현재 사용자 ID 보관용 프로퍼티 (ResultWriterManager 등에서 참조)
+        public string UserId { get; set; }
+
         public bool m_bBuzzerOff { get; set; } = false;
         public bool bIndexCal { get; set; } = true; //재현성및 1:1모드
 
@@ -1219,15 +1164,15 @@ namespace QMC.LCP_280.Process
                             mb.ShowDialog("Error!", "Failed to apply binning spec (from ExcelBinningModel).");
                         }
                     }
-                    else
-                    {
-                        // 폴백: 기존 방식(레거시 파일일 수 있음)
-                        if (Tester.LoadBinningSpecSheet(specPath) != 0)
-                        {
-                            var mb = new MessageBoxOk();
-                            mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-                        }
-                    }
+                    //else
+                    //{
+                    //    // 폴백: 기존 방식(레거시 파일일 수 있음)
+                    //    if (Tester.LoadBinningSpecSheet(specPath) != 0)
+                    //    {
+                    //        var mb = new MessageBoxOk();
+                    //        mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                    //    }
+                    //}
                 }
             }
             catch (Exception ex)
@@ -1424,6 +1369,9 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                string alarmFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Alarms.csv");
+                GlobalAlarmTable.Instance.LoadAlarmsFromFile(alarmFilePath);
+
                 InitializePreconditions();
 
                 InitializeCoreContainers();
@@ -1435,7 +1383,6 @@ namespace QMC.LCP_280.Process
                 InitializeDevices();
 
                 InitializeUnits();
-
                 InitializeRecipes();
 
                 // 여기서 VisionRunnerHub 1회 초기화하자.
@@ -1481,6 +1428,10 @@ namespace QMC.LCP_280.Process
                 FinalizeInitialization();
 
                 HookAlarmCountToSummaryOnce();
+
+                // 30일이 지난 로그 삭제
+                Log.DeleteOldLogs(5);  //Test 5일 지난 파일
+
             }
             catch (Exception ex)
             {
@@ -1620,10 +1571,10 @@ namespace QMC.LCP_280.Process
                 {
                     mb.ShowDialog("Error!", $"Failed to load test condition set.");
                 }
-                if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
-                {
-                    mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-                }
+                //if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
+                //{
+                //    mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                //}
             }
 
             _motionSafetyStopIssued = false;
@@ -1849,7 +1800,8 @@ namespace QMC.LCP_280.Process
             // [MOD] 기존 지역 변수 scanner → 필드 보관
             if (_motionStatusScanner == null)
             {
-                _motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                //_motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                _motionStatusScanner = new MotionStatusScanner(_axisManager, 5);
 
                 _motionStatusScanner.AxisStatusUpdated += (axis, status) =>
                 {
@@ -1997,7 +1949,8 @@ namespace QMC.LCP_280.Process
                 _unitIO = DIOUnit.LoadOrCreateDefault(setupPath, "Unit", 32, 32, "DB64R");
                 //파일없으면 프로그램 다운됨.
                 _dioScan = new DioScanService(_unitIO, _dio);
-                _dioScan.Start(10);
+                //_dioScan.Start(10);
+                _dioScan.Start(5);
             }
 
             

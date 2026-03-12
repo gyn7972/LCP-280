@@ -188,7 +188,7 @@ namespace QMC.Common
             };
             this.SizeChanged += (s, args) => ApplySizes();
 
-            // 🚀 폼이 처음 로드될 때 기본으로 Main 폼을 중앙에 표시
+            // 폼이 처음 로드될 때 기본으로 Main 폼을 중앙에 표시
             SwitchCenterView(MenuButtonType.Main);
 
             formAlarm = new Form_Alarm();

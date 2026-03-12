@@ -396,7 +396,6 @@ namespace QMC.Common.Keithley
                                 {
                                     dUnit = dUnit / 1000;
                                 }
-                                    
 
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;

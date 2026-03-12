@@ -393,7 +393,7 @@ namespace QMC.Common.Spectrometer
                             itemResult.Unit = ""; // 무차원
                             break;
                         case TestItemType.PickValue:
-                            value = result.StimulusX;
+                            value = result.PickValue;
                             itemResult.RawData = value;
                             itemResult.Value = value;
                             itemResult.Unit = intensityUnit;
@@ -533,7 +533,16 @@ namespace QMC.Common.Spectrometer
                 // An error occurred
                 StringBuilder sb = new StringBuilder(256);
                 CAS4DLL.casGetErrorMessage(errorCode, sb, sb.Capacity);
-                throw new Exception($"CAS Error {errorCode}: {sb.ToString()}");
+
+                string errorMsg = $"CAS Error {errorCode}: {sb.ToString()}";
+
+                // 장비 로그에 기록 (현재 클래스의 Log.Write 사용 패턴 따름)
+                Log.Write("CAS", "CheckCASErrorAndThrow", errorMsg);
+                throw new Exception(errorMsg);
+                //// An error occurred
+                //StringBuilder sb = new StringBuilder(256);
+                //CAS4DLL.casGetErrorMessage(errorCode, sb, sb.Capacity);
+                //throw new Exception($"CAS Error {errorCode}: {sb.ToString()}");
             }
         }
         private void CheckCASErrorAndThrow()
@@ -576,9 +585,24 @@ namespace QMC.Common.Spectrometer
 
                 int deviceInterfaceOption = Config.DeviceInterfaceOption;
 
-                int newId = CAS4DLL.casCreateDeviceEx(deviceInterfaceType, deviceInterfaceOption);
-                CheckCASErrorAndThrow(newId);
+                int newId = 0;
+                dynamic eq = EquipmentLocator.Instance;
+                var bIsSim = eq.EquipmentConfig.IsSimulation;
+                if (bIsSim)
+                {
+                    CheckCASErrorAndThrow(newId);
+                    // Processing after successful device initialization
+                    UpdateSupportDensityFilterList();
 
+                    deviceId = newId;
+                    return true;
+                }
+                else
+                {
+                    newId = CAS4DLL.casCreateDeviceEx(deviceInterfaceType, deviceInterfaceOption);
+                }
+
+                CheckCASErrorAndThrow(newId);
                 // Processing after successful device initialization
                 UpdateSupportDensityFilterList();
 
@@ -598,7 +622,10 @@ namespace QMC.Common.Spectrometer
                 bool tryDoneDevice = false;
                 if(IsCreated())
                 {
-                    CheckCASErrorAndThrow(CAS4DLL.casDoneDevice(deviceId));
+                    if(Config.IsSimulation == false)
+                    {
+                        CheckCASErrorAndThrow(CAS4DLL.casDoneDevice(deviceId));
+                    }
                     tryDoneDevice = true;
                 }
                 deviceId = -1;
@@ -625,6 +652,8 @@ namespace QMC.Common.Spectrometer
 
             try
             {
+                if (Config.IsSimulation)
+                    return false;
                 // Set parameter
                 SetDeviceParameter(CAS4DLL.dpidConfigFileName, Config.ConfigFileName);
                 SetDeviceParameter(CAS4DLL.dpidCalibFileName, Config.CalibFileName);
@@ -708,7 +737,7 @@ namespace QMC.Common.Spectrometer
         {
             return (deviceId >= 0);
         }
-        #endregion
+#endregion
 
         // Measurement Methods
         #region Measurement Methods
@@ -728,32 +757,35 @@ namespace QMC.Common.Spectrometer
                     );
                 }
 
+                // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
                 OnMeasureCommandSended?.Invoke(this);
 
                 // SPC(2) Line ON ( SMU(3))
                 if (useHardwareTrigger)
+                {
                     OnDigitalOut(2);
+                }
 
-                //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
-                //Thread.Sleep(10);
-                //OnMeasureCommandSended?.Invoke(this);
-
+                // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
-                // SPC(2) Line OFF (Send Falling edge to SMU(3))
-                if (useHardwareTrigger)
-                    OffDigitalOut(2);
+                //// SPC(2) Line OFF (Send Falling edge to SMU(3))
+                //if (useHardwareTrigger)
+                //{
+                //    OffDigitalOut(2);
+                //}
 
                 // Data Process
                 GetSpectrumData();
                 GetMeasureData();
-                OnMeasureCompleted?.Invoke(this);
 
-                // 검증 로그
-                //double delay = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidTriggerDelayTime);
-                //double acqTime = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidACQTime);
-                //double sigLevel = CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidSignalLevel);
-                //Log.Write("CAS", "Trigger/Timing", $"Delay={delay}ms, ACQTime={acqTime}ms, SignalLevel={sigLevel}%");
+                // SPC(2) Line OFF (Send Falling edge to SMU(3))
+                if (useHardwareTrigger)
+                {
+                    OffDigitalOut(2);
+                }
+
+                OnMeasureCompleted?.Invoke(this);
 
                 return true;
             }
@@ -773,7 +805,9 @@ namespace QMC.Common.Spectrometer
                 {
                     // if abort measurement -> SPC(2) Line OFF
                     if (useHardwareTrigger)
+                    {
                         OffDigitalOut(2);
+                    }
                 }
                 catch {}
             }
@@ -1264,6 +1298,6 @@ namespace QMC.Common.Spectrometer
             return radInt;
         }
 
-        #endregion
+#endregion
     }
 }

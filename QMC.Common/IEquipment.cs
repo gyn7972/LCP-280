@@ -5,6 +5,7 @@ using QMC.Common.IO;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Forms.DataVisualization.Charting;
 using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.Common
@@ -41,12 +42,10 @@ namespace QMC.Common
         DioScanService DioScan { get; }
         DIOUnit UnitIO { get; }
 
-
-
         // 인터페이스에서는 구현 없이 선언만(C# 7.3 호환)
         string ICurrentRecipe { get; set; }
         bool m_bBuzzerOff { get; set; }
-
+        
         void SetAndRaiseUnitState(string unitName, UnitStatus newState);
     }
 

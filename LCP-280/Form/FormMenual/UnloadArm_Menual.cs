@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;
@@ -21,7 +22,7 @@ using Timer = System.Windows.Forms.Timer;
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
     [FormOrder(5)]
-    public partial class UnloadArm_Menual : Form
+    public partial class UnloadArm_Menual : Form, ITabActivationAware
     {
         private Equipment Equipment => Equipment.Instance;
 
@@ -68,25 +69,109 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (!Visible)
                     return;
 
-                //if (_pendingTeachingReload)
-                //{
-                //    _pendingTeachingReload = false;
-                //    ReloadTeachingFromRecipeAndRefreshUi();
-                //}
-
                 ReloadTeachingFromRecipeAndRefreshUi();
             };
             this.Activated += (s, e) =>
             {
-                //if (_pendingTeachingReload)
-                //{
-                //    _pendingTeachingReload = false;
-                //    ReloadTeachingFromRecipeAndRefreshUi();
-                //}
-
                 ReloadTeachingFromRecipeAndRefreshUi();
             };
         }
+
+        // [추가] 탭 활성화 인터페이스 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
+        }
+
+        // [추가] 폼 이벤트 오버라이드
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+                if (this.Visible) ResumeCamera();
+                else PauseCamera();
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                PauseCamera();
+                // 필요한 경우 Unsubscribe 추가
+            }
+            catch { }
+            base.OnFormClosing(e);
+        }
+
+        // [추가] 카메라 제어 헬퍼 (_ChipUnloadingCameraviewer 사용)
+        private void PauseCamera()
+        {
+            if (_ChipUnloadingCameraviewer == null || _ChipUnloadingCameraviewer.IsDisposed) return;
+
+            try { _ChipUnloadingCameraviewer.SuspendDisplay(); } catch { }
+
+            var cam = _ChipUnloadingCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            try
+            {
+                var method = _ChipUnloadingCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_ChipUnloadingCameraviewer, null);
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_ChipUnloadingCameraviewer == null || _ChipUnloadingCameraviewer.IsDisposed) return;
+
+            var cam = _ChipUnloadingCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _ChipUnloadingCameraviewer.ResumeDisplay(); } catch { }
+
+            try
+            {
+                var method = _ChipUnloadingCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_ChipUnloadingCameraviewer, null);
+                else _ChipUnloadingCameraviewer.StartUpdateTask();
+            }
+            catch { }
+        }
+
 
         public void PreloadUI()
         {

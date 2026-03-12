@@ -160,7 +160,7 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name)
+        public new TeachingPosition GetTeachingPosition(string name)
         {
             if(TeachingPositions == null)
                 return null;
