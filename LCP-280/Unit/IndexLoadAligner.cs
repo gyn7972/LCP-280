@@ -46,12 +46,12 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eAlignTAxesNotReady;
                 alarm.Title = "IndexLoadAligner T-Axis Not ReadyPos.";
-                alarm.Cause = "IndexLoadAligner T-Axis 가 준비 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "IndexLoadAligner T-Axis is not at the ready position.\n Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -59,7 +59,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eAlignTAxesMoving;
                 alarm.Title = "IndexLoadAligner T-Axis Axis Moving";
-                alarm.Cause = "IndexLoadAligner T 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "IndexLoadAligner T-Axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
-                alarm.Cause = "Rotary 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "Rotary axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -297,7 +297,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -396,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                 // (Rotary.IsIndexMoving 내부 로직과 유사하게, "현재 위치가 Index 위치인지" 판별)
 
                 // 시뮬레이션 환경 등을 고려해 10ms 대기 후 재확인 (노이즈 필터)
-                Thread.Sleep(10);
+                Thread.Sleep(1);
                 if (this.Rotary.IsIndexMoving())
                 {
                     // 정말로 계속 움직이고 있다면, 위치가 틀어졌을 가능성이 높음 -> 정지
@@ -407,13 +407,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            //if (Rotary != null && this.Rotary.IsIndexMoving())
-            //{
-            //    AxisIndexZ.EmgStop();
-            //    AxisAlignT.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
-            //    return -1;
-            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeAlignUp(int nIndex = 0, bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -442,7 +435,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -545,7 +538,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -622,7 +615,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -699,7 +692,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -768,7 +761,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -908,7 +901,7 @@ namespace QMC.LCP_280.Process.Unit
             if (string.IsNullOrWhiteSpace(positionName))
             {
                 Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' 을 찾지 못했습니다.");
+                       $"[TeachingMove] '{positionName}' not found in TeachingPositions."); 
                 return -1;
             }
 
@@ -925,7 +918,7 @@ namespace QMC.LCP_280.Process.Unit
                 else
                 {
                     Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' index를 찾지 못했습니다.");
+                        $"[TeachingMove] Index for '{positionName}' not found in TeachingPositions.");
                     return -1;
                 }
             }
@@ -1012,7 +1005,7 @@ namespace QMC.LCP_280.Process.Unit
         /// Rotary(인덱스) 정지까지 대기. 
         /// - 성공: 0, 타임아웃/오류: -1, Auto 중 Stop 신호: 0
         /// </summary>
-        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 2)
+        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 1)
         {
             var sw = Stopwatch.StartNew();
             while (true)
@@ -1115,6 +1108,19 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
+                // [추가] 상태 기반 Skip (이미 NG/결과완료이면 재측정 안 함)
+                // - NG: DieProcessState.Rejected, DieProcessState.Skip
+                // - Result 완료: MaterialProcessSatate.Completed, MaterialProcessSatate.Skipped
+                if (die.State == DieProcessState.Rejected ||
+                    die.State == DieProcessState.Skip ||
+                    //die.ProcessSatate == Material.MaterialProcessSatate.Completed ||
+                    die.ProcessSatate == Material.MaterialProcessSatate.Skipped)
+                {
+                    Log.Write(UnitName, "MAlign",
+                        $"Skip re-align: DieState={die.State}, ProcessState={die.ProcessSatate}");
+                    return 0;
+                }
+
                 while (this.Rotary.IsIndexMoving())
                 {
                     if (IsStop)
@@ -1124,7 +1130,6 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     Thread.Sleep(1);
                 }
-                Log.Write("die_State", "RunAlignSocketOnce", die.State.ToString());
 
                 var socket = this.Rotary.GetSocket(nIndex);
                 socket.SetState(Rotary.RotarySocketState.MAligning);
@@ -1407,7 +1412,7 @@ namespace QMC.LCP_280.Process.Unit
                 // ========== [수정 시작] Random Failure Simulation ==========
                 // 0 ~ 99 사이의 난수 생성
                 // 예: 80보다 작으면 성공(80%), 크면 실패(20%)로 설정
-                bool isSimulatedSuccess = new Random().Next(0, 100) < 100;
+                bool isSimulatedSuccess = new Random().Next(0, 99) < 99;
                 if (isSimulatedSuccess)
                 {
                     IsAlignResult = true;       // Align 성공

@@ -136,9 +136,10 @@ namespace QMC.Common.Spectrometer
 
                 switch (supportInterface.Types[selectedInterfaceTypeIndex].Value)
                 {
-                    case CAS4DLL.InterfacePCI:
-                        config.DeviceInterfaceType = CASSpectrometerConfig.DeviceInterface.PCI;
-                        break;
+                    //
+                    //case CAS4DLL.InterfacePCI:
+                    //    config.DeviceInterfaceType = CASSpectrometerConfig.DeviceInterface.PCI;
+                    //    break;
                     case CAS4DLL.InterfaceTest:
                         config.DeviceInterfaceType = CASSpectrometerConfig.DeviceInterface.Test;
                         break;

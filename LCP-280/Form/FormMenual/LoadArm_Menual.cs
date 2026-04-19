@@ -778,7 +778,7 @@ namespace QMC.LCP_280.Process.Unit
                 Equipment.Instance.EqState == EquipmentState.AutoRunning ||
                 Equipment.Instance.EqState == EquipmentState.ManualRunning)
             {
-                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                mb.ShowDialog("Error", "Equipment is running.Please stop it before trying again.");
                 return;
             }
 
@@ -874,10 +874,10 @@ namespace QMC.LCP_280.Process.Unit
                 Equipment.Instance.EqState == EquipmentState.AutoRunning ||
                 Equipment.Instance.EqState == EquipmentState.ManualRunning)
             {
-                mb.ShowDialog("Warring", "장비가 운전 중입니다. 정지 후 시도하세요.");
+                mb.ShowDialog("Error", "Equipment is running.Please stop it before trying again.");
                 return;
-
             }
+
             var ask = new MessageBoxYesNo();
             if (ask.ShowDialog("Question", "Die PlaceDown?") != DialogResult.Yes)
             {
@@ -977,35 +977,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 SetUnitsManualRunning(false);
             }
-
-            //int nRet = 0;
-            //try
-            //{
-            //    var cts = new CancellationTokenSource();
-            //    var token = cts.Token;
-            //    // 1) 선택된 Probe Index로 이동(선택 없으면 현재 유지)
-            //    int selectedProbeIndex = GetSelectedLoadIndex();
-            //    if (selectedProbeIndex >= 0)
-            //    {
-            //        nRet = await Task.Run(() => MoveRotaryToLoadSocketAsync(selectedProbeIndex, token));
-            //        if (nRet != 0)
-            //        {
-            //            MessageBox.Show("Rotary 목표 소켓 이동 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //            return;
-            //        }
-            //    }
-
-            //    nRet = await Task.Run(() => PlaceDieFromArmToCurrentSocketAsync(token));
-            //    if (nRet != 0)
-            //    {
-            //        MessageBox.Show("Pick Down Fail.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            //        return;
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
         }
 
 

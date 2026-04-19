@@ -35,6 +35,7 @@ namespace QMC.LCP_280.Process
         private bool _autoReadyBusy = false;
         private bool _autoStarting = false;
         private readonly System.Windows.Forms.Timer _seqUiTimer = new System.Windows.Forms.Timer();
+        private readonly System.Windows.Forms.Timer _contactUiTimer = new System.Windows.Forms.Timer();
         private EventHandler _seqUiChangedHandler;
         private static readonly string[] _seqOrder =
         {
@@ -346,6 +347,13 @@ namespace QMC.LCP_280.Process
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            try
+            {
+                _contactUiTimer.Stop();
+                _contactUiTimer.Dispose();
+            }
+            catch { }
+
             try
             {
                 _seqUiTimer.Stop();
@@ -813,6 +821,12 @@ namespace QMC.LCP_280.Process
                 dieIndexSelectControl1.BindWaferArm(InputDieTransfer);
                 dieIndexSelectControl1.BindBinArm(OutputDieTransfer);
             }
+
+            RefreshContactCounterUi();
+
+            _contactUiTimer.Interval = 300;
+            _contactUiTimer.Tick += (s, ev) => RefreshContactCounterUi();
+            _contactUiTimer.Start();
         }
 
         private void Monitoring_Main_FormClosing(object sender, FormClosingEventArgs e)
@@ -975,8 +989,25 @@ namespace QMC.LCP_280.Process
 
             // 중복 진입 방지: 호출 직전에 true
             _autoStarting = true;
-
             bool success = false;
+
+            // [ADD] Start 전 장비 인터락 확인 (Camera / Tester / CAS)
+            string interlockReason;
+
+            var equipment = Equipment.Instance;
+            bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+            if (IsDryRunEqp == false)
+            {
+                if (!CheckAutoStartInterlock(out interlockReason))
+                {
+                    Log.Write("Monitoring_Main", $"Auto Start 인터락 차단: {interlockReason}");
+                    MessageBox.Show(interlockReason, "Auto Start 인터락", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    success = false;
+                    return;
+                }
+            }
+            
+
             try
             {
                 var cts = new CancellationTokenSource();
@@ -1872,6 +1903,151 @@ namespace QMC.LCP_280.Process
 
             //var dlg = new TaktMonitorAllDialog();
             //dlg.Show(); // 모달리스로 띄워야 장비 동작 중에 볼 수 있음
+        }
+
+        private bool CheckAutoStartInterlock(out string reason)
+        {
+            var errors = new List<string>();
+
+            try
+            {
+                // 0) 공통 축/설비 준비(이미 앞에서 EnsureAxisReadyOrShowMessage를 호출하지만, 이중 안전)
+                var eq = Equipment.Instance;
+                if (eq == null)
+                    errors.Add("Equipment 인스턴스가 없습니다.");
+
+                // 1) Camera 인터락
+                if (!IsCameraReadyForAutoStart(out var camMsg))
+                    errors.Add(camMsg);
+
+                // 2) Tester / CAS 인터락
+                if (!IsTesterAndCasReadyForAutoStart(out var testerMsg))
+                    errors.Add(testerMsg);
+            }
+            catch (Exception ex)
+            {
+                errors.Add("인터락 확인 중 예외: " + ex.Message);
+            }
+
+            if (errors.Count > 0)
+            {
+                reason = "[Auto Start 불가]\r\n - " + string.Join("\r\n - ", errors);
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        /// <summary>
+        /// Camera 측정 가능 상태 인터락
+        /// 현재 코드에서 확실히 접근 가능한 API가 없어, 실사용 카메라 접근 포인트를 반영할 수 있는 형태로 구성.
+        /// </summary>
+        private bool IsCameraReadyForAutoStart(out string msg)
+        {
+            try
+            {
+                // 현재 Monitoring_Main에서 카메라는 FormMapMatchManual.BindEquipmentInStageCamera()를 통해 간접 바인딩만 보임.
+                // 직접 참조 가능한 Camera 객체 API가 본 파일에서는 확인되지 않아,
+                // "실카메라 필수 검증"은 프로젝트의 실제 카메라 노출 프로퍼티로 치환 필요.
+                //
+                // 예: var cam = Equipment.Instance.InStageCamera;
+                // if (cam == null) { msg = "InStageCamera가 바인딩되지 않았습니다."; return false; }
+                // if (!cam.IsOpen()) { msg = "InStageCamera 연결(Open) 상태가 아닙니다."; return false; }
+
+                // 임시 정책:
+                // - 시뮬레이션/카메라 미사용 레시피를 고려해 Pass
+                // - 필요 시 위 예시 코드로 즉시 강화 가능
+                msg = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                msg = "카메라 상태 확인 실패: " + ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tester + CAS(=Spectrometer) 측정 가능 상태 인터락
+        /// PKGTester.CanMeasure()를 기준으로 확실히 컴파일/동작 가능한 체크.
+        /// </summary>
+        private bool IsTesterAndCasReadyForAutoStart(out string msg)
+        {
+            try
+            {
+                var t = Tester;
+                if (t == null)
+                {
+                    msg = "Tester가 null입니다.";
+                    return false;
+                }
+
+                // 세부 원인 분리 (디버깅/운영 편의)
+                if (t.Sourcemeter == null)
+                {
+                    msg = "Sourcemeter 미바인딩 상태입니다.";
+                    return false;
+                }
+
+                if (t.Spectrometer == null)
+                {
+                    msg = "CAS Spectrometer 미바인딩 상태입니다.";
+                    return false;
+                }
+
+                // 장비 Ready (실제 API)
+                if (!t.Sourcemeter.IsReady())
+                {
+                    msg = "Sourcemeter가 Ready 상태가 아닙니다.";
+                    return false;
+                }
+
+                if (!t.Spectrometer.IsReady())
+                {
+                    msg = "CAS Spectrometer가 Ready 상태가 아닙니다.";
+                    return false;
+                }
+
+                // 테스트 조건/비닝/장비 readiness 종합 체크 (실제 API)
+                if (!t.CanMeasure())
+                {
+                    msg = "Tester.CanMeasure() == false (조건셋/비닝/장비 상태 확인 필요).";
+                    return false;
+                }
+
+                // 측정 중이면 Start 차단
+                if (t.IsMeasuring)
+                {
+                    msg = "Tester가 현재 측정 중입니다.";
+                    return false;
+                }
+
+                msg = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                msg = "Tester/CAS 상태 확인 실패: " + ex.Message;
+                return false;
+            }
+        }
+
+        private void RefreshContactCounterUi()
+        {
+            try
+            {
+                if (IsDisposed) return;
+
+                long count = IndexChipProbeController?.ContactTotalCount ?? 0;
+
+                if (lbContactValue != null)
+                    lbContactValue.Text = count.ToString("N0"); // 1,234 형식
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Monitoring_Main", nameof(RefreshContactCounterUi), ex.Message);
+            }
         }
     }
 }

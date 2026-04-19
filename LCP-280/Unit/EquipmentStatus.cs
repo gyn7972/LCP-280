@@ -127,8 +127,9 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if(loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
-            
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
+
                 AlarmRegister((int)AlarmKeys.eAlarmEMO, 
                     "EMERGENCY PRESSED", "EMG_SW(X003) 입력", source,"Error");
                 AlarmRegister((int)AlarmKeys.eAlarm_WaferFeederOverload,

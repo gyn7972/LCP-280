@@ -128,6 +128,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
             if (_running)
                 return;
 
+            if (_probeCtrl == null)
+            {
+                FailAndStop("Probe Controller가 null 입니다. Probe 없이 구동할 수 없습니다.");
+                return;
+            }
+            if (_tester == null)
+            {
+                FailAndStop("PKGTester가 null 입니다. Probe 없이 구동할 수 없습니다.");
+                return;
+            }
+
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
@@ -154,7 +165,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 try
                 {
                     Log.Write("ReproTest", "Start()", "재현성 테스트 시작");
-                    //await EnsureWaferLoadedAsync(ct).ConfigureAwait(false);
+
+                    // 시작 시 필수: 칩 얼라인 + 보정
+                    int initRc = _dieTransfer.RecheckDieAndAlign();
+                    if (initRc != 0)
+                    {
+                        Log.Write("ReproTest", "시작 초기 RecheckDieAndAlign 실패");
+                        throw new Exception("초기 얼라인 실패");
+                    }
+
 
                     // [추가] 반복 사이클
                     int runCount = Math.Max(1, RepeatCycleCount);
@@ -254,8 +273,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 int rc = await MoveRotaryToSocketAsync(currentSocket, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal Fail");
                                     Log.Write("ReproTest", $"Rotary 이동 실패 (socket={currentSocket})");
-                                    break;
+                                    return;
                                 }
 
                                 // 암에 현재 다이 참조 (이전 소켓 픽 완료 후 들어있어야 함)
@@ -279,8 +299,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     rc = await PickDieFromWaferAsync(ct).ConfigureAwait(false);
                                     if (rc != 0)
                                     {
+                                        FailAndStop("Index Cal Fail");
                                         Log.Write("ReproTest", "웨이퍼에서 다이 픽 실패");
-                                        break;
+                                        return;
                                     }
 
                                     armDie = GetCurrentArmDie();
@@ -293,8 +314,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     rc = await PlaceDieFromArmToCurrentSocketAsync(ct).ConfigureAwait(false);
                                     if (rc != 0)
                                     {
+                                        FailAndStop("Index Cal Fail");
                                         Log.Write("ReproTest", "소켓 안착 실패");
-                                        break;
+                                        return;
                                     }
 
                                     // 데이터/Material 이동 (DieTransfer -> Rotary)
@@ -314,8 +336,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     rc = await PlaceDieFromArmToCurrentSocketAsync(ct).ConfigureAwait(false);
                                     if (rc != 0)
                                     {
+                                        FailAndStop("Index Cal Fail");
                                         Log.Write("ReproTest", "소켓 안착 실패(재배치)");
-                                        break;
+                                        return;
                                     }
 
                                     PlaceDieToSocket(currentSocket, armDie);
@@ -326,39 +349,48 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 rc = await MoveRotaryStepsAsync(1, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal Fail");
                                     Log.Write("ReproTest", "로딩 얼라인 위치 이동 실패");
-                                    break;
+                                    return;
                                 }
 
                                 rc = await RunLoadAlignerAsync(ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal Fail");
                                     Log.Write("ReproTest", "M-Align 실패");
-                                    break;
+                                    return;
                                 }
 
                                 // 4) 프로브 위치 이동(1 step) → 검사
                                 rc = await MoveRotaryStepsAsync(1, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal Fail");
                                     Log.Write("ReproTest", "프로브 위치 이동 실패");
-                                    break;
+                                    return;
                                 }
 
                                 rc = await RunProbeAsyncAndLog(currentSocket, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal - Probe Inspection Fail");
                                     Log.Write("ReproTest", "프로브 수행 실패");
-                                    break;
+                                    return;
                                 }
                                 if (_tester != null)
                                 {
-                                    if(true)
+                                    if (_tester.Result == null)
                                     {
-
+                                        FailAndStop($"프로브 결과 누락 (socket={currentSocket})");
+                                        return;
                                     }
 
                                     MarkDieInspected(currentSocket, _tester.Result);
+                                }
+                                else
+                                {
+
                                 }
 
                                 // [추가] 측정 간 지연(옵션)
@@ -371,8 +403,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 rc = await MoveRotaryStepsAsync(6, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
+                                    FailAndStop("Index Cal Fail");
                                     Log.Write("ReproTest", "로딩 위치 복귀 실패");
-                                    break;
+                                    return;
                                 }
 
                                 // 6) 다음 소켓을 위해 현재 소켓에서 다이 픽 (마지막 소켓(7)은 픽하지 않음)
@@ -403,8 +436,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
                                     if (rc != 0)
                                     {
+                                        FailAndStop("Index Cal Fail");
                                         Log.Write("ReproTest", "다음 소켓 이송을 위한 픽 실패");
-                                        break;
+                                        return;
                                     }
 
                                     var pickedAgain = PickupDieFromSocket(currentSocket);
@@ -417,69 +451,121 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     _dieTransfer.SetMaterial(pickedAgain);
                                     _holdingDieOnArm = true;
                                 }
-                                else
+                                else //마지막 소켓 : 
                                 {
-                                    // [변경] 마지막 소켓 종료 시: 칩을 원래 웨이퍼 위치로 되돌려 놓기
-                                    var lastDie = GetCurrentArmDie(); // 마지막 소켓에서 검사 후 로딩 위치 복귀 상태
-
-                                    // 로터리 Load 인덱스와 다이전달기 인덱스 일치 대기(최대 타임아웃)
-                                    const int timeoutMs = 3000;
-                                    var sw = System.Diagnostics.Stopwatch.StartNew();
-                                    while (_rotary.IsIndexMoving())
+                                    // 마지막 소켓: 회수만 하고 암에 유지 (웨이퍼 복귀는 runCount 완료 후 1회)
+                                    if(true)
                                     {
-                                        if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs) break;
-                                        Thread.Sleep(2);
-                                    }
+                                        const int timeoutMs = 3000;
+                                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                                        while (_rotary.IsIndexMoving())
+                                        {
+                                            if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs) break;
+                                            Thread.Sleep(2);
+                                        }
 
-                                    if (lastDie != null)
-                                    {
-                                        // 마지막 소켓에서 픽하지 않았으면 소켓에서 픽해서 들고간다.
-                                        // 걍 가지고 와야지?
                                         rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
-                                        if (rc == 0)
+                                        if (rc != 0)
                                         {
-                                            lastDie = PickupDieFromSocket(currentSocket);
-                                            if (lastDie != null)
-                                                _dieTransfer.SetMaterial(lastDie);
+                                            FailAndStop("Index Cal Fail");
+                                            Log.Write("ReproTest", "마지막 소켓 다이 픽 실패");
+                                            return;
+                                        }
+
+                                        var pickedLast = PickupDieFromSocket(currentSocket);
+                                        if (pickedLast == null)
+                                        {
+                                            Log.Write("ReproTest", "마지막 소켓 PickupDieFromSocket null");
+                                            break;
+                                        }
+
+                                        _dieTransfer.SetMaterial(pickedLast);
+                                        _holdingDieOnArm = true;
+
+                                        // 소켓 IO 안전화만 수행
+                                        try
+                                        {
+                                            var s = _rotary.GetSocket(currentSocket);
+                                            if (s != null)
+                                            {
+                                                s.SetMaterialDie(null);
+                                                s.SetState(Rotary.RotarySocketState.Empty);
+                                            }
+                                            _rotary.SetVacuum(currentSocket, false);
+                                            _rotary.SetVent(currentSocket, false);
+                                            _rotary.SetBlow(currentSocket, false);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            FailAndStop("Index Cal Fail");
+                                            Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
                                         }
                                     }
-
-                                    if (lastDie != null)
+                                    else
                                     {
-                                        int prc = await ReturnDieToWaferOriginalAsync(lastDie, ct).ConfigureAwait(false);
-                                        if (prc != 0)
+                                        // [변경] 마지막 소켓 종료 시: 칩을 원래 웨이퍼 위치로 되돌려 놓기
+                                        var lastDie = GetCurrentArmDie(); // 마지막 소켓에서 검사 후 로딩 위치 복귀 상태
+
+                                        // 로터리 Load 인덱스와 다이전달기 인덱스 일치 대기(최대 타임아웃)
+                                        const int timeoutMs = 3000;
+                                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                                        while (_rotary.IsIndexMoving())
                                         {
-                                            Log.Write("ReproTest", "마지막 다이 웨이퍼 복귀 실패");
+                                            if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs) break;
+                                            Thread.Sleep(2);
                                         }
-                                    }
-                                    //_holdingDieOnArm = false; // 마지막 소켓은 회수 없이 종료
 
-                                    // [중요] 로터리 소켓 상태/IO를 안전 상태로 리셋
-                                    try
-                                    {
-                                        var s = _rotary.GetSocket(currentSocket);
-                                        if (s != null)
+                                        if (lastDie != null)
                                         {
-                                            s.SetMaterialDie(null);
-                                            s.SetState(Rotary.RotarySocketState.Empty);
+                                            // 마지막 소켓에서 픽하지 않았으면 소켓에서 픽해서 들고간다.
+                                            // 걍 가지고 와야지?
+                                            rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
+                                            if (rc == 0)
+                                            {
+                                                lastDie = PickupDieFromSocket(currentSocket);
+                                                if (lastDie != null)
+                                                    _dieTransfer.SetMaterial(lastDie);
+                                            }
                                         }
-                                        // IO 안전화
-                                        _rotary.SetVacuum(currentSocket, false);
-                                        _rotary.SetVent(currentSocket, false);
-                                        _rotary.SetBlow(currentSocket, false);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
-                                    }
 
-                                    // 암 상태/플래그 초기화
-                                    try { _dieTransfer.SetMaterial(null); } catch { }
-                                    _holdingDieOnArm = false;
+                                        if (lastDie != null)
+                                        {
+                                            int prc = await ReturnDieToWaferOriginalAsync(lastDie, ct).ConfigureAwait(false);
+                                            if (prc != 0)
+                                            {
+                                                Log.Write("ReproTest", "마지막 다이 웨이퍼 복귀 실패");
+                                            }
+                                        }
+                                        //_holdingDieOnArm = false; // 마지막 소켓은 회수 없이 종료
 
-                                    // [권장] 유닛 안전 위치로
-                                    try { _dieTransfer.MovePositionSafetyZ(); } catch { }
-                                    try { _dieTransfer.MovePositionReady(); } catch { }
+                                        // [중요] 로터리 소켓 상태/IO를 안전 상태로 리셋
+                                        try
+                                        {
+                                            var s = _rotary.GetSocket(currentSocket);
+                                            if (s != null)
+                                            {
+                                                s.SetMaterialDie(null);
+                                                s.SetState(Rotary.RotarySocketState.Empty);
+                                            }
+                                            // IO 안전화
+                                            _rotary.SetVacuum(currentSocket, false);
+                                            _rotary.SetVent(currentSocket, false);
+                                            _rotary.SetBlow(currentSocket, false);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            FailAndStop("Index Cal Fail");
+                                            Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
+                                        }
+
+                                        // 암 상태/플래그 초기화
+                                        try { _dieTransfer.SetMaterial(null); } catch { }
+                                        _holdingDieOnArm = false;
+
+                                        // [권장] 유닛 안전 위치로
+                                        try { _dieTransfer.MovePositionSafetyZ(); } catch { }
+                                        try { _dieTransfer.MovePositionReady(); } catch { }
+                                    }
                                 }
 
                                 _nextSocket = currentSocket + 1;
@@ -497,13 +583,30 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                             PrepareNextDieForNextCycle();
 
                             _nextSocket = 0;
-                            _holdingDieOnArm = false;
+
+                            //이 줄 때문에, 마지막 소켓에서 _holdingDieOnArm = true로 들고 끝낸 상태가 사이클 종료 시 다시 false로 덮여요.
+                            //그래서 runCount 끝나고 최종 웨이퍼 복귀 의도와 충돌할 수 있습니다.
+                            //_holdingDieOnArm = false;
 
                             // 반복 사이클 중이면 루프 계속, 마지막 사이클이면 종료
                             break;
                         }
 
                         Info($"사이클 {cycle}/{runCount} 종료");
+                    }
+
+                    // 모든 cycle 종료 후, 암에 남아있는 마지막 다이를 1회만 웨이퍼 원위치 복귀
+                    if (!ct.IsCancellationRequested)
+                    {
+                        var finalDie = GetCurrentArmDie();
+                        if (finalDie != null)
+                        {
+                            int rrc = await ReturnDieToWaferOriginalAsync(finalDie, ct).ConfigureAwait(false);
+                            if (rrc != 0)
+                                Log.Write("ReproTest", "최종 다이 웨이퍼 복귀 실패");
+                            else
+                                _holdingDieOnArm = false;
+                        }
                     }
 
                     SetUnitsManualRunning(false);
@@ -526,6 +629,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                     SetUnitsManualRunning(false);
                     _running = false;
                     CloseWriter();
+
+                    FailAndStop("Index Cal Fail");
                     // [FIX] 정상종료/예외/취소 포함 "종료" 시점에 UI에 반드시 알림
                     try { RunningChanged?.Invoke(false); } catch { }
                 }
@@ -743,6 +848,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 if (rc != 0)
                 { return -1;}
 
+                rc = _rotary.WaitIndexMoveDone();
+                if (rc != 0)
+                { return -1; }
+                
                 while (true)
                 {
                     if(_rotary.IsStop)
@@ -827,6 +936,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 if (nRet != 0)
                 {
                     Log.Write(_dieTransfer.UnitName, "PickDieFromWaferAsync", "CommitPickedDie failed");
+                    return -1;
+                }
+
+                // PickUp 완료 후 웨이퍼 Vacuum OFF
+                try
+                {
+                    _inputStage.SetVacuum(false); // 실제 함수명으로 변경 필요
+                }
+                catch (Exception ex)
+                {
+                    FailAndStop("Index Cal Fail");
+                    Log.Write(_dieTransfer.UnitName, "PickDieFromWaferAsync", "SetWaferVacuum(false) failed: " + ex.Message);
                     return -1;
                 }
 
@@ -957,6 +1078,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 }
                 catch (Exception ex)
                 {
+                    FailAndStop("Index Cal Fail");
                     Log.Write("ReproTest", $"[PlaceDieToSocket] Rotary.SocketInfo 갱신 실패: {ex.Message}");
                 }
 
@@ -967,6 +1089,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 }
                 catch (Exception ex)
                 {
+                    FailAndStop("Index Cal Fail");
                     Log.Write("ReproTest", $"[PlaceDieToSocket] MoveMaterial 실패: {ex.Message}");
                 }
             }
@@ -992,6 +1115,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 }
                 catch (Exception ex)
                 {
+                    FailAndStop("Index Cal Fail");
                     Log.Write("ReproTest", $"[PickupDieFromSocket] MoveMaterial 실패: {ex.Message}");
                     return null;
                 }
@@ -1014,6 +1138,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 }
                 catch (Exception ex)
                 {
+                    FailAndStop("Index Cal Fail");
                     Log.Write("ReproTest", $"[PickupDieFromSocket] Rotary.SocketInfo 클리어 실패: {ex.Message}");
                 }
 
@@ -1046,6 +1171,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 }
                 catch (Exception ex)
                 {
+                    FailAndStop("Index Cal Fail");
                     Log.Write("ReproTest", $"[MarkDieInspected] Rotary.SocketInfo 갱신 실패: {ex.Message}");
                 }
             }
@@ -1064,6 +1190,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
             }
             catch (Exception ex)
             {
+                FailAndStop("Index Cal Fail");
                 Log.Write("ReproTest", $"AlignCurrentSocketOnceAsync 예외: {ex.Message}");
                 return -1;
             }
@@ -1157,6 +1284,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
             }
             catch (Exception ex)
             {
+                FailAndStop("Index Cal Fail");
                 Log.Write("ReproTest", $"ReturnDieToWaferOriginalAsync 예외: {ex.Message}");
                 return -1;
             }
@@ -1313,6 +1441,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 if (rc != 0)
                     return -1;
 
+                if (_tester == null || _tester.Result == null) 
+                    return -1;
+
                 try
                 {
                     if (_tester != null)
@@ -1414,6 +1545,40 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
             }
             catch { /* 최대한 실패 무시하고 다음 실행에 지장 없도록 */ }
         }
+
+
+        private void FailAndStop(string msg, Exception ex = null)
+        {
+            try
+            {
+                if (ex != null)
+                    Log.Write("ReproTest", $"{msg} / EX: {ex.Message}");
+                else
+                    Log.Write("ReproTest", msg);
+
+                // 메시지
+                Error(msg);
+
+                //_dieTransfer.PostAlarm(-999);              // 알람(프로젝트 공용 알람 호출 방식에 맞춰 택1)
+                _dieTransfer.PostAlarm((int)InputDieTransfer.AlarmKeys.eInputDieTransferError);
+
+                // 1) 설비 공용 알람 매니저가 있다면:
+                // Equipment.Instance?.PostAlarm(...);
+
+                // 2) 단순 팝업 유틸이 있다면:
+                // new MessageBoxOk().ShowDialog("Error", msg);
+            }
+            catch { }
+            finally
+            {
+                try { Stop(); } catch { }
+            }
+        }
+
+
+
+
+
 
 
 

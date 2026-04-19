@@ -299,13 +299,12 @@ namespace QMC.Common.Keithley
                     throw new Exception("Failed to run measure commands.");
 
                 stopwatch.Restart();
-
                 while (!channel.WaitComplete())
                 {
                     if (stopwatch.ElapsedMilliseconds > Config.MeasureTimeout)
                         throw new TimeoutException("Measure timeout.");
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(1);
                 }
 
                 if (!channel.ReadBufferData())

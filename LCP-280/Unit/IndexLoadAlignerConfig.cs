@@ -46,6 +46,10 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int WaitTime3Step { get; set; } = 0;
 
+        [Category("SetupConfig"), DisplayName("Alarm Count")]
+        [DefaultValue(0)]
+        public int AlarmCount { get; set; } = 0;
+
         [JsonIgnore]
         public new List<TeachingPosition> TeachingPositions
         {

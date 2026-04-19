@@ -823,7 +823,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     return -1;
                 }
 
-                nRet = controller.MovePositionProbeZGripperIndexUp(bFineSpeed);
+                nRet = controller.MovePositionProbeZGripperIndexUp(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
                     Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
@@ -847,11 +847,16 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     }
                 }
 
-                if (controller.IsPositionProbeZGripperIndexUp() == false)
+                if (controller.IsPositionProbeZGripperIndexUp(nIndex) == false)
                 {
                     Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
                     return -1;
                 }
+                //if (controller.IsPositionProbeZGripperIndexUp() == false)
+                //{
+                //    Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
+                //    return -1;
+                //}
 
                 nRet = controller.MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)

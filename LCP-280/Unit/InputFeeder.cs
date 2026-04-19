@@ -84,180 +84,181 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
 
                 // 2000~2004: Flow 실패(상위 레벨)
                 AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingFailed,
                     "InputFeeder Wafer Loading Failed",
-                    "InputFeeder 로딩 시퀀스 실패. (카세트/바코드/피더/스테이지 상태 및 인터락을 확인하십시오.)",
-                    source, "Error");
+                    "InputFeeder loading sequence failed. (Please check Cassette/Barcode/Feeder/Stage status and interlocks.)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
                     "InputFeeder Barcode Read Failed",
-                    "바코드 읽기 실패. 바코드 인쇄 상태/리더기 상태/바코드 위치(Teaching) 및 트리거 설정을 확인하십시오.",
-                    source, "Error");
+                    "Barcode reading failed. Please check barcode print status/reader status/barcode position (Teaching) and trigger settings.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
                     "InputStage Loading Failed",
-                    "스테이지 로딩 실패. 스테이지 위치/클램프/플레이트 상태 및 인터락을 확인하십시오.",
-                    source, "Error");
+                    "Stage loading failed. Please check stage position/clamp/plate status and interlocks.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
                     "InputStage Unloading Failed",
-                    "스테이지 언로딩 실패. 스테이지 준비동작(언로딩 포지션/클램프/플레이트) 및 인터락을 확인하십시오.",
-                    source, "Error");
+                    "Stage unloading failed. Please check stage preparation (unloading position/clamp/plate) and interlocks.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_WaferUnloadingFailed,
                     "InputFeeder Wafer Unloading Failed",
-                    "InputFeeder 언로딩 시퀀스 실패. (Feeder/Stage/Cassette 상태 및 웨이퍼 존재 여부를 확인하십시오.)",
-                    source, "Error");
+                    "InputFeeder unloading sequence failed. (Please check Feeder/Stage/Cassette status and wafer presence.)",
+                     source, "Error");
 
                 // 2010~: 인터락
                 AlarmRegister((int)AlarmKeys.Alarm_InputStageInterlockFailed,
                     "Interlock Failed - InputStage",
-                    "인터락 불일치로 동작을 중단했습니다. InputStage가 로딩/언로딩 위치가 아니거나, 축 이동/플레이트 UP/클램프리프트 UP 등 위험 상태일 수 있습니다.",
-                    source, "Error");
+                    "Operation stopped due to interlock mismatch. InputStage may not be in the loading/unloading position, or it may be in a dangerous state such as axis moving/plate UP/clamp lift UP.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_InputFeederInterlockFailed,
                     "Interlock Failed - InputFeeder",
-                    "인터락 불일치로 동작을 중단했습니다. Feeder 위치/클램프 상태/안전 조건을 확인하십시오.",
-                    source, "Error");
+                    "Operation stopped due to interlock mismatch. Please check Feeder position/clamp status/safety conditions.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_InputFeederNoPosition,
                     "InputFeeder Unknown Position",
-                    "현재 Feeder Y가 어떤 Teaching Position(Ready/Barcode/Stage/Cassette)에도 해당하지 않습니다. 수동으로 안전 위치(Ready)로 이동 후 Teaching/Origin 상태를 확인하십시오.",
-                    source, "Error");
+                    "Current Feeder Y does not correspond to any Teaching Position (Ready/Barcode/Stage/Cassette). Move to the safe position (Ready) manually and check Teaching/Origin status.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_InputCassetteLifterInterlockFailed,
                     "Interlock Failed - InputCassetteLifter",
-                    "카세트 리프터 인터락 불일치. 카세트 존재/리프터 축 이동/Ready for Loading 신호를 확인하십시오.",
-                    source, "Error");
+                    "Cassette lifter interlock mismatch. Please check cassette presence/lifter axis movement/Ready for Loading signal.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_IsWaferReadyForLoading,
                     "Cassette Not Ready For Loading",
-                    "Cassette Ready For Loading 신호가 OFF 입니다. 카세트 장착 상태/리프터 위치/센서 상태를 확인하십시오.",
-                    source, "Error");
+                    "Cassette Ready For Loading signal is OFF. Please check cassette installation status/lifter position/sensor status.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingPosition,
                     "InputStage Not In Loading Position",
-                    "InputStage가 Wafer Loading Position이 아닙니다. 스테이지 로딩 위치로 이동 후 다시 시도하십시오.",
-                    source, "Error");
+                    "InputStage is not in the Wafer Loading Position. Please move to the stage loading position and try again.",
+                     source, "Error");
 
                 // 2020~: 실린더/그리퍼
                 AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
                     "Feeder Clamp Failed",
-                    "클램프 동작 실패(클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
-                    source, "Error");
+                    "Clamp operation failed (clamp completion signal not confirmed). Please check air/valve/cylinder/sensor status and interference.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_GripperUnClampFailed,
                     "Feeder Unclamp Failed",
-                    "언클램프 동작 실패(언클램프 완료 신호 미확인). 에어/밸브/실린더/센서 상태 및 간섭 여부를 확인하십시오.",
-                    source, "Error");
+                    "Unclamp operation failed (unclamp completion signal not confirmed). Please check air/valve/cylinder/sensor status and interference.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
                     "Feeder Lift Up Required",
-                    "Feeder가 UP 상태가 아닙니다. Feeder Lift(UP) 센서/에어/밸브 상태를 확인하십시오.",
-                    source, "Error");
+                    "Feeder is not in the UP state. Please check the Feeder Lift (UP) sensor/air/valve status.",
+                     source, "Error");
 
                 // 2030~: 타임아웃(정확 원인 분리)
                 AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
                     "Feeder Lift Up Timeout",
-                    "Feeder Lift UP 타임아웃. UP 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                    source, "Error");
+                    "Feeder Lift UP timeout. Please check UP sensor input/air pressure/valve/cylinder/mechanism interference.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
                     "Feeder Lift Down Timeout",
-                    "Feeder Lift DOWN 타임아웃. DOWN 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                    source, "Error");
+                    "Feeder Lift DOWN timeout. Please check DOWN sensor input/air pressure/valve/cylinder/mechanism interference.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
                     "Feeder Clamp Timeout",
-                    "Feeder Clamp 타임아웃. Clamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                    source, "Error");
+                    "Feeder Clamp timeout. Please check Clamp sensor input/air pressure/valve/cylinder/mechanism interference.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
                     "Feeder Unclamp Timeout",
-                    "Feeder Unclamp 타임아웃. Unclamp 센서 입력/에어압/밸브/실린더/기구 간섭을 확인하십시오.",
-                    source, "Error");
+                    "Feeder Unclamp timeout. Please check Unclamp sensor input/air pressure/valve/cylinder/mechanism interference.",
+                     source, "Error");
 
                 // 2040~: 유실/정합성
                 AlarmRegister((int)AlarmKeys.Alarm_WaferDataFaild,
                     "Wafer Data Mismatch",
-                    "웨이퍼 센서 상태와 데이터 객체(Material) 상태가 불일치합니다. (센서 ON인데 객체 null, 객체 있는데 센서 OFF 등) 장비 내부를 확인 후 데이터 리셋이 필요할 수 있습니다.",
-                    source, "Error");
+                    "Wafer sensor status and data object (Material) status do not match. (e.g., sensor is ON but object is null, object exists but sensor is OFF) You may need to check inside the equipment and reset the data.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_WaferSensorDataMismatch,
                     "Wafer Sensor/Data Inconsistency",
-                    "웨이퍼 센서/데이터 정합성 오류. 센서 입력과 내부 웨이퍼 객체 상태를 확인하십시오.",
-                    source, "Error");
+                    "Wafer sensor/data consistency error. Please check sensor input and internal wafer object status.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterStageToFeeder,
                     "Wafer Missing After Stage -> Feeder",
-                    "Stage에서 Feeder로 이송 후 Feeder에 웨이퍼가 감지되지 않습니다. 웨이퍼 유실/낙하/그리퍼 미클램프 가능성이 있습니다.",
-                    source, "Error");
+                    "Wafer is not detected in Feeder after transferring from Stage to Feeder. There is a possibility of wafer loss/drop/gripper unclamp.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_WaferMissingAfterFeederToCassette,
                     "Wafer Missing After Feeder -> Cassette",
-                    "Feeder에서 Cassette로 배출 후 Feeder가 비워지지 않거나(센서 ON/객체 잔존) 웨이퍼 상태가 비정상입니다. 배출 동작/센서 상태를 확인하십시오.",
-                    source, "Error");
+                    "Feeder is not emptied (sensor ON/object remaining) or wafer status is abnormal after discharging from Feeder to Cassette. Please check discharge operation/sensor status.",
+                     source, "Error");
 
                 // 2050~: 기존 명칭 정리(필요시 유지)
                 AlarmRegister((int)AlarmKeys.Alarm_VerifyWaferMovedStageToFeeder,
                     "Verify Transfer Stage -> Feeder Failed",
-                    "Stage -> Feeder 이송 검증 실패. 센서/데이터 정합 및 SlotIndex 일치 여부를 확인하십시오.",
-                    source, "Error");
+                    "Verification of transfer from Stage -> Feeder failed. Please check sensor/data consistency and SlotIndex match.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_AlignT,
                     "InputStage Align(T) Failed",
-                    "InputStage Align(T) 실패. 얼라인 조건/비전/축 상태를 확인하십시오.",
-                    source, "Error");
+                    "InputStage Align(T) failed. Please check alignment conditions/vision/axis status.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
                     "Unload Target Slot Invalid",
-                    "언로딩 대상 슬롯(SlotIndex)을 결정할 수 없습니다. (Feeder/Stage/Lifter SlotIndex 확인 필요)",
-                    source, "Error");
+                    "Cannot determine the target slot (SlotIndex) for unloading. (Please check Feeder/Stage/Lifter SlotIndex)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
                     "Cassette Slot Not Empty",
-                    "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot Empty 상태/매핑 데이터 확인 필요)",
-                    source, "Error");
+                    "Target Cassette Slot for unloading is not empty. (Please check Slot Empty status/mapping data)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
                     "Cassette MoveToSlot Failed",
-                    "언로딩 대상 Slot으로 Cassette 이동에 실패했습니다. 축 상태/인터락/리미트/서보 상태를 확인하십시오.",
-                    source, "Error");
+                    "Failed to move Cassette to the target Slot for unloading. Please check axis status/interlock/limit/servo status.",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
                     "Unload Feeder->Cassette Failed - Move Position Cassette",
-                    "Feeder->Cassette 언로딩 중 Cassette Teaching Position 이동 실패. (Y축 상태/인터락/Teaching/서보 알람 확인)",
-                    source, "Error");
+                    "Failed to move to Cassette Teaching Position during Feeder->Cassette unloading. (Check Y axis status/interlock/Teaching/servo alarm)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
                     "Unload Feeder->Cassette Failed - Unclamp",
-                    "Feeder->Cassette 언로딩 중 Unclamp 실패/타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                    source, "Error");
+                    "Unclamp failure/timeout during Feeder->Cassette unloading. (Check air pressure/valve/cylinder/sensor/interference)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_WaferDataInvalid,
                     "Unload Feeder->Cassette Failed - Wafer Data Invalid",
-                    "Feeder에 웨이퍼 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette에 반영할 수 없습니다. (센서/Material 객체 정합 확인)",
-                    source, "Error");
+                    "No wafer data in Feeder or SlotIndex is invalid, so it cannot be applied to Cassette. (Check sensor/Material object consistency)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
                     "Unload Feeder->Cassette Failed - Move Standby Barcode",
-                    "언로딩 후 다음 로딩 대기(Barcode) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
-                    source, "Error");
+                    "Failed to move to the next loading standby (Barcode) position after unloading. (Check Y axis status/Teaching/interlock)",
+                     source, "Error");
 
                 AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
                     "Unload Feeder->Cassette Failed - Move Standby Ready",
-                    "언로딩 후 안전 대기(Ready) 위치 이동 실패. (Y축 상태/Teaching/인터락 확인)",
-                    source, "Error");
+                    "Failed to move to the safe standby (Ready) position after unloading. (Check Y axis status/Teaching/interlock)",
+                     source, "Error");
 
                 //Alarm_RingPresentFailed
                 AlarmRegister((int)AlarmKeys.Alarm_RingPresentFailed,
                     "Feeder Ring Present Check Failed",
-                    "Feeder의 Ring Present 상태 확인 실패. 센서/데이터 정합성 확인이 필요합니다.",
-                    source, "Error");
+                    "Failed to check Ring Present status of Feeder. Sensor/data consistency check is required.",
+                     source, "Error");
             }
             else
             {
@@ -1675,8 +1676,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     // 아직 Output 작업이 끝나지 않았으므로 "대기" 성격으로 1 반환(알람 아님)
                     // 호출부 Step 로직이 0/!=0만 본다면, 1을 리턴하고 다음 사이클에 재시도되게 구성하는 방식 권장
-                    Log.Write(UnitName, "CheckStageWaferBeforeUnload",
-                        "Blocked: OutputStage not completed or buffers not empty.");
+                    //Log.Write(UnitName, "CheckStageWaferBeforeUnload",
+                    //    "Blocked: OutputStage not completed or buffers not empty.");
                     return 0;
                 }
 

@@ -817,5 +817,387 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 Log.Write(ex);
             }
         }
+
+        private void SetUnitsManualRunning(bool running)
+        {
+            try
+            {
+                if (running)
+                {
+                    Rotary.StartManual();
+                    OutputDieTransfer.StartManual();
+                    OutputStage.StartManual();
+                }
+                else
+                {
+                    Rotary.Stop();
+                    OutputDieTransfer.Stop();
+                    OutputStage.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private int PickDieFromIndex(CancellationToken ct)
+        {
+            int nRet = 0;
+
+            // 1. Ready Position으로 이동 (안전 확인 포함)
+            nRet = OutputDieTransfer.MovePositionReady();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "MovePositionReady failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "MovePositionReady failed in PickDieFromIndex.");
+                });
+                return -1;
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            // 2. Pick Down 동작 (ToolT를 인덱스 위치로 회전 후 PickZ 하강, 진공 켬)
+            nRet = OutputDieTransfer.PickDownDie();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickDownDie failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "PickDownDie failed in PickDieFromIndex.");
+                });
+                return -1;
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            // 3. Pick Up 동작 (진공 확인 후 PickZ 상승)
+            nRet = OutputDieTransfer.PickUpDie();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickUpDie failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "PickUpDie failed in PickDieFromIndex.");
+                });
+                return -1;
+            }
+
+            return 0;
+        }
+
+        // Rotary를 목표 UnloadIndex로 이동 (회전 + 대기) - 동기 방식으로 변경
+        private int MoveRotaryToUnloadSocket(int targetSocket, CancellationToken ct)
+        {
+            int targetIdx0 = (targetSocket + 8) % 8; // 0~7
+            for (int i = 0; i < 16; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                // 현재 Unloader Index 위치를 가져와서 목표 인덱스와 일치하는지 확인
+                int unloaderIdx = OutputDieTransfer.GetUnloaderIndexNo();
+                if (unloaderIdx == targetIdx0)
+                    return 0;
+
+                // 일치하지 않으면 다음 위치로 1 Step 회전
+                int rc = Rotary.MovePositionRotate();
+                if (rc != 0)
+                {
+                    Log.Write(Rotary.UnitName, "MoveRotaryToUnloadSocket", "MovePositionRotate failed");
+                    this.Invoke((MethodInvoker)delegate {
+                        new MessageBoxOk().ShowDialog("Error", "Rotary MovePositionRotate failed.");
+                    });
+                    return -1;
+                }
+
+                rc = Rotary.WaitIndexMoveDone();
+                if (rc != 0)
+                {
+                    Log.Write(Rotary.UnitName, "MoveRotaryToUnloadSocket", "WaitIndexMoveDone failed");
+                    this.Invoke((MethodInvoker)delegate {
+                        new MessageBoxOk().ShowDialog("Error", "Rotary WaitIndexMoveDone failed.");
+                    });
+                    return -1;
+                }
+
+                // Task.Delay 대신 CancellationToken의 WaitHandle을 사용하여 동기적으로 대기 (취소 즉시 응답)
+                if (ct.WaitHandle.WaitOne(50))
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
+            }
+
+            // 16번 루프(타임아웃)를 넘겨도 목표 인덱스에 도달하지 못했을 때
+            this.Invoke((MethodInvoker)delegate {
+                new MessageBoxOk().ShowDialog("Error", "Target index movement timed out in MoveRotaryToUnloadSocket.");
+            });
+            return -1;
+        }
+
+        private int PlaceDieFromArmToOutStage(CancellationToken ct)
+        {
+            int nRet = 0;
+
+            // 1. OutputStage를 빈 Bin 위치로 이동 및 준비
+            nRet = OutputDieTransfer.MoveOutStage();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PlaceDieFromArmToOutStage", "MoveOutStage failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "MoveOutStage failed in PlaceDieFromArmToOutStage.");
+                });
+                return -1;
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            // 2. Arm을 Place 위치로 이동 (ToolT / PlaceZ)
+            nRet = OutputDieTransfer.PlaceDie_ToolT();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PlaceDieFromArmToOutStage", "PlaceDie_ToolT failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "PlaceDie_ToolT failed in PlaceDieFromArmToOutStage.");
+                });
+                return -1;
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            // 3. 진공 해제, 블로우 적용 후 Arm 상승(Z Up)
+            nRet = OutputDieTransfer.PlaceUp();
+            if (nRet != 0)
+            {
+                Log.Write(OutputDieTransfer.UnitName, "PlaceDieFromArmToOutStage", "PlaceUp failed");
+                this.Invoke((MethodInvoker)delegate {
+                    new MessageBoxOk().ShowDialog("Error", "PlaceUp failed in PlaceDieFromArmToOutStage.");
+                });
+                return -1;
+            }
+
+            return 0;
+        }
+
+        private int GetSelectedUnloadIndex()
+        {
+            if (cbUnloadIndex == null) return -1;
+
+            if (cbUnloadIndex.InvokeRequired)
+            {
+                try
+                {
+                    var idx = (int)cbUnloadIndex.Invoke(new Func<int>(() => cbUnloadIndex.SelectedIndex));
+                    return idx < 0 ? -1 : idx;
+                }
+                catch
+                {
+                    return -1;
+                }
+            }
+
+            var selected = cbUnloadIndex.SelectedIndex;
+            return selected < 0 ? -1 : selected;
+        }
+
+        private async void btnDieLoading_Click(object sender, EventArgs e)
+        {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Error", "Equipment is running.Please stop it before trying again.");
+                return;
+            }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Die PickUp?") != DialogResult.Yes)
+                return;
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            SetUnitsManualRunning(true);
+
+            // 기존 중첩된 Task.Run(async () => ...) 구조를 단순 동기 호출로 변경
+            var t = Task.Run(() =>
+            {
+                try
+                {
+                    if (OutputDieTransfer != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        nRet = PickDieFromIndex(token);
+                        if (nRet != 0)
+                        {
+                            Log.Write(OutputDieTransfer.UnitName, "btnDieLoading_Click", "PickDieFromIndex failed");
+                            return nRet;
+                        }
+                    }
+                    return nRet; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return nRet;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "DiePickUp", t, null);
+            try
+            {
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    mb.ShowDialog("DiePickUp Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    mb.ShowDialog("DiePickUp Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    // 에러 메시지는 내부 메서드에서 출력되므로 여기서는 생략하거나 간략히 처리
+                    mb.ShowDialog("DiePickUp Fail!", "Process returned error code.");
+                }
+
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                SetUnitsManualRunning(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                SetUnitsManualRunning(false);
+                Log.Write(ex);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+        }
+
+        private async void btnDieUnloading_Click(object sender, EventArgs e)
+        {
+            var mb = new MessageBoxOk();
+            if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
+            {
+                mb.ShowDialog("Error", "Equipment is running.Please stop it before trying again.");
+                return;
+            }
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Die PlaceDown?") != DialogResult.Yes)
+            {
+                return;
+            }
+
+            int nRet = 0;
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            SetUnitsManualRunning(true);
+
+            // 기존 중첩된 Task.Run(async () => ...) 구조를 단순 동기 호출로 변경
+            var t = Task.Run(() =>
+            {
+                try
+                {
+                    // 1) 선택된 Probe Index로 이동(선택 없으면 현재 유지)
+                    int selectedProbeIndex = GetSelectedUnloadIndex();
+                    if (selectedProbeIndex >= 0)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        nRet = MoveRotaryToUnloadSocket(selectedProbeIndex, token);
+                        if (nRet != 0)
+                        {
+                            Log.Write(OutputDieTransfer.UnitName, "btnDiePlaceDown_Click", "MoveRotaryToUnloadSocket failed");
+                            return nRet;
+                        }
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+
+                    nRet = PlaceDieFromArmToOutStage(token);
+                    if (nRet != 0)
+                    {
+                        Log.Write(OutputDieTransfer.UnitName, "btnDiePlaceDown_Click", "PlaceDieFromArmToOutStage failed");
+                        return nRet;
+                    }
+
+                    return nRet; // 모두 OK
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return nRet;
+                }
+            }, token);
+
+            var form = new ProgressForm("Manual Running", "DiePlaceDown", t, null);
+            try
+            {
+                form.ShowDialog();
+                if (t.IsFaulted)
+                {
+                    mb.ShowDialog("DiePlaceDown Fail!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                if (t.IsCanceled)
+                {
+                    mb.ShowDialog("DiePlaceDown Cancel!", t.Exception?.GetBaseException().Message);
+                    SetUnitsManualRunning(false);
+                    return;
+                }
+
+                var rc = await t.ConfigureAwait(true);
+                if (rc != 0)
+                {
+                    mb.ShowDialog("DiePlaceDown Fail!", "Process returned error code.");
+                }
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                SetUnitsManualRunning(false);
+                return;
+            }
+            catch (Exception ex)
+            {
+                SetUnitsManualRunning(false);
+                Log.Write(ex);
+                return;
+            }
+            finally
+            {
+                SetUnitsManualRunning(false);
+            }
+        }
     }
 }

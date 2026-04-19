@@ -643,9 +643,11 @@ namespace QMC.Common.Spectrometer
                 int deviceInterfaceType = 0;
                 switch(Config.DeviceInterfaceType)
                 {
-                    case CASSpectrometerConfig.DeviceInterface.PCI:
-                        deviceInterfaceType = CAS4DLL.InterfacePCI;
-                        break;
+                    //CAS 5.0에서는 PCI Type 지원 안함.
+                    //case CASSpectrometerConfig.DeviceInterface.PCI:
+                    //    deviceInterfaceType = CAS4DLL.InterfacePCI;
+                    //    break;
+
                     case CASSpectrometerConfig.DeviceInterface.Test:
                         deviceInterfaceType = CAS4DLL.InterfaceTest;
                         break;
@@ -760,7 +762,7 @@ namespace QMC.Common.Spectrometer
                     SetMeasurementParameter(CAS4DLL.mpidBusyStateLinePolarity, 0); // mpidBusyStateLinePolarity
 
                     //add 2025-12-06
-                    SetMeasurementParameter(CAS4DLL.mpidTriggerDelayTime, 1);// ms 
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerDelayTime, 0);// ms  // 1-> 0 으로
                     useHardwareTrigger = true;
                 }
                 else
@@ -785,9 +787,10 @@ namespace QMC.Common.Spectrometer
 
                 switch((int)devInfType)
                 {
-                    case CAS4DLL.InterfacePCI:
-                        deviceInfo.InterfaceType = "PCI";
-                        break;
+                    // CAS 5.0에서는 PCI Type 지원 안함.   
+                    //case CAS4DLL.InterfacePCI:
+                    //    deviceInfo.InterfaceType = "PCI";
+                    //    break;
                     case CAS4DLL.InterfaceTest:
                         deviceInfo.InterfaceType = "Test";
                         break;
@@ -821,89 +824,78 @@ namespace QMC.Common.Spectrometer
         {
             return (deviceId >= 0);
         }
-#endregion
+        #endregion
 
         // Measurement Methods
         #region Measurement Methods
         private bool SendMeasureCommand()
         {
+            bool do2On = false;
+
             try
             {
-                // Data clear
                 result.Clear();
                 spectrum.Clear();
 
-                // [ADD] 조건 스냅샷 로그
-                LogMeasureConditionSnapshot("MeasureStart");
+                //LogMeasureConditionSnapshot("MeasureStart");
 
-                // 20251206 수정. 
                 if (useHardwareTrigger)
                 {
                     CheckCASErrorAndThrow(
-                    CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, IntPtr.Zero)
+                        CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, IntPtr.Zero)
                     );
 
-                    // [추가] C++의 casSetMeasurementParameter(m_nCasID, mpidTriggerOptions, toShowACQState) 동일 적용
-                    // toShowACQState 값은 보통 0x00000020 (32) 입니다. (CAS API 문서 참고)
                     SetMeasurementParameter(CAS4DLL.mpidTriggerOptions, 0x20);
-
-                    // C++과 같이 1번 핀(Line1FlipFlop) 리셋하여 Trigger 대기 상태 돌입
                     SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
 
-                    // [ADD] HW Trigger 준비 상태 로그
-                    Log.Write("CAS", "HWTrigger", 
-                        $"Prepared. ACQLine=1, BusyLine=2, " +
-                        $"TrgOpt=0x20, FlipFlopReset, TrgDelay={GetTriggerDelayTimeMs()}ms");
+                    //Log.Write("CAS", "HWTrigger",
+                    //    $"Prepared. ACQLine=1, BusyLine=2, TrgOpt=0x20, FlipFlopReset, TrgDelay={GetTriggerDelayTimeMs()}ms");
                 }
 
-                // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
                 OnMeasureCommandSended?.Invoke(this);
 
-                // SPC(2) Line ON ( SMU(3))
-                // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
-                // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
                 if (useHardwareTrigger)
                 {
-                    Log.Write("CAS", "SPC", "DO2 ON (before casMeasure)");
+                    //Log.Write("CAS", "SPC", "DO2 ON (before casMeasure)");
                     OnDigitalOut(2);
+                    do2On = true;
                 }
 
                 var sw = Stopwatch.StartNew();
-                // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
                 sw.Stop();
-                Log.Write("CAS", "MeasureTime", 
-                    $"casMeasure elapsed={sw.ElapsedMilliseconds}ms, HWTrg={useHardwareTrigger}");
-                //// SPC(2) Line OFF (Send Falling edge to SMU(3))
-                //if (useHardwareTrigger)
-                //{
-                //OffDigitalOut(2);
-                //}
-                // Data Process
+
+                //Log.Write("CAS", "MeasureTime",
+                //    $"casMeasure elapsed={sw.ElapsedMilliseconds}ms, HWTrg={useHardwareTrigger}");
+
+                // 중요:
+                // SMU가 기다리는 falling edge를 측정 완료 직후 바로 내려준다.
+                if (useHardwareTrigger && do2On)
+                {
+                    //Log.Write("CAS", "SPC", "DO2 OFF (immediately after casMeasure)");
+                    OffDigitalOut(2);
+                    do2On = false;
+                }
+
                 GetSpectrumData();
                 GetMeasureData();
 
-                // [ADD] 스펙트럼 진단 + 결과 요약 로그
-                var diag = CalcSpectrumDiagnostics(250.0, 290.0, 5);
-                LogSpectrumDiagnostics("SpectrumDiag", diag);
-                LogMeasureResultsSummary("MeasureResult");
-
-                // SPC(2) Line OFF (Send Falling edge to SMU(3))
-                // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
-                // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
-                if (useHardwareTrigger)
-                {
-                    Log.Write("CAS", "SPC", "DO2 OFF (after readout)");
-                    OffDigitalOut(2);
-                }
+                //var diag = CalcSpectrumDiagnostics(250.0, 290.0, 5);
+                //LogSpectrumDiagnostics("SpectrumDiag", diag);
+                //LogMeasureResultsSummary("MeasureResult");
 
                 OnMeasureCompleted?.Invoke(this);
-
                 return true;
             }
             catch (Exception ex)
             {
-                // Error handling
+                try
+                {
+                    if (useHardwareTrigger)
+                        SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
+                }
+                catch { }
+
                 result.Clear();
                 spectrum.Clear();
                 OnMeasureFailed?.Invoke(this, ex.Message);
@@ -915,17 +907,116 @@ namespace QMC.Common.Spectrometer
             {
                 try
                 {
-                    // if abort measurement -> SPC(2) Line OFF
-                    // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
-                    // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
-                    if (useHardwareTrigger)
+                    if (useHardwareTrigger && do2On)
                     {
-                       OffDigitalOut(2);
+                        OffDigitalOut(2);
                     }
                 }
-                catch {}
+                catch { }
             }
         }
+
+        //private bool SendMeasureCommand()
+        //{
+        //    try
+        //    {
+        //        // Data clear
+        //        result.Clear();
+        //        spectrum.Clear();
+
+        //        // [ADD] 조건 스냅샷 로그
+        //        LogMeasureConditionSnapshot("MeasureStart");
+
+        //        // 20251206 수정. 
+        //        if (useHardwareTrigger)
+        //        {
+        //            CheckCASErrorAndThrow(
+        //            CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, IntPtr.Zero)
+        //            );
+
+        //            // [추가] C++의 casSetMeasurementParameter(m_nCasID, mpidTriggerOptions, toShowACQState) 동일 적용
+        //            // toShowACQState 값은 보통 0x00000020 (32) 입니다. (CAS API 문서 참고)
+        //            SetMeasurementParameter(CAS4DLL.mpidTriggerOptions, 0x20);
+
+        //            // C++과 같이 1번 핀(Line1FlipFlop) 리셋하여 Trigger 대기 상태 돌입
+        //            SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
+
+        //            // [ADD] HW Trigger 준비 상태 로그
+        //            Log.Write("CAS", "HWTrigger", 
+        //                $"Prepared. ACQLine=1, BusyLine=2, " +
+        //                $"TrgOpt=0x20, FlipFlopReset, TrgDelay={GetTriggerDelayTimeMs()}ms");
+        //        }
+
+        //        // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
+        //        OnMeasureCommandSended?.Invoke(this);
+
+        //        // SPC(2) Line ON ( SMU(3))
+        //        // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
+        //        // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
+        //        if (useHardwareTrigger)
+        //        {
+        //            Log.Write("CAS", "SPC", "DO2 ON (before casMeasure)");
+        //            OnDigitalOut(2);
+        //        }
+
+        //        var sw = Stopwatch.StartNew();
+        //        // HW Trigger면 이 casMeasure()가 외부 트리거를 기다렸다가 적분한다.
+        //        CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
+        //        sw.Stop();
+        //        Log.Write("CAS", "MeasureTime", 
+        //            $"casMeasure elapsed={sw.ElapsedMilliseconds}ms, HWTrg={useHardwareTrigger}");
+        //        //// SPC(2) Line OFF (Send Falling edge to SMU(3))
+        //        //if (useHardwareTrigger)
+        //        //{
+        //        //OffDigitalOut(2);
+        //        //}
+        //        // Data Process
+        //        GetSpectrumData();
+        //        GetMeasureData();
+
+        //        // [ADD] 스펙트럼 진단 + 결과 요약 로그
+        //        var diag = CalcSpectrumDiagnostics(250.0, 290.0, 5);
+        //        LogSpectrumDiagnostics("SpectrumDiag", diag);
+        //        LogMeasureResultsSummary("MeasureResult");
+
+        //        // SPC(2) Line OFF (Send Falling edge to SMU(3))
+        //        // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
+        //        // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
+        //        if (useHardwareTrigger)
+        //        {
+        //            Log.Write("CAS", "SPC", "DO2 OFF (after readout)");
+        //            OffDigitalOut(2);
+        //        }
+
+        //        OnMeasureCompleted?.Invoke(this);
+
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Error handling
+        //        result.Clear();
+        //        spectrum.Clear();
+        //        OnMeasureFailed?.Invoke(this, ex.Message);
+
+        //        Log.Write(this, ex.Message);
+        //        return false;
+        //    }
+        //    finally
+        //    {
+        //        try
+        //        {
+        //            // if abort measurement -> SPC(2) Line OFF
+        //            // [C++ 동일 처리] 측정 명령이 보내질 때마다 SPC(2) Line ON (Send Rising edge to SMU(3))
+        //            // test 후에 사용 유/무 결정. ( 현재는 이거 안하면 측정 안하는디 )
+        //            if (useHardwareTrigger)
+        //            {
+        //               OffDigitalOut(2);
+        //            }
+        //        }
+        //        catch {}
+        //    }
+        //}
 
         private double _lastDarkLowMean = double.NaN;
         private DateTime _lastDarkTime = DateTime.MinValue;
@@ -985,10 +1076,10 @@ namespace QMC.Common.Spectrometer
             CheckCASErrorAndThrow();
             result.PhotInt = photInt;
             result.PhotIntUnit = sb.ToString();
-            Log.Write("CAS", "PhotInt", $"Value={result.PhotInt}, " +
-                $"Unit={result.PhotIntUnit}, " +
-                $"Start={Config.ColormetricStart}, " +
-                $"Stop={Config.ColormetricStop}");
+            //Log.Write("CAS", "PhotInt", $"Value={result.PhotInt}, " +
+            //    $"Unit={result.PhotIntUnit}, " +
+            //    $"Start={Config.ColormetricStart}, " +
+            //    $"Stop={Config.ColormetricStop}");
 
             // Radiometric (방사속/WATT)
             sb.Clear();
@@ -1008,10 +1099,10 @@ namespace QMC.Common.Spectrometer
             }
             //result.RadInt = radInt;       // C++에서 mW 단위가 필요하다면 여기서 * 1000 처리 가능
             //result.RadIntUnit = sb.ToString();
-            Log.Write("CAS", "RadInt", $"Value={result.RadInt}, " +
-               $"Unit={result.RadIntUnit}, " +
-               $"Start={Config.ColormetricStart}, " +
-               $"Stop={Config.ColormetricStop}");
+            //Log.Write("CAS", "RadInt", $"Value={result.RadInt}, " +
+            //   $"Unit={result.RadIntUnit}, " +
+            //   $"Start={Config.ColormetricStart}, " +
+            //   $"Stop={Config.ColormetricStop}");
 
             //전체 영역 WATT
             //result.RadInt = GetWattRadInt(deviceId);
@@ -1496,7 +1587,7 @@ namespace QMC.Common.Spectrometer
             var unitBuf = new StringBuilder(255);
             double radInt;
             CAS4DLL.casGetRadInt(device, out radInt, unitBuf, unitBuf.Capacity);
-            Log.Write("CAS", "RadIntUnit", unitBuf.ToString());
+            //Log.Write("CAS", "RadIntUnit", unitBuf.ToString());
             return radInt;
         }
 

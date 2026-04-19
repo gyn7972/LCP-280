@@ -38,12 +38,13 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
                 alarm.Title = "InputStage Not safety Pos.";
-                alarm.Cause = "InputStage가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputStage is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -306,7 +307,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -383,7 +384,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -475,7 +476,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;

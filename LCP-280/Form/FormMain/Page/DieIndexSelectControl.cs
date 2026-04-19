@@ -965,7 +965,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 Equipment.Instance.EqState == EquipmentState.Starting)
             {
                 var mb = new MessageBoxOk();
-                mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
                 return;
             }
 

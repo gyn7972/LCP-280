@@ -69,43 +69,50 @@ namespace QMC.LCP_280.Process.Component
             if (_timer == null)
                 return;
 
-            var cycleTimes = _timer.CycleTimes;
-            int count = cycleTimes?.Count ?? 0;
-
-            lblCount.Text = $"Count: {count}";
-
-            if (count <= 0)
+            try
             {
-                lblLatest.Text = "Latest: -";
-                lblAvg.Text = "Avg: -";
-                lblMin.Text = "Min: -";
-                lblMax.Text = "Max: -";
-                grid.DataSource = null;
-                return;
+                var cycleTimes = _timer.CycleTimes;
+                int count = cycleTimes?.Count ?? 0;
+
+                lblCount.Text = $"Count: {count}";
+
+                if (count <= 0)
+                {
+                    lblLatest.Text = "Latest: -";
+                    lblAvg.Text = "Avg: -";
+                    lblMin.Text = "Min: -";
+                    lblMax.Text = "Max: -";
+                    grid.DataSource = null;
+                    return;
+                }
+
+                var latest = _timer.Latest;
+
+                lblLatest.Text = $"Latest: {latest.Interval.TotalMilliseconds:0.0} ms";
+                lblAvg.Text = $"Avg: {_timer.Average.TotalMilliseconds:0.0} ms";
+                lblMin.Text = $"Min: {_timer.Minimum.TotalMilliseconds:0.0} ms";
+                lblMax.Text = $"Max: {_timer.Maximum.TotalMilliseconds:0.0} ms";
+
+                // Grid는 매번 DataTable을 새로 만들어 교체(간단/안전)
+                var dt = new DataTable();
+                dt.Columns.Add("Start");
+                dt.Columns.Add("End");
+                dt.Columns.Add("IntervalMs");
+
+                foreach (var c in cycleTimes)
+                {
+                    dt.Rows.Add(
+                        c.Start.ToString("HH:mm:ss.fff"),
+                        c.End.ToString("HH:mm:ss.fff"),
+                        c.Interval.TotalMilliseconds.ToString("0.0"));
+                }
+
+                grid.DataSource = dt;
             }
-
-            var latest = _timer.Latest;
-
-            lblLatest.Text = $"Latest: {latest.Interval.TotalMilliseconds:0.0} ms";
-            lblAvg.Text = $"Avg: {_timer.Average.TotalMilliseconds:0.0} ms";
-            lblMin.Text = $"Min: {_timer.Minimum.TotalMilliseconds:0.0} ms";
-            lblMax.Text = $"Max: {_timer.Maximum.TotalMilliseconds:0.0} ms";
-
-            // Grid는 매번 DataTable을 새로 만들어 교체(간단/안전)
-            var dt = new DataTable();
-            dt.Columns.Add("Start");
-            dt.Columns.Add("End");
-            dt.Columns.Add("IntervalMs");
-
-            foreach (var c in cycleTimes)
+            catch (Exception ex)
             {
-                dt.Rows.Add(
-                    c.Start.ToString("HH:mm:ss.fff"),
-                    c.End.ToString("HH:mm:ss.fff"),
-                    c.Interval.TotalMilliseconds.ToString("0.0"));
+                Log.Write(ex);
             }
-
-            grid.DataSource = dt;
         }
 
         private void btnRefresh_Click(object sender, EventArgs e)

@@ -859,7 +859,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     v = 0; // 비어있으면 0으로 처리(보수적으로)
 
                 int arr = idx - 1;
-                item.Offset[arr] = v;
+                item.Offset[arr] = v * -1; //Offset 부호 반대 적용.
                 item.UseOffset[arr] = true;
             }
         }

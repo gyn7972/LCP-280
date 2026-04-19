@@ -371,7 +371,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     Equipment.Instance.EqState == EquipmentState.Starting)
                 {
                     var mb = new MessageBoxOk();
-                    mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                    mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
                     return;
                 }
 
@@ -520,7 +520,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             // 컨텍스트 메뉴 (상세보기)
             _dieContextMenu = new ContextMenuStrip();
-            var miDetail = new ToolStripMenuItem("Die 상세 정보...");
+            var miDetail = new ToolStripMenuItem("Die Info. ...");
             miDetail.Click += (s, e) =>
             {
                 if (_lastRightClickedDie != null)
@@ -828,9 +828,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             public DieInfoForm(MaterialDie die, string waferId)
             {
-                Text = $"Die 상세 정보 - Index {die.Index}";
-                Width = 520;
-                Height = 640;
+                Text = $"Die Info. - Index {die.Index}";
+                Width = 450;
+                Height = 450;
 
                 var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
                 Controls.Add(panel);
@@ -847,14 +847,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine($"WaferId: {waferId}");
-                sb.AppendLine($"Index            : {die.Index}");
+                sb.AppendLine($"Index            : {die.Index + 1}");
+                sb.AppendLine($"Socket Index     : {die.SocketIndex + 1}");
                 sb.AppendLine($"Bin (X,Y)        : {die.BinX},{die.BinY}");
                 sb.AppendLine($"Map (X,Y)        : {die.MapX},{die.MapY}");
                 sb.AppendLine($"Center (X,Y)     : {die.CenterX},{die.CenterY}");
-                sb.AppendLine($"Angle            : {die.Angle:0.###}");
+                //sb.AppendLine($"Angle            : {die.Angle:0.###}");
                 sb.AppendLine($"State            : {die.State}");
                 sb.AppendLine($"Rank             : {die.Rank} / {die.RankName}");
-                sb.AppendLine($"Pass             : {die.IsPass}");
+                //sb.AppendLine($"Pass             : {die.IsPass}");
                 if (!die.IsPass && !string.IsNullOrWhiteSpace(die.RejectReason))
                     sb.AppendLine($"RejectReason     : {die.RejectReason}");
 
@@ -882,17 +883,17 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     sb.AppendLine("(No items)");
                 }
 
-                // MeasureValues 확장
-                if (die.MeasureValues != null && die.MeasureValues.Count > 0)
-                {
-                    sb.AppendLine();
-                    sb.AppendLine("=== MeasureValues (Raw/Range/Meta) ===");
-                    int nameWidth = die.MeasureValues.Keys.Max(k => k.Length);
-                    foreach (var kv in die.MeasureValues.OrderBy(k => k.Key))
-                    {
-                        sb.AppendLine($"{kv.Key.PadRight(nameWidth)} : {kv.Value}");
-                    }
-                }
+                // MeasureValues 확장 // 필요없음.
+                //if (die.MeasureValues != null && die.MeasureValues.Count > 0)
+                //{
+                //    sb.AppendLine();
+                //    sb.AppendLine("=== MeasureValues (Raw/Range/Meta) ===");
+                //    int nameWidth = die.MeasureValues.Keys.Max(k => k.Length);
+                //    foreach (var kv in die.MeasureValues.OrderBy(k => k.Key))
+                //    {
+                //        sb.AppendLine($"{kv.Key.PadRight(nameWidth)} : {kv.Value}");
+                //    }
+                //}
 
                 txt.Text = sb.ToString();
             }

@@ -51,7 +51,15 @@ namespace QMC.LCP_280.Process.Unit
             Bottom_Index8_Ready,
             GripperX_Ready,
             GripperX_Clamp,
-            GripperX_Index_Contact,
+            //GripperX_Index_Contact,
+            GripperX_Index1_Contact,
+            GripperX_Index2_Contact,
+            GripperX_Index3_Contact,
+            GripperX_Index4_Contact,
+            GripperX_Index5_Contact,
+            GripperX_Index6_Contact,
+            GripperX_Index7_Contact,
+            GripperX_Index8_Contact,
             SphereZ_Ready,
             SphereZ_Measure,
             SafetyZone
@@ -97,7 +105,15 @@ namespace QMC.LCP_280.Process.Unit
 
                 { TeachingPositionName.GripperX_Ready,       new [] { AxisNames.GripperX } },
                 { TeachingPositionName.GripperX_Clamp,       new [] { AxisNames.GripperX } },
-                { TeachingPositionName.GripperX_Index_Contact,    new [] { AxisNames.ProbeZ } },
+                //{ TeachingPositionName.GripperX_Index_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index1_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index2_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index3_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index4_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index5_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index6_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index7_Contact,    new [] { AxisNames.ProbeZ } },
+                { TeachingPositionName.GripperX_Index8_Contact,    new [] { AxisNames.ProbeZ } },
                 { TeachingPositionName.SphereZ_Ready,        new [] { AxisNames.SphereZ } },
                 { TeachingPositionName.SphereZ_Measure,         new [] { AxisNames.SphereZ } },
                 { TeachingPositionName.SafetyZone,           new [] { AxisNames.ProbeCardZ, AxisNames.ProbeZ } },
@@ -140,6 +156,12 @@ namespace QMC.LCP_280.Process.Unit
         public string GetTopReadyName(int index0Based)
         {
             return GetIndexedName("Top", index0Based, "Ready");
+        }
+
+        public string GetGripperContactName(int index0Based)
+        {
+            //GripperX_Index1_Contact
+            return GetIndexedName("GripperX", index0Based, "Contact");
         }
 
         private static string GetIndexedName(string prefix, int index0Based, string suffix)

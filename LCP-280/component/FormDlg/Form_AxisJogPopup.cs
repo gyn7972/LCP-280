@@ -422,6 +422,13 @@ namespace QMC.LCP_280.Process.Unit
                         //var mb = new MessageBoxOk();
                         //mb.ShowDialog("Interlock!", reason);
                     }
+
+                    if(rotary.WaitIndexMoveDone() != 0)
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Move Fale!", reason);
+                    }
+
                     return;
                 }
 
@@ -468,6 +475,13 @@ namespace QMC.LCP_280.Process.Unit
                         rotary.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
                         rotary.LoadIndexChanged += Rotary_LoadIndexChanged_ForJog;
                     }
+
+                    if (rotary.WaitIndexMoveDone() != 0)
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Move Fale!", reason);
+                    }
+
                     return;
                 }
 

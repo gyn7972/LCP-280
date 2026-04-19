@@ -1801,7 +1801,7 @@ namespace QMC.LCP_280.Process
             if (_motionStatusScanner == null)
             {
                 //_motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
-                _motionStatusScanner = new MotionStatusScanner(_axisManager, 5);
+                _motionStatusScanner = new MotionStatusScanner(_axisManager, 15);
 
                 _motionStatusScanner.AxisStatusUpdated += (axis, status) =>
                 {
@@ -1949,11 +1949,8 @@ namespace QMC.LCP_280.Process
                 _unitIO = DIOUnit.LoadOrCreateDefault(setupPath, "Unit", 32, 32, "DB64R");
                 //파일없으면 프로그램 다운됨.
                 _dioScan = new DioScanService(_unitIO, _dio);
-                //_dioScan.Start(10);
-                _dioScan.Start(5);
+                _dioScan.Start(15);
             }
-
-            
 
             IoBindings.RegisterAll();
 

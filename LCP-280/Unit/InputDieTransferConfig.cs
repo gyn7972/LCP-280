@@ -108,14 +108,23 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int nPlaceBeforeBlowWaitTime { get; set; } = 0;
 
-        [Category("PlaceUp"), DisplayName("After Blow. (ms)")]
+        [Category("PlaceUp"), DisplayName("After Blow1. (ms)")]
         [DefaultValue(0)]
-        public int nPlaceAfterBlowWaitTime { get; set; } = 0;
+        public int nPlaceAfterBlowWaitTime2 { get; set; } = 0; //Blow 키고 대기 시간.
+
+        [Category("PlaceUp"), DisplayName("After Blow2. (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceAfterBlowWaitTime { get; set; } = 0; //Blow 켜 놓고 올라가는 시간.
+
+            [Category("SetupConfig"), DisplayName("IndexOfStart")]
+            [DefaultValue(0)]
+            public int IndexOfStart { get; set; } = 0;
 
 
-        [Category("SetupConfig"), DisplayName("IndexOfStart")]
+        //LdPickMissAlarmThreshold
+        [Category("SetupConfig"), DisplayName("Alarm Count")]
         [DefaultValue(0)]
-        public int IndexOfStart { get; set; } = 0;
+        public int AlarmCount { get; set; } = 0;
 
 
         [JsonIgnore]

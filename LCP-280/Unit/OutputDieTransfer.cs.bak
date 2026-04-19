@@ -2,20 +2,17 @@ using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
-using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
-using QMC.LCP_280.Process.Work;
+using QMC.LCP_280.Process.Unit.FormWork.Repro;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms.DataVisualization.Charting;
+using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // IO 상수/배열
 
@@ -23,156 +20,177 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputDieTransfer : BaseUnit<OutputDieTransferConfig>
     {
-        public enum AlarmKeys
+        private bool IsDryRunEqp
         {
-            eOutputDieTransferError = 6001,
-            eOuputDieTransferZNotSafety = 6002,
-            eOutputStageAxesMoving = 6003,
-            eRotaryAxesMoving = 6004,
-            eOutputDieTransferVacuum = 6005,
-            eOutputDieTransferVent = 6006,
-            eOutputDieTransferBlow = 6007,
-            eBinStageCylinderZNotSafety = 6008,
-            eOutputDieTransferMovePickUpToolT = 6009,
-            eOutputDieTransferChipPickDown = 6010,
-            eOutputDieTransferChipPickUp = 6011,
-            eOutputDieTransferMoveOutStage = 6012,
-            eOutputDieTransferRotateToolTForPlace = 6013,
-            eOutputDieTransferReleaseVacuumAndPlaceUp = 6014,
+            get
+            {
+                var eq = Equipment.Instance;
+                bool r = eq.EquipmentConfig.IsDryRun;
+                return r;
+            }
+        }
+        public new enum AlarmKeys
+        {
+            eOutputDieTransferError = 11001,
+            eOuputDieTransferZNotSafety,
+            eOutputStageAxesMoving,
+            eRotaryAxesMoving,
+            eOutputDieTransferVacuum,
+            eOutputDieTransferVent,
+            eOutputDieTransferBlow,
+            eBinStageCylinderZNotSafety,
+            eOutputDieTransferMovePickUpToolT,
+            eOutputDieTransferChipPickDown,
+            eOutputDieTransferChipPickUp,
+            eOutputDieTransferMoveOutStage,
+            eOutputDieTransferRotateToolTForPlace,
+            eOutputDieTransferReleaseVacuumAndPlaceUp,
             eOutputDieTransferLdPickAsMissError,
         }
-
         #region InitAlarm
         protected override void InitAlarm()
         {
             string source = "Bin_Arm";
             base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOuputDieTransferZNotSafety;
-            alarm.Title = "Die Tr Z-Axis Not safety Pos.";
-            alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+            // 1. 공용 파일 로더에서 알람 목록 가져오기
+            var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
+            if (loadedAlarms == null || loadedAlarms.Count == 0)
+            {
+                AlarmInfo alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOuputDieTransferZNotSafety;
+                alarm.Title = "Die Tr Z-Axis Not safety Pos.";
+                alarm.Cause = "Die Tr Z-Axis is not in a safe position. Please check the position and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferError;
-            alarm.Title = "Output Die Transfer Error";
-            alarm.Cause = "Output Die Transfer에서 알수 없는 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferError;
+                alarm.Title = "Output Die Transfer Error";
+                alarm.Cause = "An unknown error occurred in Output Die Transfer.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputStageAxesMoving;
-            alarm.Title = "Output Stage Axis Moving";
-            alarm.Cause = "Output Stage Axis가 동작중입니다. Output Stage Axis 동작이 완료된 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputStageAxesMoving;
+                alarm.Title = "Output Stage Axis Moving";
+                alarm.Cause = "Output Stage Axis is moving. Please wait for the movement to complete and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
-            alarm.Title = "Rotary Axis Moving";
-            alarm.Cause = "Rotary Axis가 동작중입니다. Rotary Axis 동작이 완료된 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
+                alarm.Title = "Rotary Axis Moving";
+                alarm.Cause = "Rotary Axis is moving. Please wait for the movement to complete and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
-            //eOutputDieTransferVacuum
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferVacuum;
-            alarm.Title = "Output Die Transfer Vacuum Error";
-            alarm.Cause = "Output Die Transfer Vacuum이 Off 상태입니다. Vacuum 상태를 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-
-            //
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferVent;
-            alarm.Title = "Output Die Transfer Vent Error";
-            alarm.Cause = "Output Die Transfer Vent가 Off 상태입니다. Vent 상태를 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferBlow;
-            alarm.Title = "Output Die Transfer Blow Error";
-            alarm.Cause = "Output Die Transfer Blow가 Off 상태입니다. Blow 상태를 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-            //
-            alarm.Code = (int)AlarmKeys.eBinStageCylinderZNotSafety;
-            alarm.Title = "Bin Stage Z-Cylinder Not Safety Pos.";
-            alarm.Cause = "Bin Stage Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferMovePickUpToolT;
-            alarm.Title = "Output Die Transfer Move PickUp Tool T Error";
-            alarm.Cause = "Output Die Transfer PickUp Tool T 이동 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickDown;
-            alarm.Title = "Output Die Transfer Chip Pick Down Error";
-            alarm.Cause = "Output Die Transfer Chip Pick Down 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickUp;
-            alarm.Title = "Output Die Transfer Chip Pick Up Error";
-            alarm.Cause = "Output Die Transfer Chip Pick Up 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferMoveOutStage;
-            alarm.Title = "Output Die Transfer Move Out Stage Error";
-            alarm.Cause = "Output Die Transfer Out Stage 이동 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferRotateToolTForPlace;
-            alarm.Title = "Output Die Transfer Rotate Tool T For Place Error";
-            alarm.Cause = "Output Die Transfer Tool T 회전 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferReleaseVacuumAndPlaceUp;
-            alarm.Title = "Output Die Transfer Release Vacuum And Place Up Error";
-            alarm.Cause = "Output Die Transfer Release Vacuum And Place Up 중 에러가 발생했습니다.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-
-            //eOutputDieTransferLdPickAsMissError
-            alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eOutputDieTransferLdPickAsMissError;
-            alarm.Title = "Output Die Transfer Load Pick As Miss Error";
-            alarm.Cause = "Output Die Transfer Load Pick As Miss 상태입니다. Load Pick 상태를 확인 후 다시 시작 하십시요.";
-            alarm.Source = source;// this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
+                //eOutputDieTransferVacuum
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferVacuum;
+                alarm.Title = "Output Die Transfer Vacuum Error";
+                alarm.Cause = "Output Die Transfer Vacuum is Off. Please check the vacuum status and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
 
 
+                //
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferVent;
+                alarm.Title = "Output Die Transfer Vent Error";
+                alarm.Cause = "Output Die Transfer Vent is Off. Please check the vent status and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferBlow;
+                alarm.Title = "Output Die Transfer Blow Error";
+                alarm.Cause = "Output Die Transfer Blow is Off. Please check the blow status and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+                //
+                alarm.Code = (int)AlarmKeys.eBinStageCylinderZNotSafety;
+                alarm.Title = "Bin Stage Z-Cylinder Not Safety Pos.";
+                alarm.Cause = "Bin Stage Z-Cylinder is not in a safe position.\n Please check the position and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferMovePickUpToolT;
+                alarm.Title = "Output Die Transfer Move PickUp Tool T Error";
+                alarm.Cause = "An error occurred while moving Output Die Transfer PickUp Tool T.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickDown;
+                alarm.Title = "Output Die Transfer Chip Pick Down Error";
+                alarm.Cause = "An error occurred during Output Die Transfer Chip Pick Down.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickUp;
+                alarm.Title = "Output Die Transfer Chip Pick Up Error";
+                alarm.Cause = "An error occurred during Output Die Transfer Chip Pick Up.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferMoveOutStage;
+                alarm.Title = "Output Die Transfer Move Out Stage Error";
+                alarm.Cause = "An error occurred while moving Output Die Transfer to Out Stage.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferRotateToolTForPlace;
+                alarm.Title = "Output Die Transfer Rotate Tool T For Place Error";
+                alarm.Cause = "An error occurred while rotating Output Die Transfer Tool T for placement.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferReleaseVacuumAndPlaceUp;
+                alarm.Title = "Output Die Transfer Release Vacuum And Place Up Error";
+                alarm.Cause = "An error occurred during Output Die Transfer Release Vacuum And Place Up.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                //eOutputDieTransferLdPickAsMissError
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eOutputDieTransferLdPickAsMissError;
+                alarm.Title = "Output Die Transfer Load Pick As Miss Error";
+                alarm.Cause = "Output Die Transfer is in Load Pick As Miss state. Please check the Load Pick status and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+            }
+            else
+            {
+                // 2. m_dicAlarms에 일괄 등록
+                foreach (var alarmInfo in loadedAlarms)
+                {
+                    if (!m_dicAlarms.ContainsKey(alarmInfo.Code))
+                    {
+                        m_dicAlarms.Add(alarmInfo.Code, alarmInfo);
+                    }
+                }
+            }
         }
-
         #endregion
 
         #region Unit
@@ -1645,7 +1663,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsVacuumOK(int armIndex)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
             {
                 Thread.Sleep(5);
                 return true;
@@ -1666,29 +1684,26 @@ namespace QMC.LCP_280.Process.Unit
         // timeoutMs/pollMs: 타임아웃/폴링 간격
         private int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
 
             //Todo: 2025-10-10 GYN: Vacuum 해결 되면 return 지우기.
             return 0;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds <= timeoutMs)
-            {
-                bool ok = IsVacuumOK(armIndex);
-                if (expectOn ? ok : !ok)
-                    return 0;
+            //var sw = Stopwatch.StartNew();
+            //while (sw.ElapsedMilliseconds <= timeoutMs)
+            //{
+            //    bool ok = IsVacuumOK(armIndex);
+            //    if (expectOn ? ok : !ok)
+            //        return 0;
 
-                Thread.Sleep(pollMs);
-            }
+            //    Thread.Sleep(pollMs);
+            //}
 
-            // 타임아웃 처리
-            //PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-            Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
-            return 0;
-            //PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+            //// 타임아웃 처리
+            ////PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
             //Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
-            //return -1;
+            //return 0;
         }
 
         #endregion
@@ -1776,7 +1791,6 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRtn = 0;
-                bool noDieOutputStaga = false;
                 MaterialWafer wafer = OutputStage.GetMaterialWafer();
                 if (wafer == null || wafer.Presence != Material.MaterialPresence.Exist)
                 {
@@ -1794,46 +1808,63 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 return nRtn;
             }
-            finally
+            catch (Exception ex)
             {
-                TaktEnd("OnRunReady");
+                Log.Write(ex);
+                return -1;
             }
         }
+
+        // [ADD] 마지막으로 처리(Skip 또는 Pick)를 시도했던 Die의 Index를 저장
+        private int _lastProcessedDieIndex = -1;
+
         protected override int OnRunWork()
         {
-            TaktStart("OnRunWork");
             try
             {
                 int nRet = 0;
-                bool bRet = false;
-                bool noDieOutputStaga = false;
                 try
                 {
+                    
+                    // 0. Rotary Index 동작 중인지 확인 - 이건 무조건.
                     if (Rotary != null && this.Rotary.IsIndexMoving())
                     {
                         return 0;
                     }
-
-                    MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
-                    if (DieIndex == null || DieIndex.Presence != Material.MaterialPresence.Exist)
+                    if (IsBinStageReadyForPlace() == false || OutputStage.CanPlaceDie() == false)
                     {
-                        noDieOutputStaga = OutputStage.HasNextDie();
+                        State = ProcessState.None;
                         return 0;
                     }
 
                     bool vac = false;
                     int nIndex = GetUnloaderIndexNo();
                     int nArmIndex = GetPlaceArmIndex();
-
                     Log.Write(UnitName, "OnRunWork", "OnRunWork Start");
+
+                    // 3. binArm에 die를 가지고 있으면 바로 Complete로
                     var DeiOutTr = this.GetMaterial() as MaterialDie;
+                    vac = this.IsVacuumOK(nArmIndex);
+                    if (DeiOutTr != null && vac)
+                    {
+                        TaktStart("One Cycle");
+
+                        Log.Write(UnitName, "OnRunWork", "Complete ->");
+                        State = ProcessState.Complete;
+                        return 0;
+                    }
+
+
                     if (DeiOutTr == null
                         || DeiOutTr.State != DieProcessState.Picked
                         || DeiOutTr.Presence != Material.MaterialPresence.Exist)
                     {
+                        TaktStart("One Cycle");
+
                         var sw = System.Diagnostics.Stopwatch.StartNew();
                         int timeoutMs = 60000 * 10;
-                        Material waferBin = OutputStage.GetMaterialWafer();
+                        bool signalReceived = false;
+
                         while (true)
                         {
                             if (IsStop)
@@ -1843,9 +1874,14 @@ namespace QMC.LCP_280.Process.Unit
                                 return 0;
                             }
 
-                            bRet = WaitPickupStartEvent(10);
-                            if (bRet)
+                            // 10ms 대기. 신호 오면 즉시 true 반환
+                            if (WaitPickupStartEvent(10)) //10->50
                             {
+                                signalReceived = true;
+                                // 신호를 받았으면 Start 이벤트를 끄지 않고 유지할지, 끌지는 프로토콜 결정.
+                                // 보통은 "내가 인지했다"는 의미로 로직 진행하고,
+                                // Rotary는 Done을 기다리므로 여기서는 Start를 굳이 바로 끌 필요는 없으나
+                                // 기존 로직(ReSetPickupStartEvent)을 유지한다면:
                                 ReSetPickupStartEvent();
                                 _lastPickSucceeded = false;
                                 break;
@@ -1854,99 +1890,241 @@ namespace QMC.LCP_280.Process.Unit
                             if (sw.ElapsedMilliseconds > timeoutMs)
                             {
                                 Log.Write(UnitName, $"[OutputDieTransfer] Waiting for Done... Elapsed {sw.ElapsedMilliseconds}ms");
-                                break;
+                                //break;
+                                return 0;
                             }
+
+                            // [추가] 
+                            // 만약 현재 Rotary의 자재가 불량이라면, Start 신호가 영원히 안 옴 (Rotary가 안 보내니까).
+                            // 따라서 불량 여부를 여기서도 체크해서 빠져나가야 함.
+                            //if (Rotary != null)
+                            //{
+                            //    var currentDie = Rotary.GetUnloadSocketMaterial();
+                            //    if (currentDie != null 
+                            //       && (currentDie.State == DieProcessState.Skip 
+                            //       || currentDie.State == DieProcessState.Rejected))
+                            //    {
+                            //        // 불량이면 Pick 대기하지 말고 리턴
+                            //        return 0;
+                            //    }
+                            //}
                         }
 
+                        // 신호 못 받았으면(타임아웃) 루프 종료 혹은 리턴
+                        if (!signalReceived)
+                        {
+                            // 타임아웃 처리. 보통 그냥 return 0 하여 다음 사이클에 다시 대기
+                            Log.Write(UnitName, "OnRunWork", "[OutputDieTransfer] WaitPickupStartEvent timeout");
+                            return 0;
+                        }
+
+                        // Done 이벤트는 미리 리셋해둠 (Rotary가 기다리기 전에 청소)
+                        ResetPickupDoneEvent();
+
+                        // 1.Unload Socket의 Die Index 정보 확인 - 현재 픽업 대상 Die
+                        // rotary에서 pickup 신호 받고 처리하자.
+                        MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
+                        if (DieIndex == null || DieIndex.Presence != Material.MaterialPresence.Exist)
+                        {
+                            OutputStage.HasNextDie();
+
+                            //ReSetPickupStartEvent();
+                            //_lastPickSucceeded = false;
+                            return 0;
+                        }
+
+                        if (DieIndex == null || DieIndex.Presence != Material.MaterialPresence.Exist)
+                        {
+                            SetPickupDoneEvent();
+                            return 0;
+                        }
+
+                        // [핵심 해결책] 
+                        // 만약 방금 가져온 Die의 Index가 이전에 이미 처리(Skip/Pick) 완료한 Index라면?
+                        // 장비가 재시작되었을 때 Rotary가 아직 인덱스를 이동하지 않아서 발생할 수 있음.
+                        if (DieIndex.Index == _lastProcessedDieIndex) 
+                        {
+                            // 로그를 남기고 이번 사이클은 무시 (Rotary가 다음으로 넘어갈 때까지 대기하거나 신호 처리)
+                            // Log.Write(UnitName, "OnRunWork", $"Skip duplicate die processing. Index={currentDie.Index} is already processed.");
+
+                            // 만약 Rotary가 PickDone을 기다리고 있다면 신호를 줘서 보내버려야 함.
+                            // 신호를 기다리고 있지 않아도 보내자.
+                            //if (WaitPickupStartEvent(1))
+                            {
+                                ReSetPickupStartEvent();
+                                SetPickupDoneEvent();
+                            }
+                            return 0;
+                        }
+
+                        // 2. [SKIP 처리] 이미 전공정 불량인 경우 Pass
+                        // rotary에서 pickup 신호 받고 처리하자.
+                        if (DieIndex.ProcessSatate == MaterialProcessSatate.Skipped
+                           || DieIndex.State == DieProcessState.Skip)
+                        {
+                            if (OutputStage != null)
+                            {
+                                if (OutputStage.TryReserveNextEmptyBin(DieIndex, out double binX, out double binY, out double dT, out var slot))
+                                {
+                                    OutputStage.MarkCurrentReservedMissing();
+                                    if (slot != null)
+                                    {
+                                        slot.State = DieProcessState.Skip;
+                                        OutputStage.UpdateUI();
+                                    }
+                                }
+                            }
+
+                            this.SetMaterial(null);
+                            //Rotary.ReMoveMaterialToOutputDieTransfer(); // Rotary 소켓 비우기
+
+                            // 1) 만약 Rotary가 PickStart 신호를 줬다면 받아서 소모시켜야 함
+                            // (타임아웃을 짧게 줘서 신호가 와있는지만 확인)
+                            //if (WaitPickupStartEvent(10))
+                            {
+                                //ReSetPickupStartEvent(); // Start 신호 초기화
+
+                                _lastPickSucceeded = false;
+                                // 2) Rotary에게 "나 작업(비록 Skip이지만) 끝났어"라고 알려줌
+                                SetPickupDoneEvent();
+                            }
+
+                            // [ADD] 처리 완료된 Index 기록 (다음 루프에서 중복 처리 방지)
+                            _lastProcessedDieIndex = DieIndex.Index;
+
+                            _lastPickSucceeded = false;
+                            // 상태 초기화 후 리턴 (다음 사이클 진행)
+                            State = ProcessState.None;
+                            Log.Write(UnitName, "OnRunWork", $"Die Index={DieIndex.Index} is Rejected/Skipped. Pass sequence.");
+                            return 0;
+                        }
+
+                        Material waferBin = OutputStage.GetMaterialWafer();
                         Task<int> taskOutStageMoveToNextDIe = null;
                         if (waferBin != null
                             && waferBin.Presence == Material.MaterialPresence.Exist
                             && DieIndex != null
                             && DieIndex.Presence == Material.MaterialPresence.Exist)
                         {
-                            TaktStart("MoveOutStage");
-                            try
-                            {
-                                taskOutStageMoveToNextDIe = MoveOutStageASync();
-                            }
-                            finally
-                            {
+                            // 이동과 칩 픽업 동시 수행을 위해 비동기 호출
+                            taskOutStageMoveToNextDIe = MoveOutStageASync();
+                        }
 
-                            }
-
+                        // 2.2 픽업 위치 이동
+                        try
+                        {
+                            TaktStart("PickDie_ToolT");
+                            nRet = MovePositionPickUpToolT_Index(nIndex);
                             if (nRet != 0)
                             {
-                                AxisOutputPlaceZ?.EmgStop();
+                                SetPickupDoneEvent();
+                                AxisOutputPickZ?.EmgStop();
                                 AxisOutputToolT?.EmgStop();
-                                PostAlarm((int)AlarmKeys.eOutputDieTransferMoveOutStage);
-                                Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferMovePickUpToolT);
+                                Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionPickUpToolT_Index failed");
                                 return -1;
                             }
                         }
-
-                        nRet = MovePositionPickUpToolT_Index(nIndex);
-                        if (nRet != 0)
+                        finally
                         {
-                            AxisOutputPickZ?.EmgStop();
-                            AxisOutputToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferMovePickUpToolT);
-                            Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionPickUpToolT_Index failed");
-                            return -1;
+                            TaktEnd("PickDie_ToolT");
                         }
-
-                        TaktStart("ChipPickDown");
+                        
                         try
                         {
-
-                            nRet = ChipPickDown();
+                            TaktStart("PickDownDie");
+                            nRet = PickDownDie();
+                            if (nRet != 0)
+                            {
+                                SetPickupDoneEvent();
+                                AxisOutputPickZ?.EmgStop();
+                                AxisOutputToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferChipPickDown);
+                                Log.Write(UnitName, "[OnRunWork] PickDownDie failed");
+                                return -1;
+                            }
                         }
                         finally
                         {
-                            TaktEnd("ChipPickDown");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisOutputPickZ?.EmgStop();
-                            AxisOutputToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferChipPickDown);
-                            Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
-                            return -1;
+                            TaktEnd("PickDownDie");
                         }
 
-                        TaktStart("ChipPickUp");
                         try
                         {
-                            nRet = ChipPickUp();
+                            TaktStart("PickUpDie");
+                            nRet = PickUpDie();
+                            if (nRet != 0)
+                            {
+                                SetPickupDoneEvent();
+                                AxisOutputPickZ?.EmgStop();
+                                AxisOutputToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferChipPickUp);
+                                Log.Write(UnitName, "[OnRunWork] PickUpDie failed");
+                                return -1;
+                            }
                         }
                         finally
                         {
-                            TaktEnd("ChipPickUp");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisOutputPickZ?.EmgStop();
-                            AxisOutputToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferChipPickUp);
-                            Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
-                            return -1;
+                            TaktEnd("PickUpDie");
                         }
 
                         //버큠 형성이 안되었으면 안가져다 놓으면 된다. 
-                        //if (this.IsVacuumOK(nArmindex))
-                        //int vac = WaitVacuumStateOrAlarm(nArmindex, true, 500, 5);
+                        // 2.5 [중요] Vacuum 최종 확인 및 분기 처리
                         vac = this.IsVacuumOK(nArmIndex);
                         if (vac == true)
                         {
+                            // [ADD] 성공 시에도 처리된 Index 기록
+                            _lastProcessedDieIndex = DieIndex.Index;
+                            // === [성공 케이스] ===
                             Rotary.MoveMaterialToOutputDieTransfer();
                             DieIndex.State = DieProcessState.Picked;
                             DieIndex.ProcessSatate = Material.MaterialProcessSatate.Processing;
                             DieIndex.Presence = Material.MaterialPresence.Exist;
 
-                            
                             if (taskOutStageMoveToNextDIe != null)
                             {
-                                taskOutStageMoveToNextDIe.Wait();
+                                // --- [택타임 개선 2] ---
+                                // OutputStage(XY축)가 이동을 마칠 때까지 대기하는 시간을 활용해
+                                // Tool T를 Place 위치로 먼저 돌려둡니다. (PickUpDie() 직후라 Z축은 이미 안전하게 UP 상태임)
+                                if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
+                                {
+                                    nRet = MovePositionSafetyZ();
+                                    if (nRet != 0)
+                                    {
+                                        Log.Write(UnitName, "[OnMovePositionPlace] MovePositionSafetyZ faild");
+                                        return -1;
+                                    }
+                                }
+                                double dTPos = GetTP(OutputDieTransferRecipe.TeachingPositionName.Place.ToString(),
+                                            AxisNames.RightToolT);
+                                nRet = MoveAxisPositionOne(AxisOutputToolT, dTPos);
+                                if (nRet != 0)
+                                {
+                                    AxisOutputPlaceZ?.EmgStop();
+                                    AxisOutputToolT?.EmgStop();
+                                    PostAlarm((int)AlarmKeys.eOutputDieTransferRotateToolTForPlace);
+                                    Log.Write(UnitName, "[OnRunWork] PlaceDie_ToolT failed");
+                                    return -1;
+                                }
+
+                                // 5초 대기 후 타임아웃 체크
+                                if (!taskOutStageMoveToNextDIe.Wait(5000))
+                                {
+                                    Log.Write(UnitName, "[OnRunWork]", "taskOutStageMoveToNextDIe Timeout (5s)");
+                                }
+
+                                // 작업 실패(0이 아님) 체크
+                                if (taskOutStageMoveToNextDIe.IsCompleted && taskOutStageMoveToNextDIe.Result != 0)
+                                {
+                                    SetPickupDoneEvent();
+                                    AxisOutputPickZ?.EmgStop();
+                                    AxisOutputToolT?.EmgStop();
+                                    PostAlarm((int)AlarmKeys.eOutputDieTransferMoveOutStage);
+                                    Log.Write(UnitName, "[OnRunWork] taskOutStageMoveToNextDIe failed");
+                                    return -1;
+                                }
                             }
+
                             SetPickupDoneEvent();
 
                             _lastPickSucceeded = true;
@@ -1955,10 +2133,23 @@ namespace QMC.LCP_280.Process.Unit
                         }
                         else
                         {
+                            // [ADD] 성공 시에도 처리된 Index 기록
+                            _lastProcessedDieIndex = DieIndex.Index;
+
+                            // [실패 케이스 수정: Load Align 실패 / Pick Miss]
+                            Log.Write(UnitName, "PickFail", "Vacuum Fail -> Skip Probe/Unloader sequence");
+
                             // 픽 실패 시 현재 예약 슬롯을 Rejected 처리해 다음 슬롯으로 진행할 수 있게 함
                             OutputStage?.MarkCurrentReservedMissing();
-                            //Rotary.MoveMaterialToOutputDieTransfer();
-                            DieIndex.State = DieProcessState.Rejected;
+
+                            // Rotary에 자재가 그대로 있다고 처리 (혹은 ReMoveMaterialToOutputDieTransfer 로직 확인 필요)
+                            // 여기서는 픽업 실패했으므로 Rotary 소켓에 자재가 남아야 함.
+                            // Rotary.ReMoveMaterialToOutputDieTransfer(); // <- 이 함수 이름이 헷갈림. "Rotary에 자재 복구" 의미라면 맞음.
+
+                            // 3. Die 정보 업데이트
+                            DieIndex.State = DieProcessState.Rejected; // Rejected로 마킹
+                            DieIndex.RejectReason = "PickFail";        // 사유 입력
+
                             if (taskOutStageMoveToNextDIe != null)
                             {
                                 taskOutStageMoveToNextDIe.Wait();
@@ -1970,6 +2161,7 @@ namespace QMC.LCP_280.Process.Unit
                             nRet = MovePositionReady();
                             if (nRet != 0)
                             {
+                                SetPickupDoneEvent();
                                 AxisOutputPickZ?.EmgStop();
                                 AxisOutputToolT?.EmgStop();
                                 PostAlarm((int)AlarmKeys.eOutputDieTransferError);
@@ -1977,15 +2169,18 @@ namespace QMC.LCP_280.Process.Unit
                                 return -1;
                             }
 
+                            // (4) IO 정리: Vacuum 끄고 Blow 살짝
                             this.SetVacuum(nArmIndex, false);
                             this.SetBlow(nArmIndex, true);
-
-                            Thread.Sleep(100);
-
+                            Thread.Sleep(100); //Vaccum Fail시에. 
                             this.SetBlow(nArmIndex, false);
-                            this.SetVacuum(nArmIndex, true);
 
-                            Log.Write(UnitName, "[OnRunWork] AddULdPickAsMiss");
+                            //정보를 버리고 ==
+                            this.SetMaterial(null);
+                            State = ProcessState.None;
+                            _lastPickSucceeded = true;
+
+                            Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} Process Pass(Rejected).");
                             try
                             {
                                 var ctx = Equipment.Instance.SummaryContext;
@@ -1998,54 +2193,43 @@ namespace QMC.LCP_280.Process.Unit
                             catch (Exception ex)
                             { Log.Write(ex); }
 
-                            _lastPickSucceeded = true;
-                            Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} marked Presence=Exist");
+                            //미리 키고 대기.
+                            this.SetVacuum(nArmIndex, true);
 
-                            //정보를 버리고 ==
-                            this.SetMaterial(null);
-                            State = ProcessState.None;
-
-                            return -1;
+                            // [핵심] return -1 (에러 정지) 대신 return 0 (정상 진행)으로 변경
+                            return 0;
                         }
-                    }
-
-                    //if (MaterialDie != null
-                    //    && MaterialDie.State == DieProcessState.Picked
-                    //    && MaterialDie.Presence == Material.MaterialPresence.Exist)
-                    vac = this.IsVacuumOK(nArmIndex);
-                    if (DeiOutTr != null && vac)
-                    {
-                        Log.Write(UnitName, "OnRunWork", "Complete ->");
-                        State = ProcessState.Complete;
                     }
                 }
                 catch (Exception ex)
                 {
+                    SetPickupDoneEvent();
                     Log.Write(ex);
+                    return -1; // 예외 발생 시에는 정지
                 }
-                finally
-                {
-                }
+
                 return 0;
             }
-            finally
+            catch (Exception ex)
             {
-                TaktEnd("OnRunWork");
+                Log.Write(ex);
+                return -1;
             }
         }
+
         protected override int OnRunComplete()
         {
-            TaktStart("OnRunComplete");
             try
             {
                 int nRtn = 0;
 
+                TaktStart("Bin Place Die");
                 if (IsBinStageReadyForPlace() == false || OutputStage.CanPlaceDie() == false)
                 {
+                    State = ProcessState.None;
                     return 0;
                 }
 
-                Log.Write(UnitName, "OnRunWork", "OnRunComplete Start");
                 Material waferBin = OutputStage.GetMaterialWafer();
                 MaterialDie die = GetMaterial() as MaterialDie;
 
@@ -2054,52 +2238,53 @@ namespace QMC.LCP_280.Process.Unit
                     && die != null
                     && die.Presence == Material.MaterialPresence.Exist)
                 {
-                    TaktStart("RotateToolTForPlace");
                     try
                     {
-                        nRtn = RotateToolTForPlace();
+                        TaktStart("PlaceDie_ToolT");
+                        nRtn = PlaceDie_ToolT();
+                        if (nRtn != 0)
+                        {
+                            AxisOutputPlaceZ?.EmgStop();
+                            AxisOutputToolT?.EmgStop();
+                            PostAlarm((int)AlarmKeys.eOutputDieTransferRotateToolTForPlace);
+                            Log.Write(UnitName, "[OnRunWork] PlaceDie_ToolT failed");
+                            return -1;
+                        }
                     }
                     finally
                     {
-                        TaktEnd("RotateToolTForPlace");
-                    }
-                    if (nRtn != 0)
-                    {
-                        AxisOutputPlaceZ?.EmgStop();
-                        AxisOutputToolT?.EmgStop();
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferRotateToolTForPlace);
-                        Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
-                        return -1;
+                        TaktEnd("PlaceDie_ToolT");
                     }
 
-                    TaktStart("ReleaseVacuumAndPlaceUp");
+                    TaktStart("PlaceUp");
                     try
                     {
-                        nRtn = ReleaseVacuumAndPlaceUp();
+                        nRtn = PlaceUp();
+                        if (nRtn != 0)
+                        {
+                            Log.Write(UnitName, "[OnRunWork] AddULdPlaceAsMiss");
+                            try
+                            {
+                                var ctx = Equipment.Instance.SummaryContext;
+                                ctx.GetCurrentSummaryOrNull()?.AddULdPlaceAsMiss();
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Write(ex);
+                            }
+
+                            AxisOutputPlaceZ?.EmgStop();
+                            AxisOutputToolT?.EmgStop();
+                            PostAlarm((int)AlarmKeys.eOutputDieTransferReleaseVacuumAndPlaceUp);
+                            Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
+                            return -1;
+                        }
                     }
                     finally
                     {
-                        TaktEnd("ReleaseVacuumAndPlaceUp");
+                        TaktEnd("PlaceUp");
                     }
-                    if (nRtn != 0)
-                    {
-                        Log.Write(UnitName, "[OnRunWork] AddULdPlaceAsMiss");
-                        try
-                        {
-                            var ctx = Equipment.Instance.SummaryContext;
-                            ctx.GetCurrentSummaryOrNull()?.AddULdPlaceAsMiss();
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                        }
-
-                        AxisOutputPlaceZ?.EmgStop();
-                        AxisOutputToolT?.EmgStop();
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferReleaseVacuumAndPlaceUp);
-                        Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
-                        return -1;
-                    }
+                    
                     die.State = DieProcessState.Placed;
                     die.ProcessSatate = Material.MaterialProcessSatate.Completed;
                     die.Presence = Material.MaterialPresence.Exist;
@@ -2108,17 +2293,19 @@ namespace QMC.LCP_280.Process.Unit
                     OutputStage.PlaceDie(die);
                     this.SetMaterial(null);
                 }
+
+                TaktEnd("Bin Place Die");
                 State = ProcessState.None;
-                Log.Write(UnitName, "OnRunWork", "ProcessState.None ->");
                 return 0;
             }
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
             finally
             {
-                TaktEnd("OnRunComplete");
+                TaktEnd("One Cycle");
             }
         }
         #endregion
@@ -2129,10 +2316,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnMakeSequence();
             this.SequencePlayers.Add(MoveOutStage);
-            this.SequencePlayers.Add(ChipPickDown);
-            this.SequencePlayers.Add(ChipPickUp);
-            this.SequencePlayers.Add(RotateToolTForPlace);
-            this.SequencePlayers.Add(ReleaseVacuumAndPlaceUp);
+            this.SequencePlayers.Add(PickDownDie);
+            this.SequencePlayers.Add(PickUpDie);
+            this.SequencePlayers.Add(PlaceDie_ToolT);
+            this.SequencePlayers.Add(PlaceUp);
 
         }
 
@@ -2160,11 +2347,10 @@ namespace QMC.LCP_280.Process.Unit
 
         public Task<int> MoveOutStageASync(bool bFineSpeed = false)
         {
-            Task<int> t = Task.Factory.StartNew(() =>
+            return Task.Run(() =>
             {
                 return MoveOutStage(bFineSpeed);
             });
-            return t;
         }
         
         public int MoveOutStage(bool bFineSpeed = false) 
@@ -2180,12 +2366,6 @@ namespace QMC.LCP_280.Process.Unit
             if (OutputStage == null)
                 return -1;
 
-            //if (!OutputStage.IsStageInterLockOK())
-            //{
-            //    Log.Write(UnitName, "[MoveOutStage] Stage Interlock not OK.");
-            //    return -1;
-            //}
-            
             if (OutputStage.IsPlateUp())
             {
                 if (Config.IsSimulation == false)
@@ -2194,6 +2374,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
             }
+
             var DieOutTr = this.GetMaterial() as MaterialDie;
             var DieIndex = this.Rotary?.GetUnloadSocketMaterial();
             if (OutputStage.TryReserveNextEmptyBin(DieIndex, out double binX, out double binY, out double dT, out var slot) == false)
@@ -2212,12 +2393,12 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int ChipPickDown(bool bFineSpeed = false)
+        public int PickDownDie(bool bFineSpeed = false)
         {
             int nRet = 0;
             if (RunMode == UnitRunMode.Manual)
             {
-                this.CurrentFunc = ChipPickDown;
+                this.CurrentFunc = PickDownDie;
             }
 
             int nIndex = 0;
@@ -2259,12 +2440,12 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int ChipPickUp(bool bFineSpeed = false)
+        public int PickUpDie(bool bFineSpeed = false)
         {
             int nRet = 0;
             if (RunMode == UnitRunMode.Manual)
             {
-                this.CurrentFunc = ChipPickUp;
+                this.CurrentFunc = PickUpDie;
             }
 
             int nArmindex = GetPlaceArmIndex();
@@ -2282,16 +2463,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             Thread.Sleep(1);
 
-            if (Rotary.SetVent(nIndex, true) == false)
+            if (Rotary.Config.UsePlaceVent == true)
             {
-                if (!Config.IsSimulation)
+                if (Rotary.SetVent(nIndex, true) == false)
                 {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
-                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
-                    return -1;
+                    if (!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+                        Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
+                        return -1;
+                    }
                 }
+                Thread.Sleep(10);
             }
-            Thread.Sleep(1);
 
             if (Rotary.SetVent(nIndex, false) == false)
             {
@@ -2304,16 +2488,21 @@ namespace QMC.LCP_280.Process.Unit
             }
             Thread.Sleep(1);
 
-            if (Rotary.SetBlow(nIndex, true) == false)
+            if(Rotary.Config.UsePlaceBlow == true )
             {
-                if (!Config.IsSimulation)
+                if (Rotary.SetBlow(nIndex, true) == false)
                 {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
-                    Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
-                    return -1;
+                    if (!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
+                        Log.Write(UnitName, "[ChipPickUp]", "SetBlow failed");
+                        return -1;
+                    }
                 }
             }
-            Thread.Sleep(100);   //대기 <- 설정 파라미터로 필요? //100 > 50
+
+            Thread.Sleep(Config.PickUpWaitTime);
+            //Thread.Sleep(50);   //대기 <- 설정 파라미터로 필요? //100 > 50
 
             nRet = MovePositionSafetyZ(bFineSpeed);
             if (nRet != 0)
@@ -2358,7 +2547,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int RotateToolTForPlace(bool bFineSpeed = false)
+        public int PlaceDie_ToolT(bool bFineSpeed = false)
         {
             if (AxisOutputToolT == null)
                 return -1;
@@ -2366,7 +2555,7 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (RunMode == UnitRunMode.Manual)
             {
-                this.CurrentFunc = RotateToolTForPlace;
+                this.CurrentFunc = PlaceDie_ToolT;
 
             }
 
@@ -2380,14 +2569,14 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
+        public int PlaceUp(bool bFindSpeed = false)
         {
             int nRet = 0;
             try
             {
                 if (RunMode == UnitRunMode.Manual)
                 {
-                    this.CurrentFunc = ReleaseVacuumAndPlaceUp;
+                    this.CurrentFunc = PlaceUp;
                     LogSequence("Start");
                 }
 
@@ -2399,7 +2588,7 @@ namespace QMC.LCP_280.Process.Unit
                 // Release
                 if(SetVacuum(armIndex, false) == false)
                 {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
+                    if(Config.IsSimulation == false && (Config.IsDryRun == false && IsDryRunEqp == false))
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
                         Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");
@@ -2411,7 +2600,8 @@ namespace QMC.LCP_280.Process.Unit
                 SetVent(armIndex, false);
 
                 SetBlow(armIndex, true);
-                Thread.Sleep(100);
+                Thread.Sleep(Config.PlaceUpWaitTime);
+                //Thread.Sleep(100); //place wait time
 
                 nRet = MovePositionSafetyPlaceZ(bFindSpeed);
                 //nRet = MovePositionSafetyZ(bFindSpeed);
@@ -2538,13 +2728,21 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public void ResetForNewRun(bool moveToSafeReady = true, bool clearHeldDie = true, bool ioSafeOff = true)
+        public int ManualResetForNewRun(bool bFine = false)
+        {
+            ResetForNewRun(true, true);
+            return 0;
+        }
+
+        public void ResetForNewRun(bool moveToSafeReady = true, bool clearHeldDie = true)
         {
             // 1) 런타임/시퀀스 플래그 초기화
             _isSafetyMoving = false;
             CompleteOutputDie = false;
             _lastPickSucceeded = false;
             this.CurrentFunc = null;
+            // [ADD] Index 기억 초기화
+            _lastProcessedDieIndex = -1;
 
             // 2) 핸드셰이크 리셋
             try 
@@ -2560,24 +2758,6 @@ namespace QMC.LCP_280.Process.Unit
             if (clearHeldDie)
             {
                 try { this.SetMaterial(null); } catch (Exception ex) { Log.Write(UnitName, $"[ResetForNewRun] SetMaterial(null) failed: {ex.Message}"); }
-            }
-
-            // 4) IO 안전 상태 복귀(실기에서만, 선택)
-            if (ioSafeOff && !(Config.IsSimulation || Config.IsDryRun))
-            {
-                try
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        try { SetBlow(i, false); } catch { }
-                        try { SetVent(i, false); } catch { }
-                        try { SetVacuum(i, false); } catch { }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(UnitName, $"[ResetForNewRun] IO safe off failed: {ex.Message}");
-                }
             }
 
             // 5) 축 안전/Ready 복귀(선택)
@@ -2598,6 +2778,12 @@ namespace QMC.LCP_280.Process.Unit
                     // Z 안전 → Ready 순서로 복귀
                     EnsureReady();
                     MovePositionReady();
+
+                    this.SetVacuum(0, false);
+                    this.SetVent(0, false);
+                    this.SetBlow(0, true);
+                    Thread.Sleep(100);
+                    this.SetBlow(0, false);
                 }
                 catch (Exception ex)
                 {

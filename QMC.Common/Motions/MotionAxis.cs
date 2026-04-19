@@ -315,7 +315,8 @@ namespace QMC.Common.Motions
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
 
 
@@ -695,7 +696,7 @@ namespace QMC.Common.Motions
             InterlockEventArgs args = new InterlockEventArgs();
             args.dTargetPosition = logicalTarget;
 
-            if(OnIsInterlockOK(args) == false)
+            if (OnIsInterlockOK(args) == false)
             {
                 return -1;
             }
@@ -705,7 +706,10 @@ namespace QMC.Common.Motions
                 {
                     GuardSoftLimit(logicalTarget);
                     double v = vel > 0 ? vel : (Config.MaxVelocity > 0 ? Config.MaxVelocity : 5);
-                    StartSimMoveTo(logicalTarget, v);
+                    double a = acc > 0 ? acc : (Config.RunAcc > 0 ? Config.RunAcc : v * 10);
+                    double d = dec > 0 ? dec : (Config.RunDec > 0 ? Config.RunDec : v * 10);
+
+                    StartSimMoveTo(logicalTarget, v, a, d);
                     return 0;
                 }
                 catch (Exception ex)
@@ -754,6 +758,72 @@ namespace QMC.Common.Motions
                 throw new InvalidOperationException("This axis does not support Absolute Move.");
             }
         }
+
+        // 기존 코드
+        //public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
+        //{
+        //    InterlockEventArgs args = new InterlockEventArgs();
+        //    args.dTargetPosition = logicalTarget;
+
+        //    if(OnIsInterlockOK(args) == false)
+        //    {
+        //        return -1;
+        //    }
+        //    if (IsSim)
+        //    {
+        //        try
+        //        {
+        //            GuardSoftLimit(logicalTarget);
+        //            double v = vel > 0 ? vel : (Config.MaxVelocity > 0 ? Config.MaxVelocity : 5);
+        //            StartSimMoveTo(logicalTarget, v);
+        //            return 0;
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Log.Write("MotionAxis.MoveAbs(Sim)", ex.Message);
+        //            return -1;
+        //        }
+        //    }
+
+        //    if (_driver != null)
+        //    {
+        //        // 1) 소프트리밋 검사
+        //        GuardSoftLimit(logicalTarget);
+
+        //        // 2) 하드(물리) 리밋 상태 검사: 이동 방향에 따라 해당 리밋 센서가 이미 Active이면 구동 차단
+        //        try
+        //        {
+        //            var cur = GetPosition();
+        //            if (logicalTarget > cur)
+        //            {
+        //                // + 방향 이동 예정 → +Limit 센서 Active 여부 검사
+        //                if (_driver.ReadPositiveLimit(AxisNo))
+        //                    throw new InvalidOperationException("[" + Name + "] +Limit Active 상태에서 +방향 이동 불가");
+        //            }
+        //            else if (logicalTarget < cur)
+        //            {
+        //                // - 방향 이동 예정 → -Limit 센서 Active 여부 검사
+        //                if (_driver.ReadNegativeLimit(AxisNo))
+        //                    throw new InvalidOperationException("[" + Name + "] -Limit Active 상태에서 -방향 이동 불가");
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            // 인터락 위반을 알람으로도 남기고 예외 전달 (필요시 정책에 따라 변경)
+        //            Log.Write("MotionAxis.MoveAbs", ex.Message);
+        //            return -1; // 호출측에서 실패 처리; 예외 throw를 원하면 대신 throw;
+        //        }
+
+        //        // 3) 펄스 변환 및 구동 수행
+        //        var p = _correction.ToHardware(logicalTarget);
+        //        var jerk = MapJerkPercentToDriver((int)jerkPercent, (int)jerkPercent);
+        //        return _driver.MoveAbsPosition(AxisNo, p, vel, acc, dec, jerk);
+        //    }
+        //    else
+        //    {
+        //        throw new InvalidOperationException("This axis does not support Absolute Move.");
+        //    }
+        //}
 
         public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
@@ -870,11 +940,15 @@ namespace QMC.Common.Motions
         
         public int WaitMoveDone(int timeoutMs)
         {
+            // 공통 timeout 보정
+            if (timeoutMs < 0)
+                timeoutMs = Setup.MoveTimeoutMs > 0 ? Setup.MoveTimeoutMs : 10000;
+
+            // CPU 점유/응답 균형
+            const int pollMs = 1;
+
             if (IsSim)
             {
-                if (timeoutMs < 0) 
-                    timeoutMs = Setup.MoveTimeoutMs;
-
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
@@ -885,13 +959,13 @@ namespace QMC.Common.Motions
                     if (!moving) 
                         return 0;
 
-                    Thread.Sleep(2);
+                    Thread.Sleep(pollMs);
                 }
                 return -1;
             }
+
             if (_driver != null)
             {
-                if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
@@ -903,29 +977,63 @@ namespace QMC.Common.Motions
                             return 0;
                         }
                     }
-                    Thread.Sleep(1);
+                    Thread.Sleep(pollMs);
                 }
             }
             else if(_ckdDriver != null)
             {
-                if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
+                timeoutMs = Setup.MoveTimeoutMs;
                 var sw = Stopwatch.StartNew();
+                // Index 계열 기본값(8분할): 45deg
+                // 필요하면 추후 Setup/Config로 치환 가능
+                const double stepDeg = 45.0;
+                double tolDeg = Math.Max(this.Config?.InposTolerance ?? 0.002, 0.002);
+                bool inPos = false;
+                bool runWait = false;
+
+                var swWait = Stopwatch.StartNew();
+                while (true)
+                {
+                    if (swWait.ElapsedMilliseconds > 50)
+                        break;
+                }
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
-                    if (_ckdDriver.IsInPosition() 
-                        && _ckdDriver.IsRunWait())
+                    // 1) 상태 신호
+                    inPos = _ckdDriver.IsInPosition();
+                    runWait = _ckdDriver.IsRunWait();
+                    if(false)
                     {
-                        return 0;
+                        if (inPos && runWait)
+                            return 0;
                     }
-                    double dCurPos = this.GetPosition() * 1000;
-                    double dRemainPos = dCurPos % 45;
-                    if(dRemainPos >(45 - this.Config.InposTolerance))
+                    else
                     {
-                        //Log.Write("KKKKK", "End First _ " + dRemainPos.ToString());
-                        return 0;
+                        // 2) 현재 위치 기반 오차 계산 (중요: GetPosition()은 이미 deg 단위)
+                        //    기존 코드의 *1000은 단위 해야함. (장비에서 확인 완료)
+                        double curDeg = this.GetPosition() * 1000;
+                        double rem = curDeg % stepDeg;
+                        if (rem < 0) rem += stepDeg;
+                        double err = Math.Min(rem, stepDeg - rem);
+
+                        // 3) 안전 완료 판정:
+                        //    - 기본: 상태신호 + 위치오차 동시 만족
+                        if (inPos && runWait && err <= tolDeg)
+                            return 0;
                     }
-                    Thread.Sleep(1);
+
+                    // 4) fallback:
+                    //    드라이버 상태 갱신 지연 시 위치오차만으로도 완료 인정(기존 의도 유지)
+                    //if (err <= tolDeg)
+                    //    return 0;
+
+                    if (sw.ElapsedMilliseconds > timeoutMs)
+                        break;
+
+                    Thread.Sleep(pollMs);
+
                 }
+                return -1;
             }
             else
             {
@@ -1657,6 +1765,146 @@ namespace QMC.Common.Motions
         }
 
         // ===== Simulation helpers =====
+        private void StartSimMoveTo(double target, double velocity, double acc, double dec)
+        {
+            lock (_simLock)
+            {
+                // 소프트리밋 클램프
+                if (Setup.SoftLimitEnable)
+                {
+                    if (target > Setup.SoftLimitMax) target = Setup.SoftLimitMax;
+                    if (target < Setup.SoftLimitMin) target = Setup.SoftLimitMin;
+                }
+
+                double startPos = _simPosition;
+                double dist = target - startPos;
+                double dir = Math.Sign(dist);
+                double D = Math.Abs(dist); // 총 이동 거리
+
+                double v = Math.Abs(velocity);
+                double a = Math.Abs(acc);
+                double d = Math.Abs(dec);
+
+                if (v <= 0) v = 5;
+                if (a <= 0) a = v * 10;
+                if (d <= 0) d = v * 10;
+
+                _simTarget = target;
+                _simCommandPosition = target;
+                _simIsMoving = true;
+                _simCurrentVelocity = 0;
+
+                CancelSimCts_NoLock();
+                _simMoveCts = new CancellationTokenSource();
+                var token = _simMoveCts.Token;
+
+                _simServoOn = true; // 시뮬에서는 자동 서보온 가정
+
+                _simMoveTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (D < 1e-6) // 이미 도달한 경우 바로 종료
+                        {
+                            lock (_simLock)
+                            {
+                                _simPosition = target;
+                                _simCurrentVelocity = 0;
+                            }
+                            return;
+                        }
+
+                        // 사다리꼴(Trapezoidal) 속도 프로파일 구간 계산
+                        double ta = v / a; // 가속 시간
+                        double td = v / d; // 감속 시간
+                        double da = 0.5 * a * ta * ta; // 가속 이동 거리
+                        double dd = 0.5 * d * td * td; // 감속 이동 거리
+
+                        // 최고 속도 도달 전 감속해야 하는 경우 (삼각형 프로파일)
+                        if (da + dd > D)
+                        {
+                            v = Math.Sqrt(2 * D / (1 / a + 1 / d));
+                            ta = v / a;
+                            td = v / d;
+                            da = 0.5 * a * ta * ta;
+                            dd = 0.5 * d * td * td;
+                        }
+
+                        double dc = D - da - dd; // 정속 이동 거리
+                        double tc = dc / v;      // 정속 이동 시간
+                        double tTotal = ta + tc + td; // 총 이동 시간
+
+                        var sw = Stopwatch.StartNew();
+
+                        while (!token.IsCancellationRequested)
+                        {
+                            double t = sw.ElapsedMilliseconds / 1000.0; // 경과 시간 (초)
+
+                            bool reached = false;
+                            double currentVel = 0;
+                            double currentPos = startPos;
+
+                            // 시간 경과에 따른 위치 및 속도 계산
+                            if (t >= tTotal)
+                            {
+                                currentPos = target;
+                                currentVel = 0;
+                                reached = true;
+                            }
+                            else if (t <= ta) // 가속 구간
+                            {
+                                currentVel = a * t;
+                                currentPos = startPos + dir * (0.5 * a * t * t);
+                            }
+                            else if (t <= ta + tc) // 등속 구간
+                            {
+                                currentVel = v;
+                                double timeInConstant = t - ta;
+                                currentPos = startPos + dir * (da + v * timeInConstant);
+                            }
+                            else // 감속 구간
+                            {
+                                double timeInDecel = t - (ta + tc);
+                                currentVel = v - d * timeInDecel;
+                                currentPos = startPos + dir * (da + dc + (v * timeInDecel - 0.5 * d * timeInDecel * timeInDecel));
+                            }
+
+                            lock (_simLock)
+                            {
+                                _simPosition = currentPos;
+                                _simCurrentVelocity = currentVel * dir;
+
+                                // 소프트리밋 실시간 재확인
+                                if (Setup.SoftLimitEnable)
+                                {
+                                    if ((dir > 0 && _simPosition >= Setup.SoftLimitMax) ||
+                                        (dir < 0 && _simPosition <= Setup.SoftLimitMin))
+                                    {
+                                        _simPosition = dir > 0 ? Setup.SoftLimitMax : Setup.SoftLimitMin;
+                                        _simCurrentVelocity = 0;
+                                        reached = true;
+                                    }
+                                }
+                            }
+
+                            if (reached) break;
+
+                            await Task.Delay(5).ConfigureAwait(false); // 5ms 간격으로 위치 갱신
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        lock (_simLock)
+                        {
+                            _simIsMoving = false;
+                            _simCurrentVelocity = 0;
+                        }
+                    }
+                }, token);
+            }
+        }
+
         private void StartSimMoveTo(double target, double velocity)
         {
             lock (_simLock)

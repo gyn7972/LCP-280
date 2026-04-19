@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Mail;
 using System.Reflection;
 using System.Threading;
@@ -92,12 +93,12 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageNotSafety;
                 alarm.Title = "InputStage Not safety Pos.";
-                alarm.Cause = "InputStage가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputStage is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -105,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotatyNotSafety;
                 alarm.Title = "Rotaty Not safety Pos.";
-                alarm.Cause = "Rotaty가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Rotary is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -114,7 +115,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafety;
                 alarm.Title = "EjectorPin Z-Axis Not safety Pos.";
-                alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "EjectorPin Z-Axis is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -122,7 +123,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafety;
                 alarm.Title = "Ejector Z-Axis Not safety Pos.";
-                alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Ejector Z-Axis is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -130,7 +131,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
                 alarm.Title = "InputStage Axis Moving";
-                alarm.Cause = "InputStage 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "InputStage axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -138,7 +139,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
-                alarm.Cause = "Rotary 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "Rotary axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -146,7 +147,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageEjectorAxesMoving;
                 alarm.Title = "Ejector Axis Moving";
-                alarm.Cause = "InputStageEjector 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "InputStageEjector axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -155,7 +156,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferError;
                 alarm.Title = "InputDieTransferError";
-                alarm.Cause = "InputDieTransfer명령중 예기치 않은 에러를 만났습니다. 관리자에게 문의 하여 주십시요.";
+                alarm.Cause = "An unexpected error occurred during the InputDieTransfer command. Please contact the administrator.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -164,7 +165,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageVaccum;
                 alarm.Title = "eInputStageVaccumError";
-                alarm.Cause = "eInputStageVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
+                alarm.Cause = "eInputStageVaccum error occurred. Please check the pneumatic pressure.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -173,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferVaccum;
                 alarm.Title = "InputDieTransferVaccumError";
-                alarm.Cause = "InputDieTransferVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
+                alarm.Cause = "InputDieTransferVaccum error occurred. Please check the pneumatic pressure.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -181,7 +182,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferNotSafety;
                 alarm.Title = "InputDieTransfer Not safety Pos.";
-                alarm.Cause = "InputDieTransfer가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -189,7 +190,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferMoveFail;
                 alarm.Title = "InputDieTransfer Move Fail";
-                alarm.Cause = "InputDieTransfer가 명령한 위치로 이동하지 못했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer failed to move to the commanded position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -197,7 +198,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferNoWafer;
                 alarm.Title = "InputDieTransfer No Wafer Detected";
-                alarm.Cause = "InputDieTransfer가 Wafer를 감지하지 못했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer failed to detect a wafer. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -205,7 +206,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferPrepareNextDie;
                 alarm.Title = "InputDieTransfer Prepare Next Die";
-                alarm.Cause = "InputDieTransfer가 다음 Die 준비 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was preparing the next die. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -213,7 +214,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferRaiseEjector;
                 alarm.Title = "InputDieTransfer Raise Ejector Fail";
-                alarm.Cause = "InputDieTransfer가 Ejector를 올리는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was raising the Ejector. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -221,7 +222,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferChipPickDown;
                 alarm.Title = "InputDieTransfer Chip Pick Down Fail";
-                alarm.Cause = "InputDieTransfer가 Chip을 Pick Down하는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was picking down the chip. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -229,7 +230,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferSyncPickPinUp;
                 alarm.Title = "InputDieTransfer Sync Pick Pin Up Fail";
-                alarm.Cause = "InputDieTransfer가 Pick Pin을 올리는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was syncing the pick pin up. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -237,7 +238,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferSyncPickPinRetreat;
                 alarm.Title = "InputDieTransfer Sync Pick Pin Retreat Fail";
-                alarm.Cause = "InputDieTransfer가 Pick Pin을 후퇴시키는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was syncing the pick pin retreat. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -245,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferCommitPickedDie;
                 alarm.Title = "InputDieTransfer Commit Picked Die Fail";
-                alarm.Cause = "InputDieTransfer가 Picked Die를 커밋하는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was committing the picked die. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -253,7 +254,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferRotateToolTForPlace;
                 alarm.Title = "InputDieTransfer Rotate Tool T For Place Fail";
-                alarm.Cause = "InputDieTransfer가 Place를 위해 Tool T를 회전하는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was rotating Tool T for place. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -261,7 +262,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferPlaceChipDown;
                 alarm.Title = "InputDieTransfer Place Chip Down Fail";
-                alarm.Cause = "InputDieTransfer가 Chip을 Place Down하는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was placing down the chip. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -269,7 +270,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferReleaseVacuumAndPlaceUp;
                 alarm.Title = "InputDieTransfer Release Vacuum And Place Up Fail";
-                alarm.Cause = "InputDieTransfer가 Vacuum을 해제하고 Place Up하는 중에 문제가 발생했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "A problem occurred while InputDieTransfer was releasing vacuum and placing up. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -277,7 +278,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferNoDie;
                 alarm.Title = "InputDieTransfer No Die Detected";
-                alarm.Cause = "InputDieTransfer가 Die를 감지하지 못했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer failed to detect a die. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -286,7 +287,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputDieTransferLdPickAsMiss;
                 alarm.Title = "InputDieTransfer Loadport Pick As Miss";
-                alarm.Cause = "InputDieTransfer가 Loadport에서 Pick 시 Miss로 감지했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer detected a miss during pick at the loadport. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -294,8 +295,8 @@ namespace QMC.LCP_280.Process.Unit
                 //eInputStageMoveFaile
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageMoveFaile;
-                alarm.Title = "InputStage Move Faile";
-                alarm.Cause = "InputStage가 명령한 위치로 이동하지 못했습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Title = "InputStage Move Fail";
+                alarm.Cause = "InputStage failed to move to the commanded position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -334,6 +335,13 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
         // Safety 동작 중 여부
         private bool _isSafetyMoving = false;
+
+        // 연속 Miss 카운트
+        private int _consecutiveLdPickMissCount1 = 0;
+        private int _consecutiveLdPickMissCount2 = 0;
+
+        // N회 연속 시 알람 (원하면 Config로 빼세요)
+        private int LdPickMissAlarmThreshold = 3;
 
         #region ctor / Initialization
         public InputDieTransfer(InputDieTransferConfig config = null)
@@ -489,33 +497,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-
-            //SafetyZ로 이동 시에는 인터락 필요 없음.
-            //if (InputStage.IsAnyAxisMoving())
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
-            //    return -1;
-            //}
-
-            //if (InputStageEjector.IsAnyAxisMoving())
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
-            //}
-
-            //if (Rotary.IsAnyAxisMoving())
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
-            //}
-
+            
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeSafetyZ(bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -545,7 +527,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -869,7 +851,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -1003,7 +985,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -1640,13 +1622,19 @@ namespace QMC.LCP_280.Process.Unit
                 else
                     _vacuum[nNo].OffWaitOk();
             }
+
+            Thread.Sleep(1);
             return true;
         }
         public bool SetBlow(int nNo, bool on)
         {
-            if (_blow[nNo] == null) return false;
+            if (_blow[nNo] == null) 
+                return false;
+
             if (on) _blow[nNo].On();
             else _blow[nNo].Off();
+
+            Thread.Sleep(1);
             return true;
         }
         public bool SetVent(int nNo, bool on)
@@ -1654,6 +1642,8 @@ namespace QMC.LCP_280.Process.Unit
             if (_vent[nNo] == null) return false;
             if (on) _vent[nNo].On();
             else _vent[nNo].Off();
+
+            Thread.Sleep(1);
             return true;
         }
         public bool AirTankPressureOk() => this.ReadInput(InputDieTransferConfig.IO.AIR_TANK_PRESSURE);
@@ -1895,7 +1885,7 @@ namespace QMC.LCP_280.Process.Unit
                 int nArmIndex = GetInputTrArmIndex();
                 MaterialDie DieTr = this.GetMaterial() as MaterialDie;
 
-                TaktStart("Wafer Pick Die");
+                // Die Place 유/무 판단 후 진행.
                 if (DieTr != null && IsVacuumOK(nArmIndex))
                 {
                     if (IsVacuumOK(nArmIndex))
@@ -1924,13 +1914,14 @@ namespace QMC.LCP_280.Process.Unit
                         AxisPickZ?.EmgStop();
                         AxisToolT?.EmgStop();
                         PostAlarm((int)AlarmKeys.eInputDieTransferRotateToolTForPlace);
-                        Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace_AsyncWait failed");
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] RotateToolTForPlace_AsyncWait failed");
                         return -1;
                     }
                     State = ProcessState.Complete;
                     return nRet;
                 }
 
+                TaktStart("Wafer Pick Die");
                 if (InputStage.IsRingPresent() == false
                     && InputStage.IsPlateUp() == false)
                 {
@@ -1969,7 +1960,6 @@ namespace QMC.LCP_280.Process.Unit
 
                 SetVacuum(nArmIndex, true);
 
-                //Log.Write("kkkkkkRotary", "PrepareNextDie");
                 TaktStart("PrepareNextDie");
                 try
                 {
@@ -1988,10 +1978,11 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     TaktEnd("PrepareNextDie");
                 }
-
+                // Die 없으면 Return;
                 MaterialDie waferDie = InputStage.GetNextDie();
                 if (waferDie == null || waferDie.Presence != Material.MaterialPresence.Exist)
                 {
+                    State = ProcessState.None;
                     return 0;
                 }
                 if (nRet != 0)
@@ -1999,19 +1990,20 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPickZ?.EmgStop();
                     AxisToolT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferPrepareNextDie);
-                    Log.Write(UnitName, "[OnRunWork] PrepareNextDie failed");
+                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] PrepareNextDie failed");
                     return -1;
                 }
 
+                // ===== 우선순위 1) 스테이지에서 픽업할 다이가 준비되어 있을 때만 픽업 진행 =====
                 bool shouldPickFromStage = (waferDie != null
                                            && waferDie.Presence == Material.MaterialPresence.Exist
                                            && waferDie.State != DieProcessState.Picked);
-                Log.Write(UnitName, "OnRunWork",
+                Log.Write(UnitName, "OnRunWork", "OnRunWork",
                         $"PickDecision shouldPickFromStage={shouldPickFromStage}, " +
                         $"waferDie={(waferDie == null ? "null" : $"Exist={waferDie.Presence},State={waferDie.State},Map=({waferDie.MapX:F3},{waferDie.MapY:F3}),Index={waferDie.Index}")}");
+                
                 if (shouldPickFromStage)
                 {
-                    //Log.Write("kkkkkkRotary", "RaiseEjectorForPick");
                     TaktStart("RaiseEjectorForPick");
                     try
                     {
@@ -2026,7 +2018,7 @@ namespace QMC.LCP_280.Process.Unit
                         AxisPickZ?.EmgStop();
                         AxisToolT?.EmgStop();
                         PostAlarm((int)AlarmKeys.eInputDieTransferRaiseEjector);
-                        Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed"); 
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] RaiseEjectorForPick failed"); 
                         return -1; 
                     }
 
@@ -2034,7 +2026,6 @@ namespace QMC.LCP_280.Process.Unit
                     { return 0; }
 
                     TaktStart("PickDownDie");
-                    //Log.Write("kkkkkkRotary", "ChipPickDown");
                     try
                     {
                         nRet = PickDownDie();
@@ -2048,11 +2039,10 @@ namespace QMC.LCP_280.Process.Unit
                         AxisPickZ?.EmgStop();
                         AxisToolT?.EmgStop();
                         PostAlarm((int)AlarmKeys.eInputDieTransferChipPickDown);
-                        Log.Write(UnitName, "[OnRunWork] ChipPickDown failed"); 
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] ChipPickDown failed"); 
                         return -1; 
                     }
 
-                    //Log.Write("kkkkkkRotary", "SyncPickPinUp");
                     TaktStart("SyncPickUpDie");
                     try
                     {
@@ -2067,11 +2057,10 @@ namespace QMC.LCP_280.Process.Unit
                         AxisPickZ?.EmgStop();
                         AxisToolT?.EmgStop();
                         PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinUp);
-                        Log.Write(UnitName, "[OnRunWork] SyncPickPinUp failed"); 
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] SyncPickPinUp failed"); 
                         return -1; 
                     }
 
-                    //Log.Write("kkkkkkRotary", "SyncPickPinRetreat");
                     TaktStart("SyncPickDieRetreat");
                     try
                     {
@@ -2081,16 +2070,16 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         TaktEnd("SyncPickDieRetreat");
                     }
-                    //Log.Write("kkkkkkRotary", "SyncPickPinRetreat");
                     if (nRet != 0) 
                     {
                         AxisPickZ?.EmgStop();
                         AxisToolT?.EmgStop();
                         PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinRetreat);
-                        Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed"); 
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] SyncPickPinRetreat failed"); 
                         return -1; 
                     }
 
+                    // 픽업 후 Vacuum 확인해서 제품이 없으면 Place 안하고 바로 예외 처리.
                     if (IsVacuumOK(nArmIndex) == true)
                     {
                         var res = InputStageVaccumOff();
@@ -2105,14 +2094,18 @@ namespace QMC.LCP_280.Process.Unit
                                 AxisPickZ?.EmgStop();
                                 AxisToolT?.EmgStop();
                                 PostAlarm((int)AlarmKeys.eInputDieTransferCommitPickedDie);
-                                Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                                Log.Write(UnitName, "OnRunWork", "[OnRunWork] CommitPickedDie failed");
                                 return -1;
                             }
+                            ResetLdPickMissCounter1("CommitPickedDie success");
                         }
                         catch(Exception ex)
                         {
                             Log.Write(ex);
                         }
+
+
+
                     }
                     else
                     {
@@ -2130,7 +2123,7 @@ namespace QMC.LCP_280.Process.Unit
                         this.SetBlow(nArmIndex, true);
 
                         // 여기는 택타임과 무관 //예외상태에서 대기.
-                        Thread.Sleep(50);
+                        Thread.Sleep(100);
 
                         this.SetBlow(nArmIndex, false);
                         this.SetVacuum(nArmIndex, true);
@@ -2140,8 +2133,10 @@ namespace QMC.LCP_280.Process.Unit
                         nRet = CommitNotPickedDie();
                         this.SetMaterial(null);
                         this.State = ProcessState.Ready;
+                        Log.Write(UnitName, "OnRunWork", "[OnRunWork] AddLdPickAsMiss");
 
-                        Log.Write(UnitName, "[OnRunWork] AddLdPickAsMiss");
+                        // 여기서 바로 카운터 증가 및 통계 반영. (택타임과 무관하게 즉시 처리)
+                        // 일정 횟수 이상 누적되면 추가적인 알람 조치.
                         try
                         {
                             var ctx = Equipment.Instance.SummaryContext;
@@ -2149,9 +2144,14 @@ namespace QMC.LCP_280.Process.Unit
 
                             AxisPickZ?.EmgStop();
                             AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferLdPickAsMiss);
-                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
-                            return -1;
+                            //PostAlarm((int)AlarmKeys.eInputDieTransferLdPickAsMiss);
+                            nRet = OnLdPickMissDetected1();
+                            if(nRet != 0)
+                            {
+                                Log.Write(UnitName, "OnRunWork", "[OnRunWork] CommitPickedDie failed");
+                                return -1;
+                            }
+                            
                         }
                         catch (Exception ex)
                         { Log.Write(ex); }
@@ -2159,7 +2159,6 @@ namespace QMC.LCP_280.Process.Unit
                         return 0;
                     }
                 }
-                //Log.Write("kkkkkkRotary", "RotateToolTForPlace_AsyncWait start");
 
                 TaktStart("PlaceDie_ToolT");
                 try
@@ -2175,7 +2174,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPickZ?.EmgStop();
                     AxisToolT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferRotateToolTForPlace);
-                    Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace_AsyncWait failed"); 
+                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] RotateToolTForPlace_AsyncWait failed"); 
                     return -1; 
                 }
 
@@ -2189,28 +2188,37 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        public bool CompleteInputDieTrDie { get; set; } = false;
+
         protected override int OnRunComplete()
         {
+            int nRet = 0;
+            int nArmIndex = GetInputTrArmIndex();
+
             try
             {
-                int nRet = 0;
-                int nArmIndex = GetInputTrArmIndex();
-                if (Rotary.RequestInputDieTrDie == false) 
-                    return 0;
-
-                if (this.Rotary.IsIndexMoving()) 
-                    return 0;
-
-                if (Rotary.IsLoadSocketEmpty() == false) 
-                    return 0;
-
-                MaterialDie TrDie = (GetMaterial() as MaterialDie);
-                if (TrDie == null || TrDie.Presence != Material.MaterialPresence.Exist)
+                // Rotaty에서 다이 픽업 요청이 있을 때만 Place 진행하도록. (없으면 Ready로 복귀)
+                if (Rotary.RequestInputDieTrDie == false)
                 {
                     return 0;
                 }
 
-                //Log.Write("kkkkkkRotary", "PlaceChipDown Start12");
+                if (Rotary.IsLoadSocketEmpty() == false)
+                {
+                    return 0;
+                }
+
+                if (Rotary.IsIndexMoving())
+                {
+                    return 0;
+                }
+
+                MaterialDie TrDie = (GetMaterial() as MaterialDie);
+                if (TrDie == null || TrDie.Presence != Material.MaterialPresence.Exist)
+                {
+                    State = ProcessState.Ready;
+                    return 0;
+                }
 
                 this.taskPrepareNextDie = Task.Run(() =>
                 {
@@ -2225,17 +2233,62 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 });
 
-                //여기에서 Vacuum Check해서 제품이 없으면 무조건 안됨.
+                // 시작할때 비트 내리고 시작.
+                this.CompleteInputDieTrDie = false;
+                // Place 진행 전에 Vacuum Check해서 제품이 없으면 바로 예외 처리.
                 if (IsVacuumOK(nArmIndex) == false)
                 {
-                    var ctx = Equipment.Instance.SummaryContext;
-                    ctx.GetCurrentSummaryOrNull()?.AddLdPickAsMiss();
+                    nRet = MovePositionReady();
+                    if (nRet != 0)
+                    {
+                        AxisPickZ?.EmgStop();
+                        AxisToolT?.EmgStop();
+                        PostAlarm((int)AlarmKeys.eInputDieTransferNotSafety);
+                        Log.Write(UnitName, "OnRunComplete", "[OnRunComplete] CommitPickedDie failed");
+                        return -1;
+                    }
 
-                    AxisPickZ?.EmgStop();
-                    AxisToolT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputDieTransferLdPickAsMiss);
-                    Log.Write(UnitName, "[OnRunComplete] CommitPickedDie failed");
-                    return -1;
+                    this.SetVacuum(nArmIndex, false);
+                    this.SetVent(nArmIndex, true);
+                    this.SetVent(nArmIndex, false);
+                    this.SetBlow(nArmIndex, true);
+
+                    // 여기는 택타임과 무관 //예외상태에서 대기.
+                    Thread.Sleep(100);
+
+                    this.SetBlow(nArmIndex, false);
+                    this.SetVacuum(nArmIndex, true);
+
+                    this.SetMaterial(null);
+                    var ctx = Equipment.Instance.SummaryContext;
+                    ctx.GetCurrentSummaryOrNull()?.AddLdPlaceAsMiss();
+
+                    // 여기서 바로 카운터 증가 및 통계 반영. (택타임과 무관하게 즉시 처리)
+                    nRet = OnLdPickMissDetected2(nArmIndex);
+                    if (nRet != 0)
+                    {
+                        TaktEnd("One Cycle");
+                        Log.Write(UnitName, "OnRunComplete", "[OnRunComplete] CommitPickedDie failed");
+                        return -1;
+                    }
+
+                    if (!taskPrepareNextDie.Wait(5000)) // 5초 대기.
+                    {
+                        Log.Write(UnitName, "OnRunComplete", "[OnRunComplete]taskPrepareNextDie Timeout (5s)");
+                        // 필요 시 여기서 return -1 하거나, 그냥 진행할지 결정
+                    }
+
+                    if (taskPrepareNextDie.IsCompleted && taskPrepareNextDie.Result != 0)
+                    {
+                        Log.Write(UnitName, "OnRunComplete", "[OnRunComplete]taskPrepareNextDie failed");
+                    }
+                    TaktEnd("One Cycle");
+                    State = ProcessState.None;
+                    return 0;
+                }
+                else
+                {
+                    ResetLdPickMissCounter2();
                 }
 
                 TaktStart("PlaceDownDie");
@@ -2252,11 +2305,108 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPlaceZ?.EmgStop();
                     AxisToolT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferPlaceChipDown);
-                    Log.Write(UnitName, "[OnRunComplete] PlaceChipDown failed");
+                    Log.Write(UnitName, "OnRunComplete", "[OnRunComplete] PlaceChipDown failed");
                     return -1;
                 }
-                //Log.Write("kkkkkkInputTr", "PlaceChipDown End");
-                //Log.Write("kkkkkkRotary", "PlaceChipDown Start123");
+
+                // 확인 필요.. -> Rotaty는.. 무조건 OK 인디..
+                // 우선 막자. :: 신호 반대로 해야할수도?
+                if (false)
+                {
+                    if (Rotary.IsVacuumOK(Rotary.GetLoadIndexNo()) == false)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] AddLdPickAsMiss");
+                        try
+                        {
+                            var ctx = Equipment.Instance.SummaryContext;
+                            ctx.GetCurrentSummaryOrNull()?.AddLdPlaceAsMiss();
+                        }
+                        catch (Exception ex)
+                        { Log.Write(ex); }
+                    }
+                }
+
+                //여기에서 Vacuum Check해서 제품이 있으면 무조건 안됨.
+                if (true)
+                {
+                    bool okBlow = this.SetBlow(nArmIndex, false);
+                    bool bVacuumOK = IsVacuumOK(nArmIndex);
+                    var equipment = Equipment.Instance;
+                    bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                   
+                    int timeoutMs = 1000;
+                    var sw = Stopwatch.StartNew();
+                    if (Config.IsSimulation == false &&
+                       (Config.IsDryRun == false && IsDryRunEqp == false))
+                    {
+                        while (sw.ElapsedMilliseconds <= timeoutMs)
+                        {
+                            bool ok = IsVacuumOK(nArmIndex);
+                            if (ok == false)
+                                break;
+                        }
+                    }
+
+                    if (Config.IsSimulation == true ||
+                       (Config.IsDryRun == true || IsDryRunEqp == true))
+                    {
+                        bVacuumOK = false;
+                    }
+                    if (bVacuumOK)
+                    {
+                        nRet = MovePositionReady();
+                        if (nRet != 0)
+                        {
+                            AxisPickZ?.EmgStop();
+                            AxisToolT?.EmgStop();
+                            PostAlarm((int)AlarmKeys.eInputDieTransferNotSafety);
+                            Log.Write(UnitName, "OnRunComplete", "CommitPickedDie failed");
+                            return -1;
+                        }
+
+                        this.SetVacuum(nArmIndex, false);
+                        this.SetBlow(nArmIndex, true);
+
+                        // 여기는 택타임과 무관 //예외상태에서 대기.
+                        Thread.Sleep(50);
+
+                        this.SetBlow(nArmIndex, false);
+                        Thread.Sleep(1);
+                        this.SetVacuum(nArmIndex, true);
+
+                        this.SetMaterial(null);
+                        var ctx = Equipment.Instance.SummaryContext;
+                        ctx.GetCurrentSummaryOrNull()?.AddLdPlaceAsMiss();
+
+                        nRet = OnLdPickMissDetected2(nArmIndex);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "OnRunComplete", "CommitPickedDie failed");
+                            return -1;
+                        }
+
+                        this.SetMaterial(null);
+                        if (!taskPrepareNextDie.Wait(5000)) // 5초 대기.
+                        {
+                            Log.Write(UnitName, "OnRunComplete", "taskPrepareNextDie Timeout (5s)");
+                            // 필요 시 여기서 return -1 하거나, 그냥 진행할지 결정
+                        }
+
+                        if (taskPrepareNextDie.IsCompleted && taskPrepareNextDie.Result != 0)
+                        {
+                            Log.Write(UnitName, "OnRunComplete", "taskPrepareNextDie failed");
+                        }
+
+                        TaktEnd("One Cycle");
+                        State = ProcessState.None;
+                        return 0;
+                    }
+                    else
+                    {
+                        ResetLdPickMissCounter2();
+                    }
+                }
+
                 TaktStart("PlaceUp");
                 try
                 {
@@ -2271,34 +2421,22 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPlaceZ?.EmgStop();
                     AxisToolT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferReleaseVacuumAndPlaceUp);
-                    Log.Write(UnitName, "[OnRunComplete] ReleaseVacuumAndPlaceUp failed");
+                    Log.Write(UnitName, "OnRunComplete", "[OnRunComplete] ReleaseVacuumAndPlaceUp failed");
                     return -1;
                 }
 
-                // 확인 필요.. -> Rotaty는.. 무조건 OK 인디..
-                // 우선 막자. :: 신호 반대로 해야할수도?
-                //if (Rotary.IsVacuumOK(Rotary.GetLoadIndexNo()) == false)
-                //{
-                //    Log.Write(UnitName, "[OnRunWork] AddLdPickAsMiss");
-                //    try
-                //    {
-                //        var ctx = Equipment.Instance.SummaryContext;
-                //        ctx.GetCurrentSummaryOrNull()?.AddLdPlaceAsMiss();
-                //    }
-                //    catch (Exception ex)
-                //    { Log.Write(ex); }
-                //}
-
+                // Place 완료 후 Rotary로 다이 이동
                 TrDie.State = DieProcessState.Inspecting;
                 TrDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 TrDie.Presence = Material.MaterialPresence.Exist;
-
                 this.MoveMaterial(TrDie, this.Rotary);
-                int armIndex = GetInputTrArmIndex();
-                SetVacuum(armIndex, true, false);
                 this.SetMaterial(null);
 
-                if (!taskPrepareNextDie.Wait(5000)) // 5초 대기 
+                // Rotary로 다이 이동 신호 준 후 바로 RequestInputDieTrDie 플래그 내려서,
+                // Rotary에서 다이 픽업 요청이 있을 때만 Place 진행하도록. (없으면 Ready로 복귀)
+                this.CompleteInputDieTrDie = true;
+
+                if (!taskPrepareNextDie.Wait(5000)) // 5초 대기.
                 {
                     Log.Write(UnitName, "[OnRunComplete]", "taskPrepareNextDie Timeout (5s)");
                     // 필요 시 여기서 return -1 하거나, 그냥 진행할지 결정
@@ -2314,19 +2452,36 @@ namespace QMC.LCP_280.Process.Unit
                     //return -1;
                 }
 
+                SetVacuum(nArmIndex, true, false);
                 TaktEnd("One Cycle");
                 State = ProcessState.None;
                 return 0;
             }
             finally
             {
-                
+                if (IsPositionPickZSafety() && IsPositionPlaceZSafety())
+                {
+                    nRet = MovePositionSafetyZ();
+                    if (nRet != 0)
+                    {
+                        AxisPickZ?.EmgStop();
+                        AxisPlaceZ?.EmgStop();
+                        AxisToolT?.EmgStop();
+                        PostAlarm((int)AlarmKeys.eInputDieTransferMoveFail);
+                        Log.Write(UnitName, "OnRunComplete", "MovePositionSafetyZ failed");
+                    }
+                }
             }
         }
+        #endregion
+
+        #region Sequence Use Functions
+
+
 
         #endregion
-        #region Sequence 등록
 
+        #region Sequence 등록
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
@@ -2349,10 +2504,7 @@ namespace QMC.LCP_280.Process.Unit
         public int PrepareNextDie(bool bFineSpeed = false)
         {
             int nRet = 0;
-            //if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = PrepareNextDie;
-            }
+            this.CurrentFunc = PrepareNextDie;
 
             // 웨이퍼/상태 점검은 여기서도 방어적으로 수행
             var wafer = this.InputStage?.GetMaterialWafer();
@@ -2616,78 +2768,86 @@ namespace QMC.LCP_280.Process.Unit
             // PickZ Safety 이동
             double dZPos = GetTP(InputDieTransferRecipe.TeachingPositionName.SafetyZone.ToString(),
                                  AxisNames.LeftPickZ);
-            // 각 모션을 Task로 병렬화
-            var taskZ = Task.Run(() => MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed));
-            var taskPin = Task.Run(() => InputStageEjector.MovePositionEjectPinReady(bFineSpeed));
-            var taskBlock = Task.Run(() => InputStageEjector.MovePositionEjectBlockReady(bFineSpeed));
 
-            Task.WaitAll(taskZ, taskPin, taskBlock);
-
-            if (taskZ.Result != 0 || taskPin.Result != 0 || taskBlock.Result != 0)
+            if(true) //병렬
             {
-                AxisToolT.EmgStop();
-                AxisPickZ.EmgStop();
-                AxisPlaceZ.EmgStop();
+                // 각 모션을 Task로 병렬화
+                var taskZ = Task.Run(() => MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed));
+                var taskPin = Task.Run(() => InputStageEjector.MovePositionEjectPinReady(bFineSpeed));
+                var taskBlock = Task.Run(() => InputStageEjector.MovePositionEjectBlockReady(bFineSpeed));
 
-                // ... 알람 처리
-                if (taskZ.Result != 0)
+                Task.WaitAll(taskZ, taskPin, taskBlock);
+
+                if (taskZ.Result != 0 || taskPin.Result != 0 || taskBlock.Result != 0)
                 {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+
+                    // ... 알람 처리
+                    if (taskZ.Result != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                        Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
+                    }
+
+                    if (taskPin.Result != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                        Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
+                    }
+
+                    if (taskBlock.Result != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                        Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
+                    }
+
+                    return -1;
+                }
+            }
+            else
+            {
+                // 기존 코드.
+                nRet = MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
+                if (nRet != 0)
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferError);
                     Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
+                    return -1;
                 }
 
-                if (taskPin.Result != 0)
+                // Ejector Pin Ready
+                nRet = InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
+                if (nRet != 0)
                 {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferError);
                     Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
+                    return -1;
                 }
 
-                if (taskBlock.Result != 0)
+                // Ejector Block Ready
+                nRet = InputStageEjector.MovePositionEjectBlockReady(bFineSpeed);
+                if (nRet != 0)
                 {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferError);
                     Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
+                    return -1;
                 }
-
-                return -1;
             }
-
-            // 기존 코드.
-            //nRet = MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
-            //if (nRet != 0)
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eInputDieTransferError);
-            //    Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
-            //    return -1;
-            //}
-            //// Ejector Pin Ready
-            //nRet = InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
-            //if (nRet != 0)
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eInputDieTransferError);
-            //    Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
-            //    return -1;
-            //}
-            //// Ejector Block Ready
-            //nRet = InputStageEjector.MovePositionEjectBlockReady(bFineSpeed);
-            //if (nRet != 0)
-            //{
-            //    AxisToolT.EmgStop();
-            //    AxisPickZ.EmgStop();
-            //    AxisPlaceZ.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eInputDieTransferError);
-            //    Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
-            //    return -1;
-            //}
-
 
             return nRet;
         }
+
         public int CommitPickedDie(bool bFineSpeed = false)
         {
             if (RunMode == UnitRunMode.Manual)
@@ -2845,7 +3005,7 @@ namespace QMC.LCP_280.Process.Unit
                     // 여기서는 절대값 크기로 예시를 들거나, 이동 방향을 고려해야 함.
                     if (Math.Abs(currentPos) > clearPos)
                     {
-                        Thread.Sleep(30);
+                        Thread.Sleep(50); //30->50ms 간격으로 체크 (너무 짧으면 CPU 점유율 상승, 너무 길면 반응 늦어짐)
                         break; // 촬영 가능 위치 도달! 루프 탈출
                     }
                     Thread.Sleep(1);
@@ -2862,8 +3022,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 택타임 줄이는 방안으로 taskAlign 이거는 확인 하지 말까? 무조건 된다라고 봐야하나.
 
-                //Task.WaitAll(taskRotate, taskAlign);
-                Task.WaitAll(taskRotate);
+                Task.WaitAll(taskRotate, taskAlign);
+                //Task.WaitAll(taskRotate);
             }
             // [제안 - 조금 더 명확하게]
             catch (AggregateException ae)
@@ -2942,10 +3102,9 @@ namespace QMC.LCP_280.Process.Unit
             this.WaitByTime(Config.nPlaceAfterVacWaitTime, 1);//Thread.Sleep(1);
 
             SetVent(armIndex, false);
-            Thread.Sleep(1);
-
             this.WaitByTime(Config.nPlaceBeforeBlowWaitTime, 1);
             SetBlow(armIndex, true);
+            this.WaitByTime(Config.nPlaceAfterBlowWaitTime2, 1); //Blow 키고 대기 시간.
 
             Task.Run(() =>
             {
@@ -2959,6 +3118,9 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(ex);
                 }
             });
+
+            //여기서 자재를 가지고 있는지 없는지 유/무 판단 후 알람 사용하자.
+
             
             return nRet;
 
@@ -3011,7 +3173,6 @@ namespace QMC.LCP_280.Process.Unit
 
                 this.WaitByTime(Config.nPlaceUpWaitTime, 1);
 
-
                 //Test 필요.
                 //// 개선 방안 (축 간섭을 피하는 선에서 동시 구동)
                 //// 1. Z축 상승 명령 (비동기)
@@ -3057,8 +3218,6 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionPickUpToolT failed");
                     return -1;
                 }
-
-
             }
             catch (Exception ex)
             {
@@ -3552,6 +3711,64 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return nRet;
+        }
+
+        private int OnLdPickMissDetected1()
+        {
+            LdPickMissAlarmThreshold = Config.AlarmCount;
+            _consecutiveLdPickMissCount1++;
+
+            Log.Write(UnitName, nameof(OnLdPickMissDetected1),
+                $"LdPickMiss consecutive={_consecutiveLdPickMissCount1}/{LdPickMissAlarmThreshold}");
+
+            if (_consecutiveLdPickMissCount1 >= LdPickMissAlarmThreshold)
+            {
+                PostAlarm((int)AlarmKeys.eInputDieTransferLdPickAsMiss);
+                _consecutiveLdPickMissCount1 = 0; // 알람 후 다시 카운트 시작 (원치 않으면 제거)
+                return -1;
+            }
+
+            return 0;
+        }
+
+        // 기존 메서드 교체
+        private void ResetLdPickMissCounter1(string reason = "")
+        {
+            if (_consecutiveLdPickMissCount1 != 0)
+            {
+                //Log.Write(UnitName, nameof(ResetLdPickMissCounter),
+                //    $"Reset consecutive miss counter({_consecutiveLdPickMissCount}) reason={reason}");
+            }
+            _consecutiveLdPickMissCount1 = 0;
+        }
+
+        private int OnLdPickMissDetected2(int nArmIndex)
+        {
+            LdPickMissAlarmThreshold = Config.AlarmCount;
+            _consecutiveLdPickMissCount2++;
+
+            Log.Write(UnitName, nameof(OnLdPickMissDetected1),
+                $"LdPickMiss consecutive={_consecutiveLdPickMissCount2}/{LdPickMissAlarmThreshold}");
+
+            if (_consecutiveLdPickMissCount2 >= LdPickMissAlarmThreshold)
+            {
+                PostAlarm((int)AlarmKeys.eInputDieTransferLdPickAsMiss);
+                _consecutiveLdPickMissCount2 = 0; // 알람 후 다시 카운트 시작 (원치 않으면 제거)
+                return -1;
+            }
+
+            return 0;
+        }
+
+        // 기존 메서드 교체
+        private void ResetLdPickMissCounter2(string reason = "")
+        {
+            if (_consecutiveLdPickMissCount2 != 0)
+            {
+                //Log.Write(UnitName, nameof(ResetLdPickMissCounter),
+                //    $"Reset consecutive miss counter({_consecutiveLdPickMissCount}) reason={reason}");
+            }
+            _consecutiveLdPickMissCount2 = 0;
         }
     }
 }

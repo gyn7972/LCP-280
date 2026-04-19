@@ -128,7 +128,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Fields - Params / Tunings
         // 파라미터로 빼야하는 Data 및 상수
         public int MoveTimeoutMs { get; set; } = 6000;
-        public int PollIntervalMs { get; set; } = 5; //30
+        public int PollIntervalMs { get; set; } = 1; //30
         public double AngleIgnoreThresholdDeg { get; set; } = 0.001;
         public double AngleMaxApplyDeg { get; set; } = 2.0;
         public double AngleApplyGain { get; set; } = -1.0; // 방향 반전 필요 시 -1 사용
@@ -222,12 +222,13 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eDieTransferPickZNotSafety;
                 alarm.Title = "Die Tr Z-Axis Not safety Pos.";
-                alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Die Tr Z-Axis is not at safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -235,7 +236,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputFeederCylinderZNotSafety;
                 alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
-                alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Feeder Z-Cylinder is not at safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -244,7 +245,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafety;
                 alarm.Title = "EjectorPin Z-Axis Not safety Pos.";
-                alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "EjectorPin Z-Axis is not at safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -252,7 +253,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafety;
                 alarm.Title = "Ejector Z-Axis Not safety Pos.";
-                alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Ejector Z-Axis is not at safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -261,7 +262,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputFeederYNotSafe;
                 alarm.Title = "Feeder Y-Axis Not safety Pos.";
-                alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Feeder Y-Axis is not at safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -269,7 +270,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eVisionTsearch;
                 alarm.Title = "Vision T Search.";
-                alarm.Cause = "Vision T Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Vision T Search Fail. Please check the Chip Mark and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -277,23 +278,23 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eVisionXYsearch;
                 alarm.Title = "Vision XY Search.";
-                alarm.Cause = "Vision XY Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Vision XY Search Fail. Please check the Chip Mark and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageMoveFail;
-                alarm.Title = "스테이지 이동에 실패 하였습니다.";
-                alarm.Cause = "모터상태를 확인 하여주십시요.";
+                alarm.Title = "Stage move failed.";
+                alarm.Cause = "Please check the motor status.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRingLockFailed;
-                alarm.Title = "스테이지 제품 잠금 실패 하였습니다.";
-                alarm.Cause = "스테이지 Lift Lock 실린더 상태를 확인 하여주십시요.";
+                alarm.Title = "Stage product lock failed.";
+                alarm.Cause = "Please check the stage Lift Lock cylinder status.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -301,15 +302,16 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageAlignNotDone;
                 alarm.Title = "Input Stage Align Not Done.";
-                alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Align is not done. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
+
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageNoWafer;
                 alarm.Title = "Input Stage No Wafer.";
-                alarm.Cause = "Input Stage에 Wafer가 없습니다. 다시 시도 하십시요.";
+                alarm.Cause = "There is no wafer on the Input Stage. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -317,7 +319,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageAlignNotCompleted;
                 alarm.Title = "Input Stage Align Not Completed.";
-                alarm.Cause = "Input Stage Align 가 완료되지 않았습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Align is not completed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -325,7 +327,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageMapMatch;
                 alarm.Title = "Input Stage Map Match Failed.";
-                alarm.Cause = "Input Stage Map Match 가 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Map Match failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -333,7 +335,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageRingPresent;
                 alarm.Title = "Input Stage Ring Present Failed.";
-                alarm.Cause = "Input Stage에 제품 감지가 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Product detection on Input Stage failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -341,7 +343,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageLiftUp;
                 alarm.Title = "Input Stage Lift Up Failed.";
-                alarm.Cause = "Input Stage에 Lift Up 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Lift Up failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -349,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageLiftDown;
                 alarm.Title = "Input Stage Lift Down Failed.";
-                alarm.Cause = "Input Stage에 Lift Down 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Lift Down failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -358,7 +360,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageClampFWD;
                 alarm.Title = "Input Stage Clamp FWD Failed.";
-                alarm.Cause = "Input Stage에 Clamp FWD 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Clamp FWD failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -366,7 +368,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageClampBWD;
                 alarm.Title = "Input Stage Clamp BWD Failed.";
-                alarm.Cause = "Input Stage에 Clamp BWD 실패하였습니다. 다시 시도 하십시요.";
+                alarm.Cause = "Input Stage Clamp BWD failed. Please try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -374,7 +376,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eInputStageScanEmpty;
                 alarm.Title = "Input Stage Scan Empty.";
-                alarm.Cause = "Chip Mapping Scan 결과가 0개입니다. Vision/Recipe/조명 상태를 확인 후 다시 시도 하십시요.";
+                alarm.Cause = "Chip Mapping Scan result is 0. Please check Vision/Recipe/Lighting status and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -2367,7 +2369,7 @@ namespace QMC.LCP_280.Process.Unit
             if (StageCamera != null && StageCamera.IsLiveOn)
             {
                 StageCamera.StopLive();
-                Thread.Sleep(100);
+                Thread.Sleep(50);
             }
         }
         private bool EnsureMappingPrerequisitesOrAlarm()
@@ -2965,10 +2967,15 @@ namespace QMC.LCP_280.Process.Unit
 
                 bestScore = retryScore;
 
-                if (Config.IsSimulation == false)
+                // Score보다 높으면 자동으로 시작. 
+                // 우선 막고 가자.
+                if(false)
                 {
-                    if (bestScore >= scoreThreshold)
-                        return 0;
+                    if (Config.IsSimulation == false)
+                    {
+                        if (bestScore >= scoreThreshold)
+                            return 0;
+                    }
                 }
 
                 DialogResult dr = DialogResult.None;
@@ -4921,7 +4928,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Actuator Wait Helpers (Plate / ClampLift / ClampFB)
         // === Cylinder 완료 대기 Helpers === // Plate: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 1)
         {
             var equipment = Equipment.Instance;
             bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
@@ -4944,7 +4951,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 1)
         {
             var equipment = Equipment.Instance;
             bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
@@ -4965,7 +4972,7 @@ namespace QMC.LCP_280.Process.Unit
             return -1;
         }
         // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
-        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 1)
         {
             var equipment = Equipment.Instance;
             bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;

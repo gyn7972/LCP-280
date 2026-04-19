@@ -58,36 +58,38 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
-                alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
-                alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다. 카세트를 점검 하고 다시 시작 하십시요.";
+                alarm.Title = "Protrusion detection sensor triggered.";
+                alarm.Cause = "Protrusion detection sensor triggered during cassette mapping. Please check the cassette and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
-                alarm.Title = "Feeder Y축이 안전 위치에 있지 않습니다.";
-                alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다. Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
+                alarm.Title = "Feeder Y-axis is not in a safe position.";
+                alarm.Cause = "Feeder Y-axis is not in a safe position. Please move Feeder Y-axis to a safe position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
+
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eCassetteChangeRequired;
-                alarm.Title = "Cassette 교체 필요";
-                alarm.Cause = "Cassette에 남은 Wafer가 없습니다. Cassette를 교체 하십시요.";
+                alarm.Title = "Cassette replacement required.";
+                alarm.Cause = "There are no wafers left in the cassette. Please replace the cassette.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eSlotMappingMismatch;
-                alarm.Title = "입/출력 카세트 슬롯 맵 불일치";
-                alarm.Cause = "Input/Output Cassette의 Wafer 존재 슬롯 패턴이 다릅니다. 두 Cassette를 점검 후 재스캔 하십시오.";
+                alarm.Title = "Input/Output cassette slot map mismatch.";
+                alarm.Cause = "The wafer presence slot patterns of Input/Output cassettes are different. Please check both cassettes and rescan.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms[alarm.Code] = alarm;
@@ -289,7 +291,7 @@ namespace QMC.LCP_280.Process.Unit
             if (string.IsNullOrWhiteSpace(positionName))
             {
                 Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' 을 찾지 못했습니다.");
+                        $"[TeachingMove] Could not find '{positionName}' in TeachingPositions.");
                 return -1;
             }
 
@@ -306,7 +308,7 @@ namespace QMC.LCP_280.Process.Unit
                 else
                 {
                     Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' index를 찾지 못했습니다.");
+                        $"[TeachingMove] Could not find index for '{positionName}' in TeachingPositions.");
                     return -1;
                 }
             }

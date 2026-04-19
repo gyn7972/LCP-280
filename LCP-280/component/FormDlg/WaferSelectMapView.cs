@@ -103,7 +103,7 @@ namespace QMC.LCP_280.Process.Component
             }
 
             // 실시간 렌더링 타이머 설정
-            _renderTimer = new Timer { Interval = 33 };
+            _renderTimer = new Timer { Interval = 100 };
             _renderTimer.Tick += (s, e) =>
             {
                 if (!_liveRenderEnabled) return;

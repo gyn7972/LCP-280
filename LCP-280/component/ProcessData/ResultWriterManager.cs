@@ -1002,89 +1002,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             // 현재 시점의 SumContext 스냅샷 생성
             SUMContext currentSnapshot = GetSumContextSnapshot();
             return WriteSumFileFromSnapshot(die, currentSnapshot);
-
-
-            //// Lock이 필요 없는 준비 작업
-            //FinalizeSummary();
-
-            //string waferId = SafeWaferId(die.SourceWaferId);
-            //SyncSumContextFromEquipmentSummaryIfPossible(waferId);
-
-            //var eqpConfig = Equipment.Instance.EquipmentConfig;
-
-            //// 1. Local Write
-            //string localDir = GetLocalResultDir(waferId);
-            //try { Directory.CreateDirectory(localDir); } catch { return -1; } // 안전장치
-
-            //string localFile = Path.Combine(localDir, waferId + ".sum");
-
-            //string networkDir = ShouldUploadToNetwork() ? GetNetworkResultDir(waferId, eqpConfig.SUMResultPath) : null;
-            //string networkFile = !string.IsNullOrWhiteSpace(networkDir) ? Path.Combine(networkDir, waferId + ".sum") : null;
-
-            //bool needUpload = false;
-
-            //lock (_ioLock)
-            //{
-            //    try
-            //    {
-            //        using (var fs = new FileStream(localFile, FileMode.Append, FileAccess.Write, FileShare.Read))
-            //        using (var w = new StreamWriter(fs, Encoding.UTF8))
-            //        //using (var w = new StreamWriter(localFile, false, Encoding.UTF8))
-            //        {
-            //            w.WriteLine("EQPName," + SumContext.EqpName);
-            //            w.WriteLine();
-            //            w.WriteLine("StartTime," + SumContext.StartTime);
-            //            w.WriteLine("EndTime," + SumContext.EndTime);
-            //            w.WriteLine();
-            //            w.WriteLine("WaferID," + SumContext.WaferID);
-            //            w.WriteLine();
-            //            w.WriteLine("TotalCount," + SumContext.TotalCount);
-            //            w.WriteLine("GoodCount," + SumContext.GoodCount);
-            //            w.WriteLine("NGCount," + SumContext.NGCount);
-            //            w.WriteLine();
-
-            //            w.Write("Item");
-            //            foreach (var it in SumContext.ItemNames) w.Write("," + it);
-            //            w.WriteLine();
-
-            //            WriteSummaryLine(w, "Min", SumContext.ItemNames, SumContext.Min);
-            //            WriteSummaryLine(w, "Max", SumContext.ItemNames, SumContext.Max);
-            //            WriteSummaryLine(w, "Avg", SumContext.ItemNames, SumContext.Avg);
-            //            WriteSummaryLine(w, "Std", SumContext.ItemNames, SumContext.Std);
-
-            //            w.WriteLine();
-            //            w.WriteLine("BinNo,BinCount");
-            //            foreach (var kv in SumContext.BinCounts)
-            //                w.WriteLine(kv.Key + "," + kv.Value);
-
-            //            w.WriteLine();
-
-            //            foreach (var line in SumContext.ParameterBlock)
-            //                w.WriteLine(line);
-
-            //            foreach (var line in SumContext.ZeroBlock)
-            //                w.WriteLine(line);
-            //        }
-
-            //        if (!string.IsNullOrWhiteSpace(networkFile))
-            //        {
-            //            needUpload = true;
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Log.Write("ResultWriterManager", "WriteSumFile", ex.Message);
-            //        return -1; // 파일 쓰기 실패 시 중단
-            //    }
-            //}
-
-            //// 2. Queue for Background Upload (Lock 밖에서 실행)
-            //if (needUpload)
-            //{
-            //    QueueNetworkUpload(waferId, localFile, networkFile);
-            //}
-
-            //return 0;
         }
 
         // [수정] BuildPrdHeader: ZeroBlock1 제거 및 ParameterBlock 30줄 적용
@@ -1137,9 +1054,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             // 여기서 ParameterBlock을 30줄로 생성
             BuildTestConditionParameterBlock();
-
-            // [삭제] ZeroBlock1 생성 로직 제거 (ParameterBlock에 통합됨)
-            // if (PrdContext.ZeroBlock1.Count == 0) { ... } -> 삭제
 
             if (PrdContext.ZeroBlock2.Count == 0)
             {
@@ -1238,7 +1152,9 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                             case "XADR": sb.Append(die.MapX); break;
                             case "YADR": sb.Append(die.MapY); break;
                             case "RANK": sb.Append(rank); break;
-                            case "Index": sb.Append(die.SocketIndex + 1); break;
+                            case "Index": 
+                                sb.Append(die.SocketIndex + 1); 
+                                break;
                             default:
                                 if (itemDict.TryGetValue(col, out var ti) && ti != null) sb.Append(ti.Value);
                                 else sb.Append("0");
@@ -1761,42 +1677,6 @@ namespace QMC.LCP_280.Process.Component.ProcessData
                 addedCount++;
             }
 
-
-
-
-            //PrdContext.ParameterBlock.Clear();
-
-            //if (CurrentTestConditionSet == null || CurrentTestConditionSet.Items == null || CurrentTestConditionSet.Items.Count == 0)
-            //    return;
-
-            //int seq = 1;
-            //foreach (var it in CurrentTestConditionSet.Items)
-            //{
-            //    double srcVal = it.SourceValue;
-            //    double srcTime = it.SourceTime;
-
-            //    (double low, double high) = TryExtractRange(it.Expression);
-            //    double gain0 = (it.Gain != null && it.Gain.Length > 0) ? it.Gain[0] : 0.0;
-            //    double offset0 = (it.Offset != null && it.Offset.Length > 0) ? it.Offset[0] : 0.0;
-            //    int typeCode = (int)it.Type;
-
-            //    string line =
-            //        seq.ToString(CultureInfo.InvariantCulture) + " " +
-            //        typeCode.ToString(CultureInfo.InvariantCulture) + " " +
-            //        srcVal.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        srcTime.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        "0" + " " +
-            //        low.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        high.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        gain0.ToString("0.#####", CultureInfo.InvariantCulture) + " " +
-            //        offset0.ToString("0.#####", CultureInfo.InvariantCulture);
-
-            //    PrdContext.ParameterBlock.Add(line);
-            //    WafContext.ParameterBlock.Add(line);
-            //    SumContext.ParameterBlock.Add(line);
-
-            //    seq++;
-            //}
         }
 
         private (double low, double high) TryExtractRange(string expr)
@@ -2492,6 +2372,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
 
             // 기본 값 타입 복사
             newDie.Index = org.Index;
+            newDie.SocketIndex = org.SocketIndex;
             newDie.MapX = org.MapX;
             newDie.MapY = org.MapY;
             newDie.BinX = org.BinX;
@@ -2503,8 +2384,7 @@ namespace QMC.LCP_280.Process.Component.ProcessData
             //newDie.IsCell = org.IsCell;
             newDie.SourceWaferId = org.SourceWaferId;
             newDie.SourceBinFileName = org.SourceBinFileName;
-            newDie.SocketIndex = org.SocketIndex;
-
+            
             // 참조 타입: TesterResult (가장 중요)
             if (org.TesterResult != null)
             {

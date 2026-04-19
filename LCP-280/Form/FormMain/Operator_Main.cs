@@ -1096,6 +1096,50 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         }
                     }
 
+                    //초기화 잡을때 ProbeCardX, Y를 Ready 위치로 이동.
+                    if (IndexChipProbeController != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        // XY만 이동 (요청사항)
+                        var rc = await IndexChipProbeController
+                            .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
+                            .ConfigureAwait(false);
+
+                        if (rc != 0)
+                        {
+                            failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready_XYOnly)";
+                            return -1;
+                        }
+
+                        // 필요 시 SafetyZ 별도 수행 (원하면 유지)
+                        rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "IndexChipProbeController(MovePositionSafetyZ)";
+                            return -1;
+                        }
+                    }
+                    //재 확인 필요.
+                    //if(IndexChipProbeController != null)
+                    //{
+                    //    token.ThrowIfCancellationRequested();
+
+                    //    var rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready(0), token).ConfigureAwait(false);
+                    //    if (rc != 0)
+                    //    {
+                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready)";
+                    //        return -1;
+                    //    }
+
+                    //    rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncSafetyZ(), token).ConfigureAwait(false);
+                    //    if (rc != 0)
+                    //    {
+                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncSafetyProbeCardZ)";
+                    //        return -1;
+                    //    }
+                    //}
+
                     // 3) InputStageEjector (단독, CheckReady)
                     if (InputStageEjector != null)
                     {
@@ -1240,7 +1284,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
                     Equipment.Instance.EqState == EquipmentState.Starting)
                 {
-                    mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                    mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
                     return;
                 }
 

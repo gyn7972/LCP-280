@@ -239,139 +239,6 @@ namespace QMC.Common.Keithley
             }
         }
 
-        //public bool RunCommands()
-        //{
-        //    bufferDatas.Clear();
-        //    try
-        //    {
-        //        var cmdStrs = new List<string>();
-        //        var args = new List<string>();
-
-        //        // VR 필요 여부 판단: 첫 VF3 이전에 VR1/VR 이 없으면 삽입
-        //        bool needVrBeforeFirstVf3 = false;
-        //        bool vrFoundBeforeFirstVf3 = false;
-        //        bool vf3Found = false;
-
-        //        for (int i = 0; i < commands.Count; i++)
-        //        {
-        //            var c = commands[i];
-        //            if (!vf3Found && c.Name != null && c.Name.StartsWith("VF3", StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                vf3Found = true;
-        //                // 첫 VF3 이전에 VR1/VR 있었는지 확인
-        //                vrFoundBeforeFirstVf3 = commands
-        //                    .Take(i)
-        //                    .Any(x => x.Name != null && (x.Name.StartsWith("VR1", StringComparison.OrdinalIgnoreCase) || x.Name.StartsWith("VR", StringComparison.OrdinalIgnoreCase)));
-        //                needVrBeforeFirstVf3 = !vrFoundBeforeFirstVf3;
-        //                break;
-        //            }
-        //        }
-
-        //        cmdStrs.Add($"startmeasure({Name})");
-
-        //        bool vrInjected = false;
-
-        //        foreach (var cmd in commands)
-        //        {
-        //            // 첫 VF3 직전에 VR 주입
-        //            if (needVrBeforeFirstVf3 && 
-        //                !vrInjected && 
-        //                cmd.Name != null && cmd.Name.StartsWith("VF3", StringComparison.OrdinalIgnoreCase))
-        //            {
-        //                // 하드코딩 VR1 명령.
-        //                //args.Clear();
-        //                //args.Add(Name);
-        //                ////args.Add("-9.9999999999999991E-06");//args.Add(cmd.SourceValue.ToString());
-        //                //args.Add("0.0");//args.Add(cmd.SourceValue.ToString());
-        //                //args.Add("1E-05"); //args.Add(cmd.SourceRange.ToString()); //이거 중요하넹
-        //                //args.Add("4");//args.Add(cmd.SourceTime.ToString());
-        //                //args.Add("99");//args.Add(cmd.MeasureLimit.ToString());
-        //                //args.Add("40");//args.Add(cmd.MeasureRange.ToString());
-        //                //args.Add("10");//args.Add(cmd.MeasureTime.ToString());
-        //                //cmdStrs.Add("iv(" + string.Join(",", args) + ")");
-        //                //vrInjected = true;
-        //                //injectedVrForFirstVf3 = true;
-        //            }
-
-        //            switch (cmd.Action)
-        //            {
-        //                case CommandAction.MeasureI:
-        //                    {
-        //                        args.Clear();
-        //                        args.Add(Name);
-        //                        args.Add(cmd.SourceValue.ToString());
-        //                        args.Add(cmd.SourceRange.ToString());
-        //                        args.Add(cmd.SourceTime.ToString());
-        //                        args.Add(cmd.MeasureLimit.ToString());
-        //                        args.Add(cmd.MeasureRange.ToString());
-        //                        args.Add(cmd.MeasureTime.ToString());
-        //                        cmdStrs.Add("vi(" + string.Join(",", args) + ")");
-        //                    }
-        //                    break;
-        //                case CommandAction.MeasureV:
-        //                    {
-        //                        args.Clear();
-        //                        args.Add(Name);
-        //                        args.Add(cmd.SourceValue.ToString());
-        //                        args.Add(cmd.SourceRange.ToString());
-        //                        args.Add(cmd.SourceTime.ToString());
-        //                        args.Add(cmd.MeasureLimit.ToString());
-        //                        args.Add(cmd.MeasureRange.ToString());
-        //                        args.Add(cmd.MeasureTime.ToString());
-        //                        cmdStrs.Add("iv(" + string.Join(",", args) + ")");
-        //                    }
-        //                    break;
-        //                case CommandAction.MeasureIAndTrig:
-        //                    {
-        //                        args.Clear();
-        //                        args.Add(Name);
-        //                        args.Add(cmd.SourceValue.ToString());
-        //                        args.Add(cmd.SourceRange.ToString());
-        //                        args.Add(cmd.SourceTime.ToString());
-        //                        args.Add(cmd.MeasureLimit.ToString());
-        //                        args.Add(cmd.MeasureRange.ToString());
-        //                        args.Add(cmd.MeasureTime.ToString());
-        //                        cmdStrs.Add("vi_trig(" + string.Join(",", args) + ")");
-        //                    }
-        //                    break;
-        //                case CommandAction.MeasureVAndTrig:
-        //                    {
-        //                        args.Clear();
-        //                        args.Add(Name);
-        //                        args.Add(cmd.SourceValue.ToString());
-        //                        args.Add(cmd.SourceRange.ToString());
-        //                        args.Add(cmd.SourceTime.ToString());
-        //                        args.Add(cmd.MeasureLimit.ToString());
-        //                        args.Add(cmd.MeasureRange.ToString());
-        //                        args.Add(cmd.MeasureTime.ToString());
-        //                        cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");
-        //                    }
-        //                    break;
-        //            }
-        //        }
-
-        //        // 만약 commands 에 VF3가 없고, 별도 VR 주입 조건이 없으면 아무 것도 하지 않음.
-        //        // VF3가 있었지만 리스트의 첫 요소가 VF3라 VR이 앞에 없을 때는 위에서 주입됨.
-
-        //        cmdStrs.Add($"endmeasure({Name})");
-
-        //        KeithleyInstrumentCommunicator comm = Owner.Communicator;
-        //        foreach (var cmd in cmdStrs)
-        //        {
-        //            if (!comm.Write(cmd))
-        //                throw new Exception($"[{Name}] Failed to send Command: {cmd}");
-        //        }
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Error handling
-        //        Log.Write(ex);
-        //        return false;
-        //    }
-        //}
-
-        //기존 코드 - 20251208
         public bool RunCommands()
         {
             bufferDatas.Clear();
@@ -392,7 +259,11 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
+                                //TEST
+                                //cmd.MeasureLimit = 10;
                                 args.Add(cmd.MeasureLimit.ToString());
+                                //TEST
+                                //cmd.MeasureRange = 10;
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("vi(" + string.Join(",", args) + ")");
@@ -405,7 +276,11 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
+                                //TEST
+                                cmd.MeasureLimit = 10;
                                 args.Add(cmd.MeasureLimit.ToString());
+                                //TEST
+                                cmd.MeasureRange = 10;
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("iv(" + string.Join(",", args) + ")");
@@ -418,7 +293,11 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
+                                //TEEST
+                                cmd.MeasureLimit = 10;
                                 args.Add(cmd.MeasureLimit.ToString());
+                                //TEST
+                                cmd.MeasureRange = 10;
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("vi_trig(" + string.Join(",", args) + ")");
@@ -431,7 +310,11 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
                                 args.Add(cmd.SourceTime.ToString());
+                                //TEEST
+                                cmd.MeasureLimit = 10;
                                 args.Add(cmd.MeasureLimit.ToString());
+                                //TEST
+                                cmd.MeasureRange = 10;
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
                                 cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");
@@ -539,8 +422,8 @@ namespace QMC.Common.Keithley
                                 string actualSourceVal = (dataIndex < actualSourceDatas.Length) ? actualSourceDatas[dataIndex] : "Unknown";
 
                                 // ★ [로그 출력] 설정값 vs 실제값 vs 측정값 비교
-                                Log.Write("KeithleySourcemeter",
-                                    $"[{Name}] [{cmd.Name}] Target Source: {cmd.SourceValue:E3} -> Actual Source: {actualSourceVal} | Measured: {measuredVal}");
+                                //Log.Write("KeithleySourcemeter",
+                                //    $"[{Name}] [{cmd.Name}] Target Source: {cmd.SourceValue:E3} -> Actual Source: {actualSourceVal} | Measured: {measuredVal}");
 
                                 dataIndex++;
                             }
@@ -549,14 +432,15 @@ namespace QMC.Common.Keithley
                         case CommandAction.MeasureContactRHigh:
                             {
                                 bufferDatas.Add(contactRHighData);
-                                Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R High Measured: {contactRHighData}");
+
+                                //Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R High Measured: {contactRHighData}");
                             }
                             break;
 
                         case CommandAction.MeasureContactRLow:
                             {
                                 bufferDatas.Add(contactRLowData);
-                                Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R Low Measured: {contactRLowData}");
+                                //Log.Write("KeithleySourcemeter", $"[{Name}] [{cmd.Name}] Contact R Low Measured: {contactRLowData}");
                             }
                             break;
                     }
@@ -577,87 +461,6 @@ namespace QMC.Common.Keithley
             }
         }
 
-        // 기존 코드
-        //public bool ReadBufferData()
-        //{
-        //    try
-        //    {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-        //        string bufferName = $"{Name}.nvbuffer1";
-        //        string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
-
-        //        string bufferData = "";
-
-        //        KeithleyInstrumentCommunicator comm = Owner.Communicator;
-        //        if (!comm.Query(bufferReadCommand, ref bufferData))
-        //            throw new Exception($"[{Name}] Failed to read buffer.");
-
-        //        bufferData = bufferData.Trim();
-        //        string[] datas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-        //        bufferDatas.Clear();
-        //        //foreach (var d in datas)
-        //        //    bufferDatas.Add(d.Trim());
-        //        int dataIndex = 0;
-        //        bool vf3Encountered = false;
-
-        //        foreach (var cmd in commands)
-        //        {
-        //            // VF3 앞에 주입한 VR 데이터를 정확히 스킵: 첫 VF3 직전에만 인덱스 1 증가
-        //            //if (!vf3Encountered
-        //            //    && injectedVrForFirstVf3
-        //            //    && cmd.Name != null
-        //            //    && cmd.Name.StartsWith("VF3", StringComparison.OrdinalIgnoreCase))
-        //            //{
-        //            //    // 버퍼에 최소 1개 데이터 있어야 스킵 가능
-        //            //    if (dataIndex >= datas.Length)
-        //            //        throw new Exception($"[{Name}] Insufficient buffer data to skip injected VR before VF3.");
-        //            //    dataIndex++;            // 주입된 VR 데이터 스킵
-        //            //    vf3Encountered = true;  // 첫 VF3 처리 플래그 설정
-        //            //}
-
-        //            switch (cmd.Action)
-        //            {
-        //                case CommandAction.MeasureI:
-        //                case CommandAction.MeasureV:
-        //                case CommandAction.MeasureIAndTrig:
-        //                case CommandAction.MeasureVAndTrig:
-        //                    {
-        //                        if (dataIndex >= datas.Length)
-        //                            throw new Exception($"[{Name}] Insufficient buffer data received.");
-        //                        bufferDatas.Add(datas[dataIndex]);
-        //                        dataIndex++;
-        //                    }
-        //                    break;
-        //                case CommandAction.MeasureContactRHigh:
-        //                    {
-        //                        bufferDatas.Add(contactRHighData);
-        //                    }
-        //                    break;
-        //                case CommandAction.MeasureContactRLow:
-        //                    {
-        //                        bufferDatas.Add(contactRLowData);
-        //                    }
-        //                    break;
-        //            }
-        //        }
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Error handling
-        //        bufferDatas.Clear();
-
-        //        Log.Write(ex);
-        //        return false;
-        //    }
-        //    finally
-        //    {
-        //        // 다음 측정을 위해 항상 리셋
-        //        injectedVrForFirstVf3 = false;
-        //    }
-
-        //    return true;
-        //}
         #endregion
 
         #region Simulation Method

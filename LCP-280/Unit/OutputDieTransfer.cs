@@ -56,12 +56,10 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
-
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOuputDieTransferZNotSafety;
                 alarm.Title = "Die Tr Z-Axis Not safety Pos.";
-                alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Die Tr Z-Axis is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -69,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferError;
                 alarm.Title = "Output Die Transfer Error";
-                alarm.Cause = "Output Die Transfer에서 알수 없는 에러가 발생했습니다.";
+                alarm.Cause = "An unknown error occurred in Output Die Transfer.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -77,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputStageAxesMoving;
                 alarm.Title = "Output Stage Axis Moving";
-                alarm.Cause = "Output Stage Axis가 동작중입니다. Output Stage Axis 동작이 완료된 후 다시 시작 하십시요.";
+                alarm.Cause = "Output Stage Axis is moving. Please wait for the movement to complete and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -85,7 +83,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
-                alarm.Cause = "Rotary Axis가 동작중입니다. Rotary Axis 동작이 완료된 후 다시 시작 하십시요.";
+                alarm.Cause = "Rotary Axis is moving. Please wait for the movement to complete and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -94,7 +92,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferVacuum;
                 alarm.Title = "Output Die Transfer Vacuum Error";
-                alarm.Cause = "Output Die Transfer Vacuum이 Off 상태입니다. Vacuum 상태를 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Output Die Transfer Vacuum is Off. Please check the vacuum status and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -104,7 +102,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferVent;
                 alarm.Title = "Output Die Transfer Vent Error";
-                alarm.Cause = "Output Die Transfer Vent가 Off 상태입니다. Vent 상태를 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Output Die Transfer Vent is Off. Please check the vent status and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -112,14 +110,14 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferBlow;
                 alarm.Title = "Output Die Transfer Blow Error";
-                alarm.Cause = "Output Die Transfer Blow가 Off 상태입니다. Blow 상태를 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Output Die Transfer Blow is Off. Please check the blow status and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
                 //
                 alarm.Code = (int)AlarmKeys.eBinStageCylinderZNotSafety;
                 alarm.Title = "Bin Stage Z-Cylinder Not Safety Pos.";
-                alarm.Cause = "Bin Stage Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Bin Stage Z-Cylinder is not in a safe position.\n Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -127,7 +125,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferMovePickUpToolT;
                 alarm.Title = "Output Die Transfer Move PickUp Tool T Error";
-                alarm.Cause = "Output Die Transfer PickUp Tool T 이동 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred while moving Output Die Transfer PickUp Tool T.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -135,7 +133,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickDown;
                 alarm.Title = "Output Die Transfer Chip Pick Down Error";
-                alarm.Cause = "Output Die Transfer Chip Pick Down 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred during Output Die Transfer Chip Pick Down.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -143,7 +141,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferChipPickUp;
                 alarm.Title = "Output Die Transfer Chip Pick Up Error";
-                alarm.Cause = "Output Die Transfer Chip Pick Up 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred during Output Die Transfer Chip Pick Up.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -151,7 +149,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferMoveOutStage;
                 alarm.Title = "Output Die Transfer Move Out Stage Error";
-                alarm.Cause = "Output Die Transfer Out Stage 이동 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred while moving Output Die Transfer to Out Stage.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -159,7 +157,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferRotateToolTForPlace;
                 alarm.Title = "Output Die Transfer Rotate Tool T For Place Error";
-                alarm.Cause = "Output Die Transfer Tool T 회전 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred while rotating Output Die Transfer Tool T for placement.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -167,7 +165,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferReleaseVacuumAndPlaceUp;
                 alarm.Title = "Output Die Transfer Release Vacuum And Place Up Error";
-                alarm.Cause = "Output Die Transfer Release Vacuum And Place Up 중 에러가 발생했습니다.";
+                alarm.Cause = "An error occurred during Output Die Transfer Release Vacuum And Place Up.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -176,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferLdPickAsMissError;
                 alarm.Title = "Output Die Transfer Load Pick As Miss Error";
-                alarm.Cause = "Output Die Transfer Load Pick As Miss 상태입니다. Load Pick 상태를 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Output Die Transfer is in Load Pick As Miss state. Please check the Load Pick status and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -504,7 +502,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -643,7 +641,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -893,7 +891,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -1009,7 +1007,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -1827,12 +1825,6 @@ namespace QMC.LCP_280.Process.Unit
                 int nRet = 0;
                 try
                 {
-                    
-                    // 0. Rotary Index 동작 중인지 확인 - 이건 무조건.
-                    if (Rotary != null && this.Rotary.IsIndexMoving())
-                    {
-                        return 0;
-                    }
                     if (IsBinStageReadyForPlace() == false || OutputStage.CanPlaceDie() == false)
                     {
                         State = ProcessState.None;
@@ -1856,6 +1848,12 @@ namespace QMC.LCP_280.Process.Unit
                         return 0;
                     }
 
+                    // 0. Rotary Index 동작 중인지 확인 - 이건 무조건.
+                    if (Rotary != null && this.Rotary.IsIndexMoving())
+                    {
+                        return 0;
+                    }
+
 
                     if (DeiOutTr == null
                         || DeiOutTr.State != DieProcessState.Picked
@@ -1864,7 +1862,7 @@ namespace QMC.LCP_280.Process.Unit
                         TaktStart("One Cycle");
 
                         var sw = System.Diagnostics.Stopwatch.StartNew();
-                        int timeoutMs = 60000 * 10;
+                        int timeoutMs = 60000 * 5;
                         bool signalReceived = false;
 
                         while (true)
@@ -1877,7 +1875,8 @@ namespace QMC.LCP_280.Process.Unit
                             }
 
                             // 10ms 대기. 신호 오면 즉시 true 반환
-                            if (WaitPickupStartEvent(10)) //10->50
+                            //if (WaitPickupStartEvent(10)) //10->50
+                            if (WaitPickupStartEvent(100)) //10->50  // 디버깅떄는 50으로 늘려서 신호 확인하기 편하게
                             {
                                 signalReceived = true;
                                 // 신호를 받았으면 Start 이벤트를 끄지 않고 유지할지, 끌지는 프로토콜 결정.
@@ -2083,6 +2082,14 @@ namespace QMC.LCP_280.Process.Unit
                             DieIndex.ProcessSatate = Material.MaterialProcessSatate.Processing;
                             DieIndex.Presence = Material.MaterialPresence.Exist;
 
+                            // ==============================================================================
+                            // [핵심 변경 1] 
+                            // Z축이 이미 안전 위치(PickUpDie 함수 내에서 상승 완료)에 있으므로,
+                            // 여기서 즉시 완료 신호(Done)를 세팅하여 로터리가 지연 없이 Rotate()를 시작하게 합니다.
+                            // 이후의 스테이지 이동 및 Tool 회전 동작은 Rotate와 '병렬(Overlap)'로 돌아가게 됩니다.
+                            // ==============================================================================
+                            SetPickupDoneEvent();
+
                             if (taskOutStageMoveToNextDIe != null)
                             {
                                 // --- [택타임 개선 2] ---
@@ -2127,7 +2134,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                             }
 
-                            SetPickupDoneEvent();
+                            //SetPickupDoneEvent();
 
                             _lastPickSucceeded = true;
                             State = ProcessState.Complete;
@@ -2156,6 +2163,11 @@ namespace QMC.LCP_280.Process.Unit
                             {
                                 taskOutStageMoveToNextDIe.Wait();
                             }
+
+                            // ==============================================================================
+                            // [핵심 변경 2] 
+                            // 실패 시에도 Z축은 안전 위치이므로 즉시 Done 신호를 발생시켜 로터리가 회전하도록 합니다.
+                            // ==============================================================================
                             SetPickupDoneEvent();
 
                             //여기서 Ready? 위치로 가서 제품 버려야 겠다.
@@ -2205,6 +2217,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch (Exception ex)
                 {
+                    // 에러 시에도 로터리 무한 대기를 막기 위해 Done 발생
                     SetPickupDoneEvent();
                     Log.Write(ex);
                     return -1; // 예외 발생 시에는 정지
@@ -2476,7 +2489,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
                 }
-                Thread.Sleep(10);
+                Thread.Sleep(1);
             }
 
             if (Rotary.SetVent(nIndex, false) == false)
@@ -2524,7 +2537,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Rotary.SetVacuum(nIndex, false);
-            Thread.Sleep(5);
+            Thread.Sleep(1);
 
             // 아래 구문은 우선 확인하지 않음.
             //Rotary Vacuum Off 확인.
@@ -2598,7 +2611,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
                 SetVent(armIndex, true);
-                Thread.Sleep(5);
+                Thread.Sleep(1);
                 SetVent(armIndex, false);
 
                 SetBlow(armIndex, true);
@@ -2774,7 +2787,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (IsStop) return;
                         if (sw.ElapsedMilliseconds > timeoutMs) break;
-                        System.Threading.Thread.Sleep(1);
+                        Thread.Sleep(1);
                     }
 
                     // Z 안전 → Ready 순서로 복귀

@@ -101,7 +101,7 @@ namespace QMC.Common.IOUtil
 
             if (this.Config.IsSimulation)
             {
-                Thread.Sleep(5);
+                Thread.Sleep(1);
                 return true;
             }
 

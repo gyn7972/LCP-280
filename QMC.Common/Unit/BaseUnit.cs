@@ -456,7 +456,7 @@ namespace QMC.Common.Unit
                     //break;
                 }
                 
-                Thread.Sleep(1);
+                Thread.Sleep(2);
             }
             //OnStop();
         }
@@ -660,7 +660,7 @@ namespace QMC.Common.Unit
         protected virtual bool IsAxisAtTarget(MotionAxis axis, double target,
                                               double multiplier = 2.0,
                                               int stableSamples = 5,
-                                              int sampleDelayMs = 2,
+                                              int sampleDelayMs = 1,
                                               double minEpsilon = 0.010)
         {
             if (axis == null) return true;
@@ -860,7 +860,7 @@ namespace QMC.Common.Unit
         protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
         protected virtual double TeachingInposEpsilon => 0.010;//1e-6;            // 부동소수 잡음 보정
         protected virtual int TeachingInposStableSampleCount => 5;         // 안정 샘플 횟수
-        protected virtual int TeachingInposSampleDelayMs => 2;             // 샘플 간 간격(ms)
+        protected virtual int TeachingInposSampleDelayMs => 1;             // 샘플 간 간격(ms)
                                                                            // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
         public bool InPosTeachingAxis(MotionAxis ax, double target)
         {
@@ -1039,7 +1039,7 @@ namespace QMC.Common.Unit
         #endregion
 
         #region Timing Helpers
-        public void WaitByTime(int milliseconds, int pollMs = 2)
+        public void WaitByTime(int milliseconds, int pollMs = 1)
         {
             if (milliseconds <= 0) 
                 return;

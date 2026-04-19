@@ -91,12 +91,13 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafety;
                 alarm.Title = "Die TrZAxis Not safety Pos.";
-                alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Die Transfer Z-Axis is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -104,7 +105,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputFeederCylinderZNotSafety;
                 alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
-                alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Feeder Z-Cylinder is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -113,7 +114,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputFeederYNotSafe;
                 alarm.Title = "Feeder Y-Axis Not safety Pos.";
-                alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Feeder Y-Axis is not in a safety position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -122,7 +123,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eNoBinDetected;
                 alarm.Title = "No Bin Detected";
-                alarm.Cause = "Bin이 감지되지 않았습니다. Bin이 있는지 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Bin is not detected. Please check if Bin is present and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -131,7 +132,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eClampFB;
                 alarm.Title = "Clamp F/B Not Pos.";
-                alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Clamp F/B is not in the designated position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -139,7 +140,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eClampLift;
                 alarm.Title = "Clamp Lift Not Pos.";
-                alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Clamp Lift is not in the designated position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -147,7 +148,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.ePlate;
                 alarm.Title = "Plate Not Pos.";
-                alarm.Cause = "Plate가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Plate is not in the designated position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -155,7 +156,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eStageNotLoding;
                 alarm.Title = "Stage Not Loading Pos.";
-                alarm.Cause = "Stage 가 준비 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Stage is not in the ready position.\n Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -163,15 +164,15 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.ePlateCyliderZNotDown;
                 alarm.Title = "Plate CylinerZ Not Down.";
-                alarm.Cause = "Plate CylinerZ 가 하강 위치가 아닙니다.\n 상태 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Plate CylinderZ is not in the down position.\n Please check the status and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
-                alarm.Title = "측정 준비가 되지 않았습니다.";
-                alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+                alarm.Title = "Not ready to measure.";
+                alarm.Cause = "1. Please check if a Test Condition Set is applied. 2. Please check if the instrument is initialized properly.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -731,7 +732,7 @@ namespace QMC.LCP_280.Process.Unit
 
         // === Cylinder 완료 대기 Helpers ===
         // Plate: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 1)
         {
             if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
@@ -752,7 +753,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 1)
         {
             if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
@@ -773,7 +774,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
-        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 1)
         {
             if (Config.IsSimulation || (Config.IsDryRun || IsDryRunEqp))
                 return 0;
@@ -1890,6 +1891,7 @@ namespace QMC.LCP_280.Process.Unit
             newDie.IsPass = org.IsPass;
             newDie.SourceWaferId = org.SourceWaferId;
             newDie.TargetWaferId = org.TargetWaferId;
+            newDie.SocketIndex = org.SocketIndex;
 
             // 참조 타입 복사 (Dictionary, Object 등)
             if (org.MeasureValues != null)
@@ -2008,6 +2010,8 @@ namespace QMC.LCP_280.Process.Unit
                 double dx = 0;
                 double dy = 0;
                 double dt = baseT;
+                
+                //각도
                 int dirX = -1;
                 int dirY = 1;
                 int dirT = 1;
@@ -2062,106 +2066,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return true;
         }
-
-
-
-        //public bool TryReserveNextEmptyBin(MaterialDie die, out double binX, out double binY, out double dT, out MaterialDie slot)
-        //{
-        //    binX = binY = dT = -1;
-        //    slot = null;
-
-        //    var wafer = this.GetMaterialWafer();
-        //    if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
-        //        return false;
-        //    lock (wafer.Dies)
-        //    {
-        //        Func<MaterialDie, bool> isUnplaced = d =>
-        //        d != null &&
-        //        d.State != DieProcessState.Placed
-        //        && d.State != DieProcessState.Rejected
-        //        && d.State != DieProcessState.Skip;
-
-        //        var dieRotary = RotaryUnit?.GetUnloadSocketMaterial();
-        //        var dieOutTr = OutputDieTransfer.GetMaterial() as MaterialDie;
-
-        //        MaterialDie next = null;
-
-        //        // 1) OutputDieTransfer가 들고 있는 다이 우선
-        //        if (dieOutTr != null)
-        //            next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieOutTr.Index);
-
-        //        // 2) Rotary 소켓 다이
-        //        if (next == null && dieRotary != null)
-        //            next = wafer.Dies.FirstOrDefault(d => isUnplaced(d) && d.Index == dieRotary.Index);
-
-        //        // 3) 그 외 첫 미배치
-        //        if (next == null)
-        //            next = wafer.Dies.FirstOrDefault(isUnplaced);
-
-        //        if (next == null)
-        //            return false;
-
-        //        _currentDie = next;
-        //        // [FIX] 예약 슬롯을 Index가 아니라 Bin 좌표로 고정
-        //        _reservedSlotKey = (next.BinX, next.BinY);
-
-
-        //        double baseT = GetTeahcingPosCenterT();
-        //        double dx = 0;
-        //        double dy = 0;
-        //        double dt = baseT;
-        //        if (die != null)
-        //        {
-        //            dx = die.UnloadAlignOffsetX;
-        //            dy = die.UnloadAlignOffsetY;
-        //            dt = die.UnloadAlignOffsetT;
-        //        }
-
-        //        double dStagePosT = AxisT?.GetPosition() ?? 0.0;
-
-        //        // 지정 Bin 위치로 XY 이동
-        //        binX = next.BinX;
-        //        binY = next.BinY;
-        //        var (tx, ty) = GetBinWorldPosition(binX, binY);
-
-        //        Log.Write(UnitName, "TryReserveNextEmptyBin",
-        //            $"Origin Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}");
-
-        //        if (Config.TCorrectionMode)
-        //        {
-        //            if (this.linkTypeXYTStageCorrection == null)
-        //            {
-        //                LoadTCorrectionCsvAndApply(Config.TCorrectionFile);
-        //            }
-        //        }
-
-        //        if (Config.TCorrectionMode == true && this.linkTypeXYTStageCorrection != null)
-        //        {
-        //            XyCoordinate xyCoordinateTarget = new XyCoordinate(tx, ty);
-        //            XyCoordinate xyCoordinateVision = new XyCoordinate(dx, dy);
-
-        //            this.linkTypeXYTStageCorrection.GetCorrectionPoint(dt, xyCoordinateTarget, xyCoordinateVision, out var pointD, out double t);
-        //            binX = pointD.X;
-        //            binY = pointD.Y;
-        //            dT = t;
-        //        }
-        //        else
-        //        {
-        //            binX = tx + dx;
-        //            binY = ty + dy;
-        //            dT = baseT; //0.3;//Todo :티칭 보지션에서 가져와서 넣어주세요 ;
-        //        }
-        //        slot = next;
-
-        //        bool matchedOutTr = (dieOutTr != null && next.Index == dieOutTr.Index);
-        //        bool matchedRotary = (dieRotary != null && next.Index == dieRotary.Index);
-
-        //        Log.Write(UnitName, "TryReserveNextEmptyBin",
-        //            $"Reserved Index={next.Index}, Bin=({binX},{binY}), State={next.State}, Presence={next.Presence}, MatchedByOutTr={matchedOutTr}, MatchedByRotary={matchedRotary}");
-        //    }
-        //    return true;
-        //}
-
 
         public (double x, double y) GetBinWorldPosition(double binX, double binY)
         {

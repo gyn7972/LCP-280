@@ -42,6 +42,7 @@ namespace QMC.LCP_280.Process.Unit
             eOutputDieTransferTimeout,
             eRotaryVaccum,
             ExecuteUnitActionError,
+            IndexLoadAlignerError,
         }
         protected override void InitAlarm()
         {
@@ -51,13 +52,13 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmInfo alarm = new AlarmInfo();
 
                 alarm.Code = (int)AlarmKeys.eIndexRotary;
                 alarm.Title = "Index Rotary Error";
-                alarm.Cause = "Index Rotary 동작 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Error occurred during Index Rotary operation. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -65,7 +66,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
                 alarm.Title = "Rorary Not safety Pos.";
-                alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Rotary is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -73,7 +74,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.InputDieTransferPlaceZError;
                 alarm.Title = "InputDieTraansferPlaceZ Not safety Pos.";
-                alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransferPlaceZ is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -81,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
                 alarm.Title = "IndexLoadAlignerZ Not safety Pos.";
-                alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "IndexLoadAlignerZ is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -89,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
                 alarm.Title = "IndexChipProbeControllerZ Not safety Pos.";
-                alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "IndexChipProbeControllerZ is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -97,7 +98,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.OutputDieTransferPickZError;
                 alarm.Title = "OutputDieTransferPlaceZ Not safety Pos.";
-                alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "OutputDieTransferPlaceZ is not in a safe position. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -105,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.InputDieTransferTimeout;
                 alarm.Title = "InputDieTransfer Timeout";
-                alarm.Cause = "InputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "InputDieTransfer Place operation timed out. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -113,7 +114,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.RotaryIndexMoveError;
                 alarm.Title = "Rotary Index Move Error";
-                alarm.Cause = "Rotary Index Move 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Error occurred during Rotary Index Move. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -121,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;
                 alarm.Title = "OutputDieTransfer Timeout";
-                alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "OutputDieTransfer Place operation timed out. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -129,7 +130,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryVaccum;
                 alarm.Title = "Rotary Vaccum Error";
-                alarm.Cause = "Rotary Vaccum Error. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Rotary Vacuum Error. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -137,7 +138,16 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.ExecuteUnitActionError;
                 alarm.Title = "Execute Unit Action Error";
-                alarm.Cause = "Unit Action 실행 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "Error occurred while executing Unit Action. Please check the position and restart.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+                //IndexLoadAlignerError
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.IndexLoadAlignerError;
+                alarm.Title = "IndexLoadAligner Error";
+                alarm.Cause = "Error occurred in IndexLoadAligner. Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -639,7 +649,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, $"[ClearSocketData] 실패: {ex.Message}");
+                Log.Write(UnitName, $"[ClearSocketData] Failed: {ex.Message}");
                 return -1;
             }
         }
@@ -659,11 +669,11 @@ namespace QMC.LCP_280.Process.Unit
             InitSockets();
 
             var il = InterlockManager.Instance;
-            il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T?? Home ??? ?? ???? ????????.");
+            il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T axis Home movement has not been completed.");
             il.AddGlobalRule("EquipStateRunningBlock", () =>
             {
                 return Equipment.Instance != null && Equipment.Instance.EqState == EquipmentState.AutoRunning
-                    ? "??????? ????? ?ε??? ???? ????? ???????." : null;
+                    ? "Manual operation is not allowed during AutoRunning." : null;
             });
         }
         protected override void OnBindUnit()
@@ -747,43 +757,42 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("Rotary", $"Index Move Blocked: {reason}");
                 return false;
             }
-            bool bInputTr = InputDieTransfer.IsPositionPlaceZSafety();
-            bool bOutTr = OutputDieTransfer.IsPositionPickZSafety();
-            bool bIndexAlignZ = IndexLoadAligner.IsPositionAlignZSafety();
-            bool bIndexProbeZ = IndexChipProbeController.IsPositionProbeZSafety();
-            bool bIndexProbeCardZ = IndexChipProbeController.IsPositionProbeCardZSafety();
-            if (bInputTr == false || bOutTr == false || bIndexAlignZ == false
-                || bIndexProbeZ == false || bIndexProbeCardZ == false)
-            {
-                Log.Write("Rotary", $"Index Move Blocked: {reason}");
-                return false;
-            }
 
-            // 2) Move Check.
+            //VerifyAllUnitsSafe 확인으로 충분함.
+            //bool bInputTr = InputDieTransfer.IsPositionPlaceZSafety();
+            //bool bOutTr = OutputDieTransfer.IsPositionPickZSafety();
+            //bool bIndexAlignZ = IndexLoadAligner.IsPositionAlignZSafety();
+            //bool bIndexProbeZ = IndexChipProbeController.IsPositionProbeZSafety();
+            //bool bIndexProbeCardZ = IndexChipProbeController.IsPositionProbeCardZSafety();
+            //if (bInputTr == false || bOutTr == false || bIndexAlignZ == false
+            //    || bIndexProbeZ == false || bIndexProbeCardZ == false)
+            //{
+            //    Log.Write("Rotary", $"Index Move Blocked: {reason}");
+            //    return false;
+            //}
+
+            // 3) Move Check.
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
             if (rc != 0)
             {
-                reason = $"Index 이동 시작 실패(rc={rc})";
+                reason = $"Index move start failed (rc={rc})";
                 return false;
             }
 
-            // [수정 1] 무조건 대기하던 Thread.Sleep(50) 제거 및 "모션 출발 검증" 도입
-            // 명령 직후 Done 신호가 아직 이전 상태로 남아있어 완료로 조기 판정되는 것을 방지합니다.
-            var swStart = Stopwatch.StartNew();
-            //while (swStart.ElapsedMilliseconds < 100) // 최대 100ms 대기 (보통 2~15ms 내에 탈출)
+            Thread.Sleep(100); //100->50
+
+			//var swStart = Stopwatch.StartNew();
+            //while (this.AxisIndexT.IsMoveDone() && swStart.ElapsedMilliseconds < 50)
             //{
-            //    if (IsIndexMoving() == true)
-            //    {
-            //        break; // 실제 모션이 시작되었음이 확인됨
-            //    }
             //    Thread.Sleep(1);
             //}
-            Thread.Sleep(50); //100->50
-
-            // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
+            //Thread.Sleep(50); //100->50
             _moveStartTime = DateTime.Now;
+            // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
             Task.Run(() =>
             {
+                //Thread.Sleep(70); //100->50->70
+                // Done + InPosition 동시 확인(가능하면 목표각 기반, 실패 시 기존 방식 fallback)
                 int wrc = WaitIndexMoveDone();
                 if (wrc == 0)
                 {
@@ -800,95 +809,43 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
                 }
-                //double pos = this.AxisIndexT.GetPosition() * 1000;
-                //// Done + InPosition 동시 확인(가능하면 목표각 기반, 실패 시 기존 방식 fallback)
-                //int wrc = WaitIndexMoveDone();
-                //if (wrc == 0)
-                //{
-                //    try
-                //    {
-                //        OnLoadIndexChanged(GetLoadIndexNo());
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        Log.Write("Rotary", $"LoadIndexChanged dispatch fail: {ex.Message}");
-                //    }
-                //}
-                //else
-                //{
-                //    Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
-                //}
             });
             return true;
         }
 
         // [수정 1] WaitIndexMoveDone: 무한 대기 방지 및 타임아웃 적용
-        public int WaitIndexMoveDone(int timeoutMs = 5000, int pollMs = 1) // 기본 타임아웃 10초 설정
+        public int WaitIndexMoveDone(int timeoutMs = 10000, int pollMs = 1) // 기본 타임아웃 10초 설정
         {
             if (AxisIndexT == null)
                 return -1;
 
+            //Thread.Sleep(30);
             var sw = Stopwatch.StartNew();
-            // 명령 직후 출발 지연 필터링 (최대 30ms) - 출발하기도 전에 도착으로 오판하는 것 방지
-            while (sw.ElapsedMilliseconds < 30)
-            {
-                if (IsIndexMoving() == true)
-                    break;
-                Thread.Sleep(1);
-            }
-
-            //while (true)
-            //{
-            //    // [개선] 내부에서 또 Thread를 블로킹하는 AxisIndexT.WaitMoveDone(-1) 제거.
-            //    // 즉각적으로 InPosition 여부만 확인하도록 변경하여 스케줄링 지연 최소화.
-            //    if (IsIndexMoving() == false)
-            //    {
-            //        return 0; // 정위치 도달 및 정지 완료
-            //    }
-
-            //    // 여기 우선은 안되는디
-            //    if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
-            //        Equipment.Instance.EqState == EquipmentState.Starting)
-            //    {
-            //        if (IsStop)
-            //            return -1; // 정지 신호 시 중단
-            //    }
-            //    else
-            //    {
-            //        //Manual 일때는... 흠...
-            //    }
-
-            //    if (timeoutMs > 0 && sw.ElapsedMilliseconds > timeoutMs)
-            //    {
-            //        Log.Write(UnitName, "WaitIndexMoveDone", $"Timeout ({timeoutMs}ms) axis={AxisIndexT.Name}");
-            //        return -1;
-            //    }
-
-            //    Thread.Sleep(pollMs);
-            //}
-
             while (true)
             {
                 // 동작 완료 확인 (WaitMoveDone에 타임아웃 0을 주어 즉시 확인)
+                //if (AxisIndexT.IsMoveDone())
                 if (AxisIndexT.WaitMoveDone(-1) == 0)
                 {
                     // [추가] InPosition 정밀 체크 (드라이버가 Done이라도 실제 위치 도달까지 미세 지연 방지)
-                    if (IsIndexMoving() == false)
+                    // 중복 검사.. 택타임으로 인하여 제거.
+                    //if (IsIndexMoving() == false)
                     {
+                        //OnLoadIndexChanged(GetLoadIndexNo());
                         return 0;
                     }
                 }
 
-                // 여기 우선은 안되는디
-                if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
-                    Equipment.Instance.EqState == EquipmentState.Starting)
+                if (Equipment.Instance.EqState == EquipmentState.Starting ||
+                Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                Equipment.Instance.EqState == EquipmentState.ManualRunning)
                 {
                     if (IsStop)
-                        return -1; // 정지 신호 시 중단
+                        return -1; // 정지 신호 시 중단.
                 }
                 else
                 {
-                    //Manual 일때는... 흠...
+                    // Manual일때...
                 }
 
                 if (timeoutMs > 0 && sw.ElapsedMilliseconds > timeoutMs)
@@ -896,89 +853,47 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "WaitIndexMoveDone", $"Timeout ({timeoutMs}ms) axis={AxisIndexT.Name}");
                     return -1;
                 }
+
+                pollMs = 1;
                 Thread.Sleep(pollMs);
             }
-
-            return 0;
         }
 
         private readonly object _lockIndexMoving = new object();
 
-        // [수정 3] 실제 위치 오차를 최우선으로 검증하는 로직으로 변경
         public bool  IsIndexMoving()
         {
             var ax = AxisIndexT;
-            if (ax == null) 
-                return false;
+            if (ax == null) return false;
 
-            lock (_lockIndexMoving) //이거 해야하나?
+            lock (_lockIndexMoving)
             {
                 // 1) 1차: 드라이버 상태
                 bool driverMoving = IsAxisMoving(AxisNames.IndexT);
                 if (!driverMoving)
-                {
                     return false;
-                }
 
-                // 1. 기구적 정위치 도달 여부 (최우선 판단)
+                // 2) 드라이버가 moving이라도, "인덱스 위치에 충분히 근접"하면 정지로 간주(상태 지연 보정)
                 double stepDeg = 360.0 / GetIndexCount(); // 45
-                double tolDeg = ax.Config?.InposTolerance ?? 0.003;
-                // 현재 각도(deg)
+                double tolDeg = ax.Config?.InposTolerance ?? 0.007;
+
+                // 현재 각도(deg). (단위는 질문에서 맞다고 했으니 그대로 사용)
                 double curDeg = ax.GetPosition() * 1000.0;
+
                 // 0~step 구간 잔여
                 double remain = curDeg % stepDeg;
-                if (remain < 0)
+                if (remain < 0) 
                     remain += stepDeg;
+
                 // 가장 가까운 인덱스까지의 오차 (0 근처 OR step 근처 모두 허용)
                 double err = Math.Min(remain, stepDeg - remain);
-                // [조기 Done 방지 로직] 
-                // 드라이버가 Done 신호를 일찍 띄우더라도 기계적 위치가 오차를 벗어나 있으면 무조건 이동 중으로 판정
-                if (err > tolDeg)
-                {
-                    return true;// 움직이는 중
-                }
 
-                // 2. 위치 오차가 공차 안에 들어왔더라도, 드라이버가 아직 Moving 상태라면 이동 중으로 판정
-                driverMoving = IsAxisMoving(AxisNames.IndexT);
-                if (driverMoving)
-                {
-                    return true; // 움직이는 중
-                }
+                // err이 tolerance 이하면 "실질적으로 멈춤"으로 판단
+                if (err <= tolDeg)
+                    return false;
 
-                // 3. 물리적 위치(InPosition)도 만족하고, 드라이버 상태도 확실히 정지했을 때만 완료(false) 처리
-                return false; // 안 움직임 (완료)
+                return true;
             }
-            //var ax = AxisIndexT;
-            //if (ax == null) return false;
-
-            //lock (_lockIndexMoving)
-            //{
-            //    // 1) 1차: 드라이버 상태
-            //    bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-            //    if (!driverMoving)
-            //        return false;
-
-            //    // 2) 드라이버가 moving이라도, "인덱스 위치에 충분히 근접"하면 정지로 간주(상태 지연 보정)
-            //    double stepDeg = 360.0 / GetIndexCount(); // 45
-            //    double tolDeg = ax.Config?.InposTolerance ?? 0.007;
-
-            //    // 현재 각도(deg). (단위는 질문에서 맞다고 했으니 그대로 사용)
-            //    double curDeg = ax.GetPosition() * 1000.0;
-
-            //    // 0~step 구간 잔여
-            //    double remain = curDeg % stepDeg;
-            //    if (remain < 0) 
-            //        remain += stepDeg;
-
-            //    // 가장 가까운 인덱스까지의 오차 (0 근처 OR step 근처 모두 허용)
-            //    double err = Math.Min(remain, stepDeg - remain);
-
-            //    // err이 tolerance 이하면 "실질적으로 멈춤"으로 판단
-            //    if (err <= tolDeg)
-            //        return false;
-
-            //    return true;
-            //}
         }
         #endregion
 
@@ -1370,7 +1285,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunWork() 
         {
-            
             try
             {
                 int nRet = 0;
@@ -1379,6 +1293,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return 0;
                 }
+
                 TaktStart("One Cycle");
                 int nIndex = GetLoadIndexNo();
                 bool useSocket = this.Config.GetUseSocket(nIndex);
@@ -2052,11 +1967,14 @@ namespace QMC.LCP_280.Process.Unit
 
                             // 50ms 동안 대기. 신호 오면 true 반환하고 즉시 탈출.
                             // 신호 안 오면 false 반환하고 루프 다시 돔 (IsStop 체크)
-                            if (OutputDieTransfer.WaitPickupDoneEvent(10))
+                            //if (OutputDieTransfer.WaitPickupDoneEvent(10))
+                            if (OutputDieTransfer.WaitPickupDoneEvent(50)) //디버깅때는 10ms, 실제로는 50ms 정도가 적당할 듯 (너무 짧으면 CPU 점유율 상승, 너무 길면 응답성 저하)
                             {
                                 done = true;
                                 break;
                             }
+
+                            Thread.Sleep(2);
                         }
 
                         // 완료 후 Start 신호 해제 (Output 쪽에서 인식 후 꺼주길 기대하지만, 안전장치로)
@@ -2121,13 +2039,17 @@ namespace QMC.LCP_280.Process.Unit
                 int rUnload = tUnloadAlign.Result;
                 int rTrash = tTrash.Result;
                 int rOdt = odtTask.Result;
-
                 if (rLoad != 0 || rProbe != 0 || rUnload != 0 || rTrash != 0 || rOdt != 0)
                 {
                     AxisIndexT.EmgStop();
                     Log.Write(UnitName,
                         string.Format("OnExecuteUnitAction Fail (LoadAligner={0}, Probe={1}, UnloadAligner={2}, TrashCan={3}, ODT={4})",
                             rLoad, rProbe, rUnload, rTrash, rOdt));
+
+                    if(rLoad != 0)
+                    {
+                        PostAlarm((int)AlarmKeys.IndexLoadAlignerError);
+                    }
 
                     TaktEnd("WaitAll");
                     return -1;
@@ -2309,7 +2231,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     return -1;
                 }
-                Thread.Sleep(5);
+                Thread.Sleep(1);
             }
 
             OnLoadIndexChanged(GetLoadIndexNo());
@@ -2324,7 +2246,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = Rotate;
             }
 
-            //TaktStart("MoveRotate");
+            TaktStart("MoveRotate");
             nRet = MovePositionRotate();
             if (nRet != 0)
             {
@@ -2333,9 +2255,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
-            //TaktEnd("MoveRotate");
+            TaktEnd("MoveRotate");
 
-            //TaktStart("WaitDoneRotate");
+            TaktStart("WaitDoneRotate");
             nRet = WaitIndexMoveDone();
             if (nRet != 0)
             {
@@ -2344,7 +2266,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
-            //TaktEnd("WaitDoneRotate");
+            TaktEnd("WaitDoneRotate");
 
             //OnLoadIndexChanged(GetLoadIndexNo());
             return nRet;
@@ -2363,11 +2285,12 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MovePositionAsyncRotate(isFine);
             while (IsEndTask(task) == false)
             {
-                if (VerifyAllUnitsSafe(out strmsg) == false)
-                {
-                    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
-                    return -1;
-                }
+                //VerifyAllUnitsSafe() 중복 검사
+                //if (VerifyAllUnitsSafe(out strmsg) == false)
+                //{
+                //    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
+                //    return -1;
+                //}
                 Thread.Sleep(1);
             }
             return task.Result;

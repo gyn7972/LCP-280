@@ -43,12 +43,12 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
-                alarm.Title = "측정 준비가 되지 않았습니다.";
-                alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+                alarm.Title = "Not ready to measure.";
+                alarm.Cause = "1. Please check if a Test Condition Set is applied. 2. Please check if the instrument is normally initialized.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -180,7 +180,7 @@ namespace QMC.LCP_280.Process.Unit
             if (string.IsNullOrWhiteSpace(positionName))
             {
                 Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' 을 찾지 못했습니다.");
+                        $"[TeachingMove] Could not find '{positionName}' in TeachingPositions.");
                 return -1;
             }
 
@@ -197,7 +197,7 @@ namespace QMC.LCP_280.Process.Unit
                 else
                 {
                     Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' index를 찾지 못했습니다.");
+                        $"[TeachingMove] Could not find index for '{positionName}' in TeachingPositions.");
                     return -1;
                 }
             }
@@ -351,7 +351,6 @@ namespace QMC.LCP_280.Process.Unit
                     bRet &= Measure();
                 }
 
-                //Log.Write("kkkkkkProb", "m3");
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {
@@ -374,8 +373,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 InspectDone = true;
-
-                //Log.Write("kkkkkkProb", "m4");
             }
             catch (Exception ex)
             {
@@ -393,7 +390,6 @@ namespace QMC.LCP_280.Process.Unit
         private int Measure()
         {
             int rotaryIndex = this.GetProbeIndexNo();
-
             try
             {
                 var s = Rotary.GetSocket(rotaryIndex);
@@ -402,14 +398,21 @@ namespace QMC.LCP_280.Process.Unit
                     MaterialDie currentDie = s.GetMaterialDie();
                     // 1) PKGTester에 현재 측정할 Die의 X, Y 좌표 정보를 전달
                     tester.CurrentDieContext = $"XADR={currentDie?.MapX}, YADR={currentDie?.MapY}";
-                    //tester.CurrentDieContext = $"Die({currentDie?.MapX},{currentDie?.MapY})";
                 }
+
+#if true
                 Task<int> task = tester.MeasureAsync(rotaryIndex);
+                while (IsEndTask(task) == false)
+                {
+                    Thread.Sleep(1);
+                }
+#else
+                Task<int> task = tester.MeasureAsync2(rotaryIndex);
                 while (!IsEndTask(task))
                 {
                     Thread.Sleep(1);
                 }
-
+#endif
                 // [Patch] 비동기 작업 예외 처리
                 if (task.IsFaulted)
                 {
@@ -432,7 +435,6 @@ namespace QMC.LCP_280.Process.Unit
                     //TryAssignKelItemsFromStrainGage();
                 }
                 return rc;
-                //return task.Result;
             }
             catch (Exception ex)
             {
@@ -517,7 +519,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (outWafer == null)
                 {
                     Stopwatch sw = Stopwatch.StartNew();
-                    int timeOutMs = 3000;
+                    int timeOutMs = 5000;
 
                     while (true)
                     {
@@ -539,7 +541,7 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             break;
                         }
-                        Thread.Sleep(10); // Polling 간격 완화
+                        Thread.Sleep(1); // Polling 간격 완화
                     }
                 }
 
@@ -608,8 +610,8 @@ namespace QMC.LCP_280.Process.Unit
 
                     // 기타 메타
                     die.MeasureValues["_ProbeIndex"] = probeIndex;
-                    die.MeasureValues["_LoadIndex"] = loadIndex;
-                    die.MeasureValues["_SocketCount"] = socketCount;
+                    //die.MeasureValues["_LoadIndex"] = loadIndex;
+                    //die.MeasureValues["_SocketCount"] = socketCount;
                     die.MeasureValues["_DieIndex"] = die.Index;
                     die.MeasureValues["_MapX"] = die.MapX;
                     die.MeasureValues["_MapY"] = die.MapY;
@@ -666,7 +668,6 @@ namespace QMC.LCP_280.Process.Unit
                         if (die.State != DieProcessState.Rejected)
                             die.State = DieProcessState.Inspected;
                     }
-
 
                     // 공정 상태 유지
                     die.ProcessSatate = Material.MaterialProcessSatate.Processing;
@@ -970,63 +971,13 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     if (!tester.CanMeasure())
                     {
-                        Log.Write(UnitName, "[ResetForNewRun] PKGTester not ready (CanMeasure=false). Test condition 또는 Initialize 상태 확인 필요");
+                        Log.Write(UnitName, "[ResetForNewRun] PKGTester not ready (CanMeasure=false). Please check Test condition or Initialize state.");
                     }
                 }
             }
             catch (Exception ex)
             {
                 Log.Write(UnitName, $"[ResetForNewRun] Tester readiness check failed: {ex.Message}");
-            }
-        }
-
-        // StrainGage 스냅샷 수집 헬퍼
-        private IDictionary<string, double> GetStrainGageSnapshot()
-        {
-            var dict = new Dictionary<string, double>();
-            try
-            {
-                var items = StrainGageMonitor?.Items;
-                if (items == null || items.Count == 0) return dict;
-
-                for (int i = 0; i < items.Count; i++)
-                {
-                    var sg = items[i].strainGage;
-                    dict[$"SG{i + 1}_Voltage"] = sg.Voltage; // Zero 보정 반영된 전압
-                    dict[$"SG{i + 1}_Force"] = sg.Force;     // Config Min/Max 기반 환산 힘(N 또는 kgf 등 프로젝트 단위)
-                                                             // 필요 시 LookupTable 사용 시 여기서 Pressure 계산 후 추가:
-                                                             // dict[$"SG{i + 1}_Pressure"] = myLookupTable.VoltageToPressure(sg.Voltage);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, $"[GetStrainGageSnapshot] {ex.Message}");
-            }
-            return dict;
-        }
-
-        private void TryStartStrainGageMonitor()
-        {
-            try
-            {
-                if (IsAutoMode) // BaseUnit에 존재
-                    StrainGageMonitor?.Start();
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, $"[StrainGageMonitor.Start] {ex.Message}");
-            }
-        }
-
-        private void TryStopStrainGageMonitor()
-        {
-            try
-            {
-                StrainGageMonitor?.Stop();
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, $"[StrainGageMonitor.Stop] {ex.Message}");
             }
         }
 
@@ -1101,7 +1052,6 @@ namespace QMC.LCP_280.Process.Unit
 
             //return 0;
         }
-    
-    
+
     }
 }

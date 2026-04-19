@@ -192,7 +192,7 @@ namespace QMC.Common
                         Log.Write("GUI", "Button_Click", "AutoRun 중 Menu 변경");
                         //Todo : 장비 시양산 중 부터는 주석 해제 필요
                         //var mb = new MessageBoxOk();
-                        //mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                        //mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
                         //return;
                     }
                 }
@@ -214,7 +214,7 @@ namespace QMC.Common
                         EquipmentLocator.Instance.EqState == EquipmentState.Starting)
                     {
                         var mb = new MessageBoxOk();
-                        mb.ShowDialog("Warring", "장비가 자동 운전 중입니다. 정지 후 시도하세요.");
+                        mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
                         return;
                     }
 
@@ -222,7 +222,9 @@ namespace QMC.Common
                     if (ask.ShowDialog("Info", "Exit?") != DialogResult.Yes)
                         return;
 
+//#if !DEBUG
                     QMC.Common.Win32Timer.RestoreResolution();
+//#endif
 
                     Application.Exit();
                     return;

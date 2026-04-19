@@ -81,6 +81,8 @@ namespace QMC.Common.Motions
                 // 주기 유지(작업에 걸린 시간 제외)
                 var wait = _periodMs - (int)sw.ElapsedMilliseconds;
                 if (wait < 0) wait = 0;
+
+                wait = 1;
                 try { await Task.Delay(wait, ct); } catch { /* canceled */ }
             }
         }

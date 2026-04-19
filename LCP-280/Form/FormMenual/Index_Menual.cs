@@ -1051,17 +1051,24 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
                 return;
             }
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate -------------");
+
+            // 움직이고 바로 Inpos 확인하면 바로 OK가 들어와 버림.
+            // 그래서 Sleep 아니면 포지션을 봐야 하는 거임.
+            //포지션 위치를 확인해서 완료할때는 0.365ms
+            //임의로 Sleep을 줄때는
+            //Thread.Sleep(50);
             nRet = Rotary.WaitIndexMoveDone();
             if (nRet != 0)
             {
                 Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
                 return;
             }
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End");
 
+            //이거 여기 왜 있지?
             try { BindTeachingPositions(); } catch { }
 
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End");
+            //Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End");
         }
 
         private void LightControlRequested(object sender, EventArgs e)

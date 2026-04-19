@@ -40,13 +40,13 @@ namespace QMC.Common.Unit
         public enum UnitStatus
         {
             Error = -1,
+            Unknown = 0,
             Stopped = 0,
             Starting,
             AutoRunning,
             ManualRunning,
             Stopping,
-            CycleStop,
-            Unknown
+            CycleStop
         }
 
         public enum UnitRunMode
@@ -135,7 +135,7 @@ namespace QMC.Common.Unit
         }
         
         public bool IsRunning => RunUnitStatus == UnitStatus.AutoRunning;
-        public bool IsStop => RunUnitStatus == UnitStatus.Stopped; 
+        public bool IsStop => (RunUnitStatus == UnitStatus.Stopped || RunUnitStatus == UnitStatus.Error); 
         public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
         public ProcessState State { get; set; }
@@ -228,19 +228,6 @@ namespace QMC.Common.Unit
             }
         }
 
-        //public List<TeachingPosition> TeachingPositions
-        //{
-        //    get => Config != null ? (Config.TeachingPositions ?? new List<TeachingPosition>()) : new List<TeachingPosition>();
-        //    private set
-        //    {
-        //        if (Config == null)
-        //        {
-        //            return;
-        //        }
-        //        Config.TeachingPositions = value ?? new List<TeachingPosition>();
-        //    }
-        //}
-
         protected BaseUnit(string unitName)
         {
             UnitName = unitName;
@@ -269,7 +256,7 @@ namespace QMC.Common.Unit
             //AlarmRegister((int)AlarmKeys.ePrepareFailed, "PrepareFialed", "PrepareFialed", "Error");
         }
 
-        protected void AlarmRegister(int alarmCode, string title, string cause, string grade)
+        protected void AlarmRegister(int alarmCode, string title, string cause, string Source, string grade)
         {
             if (m_dicAlarms.ContainsKey(alarmCode)) return;
             var alarm = new AlarmInfo
@@ -277,7 +264,7 @@ namespace QMC.Common.Unit
                 Code = alarmCode,
                 Title = title,
                 Cause = cause,
-                Source = UnitName,
+                Source = Source,//UnitName,
                 Grade = grade
             };
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -289,28 +276,27 @@ namespace QMC.Common.Unit
                 this.State = ProcessState.Error;
                 this.RunUnitStatus = UnitStatus.Error;
 
-                AlarmInfo alarm = GetAlarm(alarmCode);
-                alarm.GeneratedTime = DateTime.Now;
+                // [FIX] 템플릿 객체 직접 수정 금지: 복사본 생성
+                var template = GetAlarm(alarmCode);
 
+                var alarm = new AlarmInfo
+                {
+                    Code = template.Code,
+                    Title = template.Title,
+                    Cause = template.Cause,
+                    Source = template.Source,
+                    Grade = template.Grade,
+                    StateImage = template.StateImage,
+                    GeneratedTime = DateTime.Now
+                };
+
+                // 활성 알람 중복 방지(기존 정책 유지)
                 if (AlarmManager.Instance.Alarms.Any(a => a.Code == alarm.Code))
                     return alarmCode;
 
                 Log.Write("AlarmPost", $"[ALARM] Code:{alarmCode} Grade:{alarm.Grade} Cause:{alarm.Cause}");
 
-                string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
-                string logFile = Path.Combine(logFolder, $"AlarmLog_{DateTime.Now:yyyyMMdd}.csv");
-                Directory.CreateDirectory(logFolder);
-
-                lock (_alarmLogLock)
-                {
-                    using (var fs = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-                    using (var writer = new StreamWriter(fs, new UTF8Encoding(true)))
-                    {
-                        string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{alarm.Code}";
-                        writer.WriteLine(logLine);
-                    }
-                }
-
+                // [CHG] CSV 기록은 HistoryManager 단일 지점에서만 수행한다.
                 AlarmManager.Instance.ShowAlarm(alarm);
             }
             catch (Exception ex)
@@ -319,7 +305,6 @@ namespace QMC.Common.Unit
             }
             return alarmCode;
         }
-
 
 
         private Material m_currentMaterial;
@@ -772,6 +757,7 @@ namespace QMC.Common.Unit
             if (axis == null) 
                 return false;
 
+            // NEW: 올바른 의미. 이동 중이면 true.
             bool IsDone = axis.IsMoveDone();
             if(IsDone == false)
             {
@@ -781,7 +767,6 @@ namespace QMC.Common.Unit
             {
                 return !IsDone;
             }
-            //return !axis.IsMoveDone();
         }
         // 이동 완료 여부 바로 얻고 싶을 때(가독성):
         public virtual bool IsAxisStopped(string axisKeyOrName) => !IsAxisMoving(axisKeyOrName);
@@ -838,7 +823,6 @@ namespace QMC.Common.Unit
                         $"MoveAbs Fail axis={axis.Name} rc={rc}");
                     return -1;
                 }
-
                 double timeoutMs = 2000;
                 if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
                 var sw = Stopwatch.StartNew();
@@ -870,20 +854,7 @@ namespace QMC.Common.Unit
             
             return 0;
         }
-       
-        protected void LogAxisMoveDone(MotionAxis axis, double target, bool isFine)
-        {
-            Log.Write(UnitName, "MoveAxisWithSafety",
-                $"MoveAxisWithSafety Done axis={axis.Name} target={target} isFine={isFine} " +
-                $"cur={axis.GetPosition()}");
-        }
-        protected void LogAxisMove(MotionAxis axis, double target, bool isFine)
-        {
-            Log.Write(UnitName, "MoveAxisWithSafety",
-                $"MoveAxisWithSafety axis={axis.Name} target={target} isFine={isFine} " +
-                $"cur={axis.GetPosition()}");
-        }
-
+      
         //Position 확인
         // BaseUnit 클래스 내부에 추가: Teaching 전용 판정 파라미터(필요 시 파생 클래스에서 override 가능)
         protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
@@ -930,8 +901,6 @@ namespace QMC.Common.Unit
                 return false;
             return InPosTeaching(tp.Name);
         }
-
-
         public virtual bool InPosTeaching(string positionName)
         {
             // [CHG] Recipe 우선(TeachingPositions는 내부에서 Recipe/Config fallback 처리됨)
@@ -1072,12 +1041,26 @@ namespace QMC.Common.Unit
         #region Timing Helpers
         public void WaitByTime(int milliseconds, int pollMs = 2)
         {
-            if (milliseconds <= 0) return;
-            if (pollMs < 0) pollMs = 0;
+            if (milliseconds <= 0) 
+                return;
+            if (pollMs <= 0) 
+                pollMs = 1;
 
             var sw = Stopwatch.StartNew();
             while (sw.ElapsedMilliseconds < milliseconds)
             {
+                // 1. 프로그램 종료 상태 감지
+                if (m_bExit)
+                    break;
+
+                // 2. 장비 정지(Stop) 또는 에러(Error) 상태 감지
+                //if (IsStop)
+                //    break;
+
+                // 3. 작업 취소(Cancel) 요청 감지
+                if (CalcelToken != null && CalcelToken.IsCancellationRequested)
+                    break;
+
                 Thread.Sleep(pollMs);
             }
         }
@@ -1094,26 +1077,17 @@ namespace QMC.Common.Unit
         }
         #endregion
 
-
-        #region TaktTime (공통 계측/저장)
-        private readonly object _taktLock = new object();
-        private readonly Dictionary<string, QMC.Common.CycleTimer> _taktTimers
-            = new Dictionary<string, QMC.Common.CycleTimer>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// 태그별 CycleTimer 가져오거나 생성. 기본 Capacity=100
-        /// </summary>
-        protected QMC.Common.CycleTimer GetOrCreateTaktTimer(string tag, int capacity = 100)
+        #region TaktTime
+        private UnitTaktTimer _taktTimerManager;
+        private UnitTaktTimer TaktTimerManager
         {
-            if (string.IsNullOrWhiteSpace(tag)) tag = "Unnamed";
-            lock (_taktLock)
+            get
             {
-                if (!_taktTimers.TryGetValue(tag, out var ct))
+                if (_taktTimerManager == null)
                 {
-                    ct = new QMC.Common.CycleTimer(this) { Capacity = capacity };
-                    _taktTimers[tag] = ct;
+                    _taktTimerManager = new UnitTaktTimer(UnitName ?? GetType().Name, this);
                 }
-                return ct;
+                return _taktTimerManager;
             }
         }
 
@@ -1122,159 +1096,218 @@ namespace QMC.Common.Unit
         /// </summary>
         public void TaktStart(string tag)
         {
-            try
-            {
-                var ct = GetOrCreateTaktTimer(tag);
-                ct.Start();
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName ?? "BaseUnit", $"[TaktStart:{tag}] {ex.Message}");
-            }
+            TaktTimerManager.Start(tag);
         }
 
         /// <summary>
-        /// 태그 종료(측정 종료 및 파일 저장). IntervalMs <= 0은 저장 생략
+        /// 태그 종료(측정 종료 및 백그라운드 파일 저장)
         /// </summary>
         public void TaktEnd(string tag, bool saveToFile = true)
         {
-            try
-            {
-                var ct = GetOrCreateTaktTimer(tag);
-                ct.End();
-
-                if (!saveToFile) return;
-
-                var latest = ct.Latest;
-                var intervalMs = latest.Interval.TotalMilliseconds;
-
-                // IntervalMs가 0 이하인 경우 저장 안 함
-                if (intervalMs <= 0) return;
-
-                AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName ?? "BaseUnit", $"[TaktEnd:{tag}] {ex.Message}");
-            }
+            TaktTimerManager.End(tag, saveToFile);
         }
 
         /// <summary>
-        /// 현재까지의 태그별 평균/최소/최대/개수 요약을 CSV로 저장(스냅샷).
-        /// IntervalMs <= 0인 최신 항목은 생략
+        /// 현재까지의 태그별 요약을 CSV로 백그라운드 저장
         /// </summary>
         public void SaveAllTaktSummaries()
         {
-            try
-            {
-                lock (_taktLock)
-                {
-                    foreach (var kv in _taktTimers)
-                    {
-                        var tag = kv.Key;
-                        var ct = kv.Value;
-                        var latest = ct.Latest;
-                        if (latest.Interval.TotalMilliseconds <= 0) continue; // 생략
-                        AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName ?? "BaseUnit", $"[SaveAllTaktSummaries] {ex.Message}");
-            }
-        }
-
-        private static string SanitizeFilePart(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return "Unnamed";
-            foreach (var ch in Path.GetInvalidFileNameChars())
-                s = s.Replace(ch, '_');
-            return s;
-        }
-
-        protected virtual string GetTaktLogRootPath()
-        {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log", "TaktTime");
-        }
-
-        protected virtual string GetTaktLogFilePath(string unitName, string tag)
-        {
-            var root = GetTaktLogRootPath();
-            var unitDir = Path.Combine(root, SanitizeFilePart(unitName ?? "Unit"));
-            Directory.CreateDirectory(unitDir);
-
-            var tagSafe = SanitizeFilePart(tag);
-            var file = $"{SanitizeFilePart(unitName)}_{tagSafe}_{DateTime.Now:yyyyMMdd}.csv";
-            return Path.Combine(unitDir, file);
-        }
-
-        private void AppendTaktCsv(string unitName, string tag, QMC.Common.CycleTimer timer, QMC.Common.CycleTime latest)
-        {
-            try
-            {
-                // 방어: IntervalMs <= 0 은 저장하지 않음
-                double intervalMs = latest.Interval.TotalMilliseconds;
-                if (intervalMs <= 0) return;
-
-                var path = GetTaktLogFilePath(unitName, tag);
-                var exists = File.Exists(path);
-
-                // 요약값
-                double avgMs = timer.Average.TotalMilliseconds;
-                double minMs = timer.Minimum.TotalMilliseconds;
-                double maxMs = timer.Maximum.TotalMilliseconds;
-                int count = timer.CycleTimes.Count;
-
-                var startStr = latest.Start != DateTime.MinValue
-                               ? latest.Start.ToString("yyyy-MM-dd HH:mm:ss.fff")
-                               : "";
-                var endStr = latest.End != DateTime.MinValue
-                               ? latest.End.ToString("yyyy-MM-dd HH:mm:ss.fff")
-                               : "";
-
-                using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
-                using (var sw = new StreamWriter(fs, Encoding.UTF8))
-                {
-                    fs.Seek(0, SeekOrigin.End);
-                    if (!exists || fs.Length == 0)
-                    {
-                        sw.WriteLine("Date,Unit,Tag,IntervalMs,Start,End,AverageMs,MinMs,MaxMs,Count");
-                    }
-                    var line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
-                        unitName,
-                        tag,
-                        intervalMs.ToString("0.###"),
-                        startStr,
-                        endStr,
-                        avgMs.ToString("0.###"),
-                        minMs.ToString("0.###"),
-                        maxMs.ToString("0.###"),
-                        count);
-                    sw.WriteLine(line);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName ?? "BaseUnit", $"[AppendTaktCsv:{tag}] {ex.Message}");
-            }
+            TaktTimerManager.SaveAllSummaries();
         }
 
         /// <summary>
-        /// 읽기 전용으로 현재 태그 타이머 맵을 반환
+        /// 읽기 전용으로 현재 태그 타이머 맵을 반환 (UI 용도 등)
         /// </summary>
         public IReadOnlyDictionary<string, QMC.Common.CycleTimer> TaktTimers
         {
             get
             {
-                lock (_taktLock)
-                {
-                    return new Dictionary<string, QMC.Common.CycleTimer>(_taktTimers);
-                }
+                return TaktTimerManager.GetTimers();
             }
         }
         #endregion
+
+
+        //#region TaktTime (공통 계측/저장)
+        //private readonly object _taktLock = new object();
+        //private readonly Dictionary<string, QMC.Common.CycleTimer> _taktTimers
+        //    = new Dictionary<string, QMC.Common.CycleTimer>(StringComparer.OrdinalIgnoreCase);
+
+        ///// <summary>
+        ///// 태그별 CycleTimer 가져오거나 생성. 기본 Capacity=100
+        ///// </summary>
+        //protected QMC.Common.CycleTimer GetOrCreateTaktTimer(string tag, int capacity = 100)
+        //{
+        //    if (string.IsNullOrWhiteSpace(tag)) tag = "Unnamed";
+        //    lock (_taktLock)
+        //    {
+        //        if (!_taktTimers.TryGetValue(tag, out var ct))
+        //        {
+        //            ct = new QMC.Common.CycleTimer(this) { Capacity = capacity };
+        //            _taktTimers[tag] = ct;
+        //        }
+        //        return ct;
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 태그 시작(측정 시작)
+        ///// </summary>
+        //public void TaktStart(string tag)
+        //{
+        //    try
+        //    {
+        //        var ct = GetOrCreateTaktTimer(tag);
+        //        ct.Start();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(UnitName ?? "BaseUnit", $"[TaktStart:{tag}] {ex.Message}");
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 태그 종료(측정 종료 및 파일 저장). IntervalMs <= 0은 저장 생략
+        ///// </summary>
+        //public void TaktEnd(string tag, bool saveToFile = true)
+        //{
+        //    try
+        //    {
+        //        var ct = GetOrCreateTaktTimer(tag);
+        //        ct.End();
+
+        //        if (!saveToFile) return;
+
+        //        var latest = ct.Latest;
+        //        var intervalMs = latest.Interval.TotalMilliseconds;
+
+        //        // IntervalMs가 0 이하인 경우 저장 안 함
+        //        if (intervalMs <= 0) return;
+
+        //        AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(UnitName ?? "BaseUnit", $"[TaktEnd:{tag}] {ex.Message}");
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 현재까지의 태그별 평균/최소/최대/개수 요약을 CSV로 저장(스냅샷).
+        ///// IntervalMs <= 0인 최신 항목은 생략
+        ///// </summary>
+        //public void SaveAllTaktSummaries()
+        //{
+        //    try
+        //    {
+        //        lock (_taktLock)
+        //        {
+        //            foreach (var kv in _taktTimers)
+        //            {
+        //                var tag = kv.Key;
+        //                var ct = kv.Value;
+        //                var latest = ct.Latest;
+        //                if (latest.Interval.TotalMilliseconds <= 0) continue; // 생략
+        //                AppendTaktCsv(UnitName ?? GetType().Name, tag, ct, latest);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(UnitName ?? "BaseUnit", $"[SaveAllTaktSummaries] {ex.Message}");
+        //    }
+        //}
+
+        //private static string SanitizeFilePart(string s)
+        //{
+        //    if (string.IsNullOrWhiteSpace(s)) return "Unnamed";
+        //    foreach (var ch in Path.GetInvalidFileNameChars())
+        //        s = s.Replace(ch, '_');
+        //    return s;
+        //}
+
+        //protected virtual string GetTaktLogRootPath()
+        //{
+        //    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log", "TaktTime");
+        //}
+
+        //protected virtual string GetTaktLogFilePath(string unitName, string tag)
+        //{
+        //    var root = GetTaktLogRootPath();
+        //    var unitDir = Path.Combine(root, SanitizeFilePart(unitName ?? "Unit"));
+        //    Directory.CreateDirectory(unitDir);
+
+        //    var tagSafe = SanitizeFilePart(tag);
+        //    var file = $"{SanitizeFilePart(unitName)}_{tagSafe}_{DateTime.Now:yyyyMMdd}.csv";
+        //    return Path.Combine(unitDir, file);
+        //}
+
+        //private void AppendTaktCsv(string unitName, string tag, QMC.Common.CycleTimer timer, QMC.Common.CycleTime latest)
+        //{
+        //    try
+        //    {
+        //        // 방어: IntervalMs <= 0 은 저장하지 않음
+        //        double intervalMs = latest.Interval.TotalMilliseconds;
+        //        if (intervalMs <= 0) return;
+
+        //        var path = GetTaktLogFilePath(unitName, tag);
+        //        var exists = File.Exists(path);
+
+        //        // 요약값
+        //        double avgMs = timer.Average.TotalMilliseconds;
+        //        double minMs = timer.Minimum.TotalMilliseconds;
+        //        double maxMs = timer.Maximum.TotalMilliseconds;
+        //        int count = timer.CycleTimes.Count;
+
+        //        var startStr = latest.Start != DateTime.MinValue
+        //                       ? latest.Start.ToString("yyyy-MM-dd HH:mm:ss.fff")
+        //                       : "";
+        //        var endStr = latest.End != DateTime.MinValue
+        //                       ? latest.End.ToString("yyyy-MM-dd HH:mm:ss.fff")
+        //                       : "";
+
+        //        using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+        //        using (var sw = new StreamWriter(fs, Encoding.UTF8))
+        //        {
+        //            fs.Seek(0, SeekOrigin.End);
+        //            if (!exists || fs.Length == 0)
+        //            {
+        //                sw.WriteLine("Date,Unit,Tag,IntervalMs,Start,End,AverageMs,MinMs,MaxMs,Count");
+        //            }
+        //            var line = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
+        //                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+        //                unitName,
+        //                tag,
+        //                intervalMs.ToString("0.###"),
+        //                startStr,
+        //                endStr,
+        //                avgMs.ToString("0.###"),
+        //                minMs.ToString("0.###"),
+        //                maxMs.ToString("0.###"),
+        //                count);
+        //            sw.WriteLine(line);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(UnitName ?? "BaseUnit", $"[AppendTaktCsv:{tag}] {ex.Message}");
+        //    }
+        //}
+
+        ///// <summary>
+        ///// 읽기 전용으로 현재 태그 타이머 맵을 반환
+        ///// </summary>
+        //public IReadOnlyDictionary<string, QMC.Common.CycleTimer> TaktTimers
+        //{
+        //    get
+        //    {
+        //        lock (_taktLock)
+        //        {
+        //            return new Dictionary<string, QMC.Common.CycleTimer>(_taktTimers);
+        //        }
+        //    }
+        //}
+        //#endregion
 
     }
 }

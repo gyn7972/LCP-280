@@ -25,11 +25,21 @@ namespace QMC.Common.PKGTester
         public double OffTime { get; set; }
 
         // Measure
-        public double MeasureTime { get; set; }
-        public double MeasureLimit { get; set; }
-        public double MeasureLow { get; set; }
-        public double MeasureHigh { get; set; }
+        public double MeasureTime { get; set; } //NplcTime
+        public double MeasureLow { get; set; }  //Limit 임.
+        public double MeasureHigh { get; set; }  //Limit 임.
+        // AppRange를 동적으로 구성
+        public string AppRange
+        {
+            get
+            {
+                string unit = GetMeasureUnitFromType();
+                return $"{MeasureLow} - {MeasureHigh}({unit})";
+            }
+            set { } // JSON 역직렬화 시 에러 방지용 빈 setter
+        }
 
+        public double MeasureLimit { get; set; }
         // User Define
         public string Expression { get; set; }
 
@@ -66,11 +76,13 @@ namespace QMC.Common.PKGTester
             SourceTime = 0;
             WaitTime = 0;
             OffTime = 0;
-            MeasureLimit = 0;
+            
             MeasureTime = 0;
             MeasureLow = 0;
             MeasureHigh = 0;
+            AppRange = "0.0 - 0.0(단위)";
 
+            MeasureLimit = 0;
             Expression = "";
 
             // Total calibration defaults
@@ -207,7 +219,7 @@ namespace QMC.Common.PKGTester
                     {
                         pc.Add("Measure");
                         pc.Add("Measure Time", "ms", MeasureTime);
-                        pc.Add("Measure Limit", GetMeasureUnitFromType(), MeasureLimit);
+                        //pc.Add("Measure Limit", GetMeasureUnitFromType(), MeasureLimit);
                         pc.Add("Measure Low", GetMeasureUnitFromType(), MeasureLow);
                         pc.Add("Measure High", GetMeasureUnitFromType(), MeasureHigh);
                     }
@@ -311,7 +323,7 @@ namespace QMC.Common.PKGTester
                     case TestItemCategory.Electrical:
                         {
                             MeasureTime = pc.GetValue<double>("Measure Time");
-                            MeasureLimit = pc.GetValue<double>("Measure Limit");
+                            //MeasureLimit = pc.GetValue<double>("Measure Limit");
                             MeasureLow = pc.GetValue<double>("Measure Low");
                             MeasureHigh = pc.GetValue<double>("Measure High");
                         }

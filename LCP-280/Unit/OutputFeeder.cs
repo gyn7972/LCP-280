@@ -99,174 +99,174 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmRegister((int)AlarmKeys.Alarm_BinLoadingFailed,
-                "Bin Loading Failed",
-                "Bin 로딩에 실패 하였습니다.",
+                   "Bin Loading Failed",
+                   "Bin loading failed.",
                 source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
-                    "Barcode Reading Failed",
-                    "바코드 읽기에 실패 하였습니다. 바코드 상태를 확인 하여 주십시요",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
-                    "Stage Loading Failed",
-                    "스테이지 로딩에 실패 하였습니다.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
-                    "Stage Unloading Failed",
-                    "스테이지 언로딩에 실패 하였습니다.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_BinUnloadingFailed,
-                    "Bin Unloading Failed",
-                    "Bin 언로딩에 실패 하였습니다.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_OutputStageInterlockFailed,
-                    "Output Stage Interlock Failed",
-                    "Bin 로딩을 위한 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
-                    "Gripper Clamp Failed",
-                    "그리퍼 클램프에 실패 하였습니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_FeederClampUpDown,
-                    "Feeder Clamp Up Failed",
-                    "피더 클램프 업 상태가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
+                   "Barcode Reading Failed",
+                   "Barcode reading failed. Please check the barcode status.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
+                   "Stage Loading Failed",
+                   "Stage loading failed.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_StageUnloadingFailed,
+                   "Stage Unloading Failed",
+                   "Stage unloading failed.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_BinUnloadingFailed,
+                   "Bin Unloading Failed",
+                   "Bin unloading failed.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_OutputStageInterlockFailed,
+                   "Output Stage Interlock Failed",
+                   "Interlock for Bin loading does not match. Please check the equipment status.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
+                   "Gripper Clamp Failed",
+                   "Gripper clamp failed. Please check the equipment status.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_FeederClampUpDown,
+                   "Feeder Clamp Up Failed",
+                   "Feeder clamp is not in UP status. Please check the equipment status.",
+                   source, "Error");
 
-                // = 2022,
-                AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
-                    "Bin ReadyForLoading Failed",
-                    "Ready for Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                // = 2023,
-                AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
-                    "Bin Loading Position Failed",
-                    "Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                // = 2024,
-                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederNoPosition,
-                    "Output Feeder No Position",
-                    "Output Feeder 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                // = 2025,
-                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederInterlockFailed,
-                    "Output Feeder Interlock Failed",
-                    "Output Feeder 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                // = 2026,
-                AlarmRegister((int)AlarmKeys.Alarm_OutputFeederBinData,
-                    "Output Feeder Bin Data Error",
-                    "Output Feeder Bin Data 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
-                AlarmRegister((int)AlarmKeys.Alarm_PrepareOutputStageUnloadingBin,
-                    "Output Feeder PrepareOutputStageUnloadingBin Error",
-                    "Output Feeder PrepareOutputStageUnloadingBin 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
+               // = 2022,
+               AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
+                   "Bin ReadyForLoading Failed",
+                   "Not at Ready for Loading position. Please check the equipment status.",
+                   source, "Error");
+               // = 2023,
+               AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
+                   "Bin Loading Position Failed",
+                   "Not at Loading position. Please check the equipment status.",
+                   source, "Error");
+               // = 2024,
+               AlarmRegister((int)AlarmKeys.Alarm_OutputFeederNoPosition,
+                   "Output Feeder No Position",
+                   "Not at Output Feeder position. Please check the equipment status.",
+                   source, "Error");
+               // = 2025,
+               AlarmRegister((int)AlarmKeys.Alarm_OutputFeederInterlockFailed,
+                   "Output Feeder Interlock Failed",
+                   "Output Feeder interlock does not match. Please check the equipment status.",
+                   source, "Error");
+               // = 2026,
+               AlarmRegister((int)AlarmKeys.Alarm_OutputFeederBinData,
+                   "Output Feeder Bin Data Error",
+                   "Output Feeder Bin Data error. Please check the equipment status.",
+                   source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_PrepareOutputStageUnloadingBin,
+                   "Output Feeder PrepareOutputStageUnloadingBin Error",
+                   "Output Feeder PrepareOutputStageUnloadingBin error. Please check the equipment status.",
+                   source, "Error");
 
-                //Alarm_OutputCassetteLifter_Fail
-                AlarmRegister((int)AlarmKeys.Alarm_OutputCassetteLifter_Fail,
-                    "Output Feeder OutputCassetteLifter Slot Error",
-                    "Output Feeder OutputCassetteLifter Slot 오류입니다. 장비 상태를 확인 하여 주십시요.",
-                    source, "Error");
+               //Alarm_OutputCassetteLifter_Fail
+               AlarmRegister((int)AlarmKeys.Alarm_OutputCassetteLifter_Fail,
+                   "Output Feeder OutputCassetteLifter Slot Error",
+                   "Output Feeder OutputCassetteLifter Slot error. Please check the equipment status.",
+                   source, "Error");
 
-                // ===== 2030~ 타임아웃 =====
-                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
-                    "Feeder Lift Up Timeout",
-                    "Feeder Lift UP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                    source, "Error");
+               // ===== 2030~ 타임아웃 =====
+               AlarmRegister((int)AlarmKeys.Alarm_FeederLiftUpTimeout,
+                   "Feeder Lift Up Timeout",
+                   "Feeder Lift UP timeout. (Check air pressure/valve/cylinder/sensor/interference)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
-                    "Feeder Lift Down Timeout",
-                    "Feeder Lift DOWN 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_FeederLiftDownTimeout,
+                   "Feeder Lift Down Timeout",
+                   "Feeder Lift DOWN timeout. (Check air pressure/valve/cylinder/sensor/interference)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
-                    "Feeder Clamp Timeout",
-                    "Gripper CLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_FeederClampTimeout,
+                   "Feeder Clamp Timeout",
+                   "Gripper CLAMP timeout. (Check air pressure/valve/cylinder/sensor/interference)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
-                    "Feeder Unclamp Timeout",
-                    "Gripper UNCLAMP 타임아웃. (에어압/밸브/실린더/센서/간섭 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_FeederUnclampTimeout,
+                   "Feeder Unclamp Timeout",
+                   "Gripper UNCLAMP timeout. (Check air pressure/valve/cylinder/sensor/interference)",
+                   source, "Error");
 
-                // ===== 2040~ 데이터/센서 =====
-                AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterStageToFeeder,
-                    "Bin Missing After Stage -> Feeder",
-                    "Stage->Feeder 이송 후 Feeder에서 Bin 존재가 확인되지 않습니다. (센서/클램프/이송 시퀀스 확인)",
-                    source, "Error");
+               // ===== 2040~ 데이터/센서 =====
+               AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterStageToFeeder,
+                   "Bin Missing After Stage -> Feeder",
+                   "Bin is not detected in Feeder after Stage->Feeder transfer. (Check sensor/clamp/transfer sequence)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterFeederToCassette,
-                    "Bin Missing After Feeder -> Cassette",
-                    "Feeder->Cassette 배출 후 Feeder에 Bin이 남아있거나 불일치 상태입니다. (센서/데이터/간섭 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_BinMissingAfterFeederToCassette,
+                   "Bin Missing After Feeder -> Cassette",
+                   "Bin remains in Feeder or mismatch status after Feeder->Cassette unload. (Check sensor/data/interference)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_BinSensorDataMismatch,
-                    "Bin Sensor/Data Inconsistency",
-                    "Bin 센서 상태와 Material 데이터가 불일치합니다. (센서 ON인데 객체 null, 또는 반대)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_BinSensorDataMismatch,
+                   "Bin Sensor/Data Inconsistency",
+                   "Bin sensor status and Material data are inconsistent. (Sensor is ON but object is null, or vice versa)",
+                   source, "Error");
 
-                // ===== 2060~ 슬롯/카세트 =====
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
-                    "Unload Target Slot Invalid",
-                    "언로딩 대상 SlotIndex가 유효하지 않습니다. (Feeder/Stage/Lifter SlotIndex 확인)",
-                    source, "Error");
+               // ===== 2060~ 슬롯/카세트 =====
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadTargetSlotInvalid,
+                   "Unload Target Slot Invalid",
+                   "Unload Target SlotIndex is invalid. (Check Feeder/Stage/Lifter SlotIndex)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
-                    "Cassette Slot Not Empty",
-                    "언로딩 대상 Cassette Slot이 비어있지 않습니다. (Slot 상태 확인 필요)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_CassetteSlotNotEmptyForUnload,
+                   "Cassette Slot Not Empty",
+                   "Unload Target Cassette Slot is not empty. (Check Slot status)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
-                    "Cassette MoveToSlot Failed",
-                    "언로딩 대상 Slot으로 Cassette 이동 실패. (축 알람/인터락/Teaching 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_CassetteMoveToSlotFailedForUnload,
+                   "Cassette MoveToSlot Failed",
+                   "Failed to move Cassette to Unload Target Slot. (Check axis alarm/interlock/Teaching)",
+                   source, "Error");
 
-                // ===== 2070~ Feeder->Cassette 상세 =====
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
-                    "Unload Feeder->Cassette Failed - Move Position Cassette",
-                    "Feeder->Cassette 배출 중 Cassette Teaching Position 이동 실패.",
-                    source, "Error");
+               // ===== 2070~ Feeder->Cassette 상세 =====
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
+                   "Unload Feeder->Cassette Failed - Move Position Cassette",
+                   "Failed to move to Cassette Teaching Position during Feeder->Cassette unload.",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
-                    "Unload Feeder->Cassette Failed - Unclamp",
-                    "Feeder->Cassette 배출 중 Unclamp 실패/타임아웃.",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_UnclampFailed,
+                   "Unload Feeder->Cassette Failed - Unclamp",
+                   "Unclamp failed/timeout during Feeder->Cassette unload.",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_BinDataInvalid,
-                    "Unload Feeder->Cassette Failed - Bin Data Invalid",
-                    "Feeder에 Bin 데이터가 없거나 SlotIndex가 유효하지 않아 Cassette 반영 불가.",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_BinDataInvalid,
+                   "Unload Feeder->Cassette Failed - Bin Data Invalid",
+                   "Cannot apply to Cassette because there is no Bin data in Feeder or SlotIndex is invalid.",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
-                    "Unload Feeder->Cassette Failed - Move Standby Barcode",
-                    "배출 후 Barcode 대기 위치 이동 실패.",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
+                   "Unload Feeder->Cassette Failed - Move Standby Barcode",
+                   "Failed to move to Barcode standby position after unload.",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
-                    "Unload Feeder->Cassette Failed - Move Standby Ready",
-                    "배출 후 Ready 대기 위치 이동 실패.",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
+                   "Unload Feeder->Cassette Failed - Move Standby Ready",
+                   "Failed to move to Ready standby position after unload.",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_ScanBinFailed,
-                    "Scan Bin Failed",
-                    "OutputCassetteLifter ScanBin 실패. (Cassette 존재/센서/축 알람/슬롯 상태 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_ScanBinFailed,
+                   "Scan Bin Failed",
+                   "OutputCassetteLifter ScanBin failed. (Check Cassette existence/sensor/axis alarm/slot status)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_MoveToReadyFailed,
-                    "Move To Ready Failed",
-                    "Ready 대기 위치 이동/상승 동작 실패. (Teaching/축 알람/인터락/실린더 상태 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_MoveToReadyFailed,
+                   "Move To Ready Failed",
+                   "Move/Lift UP to Ready standby position failed. (Check Teaching/axis alarm/interlock/cylinder status)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_MoveToCassetteTeachFailed,
-                    "Move To Cassette Teaching Failed",
-                    "Cassette Teaching Position 이동 실패. (Teaching/축 알람/인터락 확인)",
-                    source, "Error");
+               AlarmRegister((int)AlarmKeys.Alarm_MoveToCassetteTeachFailed,
+                   "Move To Cassette Teaching Failed",
+                   "Move to Cassette Teaching Position failed. (Check Teaching/axis alarm/interlock)",
+                   source, "Error");
 
-                AlarmRegister((int)AlarmKeys.Alarm_BinCassetteLoadingFailed,
-                    "Bin Cassette Loading Failed",
-                    "Cassette에서 Bin 픽업/바코드/이동 시퀀스에 실패했습니다. (상세 로그 확인)",
+               AlarmRegister((int)AlarmKeys.Alarm_BinCassetteLoadingFailed,
+                   "Bin Cassette Loading Failed",
+                   "Bin pickup/barcode/move sequence from Cassette failed. (Check detailed log)",
                     source, "Error");
 
             }
@@ -3717,83 +3717,57 @@ namespace QMC.LCP_280.Process.Unit
         // LCP-280\Unit\OutputFeeder.cs 내부
         // [수정] InputStage의 Map 정보를 복사하되, 
         // 1) 기본 장비 축 매핑(X:정방향, Y:역방향)을 먼저 적용한 뒤
-        // 2) Recipe의 Rotate/Mirror 설정을 추가 반영함
-        private int CopyInputMapRotate180(MaterialWafer srcWafer,
-                                          MaterialWafer dstWafer)
+        // 2) Recipe의 Rotate/Mirror 설정을 추가 반영함.
+        private int CopyInputMapRotate180(MaterialWafer srcWafer, MaterialWafer dstWafer)
         {
             try
             {
-                if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
+                if (srcWafer?.Dies == null || srcWafer.Dies.Count == 0)
                     return -1;
                 if (dstWafer == null)
                     return -2;
 
                 lock (srcWafer.Dies)
                 {
+                    var sourceDies = srcWafer.Dies.OrderBy(d => d.Index).ToList();
+                    if (sourceDies.Count == 0)
+                        return -3;
+
+                    // src lock 안에서 min/max 계산
+                    double minX = sourceDies.Min(d => d.MapX);
+                    double maxX = sourceDies.Max(d => d.MapX);
+                    double minY = sourceDies.Min(d => d.MapY);
+                    double maxY = sourceDies.Max(d => d.MapY);
+
+                    // 전체 그리드 크기(중간 빈 줄 포함)
+                    double nx = maxX - minX + 1;
+                    double ny = maxY - minY + 1;
+                    if (nx <= 0 || ny <= 0)
+                        return -4;
+
                     lock (dstWafer.Dies)
                     {
-                        // 1. 소스 다이 가져오기 (Index 순서대로 정렬)
-                        var sourceDies = srcWafer.Dies.OrderBy(d => d.Index).ToList();
-                        if (sourceDies.Count == 0)
-                            return -3;
-
-                        // 2. Grid Index 계산 준비 (BinX, BinY 매핑용)
-                        const double tol = 1e-6;
-                        // 좌표값 목록 추출 (오름차순 정렬)
-                        var xs = sourceDies.Select(d => (double)d.MapX).Distinct().OrderBy(v => v).ToList();
-                        var ys = sourceDies.Select(d => (double)d.MapY).Distinct().OrderBy(v => v).ToList();
-
-                        // 좌표값 -> 그리드 인덱스 변환 로컬 함수
-                        int FindIndex(List<double> list, double value)
-                        {
-                            for (int i = 0; i < list.Count; i++)
-                            {
-                                if (Math.Abs(list[i] - value) <= tol) return i;
-                            }
-                            return -1;
-                        }
-
-                        if (dstWafer.Dies != null) dstWafer.Dies.Clear();
+                        dstWafer.Dies?.Clear();
                         dstWafer.Dies = new List<MaterialDie>(sourceDies.Count);
 
-                        // 그리드 전체 크기
-                        int nx = xs.Count;
-                        int ny = ys.Count;
-
-                        // 3. InputStage의 Die를 순회하며 좌표 변환 수행
                         foreach (var s in sourceDies)
                         {
-                            // 원본에서의 그리드 인덱스 찾기
-                            int ix = FindIndex(xs, s.MapX);
-                            int iy = FindIndex(ys, s.MapY);
+                            // 1) 절대좌표 -> 0-base 정규화
+                            double x0 = s.MapX - minX;   // [0..nx-1]
+                            double y0 = s.MapY - minY;   // [0..ny-1]
 
-                            int binX = 0, binY = 0;
-                            if (ix >= 0 && iy >= 0)
-                            {
-                                // [Step 1] 장비 기본 좌표계 보정 (사용자 확인 사항: X정방향, Y역방향)
-                                // 이 상태가 Rotate=None, Mirror=None 일 때의 기준이 됩니다.
-                                int baseX = ix;
-                                int baseY = ny - 1 - iy; // LCP-280 기준 Y역방향 → 그리드 인덱스는 Y역방향으로 계산
+                            // 2) 장비 기본 보정 (Y 역방향)
+                            double baseX = x0;
+                            double baseY = ny - 1 - y0;
 
-                                // [Step 2] Recipe Rotate 적용 (기본 보정된 좌표 기준)
-                                // ApplyRotateToIndex는 내부적으로 0,0 기준 회전을 수행한다고 가정
-                                int rotatedX = baseX;
-                                int rotatedY = baseY;
+                            // 3) 180도 회전
+                            double rotX = nx - 1 - baseX;
+                            double rotY = ny - 1 - baseY;
 
-                                // 회전 후의 그리드 차원 (90/270도 회전 시 가로세로 바뀜)
-                                int currentNx = nx;
-                                int currentNy = ny;
+                            // 4) 필요 시 다시 절대좌표로 복원 (dst는 0-base Bin 쓰는 구조면 그대로 사용)
+                            double binX = rotX; // = maxX - s.MapX
+                            double binY = rotY; // = s.MapY - minY
 
-                                // 무조건 180도 회전.
-                                // (x, y) -> (nx-1-x, ny-1-y)
-                                rotatedX = currentNx - 1 - baseX;
-                                rotatedY = currentNy - 1 - baseY;
-                                binX = rotatedX;
-                                binY = rotatedY;
-                            }
-
-                            // 결과 추가
-                            // Index는 InputStage 순서(작업 순서)를 유지하기 위해 s.Index 그대로 사용
                             dstWafer.Dies.Add(new MaterialDie
                             {
                                 Index = s.Index,
@@ -3801,23 +3775,22 @@ namespace QMC.LCP_280.Process.Unit
                                 ProcessSatate = Material.MaterialProcessSatate.Ready,
                                 BinX = binX,
                                 BinY = binY,
-
-                                // MapX, MapY는 그리드 인덱스(BinX, BinY)를 따르도록 설정
                                 MapX = binX,
                                 MapY = binY
                             });
                         }
-
-                        return 0;
                     }
                 }
+
+                return 0;
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, "CopyInputMapRotate180", ex.Message);
+                Log.Write(UnitName, nameof(CopyInputMapRotate180), ex.Message);
                 return -9;
             }
         }
+
 
         private static (int tx, int ty) ApplyRotateToIndex(int ix, int iy, int nx, int ny, MapRotateOption r)
         {

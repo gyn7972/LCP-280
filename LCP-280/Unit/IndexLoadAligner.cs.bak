@@ -46,12 +46,12 @@ namespace QMC.LCP_280.Process.Unit
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
-                Log.Write("AlarmInit", $"알람 파일에서 '{source}' 소스의 알람을 찾을 수 없습니다. 기본 알람만 등록됩니다.");
+                Log.Write("AlarmInit", $"Cannot find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
 
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eAlignTAxesNotReady;
                 alarm.Title = "IndexLoadAligner T-Axis Not ReadyPos.";
-                alarm.Cause = "IndexLoadAligner T-Axis 가 준비 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+                alarm.Cause = "IndexLoadAligner T-Axis is not at the ready position.\n Please check the position and restart.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -59,7 +59,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eAlignTAxesMoving;
                 alarm.Title = "IndexLoadAligner T-Axis Axis Moving";
-                alarm.Cause = "IndexLoadAligner T 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "IndexLoadAligner T-Axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
-                alarm.Cause = "Rotary 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+                alarm.Cause = "Rotary axis is moving. Please stop and try again.";
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
@@ -297,7 +297,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -396,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                 // (Rotary.IsIndexMoving 내부 로직과 유사하게, "현재 위치가 Index 위치인지" 판별)
 
                 // 시뮬레이션 환경 등을 고려해 10ms 대기 후 재확인 (노이즈 필터)
-                Thread.Sleep(10);
+                Thread.Sleep(1);
                 if (this.Rotary.IsIndexMoving())
                 {
                     // 정말로 계속 움직이고 있다면, 위치가 틀어졌을 가능성이 높음 -> 정지
@@ -407,13 +407,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            //if (Rotary != null && this.Rotary.IsIndexMoving())
-            //{
-            //    AxisIndexZ.EmgStop();
-            //    AxisAlignT.EmgStop();
-            //    PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
-            //    return -1;
-            //}
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeAlignUp(int nIndex = 0, bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -442,7 +435,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -545,7 +538,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    Thread.Sleep(2); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                    Thread.Sleep(1); // 0→5ms로 약간 여유 (CPU 점유 감소)
                 }
 
                 return coreTask.Result;
@@ -622,7 +615,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -699,7 +692,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -768,7 +761,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return -1;
                     }
-                    Thread.Sleep(2);
+                    Thread.Sleep(1);
                 }
                 return coreTask.Result;
             }, ct);
@@ -908,7 +901,7 @@ namespace QMC.LCP_280.Process.Unit
             if (string.IsNullOrWhiteSpace(positionName))
             {
                 Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' 을 찾지 못했습니다.");
+                       $"[TeachingMove] '{positionName}' not found in TeachingPositions."); 
                 return -1;
             }
 
@@ -925,7 +918,7 @@ namespace QMC.LCP_280.Process.Unit
                 else
                 {
                     Log.Write(UnitName, nameof(MoveToTeachingPosition),
-                        $"[TeachingMove] TeachingPositions에서 '{positionName}' index를 찾지 못했습니다.");
+                        $"[TeachingMove] Index for '{positionName}' not found in TeachingPositions.");
                     return -1;
                 }
             }
@@ -1012,7 +1005,7 @@ namespace QMC.LCP_280.Process.Unit
         /// Rotary(인덱스) 정지까지 대기. 
         /// - 성공: 0, 타임아웃/오류: -1, Auto 중 Stop 신호: 0
         /// </summary>
-        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 2)
+        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 1)
         {
             var sw = Stopwatch.StartNew();
             while (true)
@@ -1090,7 +1083,7 @@ namespace QMC.LCP_280.Process.Unit
             int bRtn = 0;
             this.CurrentFunc = RunAlignSocketOnce;
             LogSequence("Start");
-
+            
             int nIndex = GetAlignIndexNo();
             try
             {
@@ -1129,6 +1122,8 @@ namespace QMC.LCP_280.Process.Unit
                 var socket = this.Rotary.GetSocket(nIndex);
                 socket.SetState(Rotary.RotarySocketState.MAligning);
 
+                TaktStart("One Cycle"); 
+                TaktStart("AlignTReady");
                 // === 동작 수행 (Z Up -> T Fwd -> T Bwd -> T Ready -> Z Safe) ===
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 //Log.Write("kkkkkkIndexLoadAligner", "Start1");
@@ -1141,35 +1136,47 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
                     return -1;
                 }
+                TaktEnd("AlignTReady");
 
                 //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignZUp");
                 // 3) Z Up
+                TaktStart("AlignZUp");
                 bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
+                TaktEnd("AlignZUp");
+
                 //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTForward");
                 // 4) T Forward
+                TaktStart("AlignTForward");
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward1");
                     return -1;
                 }
+                TaktEnd("AlignTForward");
 
+                TaktStart("WaitTime1Step");
                 WaitByTime(Config.WaitTime1Step);
+                TaktEnd("WaitTime1Step");
                 //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTBackward");
                 // 5) T Backward
+                TaktStart("AlignTBackward");
                 bRtn = MovePositionAlignTBackward(bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
                     return -1;
                 }
+                TaktEnd("AlignTBackward");
 
+                TaktStart("WaitTime2Step");
                 WaitByTime(Config.WaitTime2Step);
+                TaktEnd("WaitTime2Step");
                 //bRtn = MovePositionAlignTForward(bFineSpeed);
                 //if (bRtn != 0)
                 //{
@@ -1178,15 +1185,21 @@ namespace QMC.LCP_280.Process.Unit
                 //}
                 //WaitByTime(Config.WaitTime3Step);
 
-                bRtn = MovePositionAlignTReady(bFineSpeed);
-                if (bRtn != 0)
-                {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
-                    return -1;
-                }
+                //TaktStart("AlignTReady2");
+                //bRtn = MovePositionAlignTReady(bFineSpeed);
+                //if (bRtn != 0)
+                //{
+                //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                //    return -1;
+                //}
+                //TaktEnd("AlignTReady2");
 
                 // Vision Align 검사 추가.
+                TaktStart("AlignXY_Vision");
                 bRtn = AlignXY(bFineSpeed);
+                TaktEnd("AlignXY_Vision");
+
+                TaktStart("SafetyZ");
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: AlignXY");
@@ -1213,6 +1226,7 @@ namespace QMC.LCP_280.Process.Unit
                     die.State = DieProcessState.Skip;
                     socket.SetState(Rotary.RotarySocketState.Error);
                     LogSequence("End");
+
                 }
                 else
                 {
@@ -1230,6 +1244,8 @@ namespace QMC.LCP_280.Process.Unit
                     socket.SetState(Rotary.RotarySocketState.MAligned);
                     LogSequence("End");
                 }
+                TaktEnd("SafetyZ");
+                TaktEnd("One Cycle");
             }
             catch (Exception ex)
             {
@@ -1255,217 +1271,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-
-        //public int RunAlignSocketOnce(bool bFineSpeed = false)
-        //{
-        //    int bRtn = 0;
-        //    this.CurrentFunc = RunAlignSocketOnce;
-        //    LogSequence("Start");
-
-        //    int nIndex = GetAlignIndexNo();
-        //    try
-        //    {
-        //        //Log.Write("kkkkkkIndexLoadAligner", "Start");
-        //        bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
-        //        if(bUseSocket == false)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Skip: No socket at unload align position");
-        //            return 0;
-        //        }
-
-        //        MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
-        //        if(die == null)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Skip: No die at unload align position");
-        //            return 0;
-        //        }
-
-        //        if(die.Presence != Material.MaterialPresence.Exist)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Skip: No die presence at unload align position");
-        //            return 0;
-        //        }
-
-        //        while(this.Rotary.IsIndexMoving())
-        //        {
-        //            if(IsStop)
-        //            {
-        //                Log.Write(UnitName, "MAlign", "IsStop True");
-        //                return 0; 
-        //            }
-        //            Thread.Sleep(1);
-        //        }
-        //        Log.Write("die_State", "RunAlignSocketOnce", die.State.ToString());
-
-        //        var socket = this.Rotary.GetSocket(nIndex);
-        //        socket.SetState(Rotary.RotarySocketState.MAligning);
-
-        //        if(false)
-        //        {
-        //            // [최적화 1] 2) T Ready 와 3) Z Up 동시 진행
-        //            // 이거 하고 싶은데 T축이 무조건 Ready 상태에서 Z축이 올라가야함...
-        //            //var taskTReady1 = MovePositionAsyncSafeAlignTReady(bFineSpeed);
-        //            //var taskZUp = MovePositionAsyncSafeAlignUp(nIndex, bFineSpeed);
-
-        //            //Task.WaitAll(taskTReady1, taskZUp);
-        //            //if (taskTReady1.Result != 0 || taskZUp.Result != 0)
-        //            //{
-        //            //    Log.Write(UnitName, "MAlign", "Fail: T Ready or Z Up move");
-        //            //    return -1;
-        //            //}
-        //        }
-        //        else
-        //        {
-        //            bRtn &= MovePositionAlignTReady(bFineSpeed);
-        //            if (bRtn != 0)
-        //            {
-        //                Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
-        //                return -1;
-        //            }
-        //            // 3) Z Up
-        //            bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
-        //            if (bRtn != 0)
-        //            {
-        //                Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
-        //                return -1;
-        //            }
-        //        }
-
-        //        // 4) T Forward
-        //        bRtn = MovePositionAlignTForward(bFineSpeed);
-        //        if (bRtn != 0)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward1");
-        //            return -1;
-        //        }
-        //        WaitByTime(Config.WaitTime1Step);
-        //        // 5) T Backward
-        //        bRtn = MovePositionAlignTBackward(bFineSpeed);
-        //        if (bRtn != 0)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
-        //            return -1;
-        //        }
-        //        WaitByTime(Config.WaitTime2Step);
-        //        //bRtn = MovePositionAlignTForward(bFineSpeed);
-        //        //if (bRtn != 0)
-        //        //{
-        //        //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
-        //        //    return -1;
-        //        //}
-        //        //WaitByTime(Config.WaitTime3Step);
-        //        bRtn = MovePositionAlignTReady(bFineSpeed);
-        //        if (bRtn != 0)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
-        //            return -1;
-        //        }
-
-        //        // [최적화 3] Vision Align 연산과 하드웨어 복귀 동시 진행
-        //        Task<int> taskZSafeFinal = null;
-        //        Task<int> taskTReadyFinal = null;
-        //        // Vision Align 검사 추가.
-        //        bRtn = AlignXY(bFineSpeed, () =>
-        //        {
-        //            // 이 콜백은 AlignXY에서 영상 촬영이 끝나는 '즉시' 실행됨.
-        //            // 비전 서치 연산 처리를 들어감이 동시에 Z하강 + T Ready 병렬 호출
-        //            taskZSafeFinal = MovePositionAsyncSafeSafetyZ(bFineSpeed);
-        //            taskTReadyFinal = MovePositionAsyncSafeAlignTReady(bFineSpeed);
-        //        });
-        //        // 비전 결과 및 Task 대기
-        //        if (taskZSafeFinal != null) 
-        //            taskZSafeFinal.Wait();
-        //        if (taskTReadyFinal != null) 
-        //            taskTReadyFinal.Wait();
-
-        //        if (bRtn != 0)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Fail: AlignXY");
-        //            try
-        //            {
-        //                var ctx = Equipment.Instance.SummaryContext;
-        //                ctx.GetCurrentSummaryOrNull()?.AddAlignVisionAsMiss();
-        //            }
-        //            catch (Exception ex) { Log.Write(ex); }
-
-        //            CompleteLoadAligner = true;
-        //            die.Presence = Material.MaterialPresence.Exist;
-        //            die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
-        //            die.State = DieProcessState.Skip;
-        //            socket.SetState(Rotary.RotarySocketState.Error);
-        //            LogSequence("End");
-
-        //            //Log.Write(UnitName, "MAlign", "Fail: AlignXY");
-        //            //try
-        //            //{
-        //            //    var ctx = Equipment.Instance.SummaryContext;
-        //            //    ctx.GetCurrentSummaryOrNull()?.AddAlignVisionAsMiss();
-        //            //}
-        //            //catch (Exception ex)
-        //            //{ Log.Write(ex); }
-        //            //List<Task<int>> tasks = new List<Task<int>>();
-        //            //Task<int> t = null;
-        //            //t = MovePositionAsyncSafeSafetyZ(bFineSpeed);
-        //            //Task<int> tz = t;
-        //            //tasks.Add(t);
-        //            //t = MovePositionAsyncAlignTReady(bFineSpeed);
-        //            //tasks.Add(t);
-        //            //tz.Wait();
-        //            //CompleteLoadAligner = true;
-        //            //die.Presence = Material.MaterialPresence.Exist;
-        //            //die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
-        //            //die.State = DieProcessState.Skip;
-        //            ////die.State = DieProcessState.Rejected;
-        //            ////index socket정보에서 Data를 지워버리면.. 제품을 못찾으면..없는거니깐.
-        //            ////Rotary.ClearSocketData(nIndex);
-        //            //socket.SetState(Rotary.RotarySocketState.Error);
-        //            //LogSequence("End");
-        //        }
-        //        else
-        //        {
-        //            die.State = DieProcessState.Inspecting;
-        //            CompleteLoadAligner = true;
-        //            socket.SetState(Rotary.RotarySocketState.MAligned);
-        //            LogSequence("End");
-
-        //            //List<Task<int>> tasks = new List<Task<int>>();
-        //            //Task<int> t = null;
-        //            //t = MovePositionAsyncSafeSafetyZ(bFineSpeed);
-        //            //Task<int> tz = t;
-        //            //tasks.Add(t);
-        //            //t = MovePositionAsyncAlignTReady(bFineSpeed);
-        //            //tasks.Add(t);
-        //            //tz.Wait();
-        //            //die.State = DieProcessState.Inspecting;
-        //            //CompleteLoadAligner = true;
-        //            //socket.SetState(Rotary.RotarySocketState.MAligned);
-        //            //LogSequence("End");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //        return -1;
-        //    }
-        //    finally
-        //    {
-        //        if (IsAlignTReady() == false)
-        //        {
-        //            bRtn = MovePositionAlignTReady(bFineSpeed);
-        //        }
-        //        if(IsPositionAlignZSafety() == false)
-        //        {
-        //            bRtn += MovePositionSafetyZ(bFineSpeed);
-        //        }
-        //        if (bRtn != 0)
-        //        {
-        //            Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
-        //        }
-        //        CompleteLoadAligner = true;
-        //    }
-
-        //    return bRtn;
-        //}
 
         private void LogSequence(string log)
         {
@@ -1643,24 +1448,6 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
-                // 1) Recipe 보장 (실패 체크 권장)
-                //bool loaded = false;
-                //try
-                //{
-                //    loaded = PmRunner.LoadRecipe();
-                //}
-                //catch (Exception ex)
-                //{
-                //    Log.Write(UnitName, "AlignXY", "LoadRecipe exception: " + ex.Message);
-                //}
-                //if (!loaded)
-                //{
-                //    Log.Write(UnitName, "AlignXY", "Fail: LoadRecipe returned false");
-                //    // 필요 시 알람:
-                //    // PostAlarm((int)AlarmKeys.eVisionSearch);
-                //    return -1;
-                //}
-
                 VisionImage img = null;
                 IndexAlignerCam.SuspendedImageDisplay = true;
                 IndexAlignerCam.GrabSync(out img);
@@ -1757,182 +1544,6 @@ namespace QMC.LCP_280.Process.Unit
                 IndexAlignerCam.SuspendedImageDisplay = false;
             }
         }
-
-        //public int AlignXY(bool bFineSpeed = false, Action onImageGrabbed = null)
-        //{
-        //    IsStatus_AlignDoneXY = false;
-        //    IsAlignResult = false;
-        //    dLastFoundX = 0.0;
-        //    dLastFoundY = 0.0;
-        //    dLastFoundAngle = 0.0;
-
-        //    MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
-        //    if (die == null || die.Presence != Material.MaterialPresence.Exist)
-        //    {
-        //        Log.Write(UnitName, "Align", "Skip: No die on unload socket");
-        //        IsStatus_AlignDoneXY = true;
-        //        return 0;
-        //    }
-
-        //    var equipment = Equipment.Instance;
-        //    bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
-        //    if (Config.IsSimulation || (this.Config.IsDryRun || IsDryRunEqp))
-        //    {
-        //        onImageGrabbed?.Invoke(); // 시뮬레이션 시에도 축 복귀 트리거
-
-        //        // ========== [수정 시작] Random Failure Simulation ==========
-        //        // 0 ~ 99 사이의 난수 생성
-        //        // 예: 80보다 작으면 성공(80%), 크면 실패(20%)로 설정
-        //        bool isSimulatedSuccess = new Random().Next(0, 100) < 100;
-        //        if (isSimulatedSuccess)
-        //        {
-        //            IsAlignResult = true;       // Align 성공
-        //            IsStatus_AlignDoneXY = true;
-        //            Log.Write(UnitName, "Simulation", "Align Simulated: SUCCESS");
-        //            return 0;
-        //        }
-        //        else
-        //        {
-        //            IsAlignResult = false;      // Align 실패 (Reject 처리 유도)
-        //            IsStatus_AlignDoneXY = true; // 동작 자체는 완료됨
-
-        //            // 실패 시, 현재 제품 상태를 Reject로 마킹해야 시퀀스가 정상 흐름을 탑니다.
-        //            // (실제 비전 로직 실패 시에도 아래와 유사하게 처리됩니다)
-        //            var loaddie = Rotary.GetLoadSocketMaterial();
-        //            if (loaddie != null)
-        //            {
-        //                loaddie.SetReject("Align Fail (Simulated)");
-        //                // die.State = DieProcessState.Rejected; // SetReject 내부에서 처리됨
-        //            }
-
-        //            Log.Write(UnitName, "Simulation", "Align Simulated: FAIL (Random)");
-        //            return -1; // 시퀀스 동작 자체는 에러(return -1)가 아니라 0(정상종료) 후 결과값(Result)으로 판별
-        //        }
-        //        // ========== [수정 끝] ==========
-        //    }
-
-        //    if (IndexAlignerCam == null)
-        //    {
-        //        Log.Write(UnitName, "AlignXY", "Fail: IndexAlignerCam null");
-        //        IsStatus_AlignDoneXY = true;
-        //        return -1;
-        //    }
-
-        //    try
-        //    {
-        //        if (IndexAlignerCam.IsLiveOn)
-        //        {
-        //            IndexAlignerCam.StopLive();
-        //            Thread.Sleep(50);
-        //        }
-        //    }
-        //    catch { }
-
-        //    try
-        //    {
-        //        VisionImage img = null;
-        //        IndexAlignerCam.SuspendedImageDisplay = true;
-        //        IndexAlignerCam.GrabSync(out img);
-
-        //        // ======== [핵심 최적화 부분] ========
-        //        // 카메라 영상 촬영 완료! 이후 Search(소프트웨어 연산)에는 시간이 걸립니다.
-        //        // 연산 중에 하드웨어가 복귀할 수 있도록 앞서 넘겨받은 복귀 명령 콜백을 실행합니다.
-        //        onImageGrabbed?.Invoke();
-        //        // ===================================
-
-        //        var result = PmRunner.Search(img);
-
-        //        // 4) 결과 표시 (성공/실패 여부와 관계없이 호출하여 화면 갱신)
-        //        var matches = (result != null && result.Matches != null)
-        //                        ? result.Matches.ToArray()
-        //                        : null;
-
-        //        int repIdx = 0;
-        //        if (result != null && result.Matches != null &&
-        //            result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count)
-        //        {
-        //            repIdx = result.ReferenceIndex;
-        //        }
-
-        //        // 실패 시 matches가 null이므로 이미지만 갱신됨
-        //        RaiseMarks(img, matches, repIdx);
-        //        IndexAlignerCam.SuspendedImageDisplay = false;
-
-        //        //if (result != null && result.Success && result.Matches != null && result.Matches.Count > 0)
-        //        //{
-        //        //    int repIdx = 2; // (result.ReferenceIndex >= 0 && result.ReferenceIndex < result.Matches.Count) ? result.ReferenceIndex : 0;
-        //        //    RaiseMarks(img, result.Matches.ToArray(), repIdx);
-        //        //    IndexAlignerCam.SuspendedImageDisplay = false;
-        //        //}
-
-        //        // 5) Offset 저장 (mm)
-        //        if (result != null && result.Success)
-        //        {
-        //            IsAlignResult = true;
-
-        //            var pt = GetPixelToMmScale(result.X, result.Y);
-        //            dLastFoundX = pt.X;
-        //            dLastFoundY = pt.Y;
-        //            dLastFoundAngle = result.R;
-
-        //            Log.Write(UnitName, "AlignXY",
-        //                $"VisionX={dLastFoundX:F4}, VisionY={dLastFoundY:F4}, VisionAngle={dLastFoundAngle:F4}");
-        //        }
-        //        else
-        //        {
-        //            IsAlignResult = false;
-        //            Log.Write(UnitName, "AlignXY",
-        //                $"Vision Search Fail. reason={(result != null ? result.FailReason : "result null")}");
-
-        //            // ==========================================================
-        //            // [추가됨] 실패 시 이미지 저장 (날짜시간_밀리초.bmp)
-        //            // ==========================================================
-        //            try
-        //            {
-        //                // 1. 저장 경로 설정 (D:\Log\Image\{UnitName}\Fail)
-        //                string saveFolder = $@"D:\LCP-280\Log\Image\{UnitName}\Fail";
-
-        //                // 2. 폴더 없으면 생성
-        //                if (!System.IO.Directory.Exists(saveFolder))
-        //                {
-        //                    System.IO.Directory.CreateDirectory(saveFolder);
-        //                }
-
-        //                // 3. 파일명 생성 (년월일_시분초_밀리초)
-        //                string fileName = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".bmp";
-        //                string fullPath = System.IO.Path.Combine(saveFolder, fileName);
-
-        //                // 4. 저장 실행
-        //                if (img != null)
-        //                {
-        //                    img.Save(fullPath, VisionImage.FileFilter.bmp);
-        //                    Log.Write(UnitName, "AlignXY", $"Saved Fail Image: {fileName}");
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Log.Write(UnitName, "AlignXY", $"Image Save Error: {ex.Message}");
-        //            }
-        //            // ==========================================================
-
-        //            // 필요 시 알람:
-        //            // PostAlarm((int)AlarmKeys.eVisionSearch);
-        //            return -1; // ← 실패를 상위에서 감지하고 싶으면 -1 유지, "그냥 진행"이면 0으로 바꿔도 됨
-        //        }
-
-        //        return 0;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //        return -1;
-        //    }
-        //    finally
-        //    {
-        //        IsStatus_AlignDoneXY = true;
-        //        IndexAlignerCam.SuspendedImageDisplay = false;
-        //    }
-        //}
 
         PointD GetPixelToMmScale(double dX, double dY)
         {
