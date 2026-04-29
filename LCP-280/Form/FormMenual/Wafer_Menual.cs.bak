@@ -9,7 +9,9 @@ using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.FormMenual;
 using static QMC.Common.Unit.BaseUnit;
+
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -21,7 +23,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     ///    InputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    InputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
-    public partial class Wafer_Menual : Form
+    public partial class Wafer_Menual : Form, ITabActivationAware
     {
         private const string WORK_NAME = "InputWafer";
         private Equipment Equipment => Equipment.Instance;
@@ -60,9 +62,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             FormClosing += InputWafer_Working_FormClosing;
             _InputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
-            waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+            waferMapView_InputWafer.GetWaferSelectMapView()?.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
 
             comboBoxSlot.SelectedIndex = 0;
+        }
+
+        // 1. ITabActivationAware 구현
+        public void OnActivatedInTab()
+        {
+            ResumeCamera();
+        }
+
+        public void OnDeactivatedInTab()
+        {
+            PauseCamera();
         }
 
         /// <summary>
@@ -81,6 +94,51 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void InputWafer_Working_Load(object sender, EventArgs e)
         {
             EnsureInitialized();
+        }
+
+        // [ADD] 화면 표시 변경 시 카메라 제어 (Operator_Main 참조)
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            try
+            {
+                if (IsDisposed || Disposing) return;
+
+                if (this.Visible)
+                {
+                    ResumeCamera();
+                }
+                else
+                {
+                    PauseCamera();
+                }
+            }
+            catch { }
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            try { ResumeCamera(); } catch { }
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            try { PauseCamera(); } catch { }
+        }
+
+
+        // [ADD] 폼 종료 시 리소스 정리
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            try
+            {
+                PauseCamera();
+                UnsubscribeInputStageMarkEvents();
+            }
+            catch { }
+            base.OnFormClosing(e);
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -360,12 +418,82 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 {
                     if (_InputWaferCameraviewer.Camera != InputStage.StageCamera)
                         _InputWaferCameraviewer.Camera = InputStage.StageCamera;
-                    try { InputStage.StageCamera.StartLive(); } catch { }
-                    try { _InputWaferCameraviewer.StartUpdateTask(); } catch { }
+
+                    // 현재 visible 상태라면 즉시 Resume 수행
+                    if (this.Visible)
+                    {
+                        ResumeCamera();
+                    }
                 }
             }
             catch { }
         }
+        private void PauseCamera()
+        {
+            if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed) return;
+
+            try
+            {
+                _InputWaferCameraviewer.SuspendDisplay();
+            }
+            catch { }
+
+            var cam = _InputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try
+                {
+                    // UI 숨겨질 때 이미지 갱신 플래그 OFF (불필요한 리소스 낭비 방지)
+                    cam.SuspendedImageDisplay = true;
+                    cam.StopLive();
+                }
+                catch { }
+            }
+
+            // 뷰어 내부의 업데이트 Task 중지 (리플렉션 또는 메서드 호출)
+            try
+            {
+                // VisionImageViewer에 StopUpdateTask가 있다면 명시적 호출
+                // Operator_Main 참조하여 리플렉션 사용 혹은 직접 호출
+                var method = _InputWaferCameraviewer.GetType().GetMethod("StopUpdateTask");
+                if (method != null) method.Invoke(_InputWaferCameraviewer, null);
+                else
+                {
+                    // 직접 호출 가능한 경우(public 인 경우)
+                    // _InputWaferCameraviewer.StopUpdateTask(); 
+                }
+            }
+            catch { }
+        }
+
+        private void ResumeCamera()
+        {
+            if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed) return;
+
+            var cam = _InputWaferCameraviewer.Camera;
+            if (cam != null)
+            {
+                try { cam.SuspendedImageDisplay = false; } catch { }
+                try { cam.StartLive(); } catch { }
+            }
+
+            try { _InputWaferCameraviewer.ResumeDisplay(); } catch { }
+
+            // 뷰어 내부 업데이트 Task 재개
+            try
+            {
+                // VisionImageViewer에 StartUpdateTask 호출
+                var method = _InputWaferCameraviewer.GetType().GetMethod("StartUpdateTask");
+                if (method != null) method.Invoke(_InputWaferCameraviewer, null);
+                else
+                {
+                    _InputWaferCameraviewer.StartUpdateTask();
+                }
+            }
+            catch { }
+        }
+
+
         #endregion
 
 
@@ -445,79 +573,52 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 return;
             _lastMarkDrawUtc = now;
 
-            // UI 스레드 처리
             if (_InputWaferCameraviewer == null || _InputWaferCameraviewer.IsDisposed)
                 return;
 
-
-            //_InputWaferCameraviewer.ResumeDisplay();
-            if (_InputWaferCameraviewer.InvokeRequired)
+            // Hub로만 오버레이 적용
+            Action apply = () =>
             {
-                _InputWaferCameraviewer.Invoke(new Action(() => ApplyInputStageMarkOverlays(e)));
-            }
-            else
-            {
-                ApplyInputStageMarkOverlays(e);
-            }
-        }
-
-        // Overlay 적용 메서드
-        private void ApplyInputStageMarkOverlays(PatternMarksFoundEventArgs e)
-        {
-            try
-            {
-                if (_InputWaferCameraviewer == null) return;
-
-                // 라이브 그랩 중이라면 이미지 교체는 선택 – 필요 시만 적용
-                // if (e.Image != null && !_InputWaferCameraviewer.Simulated)
-                //     _InputWaferCameraviewer.InputImage = e.Image;  // 프로젝트의 실제 이미지 교체 API에 맞게 조정
-
-                // ResultOverlays 컬렉션 반영 (VisionImageViewer 내부 구현이 해당 컬렉션을 그리는 구조라고 가정)
-                var overlaysProp = _InputWaferCameraviewer.GetType().GetProperty("ResultOverlays");
-                var list = overlaysProp?.GetValue(_InputWaferCameraviewer) as System.Collections.IList;
-
-                if (list != null)
-                {
-                    lock (list)
+                VisionRunnerHub.ApplyMarksFoundOverlays(
+                    _InputWaferCameraviewer,
+                    e,
+                    new VisionRunnerHub.MarksOverlayOptions
                     {
-                        list?.Clear();
+                        UseXAxisRoi = true,                 // InputWafer는 X축 ROI
+                        ShowTextInfo = true,
+                        TextLocation = new Point(10, 50),   // 위쪽 잘림 방지
 
-                        if (e.Marks == null || e.Marks.Count == 0)
+                        // 가능하면 Recipe ROI 제공(없으면 Hub가 CenterROI fallback)
+                        RecipeInspectRoiProvider = () =>
                         {
-                            _InputWaferCameraviewer.Refresh();
-                            return;
-                        }
-
-                        for (int i = 0; i < e.Marks.Count; i++)
-                        {
-                            var m = e.Marks[i];
-                            var ov = new QMC.Common.Vision.PatternMatchResultOverlay
+                            try
                             {
-                                Center = new System.Drawing.PointF((float)m.X, (float)m.Y),
-                                PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
-                                PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
-                                AngleDeg = (float)m.AngleDeg,
-                                CrossHalfLenPx = (i == e.RepresentativeIndex) ? 24 : 16,
-                                Highlight = (i == e.RepresentativeIndex),
-                                Index = i,
-                                Color = (i == e.RepresentativeIndex) ? System.Drawing.Color.Yellow : System.Drawing.Color.Lime,
-                                Thickness = (i == e.RepresentativeIndex) ? 2f : 1f,
-                                Visible = true
-                            };
-                            list?.Add(ov);
+                                if (InputStage?.PmRunner != null)
+                                {
+                                    var s = InputStage.PmRunner._Roi.InspectStart;
+                                    var ed = InputStage.PmRunner._Roi.InspectEnd;
+                                    if (!(s.IsEmpty && ed.IsEmpty))
+                                        return (s, ed);
+                                }
+                            }
+                            catch { }
+                            return null;
                         }
-                    }
-                }
-                _InputWaferCameraviewer.ResumeDisplay();
-            }
-            catch (Exception ex)
-            {
-                Log.Write("InputWafer_Working", "ApplyInputStageMarkOverlays", ex.Message);
-            }
+                    });
+            };
+
+            if (_InputWaferCameraviewer.InvokeRequired) _InputWaferCameraviewer.BeginInvoke(apply);
+            else apply();
         }
 
         private void btnMapping_Click(object sender, EventArgs e)
         {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Question", "Cassette Mapping을 하시겠습니까?") != DialogResult.Yes)
+            {
+                return;
+            }
+
             try
             {
                 if (InputCassetteLifter == null)
@@ -546,7 +647,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     return;
                 }
 
-                waferMapView_InputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_InputWafer.GetWaferSelectMapView()?.SetMaterialCassette(materialCassette);
                 waferMapView_InputWafer.Refresh();
 
                 MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -554,48 +655,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch (Exception ex)
             {
                 MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void checkBoxTest_CheckedChanged(object sender, EventArgs e)
-        {
-            //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "DryRun 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
-                return;
-
-            if (checkBoxTest.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(true, save: true);
-            }
-            else if(!checkBoxTest.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: true);
-            }
-            else
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: false);
-            }
-        }
-
-        private void checkBoxSimulation_CheckedChanged(object sender, EventArgs e)
-        {
-            //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "Simulation 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
-                return;
-
-            if (checkBoxSimulation.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(true, save: true);
-            }
-            else if (!checkBoxSimulation.Checked)
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: true);
-            }
-            else
-            {
-                //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: false);
             }
         }
 
@@ -759,7 +818,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void btnTest_Click(object sender, EventArgs e)
         {
-            InputStage.TryGetMarkCenterGlobalDirectional(true, null, out var gx, out var gy, out var s);
+            
         }
+
     }
 }

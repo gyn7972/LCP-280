@@ -333,14 +333,21 @@ namespace QMC.LCP_280.Process.Unit
                 return;
 
             bool IsAuto = false;
-            if (RunMode == UnitRunMode.Auto)
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
                 IsAuto = true;
+            }
             else
+            {
                 IsAuto = false;
+            }
 
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+            {
                 ax.MoveAbs(target, IsAuto, isFine);
-                //ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            }
         }
         #endregion
 
@@ -643,10 +650,16 @@ namespace QMC.LCP_280.Process.Unit
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
 
             bool IsAuto = false;
-            if (RunMode == UnitRunMode.Auto)
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
                 IsAuto = true;
+            }
             else
+            {
                 IsAuto = false;
+            }
             int ret = this.WaferLifterZ.MoveAbs(axisPos, IsAuto, isFine);
             Thread.Sleep(10);
             if (ret == 0)

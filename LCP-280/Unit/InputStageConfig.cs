@@ -88,13 +88,13 @@ namespace QMC.LCP_280.Process.Unit
 
 
         //
-        [Category("Limit"), DisplayName("safeHalfRangeX(mm)")]
-        [DefaultValue(0.0)]
-        public double dSafeHalfRangeX { get; set; } = 0.0;
+        //[Category("Limit"), DisplayName("safeHalfRangeX(mm)")]
+        //[DefaultValue(0.0)]
+        //public double dSafeHalfRangeX { get; set; } = 0.0;
 
-        [Category("Limit"), DisplayName("safeHalfRangeY(mm)")]
-        [DefaultValue(0.0)]
-        public double dSafeHalfRangeY { get; set; } = 0.0;
+        //[Category("Limit"), DisplayName("safeHalfRangeY(mm)")]
+        //[DefaultValue(0.0)]
+        //public double dSafeHalfRangeY { get; set; } = 0.0;
 
 
 
@@ -121,6 +121,17 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         public double dSafeSatageRaius;
+
+
+        [Category("OffsetDie"), DisplayName("OffsetDieX(mm)")]
+        [DefaultValue(0.0)]
+        public double dOffsetDieX { get; set; } = 0.0;
+
+        [Category("OffsetDie"), DisplayName("OffsetDieY(mm)")]
+        [DefaultValue(0.0)]
+        public double dOffsetDieY { get; set; } = 0.0;
+
+
         // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;
         public double MoveDoneRemainDistance    { get; set; } = 0.005;

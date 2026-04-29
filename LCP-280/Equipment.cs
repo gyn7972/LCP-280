@@ -558,11 +558,9 @@ namespace QMC.LCP_280.Process
             Units.TryGetValue(name, out var unit);
             return unit as BaseUnit;
         }
-
         #endregion
 
         #region Unit State Events (Setter/Broadcast)
-
         public void SetAndRaiseUnitState(string unitName, UnitStatus newState)
         {
             if (string.IsNullOrWhiteSpace(unitName))
@@ -608,16 +606,13 @@ namespace QMC.LCP_280.Process
 
             OnUnitStateChanged(unitName, newState);
         }
-
         private void OnUnitStateChanged(string unitName, UnitStatus newState)
         {
             UnitStateChanged?.Invoke(this, new UnitStateChangedEventArgs(unitName, newState));
         }
-
         #endregion
 
         #region Unit Gates (Shared-Unit Collision Avoidance)
-
         private readonly object _unitGateMapLock = new object();
         private readonly Dictionary<string, SemaphoreSlim> _unitGateMap =
             new Dictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
@@ -1057,6 +1052,7 @@ namespace QMC.LCP_280.Process
         }
         private void InitializeSourcemeters()
         {
+            var mb = new MessageBoxOk();
             var list = new List<string> { "Index_Prober_Sourcemeter" };
             foreach (var name in list)
             {
@@ -1066,19 +1062,21 @@ namespace QMC.LCP_280.Process
                     int ret = smu.Config.Load();
                     if (ret != 0)
                     {
-                        Log.Write("Equipment", $"[Sourcemeter] '{name}' config load failed rc=0x{ret:X8}");
                         smu.Config.Reset();
                         smu.Config.Save();
+                        var st = $"[Sourcemeter] '{name}' config load failed rc=0x{ret:X8}";
+                        mb.ShowDialog("initialize NG", st);
+                        Log.Write("Equipment", "InitializeSourcemeters", st.ToString());
                     }
                     ret = smu.Initialize();
                     if (ret != 0)
                     {
-                        var mb = new MessageBoxOk();
                         var st = $"Sourcemeter [{smu.Name}] initialize NG.";
                         mb.ShowDialog("initialize NG", st);
+                        Log.Write("Equipment", "InitializeSourcemeters", st.ToString());
                     }
                     Sourcemeters[name] = smu;
-                    Console.WriteLine($"[Sourcemeter] {name} ready");
+                    Log.Write("Equipment", "InitializeSourcemeters", $"[Sourcemeter] {name} ready");
                 }
                 catch (Exception ex) { Log.Write(ex); }
             }
@@ -1125,20 +1123,26 @@ namespace QMC.LCP_280.Process
         public PKGTester Tester { get; private set; }
         private void InitializePKGTester()
         {
+            int nRet = 0;
+            var mb = new MessageBoxOk();
             try
             {
-                Tester = new PKGTester("PKGTester");
-                Tester.BindSourcemeter(Sourcemeter);
-                Tester.BindSpectrometer(Spectrometer);
+                //Tester = new PKGTester("PKGTester");
+                //Tester.BindSourcemeter(Sourcemeter);
+                //Tester.BindSpectrometer(Spectrometer);
 
                 var currentRecipe = EquipmentRecipe?.CurrentRecipe;
                 if (currentRecipe != null)
                 {
-                    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile);
+                    nRet = Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile);
+                    if(nRet != 0)
+                    {
+                        mb.ShowDialog("Error!", $"Failed to load test condition set file.");
+                        Log.Write("Equipment", "InitializePKGTester", $"Failed to load test condition set file.");
+                    }
 
                     // 1) 레시피의 스펙 파일 경로 추출
                     var specPath = currentRecipe.BinningSpecSheetFile;
-
                     // 2) Excel/BIN → ExcelBinningModel 로드
                     ExcelBinningModel excelModel = null;
                     if (!string.IsNullOrWhiteSpace(specPath) && File.Exists(specPath))
@@ -1146,7 +1150,7 @@ namespace QMC.LCP_280.Process
                         var ext = Path.GetExtension(specPath).ToLowerInvariant();
                         if (ext == ".xlsx" || ext == ".xls")
                         {
-                            excelModel = QMC.Common.PKGTester.DataBinningExcelLoader.Load(specPath);
+                            excelModel = DataBinningExcelLoader.Load(specPath);
                         }
                         else if (ext == ".bin")
                         {
@@ -1160,19 +1164,14 @@ namespace QMC.LCP_280.Process
                         var sheet = ExcelBinningModelConverter.ToSpecSheet(excelModel);
                         if (!Tester.BinningSpecSheet.CopyFrom(sheet))
                         {
-                            var mb = new MessageBoxOk();
                             mb.ShowDialog("Error!", "Failed to apply binning spec (from ExcelBinningModel).");
                         }
                     }
-                    //else
-                    //{
-                    //    // 폴백: 기존 방식(레거시 파일일 수 있음)
-                    //    if (Tester.LoadBinningSpecSheet(specPath) != 0)
-                    //    {
-                    //        var mb = new MessageBoxOk();
-                    //        mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-                    //    }
-                    //}
+                }
+                else
+                {
+                    mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                    Log.Write("Equipment", "InitializePKGTester", $"Failed to load binning spec sheet.");
                 }
             }
             catch (Exception ex)
@@ -1373,17 +1372,13 @@ namespace QMC.LCP_280.Process
                 GlobalAlarmTable.Instance.LoadAlarmsFromFile(alarmFilePath);
 
                 InitializePreconditions();
-
                 InitializeCoreContainers();
-
                 OnStateChanged(EquipmentState.Initializing);
-
                 InitializeMotionIo();
-
-                InitializeDevices();
-
+                InitializeDevices_01();
                 InitializeUnits();
                 InitializeRecipes();
+                InitializeDevices_02(); //Recipe 필요한 Device.
 
                 // 여기서 VisionRunnerHub 1회 초기화하자.
                 try
@@ -1424,13 +1419,10 @@ namespace QMC.LCP_280.Process
 
                 // ===== GEM 초기화/시작 =====
                 // 64bIT 지원 안함.!
-
                 FinalizeInitialization();
-
                 HookAlarmCountToSummaryOnce();
-
-                // 30일이 지난 로그 삭제
-                Log.DeleteOldLogs(5);  //Test 5일 지난 파일
+                // 30일이 지난 로그 삭제 -> 30일자 파라미터로 바꿔야함.
+                Log.DeleteOldLogs(30);  //Test 30일 지난 파일
 
             }
             catch (Exception ex)
@@ -1482,7 +1474,7 @@ namespace QMC.LCP_280.Process
             BootstrapIODirect();
         }
 
-        private void InitializeDevices()
+        private void InitializeDevices_01()
         {
             // === 카메라 초기화 ===
             InitializeCameras();
@@ -1499,11 +1491,19 @@ namespace QMC.LCP_280.Process
             // === Spectrometer 초기화 ===
             InitializeSpectrometers();
 
-            // === PKG Tester 초기화 ===
-            InitializePKGTester();
-
             // === Strain Gage 초기화 ===
             InitializeStrainGages();
+
+            // === PKG Tester 초기화 ===
+            // 1차로 우선 할당.
+            Tester = new PKGTester("PKGTester");
+            Tester.BindSourcemeter(Sourcemeter);
+            Tester.BindSpectrometer(Spectrometer);
+        }
+        private void InitializeDevices_02()
+        {
+            // === PKG Tester 초기화 ===
+            InitializePKGTester();
         }
 
         private void InitializeUnits()

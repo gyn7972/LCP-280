@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.EjectBlockUp,      new [] { AxisNames.EjectorZ } },
             { TeachingPositionName.EjectBlockReady,   new [] { AxisNames.EjectorZ } },
             { TeachingPositionName.EjectBlockSafety,   new [] { AxisNames.EjectorZ } },
-            { TeachingPositionName.EjectPinChange,    new [] { AxisNames.EjectorZ } },
+            { TeachingPositionName.EjectPinChange,    new [] { AxisNames.EjectPinZ } },
             { TeachingPositionName.EjectPinOffset,    new [] { AxisNames.EjectPinZ } },
             { TeachingPositionName.EjectPinReady,   new [] { AxisNames.EjectPinZ } },
         };

@@ -3717,8 +3717,7 @@ namespace QMC.LCP_280.Process.Unit
         // LCP-280\Unit\OutputFeeder.cs 내부
         // [수정] InputStage의 Map 정보를 복사하되, 
         // 1) 기본 장비 축 매핑(X:정방향, Y:역방향)을 먼저 적용한 뒤
-        // 2) Recipe의 Rotate/Mirror 설정을 추가 반영함
-
+        // 2) Recipe의 Rotate/Mirror 설정을 추가 반영함.
         private int CopyInputMapRotate180(MaterialWafer srcWafer, MaterialWafer dstWafer)
         {
             try
@@ -3792,106 +3791,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        //private int CopyInputMapRotate180(MaterialWafer srcWafer,
-        //                                  MaterialWafer dstWafer)
-        //{
-        //    try
-        //    {
-        //        if (srcWafer == null || srcWafer.Dies == null || srcWafer.Dies.Count == 0)
-        //            return -1;
-        //        if (dstWafer == null)
-        //            return -2;
-
-        //        lock (srcWafer.Dies)
-        //        {
-        //            lock (dstWafer.Dies)
-        //            {
-        //                // 1. 소스 다이 가져오기 (Index 순서대로 정렬)
-        //                var sourceDies = srcWafer.Dies.OrderBy(d => d.Index).ToList();
-        //                if (sourceDies.Count == 0)
-        //                    return -3;
-
-        //                // 2. Grid Index 계산 준비 (BinX, BinY 매핑용)
-        //                const double tol = 1e-6;
-        //                // 좌표값 목록 추출 (오름차순 정렬)
-        //                var xs = sourceDies.Select(d => (double)d.MapX).Distinct().OrderBy(v => v).ToList();
-        //                var ys = sourceDies.Select(d => (double)d.MapY).Distinct().OrderBy(v => v).ToList();
-
-        //                // 좌표값 -> 그리드 인덱스 변환 로컬 함수
-        //                int FindIndex(List<double> list, double value)
-        //                {
-        //                    for (int i = 0; i < list.Count; i++)
-        //                    {
-        //                        if (Math.Abs(list[i] - value) <= tol) return i;
-        //                    }
-        //                    return -1;
-        //                }
-
-        //                if (dstWafer.Dies != null) dstWafer.Dies.Clear();
-        //                dstWafer.Dies = new List<MaterialDie>(sourceDies.Count);
-
-        //                // 그리드 전체 크기
-        //                int nx = xs.Count;
-        //                int ny = ys.Count;
-
-        //                // 3. InputStage의 Die를 순회하며 좌표 변환 수행
-        //                foreach (var s in sourceDies)
-        //                {
-        //                    // 원본에서의 그리드 인덱스 찾기
-        //                    int ix = FindIndex(xs, s.MapX);
-        //                    int iy = FindIndex(ys, s.MapY);
-
-        //                    int binX = 0, binY = 0;
-        //                    if (ix >= 0 && iy >= 0)
-        //                    {
-        //                        // [Step 1] 장비 기본 좌표계 보정 (사용자 확인 사항: X정방향, Y역방향)
-        //                        // 이 상태가 Rotate=None, Mirror=None 일 때의 기준이 됩니다.
-        //                        int baseX = ix;
-        //                        int baseY = ny - 1 - iy; // LCP-280 기준 Y역방향 → 그리드 인덱스는 Y역방향으로 계산
-
-        //                        // [Step 2] Recipe Rotate 적용 (기본 보정된 좌표 기준)
-        //                        // ApplyRotateToIndex는 내부적으로 0,0 기준 회전을 수행한다고 가정
-        //                        int rotatedX = baseX;
-        //                        int rotatedY = baseY;
-
-        //                        // 회전 후의 그리드 차원 (90/270도 회전 시 가로세로 바뀜)
-        //                        int currentNx = nx;
-        //                        int currentNy = ny;
-
-        //                        // 무조건 180도 회전.
-        //                        // (x, y) -> (nx-1-x, ny-1-y)
-        //                        rotatedX = currentNx - 1 - baseX;
-        //                        rotatedY = currentNy - 1 - baseY;
-        //                        binX = rotatedX;
-        //                        binY = rotatedY;
-        //                    }
-
-        //                    // 결과 추가
-        //                    // Index는 InputStage 순서(작업 순서)를 유지하기 위해 s.Index 그대로 사용
-        //                    dstWafer.Dies.Add(new MaterialDie
-        //                    {
-        //                        Index = s.Index,
-        //                        Presence = Material.MaterialPresence.Exist,
-        //                        ProcessSatate = Material.MaterialProcessSatate.Ready,
-        //                        BinX = binX,
-        //                        BinY = binY,
-
-        //                        // MapX, MapY는 그리드 인덱스(BinX, BinY)를 따르도록 설정
-        //                        MapX = binX,
-        //                        MapY = binY
-        //                    });
-        //                }
-
-        //                return 0;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(UnitName, "CopyInputMapRotate180", ex.Message);
-        //        return -9;
-        //    }
-        //}
 
         private static (int tx, int ty) ApplyRotateToIndex(int ix, int iy, int nx, int ny, MapRotateOption r)
         {

@@ -276,20 +276,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (Rotary != null)
                 {
-                    manualControlProcessSeq.ParentUnit = Rotary; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlProcessSeq.ParentUnit = Rotary; // 시퀀스 등록 대상 유닛 지정
                 }
 
                 if (IndexLoadAligner != null)
                 {
-                    manualControl.ParentUnit = IndexLoadAligner; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControl.ParentUnit = IndexLoadAligner; // 시퀀스 등록 대상 유닛 지정
                 }
                 if(IndexChipProbeController != null)
                 {
-                    manualControlControlProbe.ParentUnit = IndexChipProbeController;
+                    manualSequenceControlProbe.ParentUnit = IndexChipProbeController;
                 }
                 if(IndexUnloadAligner != null)
                 {
-                    manualControlControlOutAlign.ParentUnit = IndexUnloadAligner;
+                    manualSequenceControlOutAlign.ParentUnit = IndexUnloadAligner;
                 }
 
             }
@@ -1044,28 +1044,26 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             int nRet = 0;
 
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate Start1");
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate Start");
             nRet = Rotary.MovePositionRotate();
             if(nRet != 0)
             {
                 Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
                 return;
             }
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate Start2");
 
             // 움직이고 바로 Inpos 확인하면 바로 OK가 들어와 버림.
             // 그래서 Sleep 아니면 포지션을 봐야 하는 거임.
             //포지션 위치를 확인해서 완료할때는 0.365ms
             //임의로 Sleep을 줄때는
             //Thread.Sleep(50);
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End1");
             nRet = Rotary.WaitIndexMoveDone();
             if (nRet != 0)
             {
                 Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
                 return;
             }
-            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End2");
+            Log.Write(Rotary.UnitName, "btnRotary_Click", "Rotary Rotate End");
 
             //이거 여기 왜 있지?
             try { BindTeachingPositions(); } catch { }

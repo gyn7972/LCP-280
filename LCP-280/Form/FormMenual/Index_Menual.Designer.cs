@@ -48,14 +48,14 @@
             this.comboBoxIndexSocketNo = new System.Windows.Forms.ComboBox();
             this.btnManualVision = new QMC.Common.IndividualMenuButton();
             this.groupBoxProcessSeq = new System.Windows.Forms.GroupBox();
-            this.manualSequenceControlProcessSeq = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlProcessSeq = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControl = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlProbe = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlControlProbe = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlControlOutAlign = new QMC.LCP_280.Process.Component.ManualControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
@@ -376,7 +376,7 @@
             // 
             // groupBoxProcessSeq
             // 
-            this.groupBoxProcessSeq.Controls.Add(this.manualSequenceControlProcessSeq);
+            this.groupBoxProcessSeq.Controls.Add(this.manualControlProcessSeq);
             this.groupBoxProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxProcessSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.groupBoxProcessSeq.Location = new System.Drawing.Point(1424, 3);
@@ -388,14 +388,14 @@
             // 
             // manualSequenceControlProcessSeq
             // 
-            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(3, 30);
-            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
-            this.manualSequenceControlProcessSeq.ParentUnit = null;
-            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(463, 524);
-            this.manualSequenceControlProcessSeq.TabIndex = 14;
+            this.manualControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControlProcessSeq.Location = new System.Drawing.Point(3, 30);
+            this.manualControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualControlProcessSeq.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualControlProcessSeq.Name = "manualSequenceControlProcessSeq";
+            this.manualControlProcessSeq.ParentUnit = null;
+            this.manualControlProcessSeq.Size = new System.Drawing.Size(463, 524);
+            this.manualControlProcessSeq.TabIndex = 14;
             // 
             // tabControl1
             // 
@@ -412,7 +412,7 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.manualSequenceControl);
+            this.tabPage1.Controls.Add(this.manualControl);
             this.tabPage1.Location = new System.Drawing.Point(4, 39);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -423,18 +423,18 @@
             // 
             // manualSequenceControl
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControl.Location = new System.Drawing.Point(3, 3);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(455, 508);
-            this.manualSequenceControl.TabIndex = 14;
+            this.manualControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControl.Location = new System.Drawing.Point(3, 3);
+            this.manualControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualControl.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualControl.Name = "manualSequenceControl";
+            this.manualControl.ParentUnit = null;
+            this.manualControl.Size = new System.Drawing.Size(455, 508);
+            this.manualControl.TabIndex = 14;
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.manualSequenceControlProbe);
+            this.tabPage2.Controls.Add(this.manualControlControlProbe);
             this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -445,18 +445,18 @@
             // 
             // manualSequenceControlProbe
             // 
-            this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 3);
-            this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
-            this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(455, 372);
-            this.manualSequenceControlProbe.TabIndex = 15;
+            this.manualControlControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualControlControlProbe.Location = new System.Drawing.Point(3, 3);
+            this.manualControlControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualControlControlProbe.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualControlControlProbe.Name = "manualSequenceControlProbe";
+            this.manualControlControlProbe.ParentUnit = null;
+            this.manualControlControlProbe.Size = new System.Drawing.Size(455, 372);
+            this.manualControlControlProbe.TabIndex = 15;
             // 
             // tabPage3
             // 
-            this.tabPage3.Controls.Add(this.manualSequenceControlOutAlign);
+            this.tabPage3.Controls.Add(this.manualControlControlOutAlign);
             this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Size = new System.Drawing.Size(461, 514);
@@ -466,14 +466,14 @@
             // 
             // manualSequenceControlOutAlign
             // 
-            this.manualSequenceControlOutAlign.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlOutAlign.Location = new System.Drawing.Point(0, 0);
-            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
-            this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
-            this.manualSequenceControlOutAlign.ParentUnit = null;
-            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(461, 372);
-            this.manualSequenceControlOutAlign.TabIndex = 29;
+            this.manualControlControlOutAlign.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualControlControlOutAlign.Location = new System.Drawing.Point(0, 0);
+            this.manualControlControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualControlControlOutAlign.MinimumSize = new System.Drawing.Size(357, 300);
+            this.manualControlControlOutAlign.Name = "manualSequenceControlOutAlign";
+            this.manualControlControlOutAlign.ParentUnit = null;
+            this.manualControlControlOutAlign.Size = new System.Drawing.Size(461, 372);
+            this.manualControlControlOutAlign.TabIndex = 29;
             // 
             // groupBox1
             // 
@@ -659,20 +659,20 @@
         }
 
         #endregion
-        private Component.ManualSequenceControl manualSequenceControl;
+        private Component.ManualControl manualControl;
         private System.Windows.Forms.GroupBox groupBoxManual;
         private Common.IndividualMenuButton btnInputMAlign;
         private System.Windows.Forms.Button buttonTest;
         private System.Windows.Forms.Label labelIndexSocketNo;
         private System.Windows.Forms.ComboBox comboBoxIndexSocketNo;
-        private Component.ManualSequenceControl manualSequenceControlProbe;
+        private Component.ManualControl manualControlControlProbe;
         private System.Windows.Forms.GroupBox groupBoxProcessSeq;
-        private Component.ManualSequenceControl manualSequenceControlProcessSeq;
+        private Component.ManualControl manualControlProcessSeq;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.TabPage tabPage3;
-        private Component.ManualSequenceControl manualSequenceControlOutAlign;
+        private Component.ManualControl manualControlControlOutAlign;
         private System.Windows.Forms.GroupBox groupBox1;
         private Common.Vision.VisionImageViewer _ProcessCameraviewer;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;

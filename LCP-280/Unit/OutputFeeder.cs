@@ -44,50 +44,51 @@ namespace QMC.LCP_280.Process.Unit
         public new enum AlarmKeys
         {
             Alarm_BinLoadingFailed = 11201,
-            Alarm_BarcodeReadingFailed,
-            Alarm_StageLoadingFailed,
-            Alarm_StageUnloadingFailed,
-            Alarm_BinUnloadingFailed,
+            Alarm_BarcodeReadingFailed = 11202,
+            Alarm_StageLoadingFailed = 11203,
+            Alarm_StageUnloadingFailed = 11204,
+            Alarm_BinUnloadingFailed = 11205,
 
-            Alarm_OutputStageInterlockFailed,
+            Alarm_OutputStageInterlockFailed = 11206,
 
-            Alarm_GripperClampFailed,
-            Alarm_FeederClampUpDown,
-            Alarm_IsBinReadyForLoading,
-            Alarm_BinLoadingPosition,
-            Alarm_OutputFeederNoPosition,
-            Alarm_OutputFeederInterlockFailed,
-            Alarm_OutputFeederBinData,
-            Alarm_PrepareOutputStageUnloadingBin,
-            Alarm_OutputCassetteLifter_Fail,
+            Alarm_GripperClampFailed = 11207,
+            Alarm_FeederClampUpDown = 11208,
+            Alarm_IsBinReadyForLoading = 11209,
+            Alarm_BinLoadingPosition = 11210,
+            Alarm_OutputFeederNoPosition = 11211,
+            Alarm_OutputFeederInterlockFailed = 11212,
+            Alarm_OutputFeederBinData = 11213,
+            Alarm_PrepareOutputStageUnloadingBin = 11214,
+            Alarm_OutputCassetteLifter_Fail = 11215,
 
-            // ===== [ADD] 타임아웃/상태 분리 (InputFeeder 2030~2033와 동일 의미) =====
-            Alarm_FeederLiftUpTimeout,
-            Alarm_FeederLiftDownTimeout,
-            Alarm_FeederClampTimeout,
-            Alarm_FeederUnclampTimeout,
+            // timeout
+            Alarm_FeederLiftUpTimeout = 11216,
+            Alarm_FeederLiftDownTimeout = 11217,
+            Alarm_FeederClampTimeout = 11218,
+            Alarm_FeederUnclampTimeout = 11219,
 
-            // ===== [ADD] 센서/데이터 불일치 분리 (InputFeeder 2040~2042와 유사) =====
-            Alarm_BinMissingAfterStageToFeeder,
-            Alarm_BinMissingAfterFeederToCassette,
-            Alarm_BinSensorDataMismatch,
+            // consistency
+            Alarm_BinMissingAfterStageToFeeder = 11220,
+            Alarm_BinMissingAfterFeederToCassette = 11221,
+            Alarm_BinSensorDataMismatch = 11222,
 
-            // ===== [ADD] 언로딩 슬롯/카세트 단계 분리 (InputFeeder 2060~와 유사) =====
-            Alarm_UnloadTargetSlotInvalid,
-            Alarm_CassetteSlotNotEmptyForUnload,
-            Alarm_CassetteMoveToSlotFailedForUnload,
+            // unload slot
+            Alarm_UnloadTargetSlotInvalid = 11223,
+            Alarm_CassetteSlotNotEmptyForUnload = 11224,
+            Alarm_CassetteMoveToSlotFailedForUnload = 11225,
 
-            // ===== [ADD] Feeder->Cassette 상세 알람 (InputFeeder 2070~2074와 동일 스타일) =====
-            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
-            Alarm_UnloadFeederToCassette_UnclampFailed,
-            Alarm_UnloadFeederToCassette_BinDataInvalid,
-            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
-            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
+            // feeder->cassette step alarms
+            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed = 11226,
+            Alarm_UnloadFeederToCassette_UnclampFailed = 11227,
+            Alarm_UnloadFeederToCassette_BinDataInvalid = 11228,
+            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed = 11229,
+            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed = 11230,
 
-            Alarm_ScanBinFailed,
-            Alarm_MoveToReadyFailed,
-            Alarm_MoveToCassetteTeachFailed,
-            Alarm_BinCassetteLoadingFailed
+            Alarm_ScanBinFailed = 11231,
+            Alarm_MoveToReadyFailed = 11232,
+            Alarm_MoveToCassetteTeachFailed = 11233,
+            Alarm_BinCassetteLoadingFailed = 11234
+
         }
 
         #region InitAlarm
@@ -95,6 +96,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             string source = "Bin_Feeder";
             base.InitAlarm();
+
             // 1. 공용 파일 로더에서 알람 목록 가져오기
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
             if (loadedAlarms == null || loadedAlarms.Count == 0)
@@ -281,9 +283,6 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
-
-            
-
         }
         #endregion
 
@@ -313,9 +312,8 @@ namespace QMC.LCP_280.Process.Unit
 
         #region ctor / Initialization
         public OutputFeeder(OutputFeederConfig config = null)
-            : base(new OutputFeederConfig())
+           : base(config ?? new OutputFeederConfig())
         {
-            
             AddComponents();
         }
 
@@ -659,8 +657,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() =>
             {
-                OnMovePositionReady(isFine);
-                return 0;
+                return OnMovePositionReady(isFine);
             });
         }
         private int OnMovePositionReady(bool isFine = false)
@@ -1035,16 +1032,22 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Domain Mapping
         private void BindIoDomains()
         {
-            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+            var eq = Equipment.Instance; 
+            var unit = eq?.UnitIO; 
+            if (unit == null) 
+                return;
+
             if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederLift", out _feederLift))
             {
                 Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederLift");
             }
+            BindCylinder(_feederLift); //ADD
 
             if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederClamp", out _cylClamp))
             {
                 Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederClamp");
             }
+            BindCylinder(_cylClamp); //ADD
         }
         #endregion
 
@@ -2080,146 +2083,6 @@ namespace QMC.LCP_280.Process.Unit
         // [ADD] WaferExchangeDecision 로그 쓰로틀/변화 감지용(간단 버전)
         private int _lastWEDStateMask = -1;
         private int _lastWEDTick = 0;
-        private bool ShouldEnterWorkForWaferExchange(out bool unloadFirst)
-        {
-            unloadFirst = false;
-            var waferBin = OutputStage?.GetMaterialWafer();
-            bool stageHasBin = OutputStage?.IsRingPresent() == true;
-            bool feederHasWafer = GetMaterial() is MaterialWafer;
-            var feederBin = GetMaterial() as MaterialWafer;
-            if (stageHasBin)
-            {
-                bool diesMissing = (waferBin == null) || waferBin.Dies == null || waferBin.Dies.Count == 0;
-                bool noNextDie = false;
-                try 
-                { 
-                    noNextDie = !OutputStage.HasNextDie(); 
-                } 
-                catch (Exception ex)
-                { 
-                    //noNextDie = true;
-                    Log.Write(ex);
-                }
-
-                bool noNextDieByStateOnly = true;
-                bool binFull = false;
-                try
-                {
-                    lock (waferBin.Dies)
-                    {
-                        if (waferBin?.Dies != null && waferBin.Dies.Count > 0)
-                        {
-                            noNextDieByStateOnly = !waferBin.Dies.Any
-                                (d => d != null &&
-                                d.State != DieProcessState.Placed 
-                                && d.State != DieProcessState.Rejected
-                                && d.State != DieProcessState.Skip);
-                        }
-                        // 임시 우회: State-only가 남아있으면 '없다'로 보지 않음
-                        noNextDie = noNextDie && noNextDieByStateOnly;
-                        binFull = waferBin != null &&
-                                       waferBin.Dies != null &&
-                                       waferBin.Dies.Count > 0 &&
-                                       waferBin.Dies.All(d =>
-                                       d != null &&
-                                       (d.State == DieProcessState.Placed || d.State == DieProcessState.Rejected));
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                }
-
-                // 전체 완료(Placed+Rejected) 시 Completed 승격 (안전 보정)
-                if (binFull &&
-                    waferBin.ProcessSatate != Material.MaterialProcessSatate.Completed)
-                {
-                    waferBin.ProcessSatate = Material.MaterialProcessSatate.Completed;
-                }
-
-                // 진단 로그(쓰로틀/변화 시에만)
-                try
-                {
-                    int total = waferBin?.Dies?.Count ?? 0;
-                    int placed = waferBin?.Dies?.Count(d => d != null && d.Presence == Material.MaterialPresence.Exist) ?? 0;
-                    var proc = waferBin?.ProcessSatate;
-
-                    // 상태 마스크(간단 요약): 변화 감지/이슈 판별에만 사용
-                    int mask = 0;
-                    if (diesMissing) mask |= 1;
-                    if (noNextDie) mask |= 2;
-                    if (binFull) mask |= 4;
-                    if (proc == Material.MaterialProcessSatate.Completed) mask |= 8;
-
-                    int now = Environment.TickCount;
-                    bool changed = (mask != _lastWEDStateMask);
-                    bool issue = (mask != 0); // 하나라도 true면 이슈로 간주
-                    int intervalMs = issue ? 1000 : 5000; // 이슈: 5초, 정상: 15초 간격
-
-                    if (changed || (now - _lastWEDTick) >= intervalMs)
-                    {
-                        Log.Write(UnitName, "WaferExchangeDecision",
-                            $"mask={mask}, stageHasBin={stageHasBin}, diesMissing={diesMissing}, noNextDie={noNextDie}, binFull={binFull}, " +
-                            $"proc={proc}, totalDies={total}, placed={placed}");
-
-                        _lastWEDStateMask = mask;
-                        _lastWEDTick = now;
-                    }
-                }
-                catch (Exception ex) 
-                { Log.Write(ex); }
-
-                if (waferBin == null && feederBin != null)
-                {
-                    unloadFirst = false;
-                    return true; // 언로드 시퀀스 진입
-                    //LoadFlowStep.BinStageMapping;
-                }
-
-                if (diesMissing || noNextDie || binFull ||
-                    waferBin?.ProcessSatate == Material.MaterialProcessSatate.Completed)
-                {
-                    unloadFirst = true;
-                    return true; // 언로드 시퀀스 진입
-                }
-                // 아직 더 놓을 다이 존재 → 유지 (Work 미진입, Ready 대기)
-                return false;
-            }
-
-            // Stage 비어있고 Feeder에만 웨이퍼 존재 → Stage 로딩 진행
-            if (!stageHasBin && feederHasWafer)
-                return true;
-
-            bool cassettePresent = OutputCassetteLifter?.IsCassettePresentAll() == true;
-            bool scanDone = OutputCassetteLifter?.IsScanCompleted() == true;
-
-            // Cassette 장착 + 스캔 미완료 → Scan 수행 위해 Work
-            if (cassettePresent && !scanDone)
-                return true;
-
-            // Cassette에 더 로딩 가능한 웨이퍼 존재
-            if (OutputCassetteLifter?.IsHaveMoreProcessWafer() == true)
-            {
-                return true;
-            }
-            else
-            {
-                TryShutdownIfAllCassettesEmpty();
-                return false;
-            }
-            return false;
-        }
-
-        private int PreparetoOutputStage()
-        {
-            int nRet = 0;
-
-            // T 보정 필요시. 
-            //nRet = OutputStage.ScanBin();
-
-            return nRet;
-        }
         public int BinCassetteLoading(bool isFine = false)
         {
             int nRet = 0;
@@ -3187,7 +3050,10 @@ namespace QMC.LCP_280.Process.Unit
         }
         public Task<int> MoveToCassetteAsync(bool isFine)
         {
-            return Task.Run(() => OnMoveToCassette(isFine));
+            return Task.Run(() =>
+            {
+                return OnMoveToCassette(isFine);
+            });
         }
         protected int OnMoveToCassette(bool isFine)
         {
@@ -3376,8 +3242,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() =>
             {
-                OnEnsureReady(isFine);
-                return 0;
+                return OnEnsureReady(isFine);
             });
         }
         private int OnEnsureReady(bool isFine)

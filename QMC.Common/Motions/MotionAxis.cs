@@ -946,7 +946,6 @@ namespace QMC.Common.Motions
 
             // CPU 점유/응답 균형
             const int pollMs = 1;
-
             if (IsSim)
             {
                 var sw = Stopwatch.StartNew();
@@ -966,18 +965,50 @@ namespace QMC.Common.Motions
 
             if (_driver != null)
             {
-                var sw = Stopwatch.StartNew();
-                while (sw.ElapsedMilliseconds < timeoutMs)
+                if (true)
                 {
-                    if (_driver.IsMoveDone(AxisNo))
+                    var sw = Stopwatch.StartNew();
+                    while (sw.ElapsedMilliseconds < timeoutMs)
                     {
-                        Thread.Sleep(1);
                         if (_driver.IsMoveDone(AxisNo))
                         {
-                            return 0;
+                            Thread.Sleep(1);
+                            if (_driver.IsMoveDone(AxisNo))
+                            {
+                                return 0;
+                            }
                         }
+                        Thread.Sleep(pollMs);
                     }
-                    Thread.Sleep(pollMs);
+                }
+                else
+                {
+                    var sw = Stopwatch.StartNew();
+                    // 목표 위치(논리단위)와 허용 오차
+                    double target = GetStatusSnapshot().PV.CommandPosition; // 또는 move 호출 시 목표를 멤버로 저장해 사용
+                    double tol = Math.Max(this.Config?.InposTolerance ?? 0.002, 0.002);
+                    while (sw.ElapsedMilliseconds < timeoutMs)
+                    {
+                        bool done1 = _driver.IsMoveDone(AxisNo);
+
+                        // 위치 오차 확인 (논리 단위)
+                        double cur = GetPosition();
+                        double err = Math.Abs(cur - target);
+
+                        if (done1 && err <= tol)
+                        {
+                            // 글리치 방지용 1회 재확인
+                            Thread.Sleep(1);
+
+                            bool done2 = _driver.IsMoveDone(AxisNo);
+                            double cur2 = GetPosition();
+                            double err2 = Math.Abs(cur2 - target);
+
+                            if (done2 && err2 <= tol)
+                                return 0;
+                        }
+                        Thread.Sleep(pollMs);
+                    }
                 }
             }
             else if(_ckdDriver != null)

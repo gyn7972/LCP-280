@@ -35,6 +35,7 @@ namespace QMC.LCP_280.Process.Unit
             eAlignTAxesNotReady = 10601,
             eAlignTAxesMoving,
             eRotaryAxesMoving,
+            eIndexLoadAlignerRotateMoveToSocket,
         }
 
         #region InitAlarm
@@ -71,6 +72,16 @@ namespace QMC.LCP_280.Process.Unit
                 alarm.Source = source;// this.UnitName;
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
+
+                alarm = new AlarmInfo();
+                alarm.Code = (int)AlarmKeys.eIndexLoadAlignerRotateMoveToSocket;
+                alarm.Title = "IndexLoadAligner Rotate Move To Socket Failed";
+                alarm.Cause = "Failed to move IndexLoadAligner rotate to socket position. Please check the mechanism and try again.";
+                alarm.Source = source;// this.UnitName;
+                alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+                m_dicAlarms.Add(alarm.Code, alarm);
+
+
             }
             else
             {
@@ -189,6 +200,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     AxisIndexZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                    Log.Write(UnitName, nameof(IsInterlockOK), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                     return false;
                 }
                 if (this.IsAlignTReady() == false)
@@ -258,6 +270,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                Log.Write(UnitName, nameof(IsMoveInterLockSafetyZ), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                 return -1;
             }
 
@@ -367,14 +380,9 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(1);
             }
 
-            //nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index1_Up, isFine);
-            //if(nRet != 0)
-            //{
-            //    Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] MoveTeachingPositionOnce failed: {tpName}");
-            //    return -1;
-            //}
             return nRet;
         }
+
         private int IsMoveInterLockAlignUp(int nIndex = 0)
         {
             int nRet = 0;
@@ -403,6 +411,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisIndexZ.EmgStop();
                     AxisAlignT.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                    Log.Write(UnitName, nameof(IsMoveInterLockAlignUp), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                     return -1;
                 }
             }
@@ -508,6 +517,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                Log.Write(UnitName, nameof(IsMoveInterLockAlignZReady), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                 return -1;
             }
             return nRet;
@@ -594,6 +604,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                Log.Write(UnitName, nameof(IsMoveInterLockAlignTForward), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                 return -1;
             }
             return nRet;
@@ -640,8 +651,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() =>
             {
-                OnMovePositionAlignTBackward(isFine);
-                return 0;
+                return OnMovePositionAlignTBackward(isFine);
             });
         }
         private int OnMovePositionAlignTBackward(bool isFine = false)
@@ -655,9 +665,8 @@ namespace QMC.LCP_280.Process.Unit
             while (IsAlignTBackward() == false)
             {
                 if (IsStop)
-                {
                     return 0;
-                }
+
                 Thread.Sleep(1);
             }
             return nRet;
@@ -668,9 +677,13 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (Rotary != null && this.Rotary.IsIndexMoving())
             {
+                Log.Write(UnitName, nameof(IsMoveInterLockAlignTBackward),
+                    $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
+
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+
                 return -1;
             }
             return nRet;
@@ -737,6 +750,7 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (Rotary != null && this.Rotary.IsIndexMoving())
             {
+                Log.Write(UnitName, nameof(IsMoveInterLockAlignTReady), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
@@ -1078,47 +1092,66 @@ namespace QMC.LCP_280.Process.Unit
         /// 순서: Z Up(해당 소켓) -> T Forward -> T Backward -> T Ready
         /// 모든 축 이동은 안전 Async 버전 사용(내부 폴링).
         /// </summary>
+        private int _mAlignRunFlag = 0;
+        private long _mAlignRunSeq = 0;
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
-            int bRtn = 0;
+            int nRet = 0;
             this.CurrentFunc = RunAlignSocketOnce;
             LogSequence("Start");
-            
             int nIndex = GetAlignIndexNo();
             try
             {
-                //Log.Write("kkkkkkIndexLoadAligner", "Start");
+                long seq = Interlocked.Increment(ref _mAlignRunSeq);
+                if (Interlocked.Exchange(ref _mAlignRunFlag, 1) == 1)
+                {
+                    Log.Write(UnitName, "RunAlignSocketOnce",
+                        $"[MAlign#{seq}] BLOCKED: duplicated call. Thread={Thread.CurrentThread.ManagedThreadId}, Name={Thread.CurrentThread.Name}");
+                    return 0;
+                }
+
                 bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
+                var socket = this.Rotary.GetSocket(nIndex);
+                MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
+
+                Log.Write(UnitName, "MAlign",
+                    $"[MAlign#{seq}] ENTER. " +
+                    $"Thread={Thread.CurrentThread.ManagedThreadId}, Name={Thread.CurrentThread.Name}, " +
+                    $"LoadIndex={Rotary.GetLoadIndexNo()}, AlignIndex={nIndex}, " +
+                    $"UseSocket={bUseSocket}, " +
+                    $"SocketState={socket?.State}, " +
+                    $"DieNull={(die == null)}, " +
+                    $"Presence={die?.Presence}, DieState={die?.State}, ProcState={die?.ProcessSatate}, " +
+                    $"RotaryMoving={Rotary.IsIndexMoving()}");
+
                 if (bUseSocket == false)
                 {
-                    Log.Write(UnitName, "MAlign", "Skip: No socket at unload align position");
+                    Log.Write(UnitName, "MAlign", $"[MAlign#{seq}] Skip: No socket. AlignIndex={nIndex}");
                     return 0;
                 }
-
-                MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
                 if (die == null)
                 {
-                    Log.Write(UnitName, "MAlign", "Skip: No die at unload align position");
+                    Log.Write(UnitName, "MAlign", $"[MAlign#{seq}] Skip: No die. AlignIndex={nIndex}");
                     return 0;
                 }
-
                 if (die.Presence != Material.MaterialPresence.Exist)
                 {
-                    Log.Write(UnitName, "MAlign", "Skip: No die presence at unload align position");
+                    Log.Write(UnitName, "MAlign",
+                        $"[MAlign#{seq}] Skip: No die presence. AlignIndex={nIndex}, Presence={die.Presence}");
                     return 0;
                 }
 
-                // [추가] 상태 기반 Skip (이미 NG/결과완료이면 재측정 안 함)
-                // - NG: DieProcessState.Rejected, DieProcessState.Skip
-                // - Result 완료: MaterialProcessSatate.Completed, MaterialProcessSatate.Skipped
-                if (die.State == DieProcessState.Rejected ||
-                    die.State == DieProcessState.Skip ||
-                    //die.ProcessSatate == Material.MaterialProcessSatate.Completed ||
-                    die.ProcessSatate == Material.MaterialProcessSatate.Skipped)
+                if (this.RunUnitStatus != UnitStatus.ManualRunning)
                 {
-                    Log.Write(UnitName, "MAlign",
-                        $"Skip re-align: DieState={die.State}, ProcessState={die.ProcessSatate}");
-                    return 0;
+                    // [추가] 상태 기반 Skip (이미 NG/결과완료이면 재측정 안 함)
+                    if (die.State == DieProcessState.Rejected ||
+                        die.State == DieProcessState.Skip ||
+                        die.ProcessSatate == Material.MaterialProcessSatate.Skipped)
+                    {
+                        Log.Write(UnitName, "MAlign",
+                            $"Skip re-align: DieState={die.State}, ProcessState={die.ProcessSatate}");
+                        return 0;
+                    }
                 }
 
                 while (this.Rotary.IsIndexMoving())
@@ -1131,41 +1164,94 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-                var socket = this.Rotary.GetSocket(nIndex);
                 socket.SetState(Rotary.RotarySocketState.MAligning);
-
-                TaktStart("One Cycle"); 
-                TaktStart("AlignTReady");
+                TaktStart("One Cycle");
                 // === 동작 수행 (Z Up -> T Fwd -> T Bwd -> T Ready -> Z Safe) ===
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
-                //Log.Write("kkkkkkIndexLoadAligner", "Start1");
-                bRtn &= MovePositionAlignTReady(bFineSpeed);
-                //Log.Write("kkkkkkIndexLoadAligner", "Start2");
-                //bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
-                //Log.Write("kkkkkkIndexLoadAligner", "Start3");
-                if (bRtn != 0)
+                TaktStart("AlignTReady");
+                if (IsAlignTReady() == false)
                 {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
-                    return -1;
+                    nRet &= MovePositionAlignTReady(bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
+                        return -1;
+                    }
                 }
                 TaktEnd("AlignTReady");
 
-                //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignZUp");
                 // 3) Z Up
                 TaktStart("AlignZUp");
-                bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
-                if (bRtn != 0)
+                nRet = MovePositionAlignZUp(nIndex, bFineSpeed);
+                if (nRet != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
                 TaktEnd("AlignZUp");
 
-                //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTForward");
+                //Place가 제대로 안되서 여기에서 검사하고 얼라인했지만
+                //칩이 틸트가 져서 밝기 차이로 검출 실패가 많음.
+                //알고리즘 개선 안하면 사용 못함
+                if(false)
+                {
+                    // Vision Align 검사 추가.
+                    TaktStart("AlignXY_Vision");
+                    nRet = AlignXY(bFineSpeed);
+                    TaktEnd("AlignXY_Vision");
+                    if (nRet != 0) //NG면
+                    {
+                        TaktStart("SafetyZ");
+                        Log.Write(UnitName, "MAlign", "Fail: AlignXY");
+                        try
+                        {
+                            var ctx = Equipment.Instance.SummaryContext;
+                            ctx.GetCurrentSummaryOrNull()?.AddAlignVisionAsMiss();
+                        }
+                        catch (Exception ex)
+                        { Log.Write(ex); }
+
+                        if (false)
+                        {
+                            nRet = MoveSafeAndReadyAndWait(bFineSpeed);
+                            if (nRet != 0)
+                            {
+                                return -1;
+                            }
+                        }
+                        else
+                        {
+                            nRet = MovePositionAlignTReady(bFineSpeed);
+                            if (nRet != 0)
+                            {
+                                Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                                nRet = -1;
+                            }
+                            nRet = MovePositionSafetyZ(bFineSpeed);
+                            if (nRet != 0)
+                            {
+                                Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
+                                return -1;
+                            }
+                        }
+
+                        CompleteLoadAligner = true;
+                        die.Presence = Material.MaterialPresence.Exist;
+                        die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
+                        die.State = DieProcessState.Skip;
+                        socket.SetState(Rotary.RotarySocketState.Error);
+                        LogSequence("End");
+                        TaktEnd("SafetyZ");
+                        TaktEnd("One Cycle");
+
+                        return 0;
+                    }
+                }
+
                 // 4) T Forward
                 TaktStart("AlignTForward");
-                bRtn = MovePositionAlignTForward(bFineSpeed);
-                if (bRtn != 0)
+                nRet = MovePositionAlignTForward(bFineSpeed);
+                if (nRet != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward1");
                     return -1;
@@ -1175,11 +1261,11 @@ namespace QMC.LCP_280.Process.Unit
                 TaktStart("WaitTime1Step");
                 WaitByTime(Config.WaitTime1Step);
                 TaktEnd("WaitTime1Step");
-                //Log.Write("kkkkkkIndexLoadAligner", "MovePositionAlignTBackward");
+
                 // 5) T Backward
                 TaktStart("AlignTBackward");
-                bRtn = MovePositionAlignTBackward(bFineSpeed);
-                if (bRtn != 0)
+                nRet = MovePositionAlignTBackward(bFineSpeed);
+                if (nRet != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
                     return -1;
@@ -1189,32 +1275,36 @@ namespace QMC.LCP_280.Process.Unit
                 TaktStart("WaitTime2Step");
                 WaitByTime(Config.WaitTime2Step);
                 TaktEnd("WaitTime2Step");
-                //bRtn = MovePositionAlignTForward(bFineSpeed);
-                //if (bRtn != 0)
-                //{
-                //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
-                //    return -1;
-                //}
-                //WaitByTime(Config.WaitTime3Step);
 
-                //TaktStart("AlignTReady2");
-                //bRtn = MovePositionAlignTReady(bFineSpeed);
-                //if (bRtn != 0)
-                //{
-                //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
-                //    return -1;
-                //}
-                //TaktEnd("AlignTReady2");
+                nRet = MovePositionAlignTForward(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
+                    return -1;
+                }
+                WaitByTime(Config.WaitTime3Step);
 
-                // Vision Align 검사 추가.
-                TaktStart("AlignXY_Vision");
-                bRtn = AlignXY(bFineSpeed);
-                TaktEnd("AlignXY_Vision");
+                //Ready Skip
+                TaktStart("AlignTReady2");
+                nRet = MovePositionAlignTReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                    return -1;
+                }
+                TaktEnd("AlignTReady2");
+
+                //// Vision Align 검사 추가.
+                if (true)
+                {
+                    TaktStart("AlignXY_Vision");
+                    nRet = AlignXY(bFineSpeed);
+                    TaktEnd("AlignXY_Vision");
+                }
 
                 TaktStart("SafetyZ");
-                if (bRtn != 0)
+                if (nRet != 0)
                 {
-                    Log.Write(UnitName, "MAlign", "Fail: AlignXY");
                     try
                     {
                         var ctx = Equipment.Instance.SummaryContext;
@@ -1223,14 +1313,29 @@ namespace QMC.LCP_280.Process.Unit
                     catch (Exception ex)
                     { Log.Write(ex); }
 
-                    List<Task<int>> tasks = new List<Task<int>>();
-                    Task<int> t = null;
-                    t = MovePositionAsyncSafeSafetyZ(bFineSpeed);
-                    Task<int> tz = t;
-                    tasks.Add(t);
-                    t = MovePositionAsyncAlignTReady(bFineSpeed);
-                    tasks.Add(t);
-                    tz.Wait();
+                    if(false)
+                    {
+                        nRet = MoveSafeAndReadyAndWait(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            return -1;
+                        }
+                    }
+                    else
+                    {
+                        nRet = MovePositionAlignTReady(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                            nRet = -1;
+                        }
+                        nRet = MovePositionSafetyZ(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
+                            return -1;
+                        }
+                    }
 
                     CompleteLoadAligner = true;
                     die.Presence = Material.MaterialPresence.Exist;
@@ -1241,14 +1346,30 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    List<Task<int>> tasks = new List<Task<int>>();
-                    Task<int> t = null;
-                    t = MovePositionAsyncSafeSafetyZ(bFineSpeed);
-                    Task<int> tz = t;
-                    tasks.Add(t);
-                    t = MovePositionAsyncAlignTReady(bFineSpeed);
-                    tasks.Add(t);
-                    tz.Wait();
+                    if (false)
+                    {
+                        nRet = MoveSafeAndReadyAndWait(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            return -1;
+                        }
+                    }
+                    else
+                    {
+                        nRet = MovePositionAlignTReady(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                            nRet = -1;
+                        }
+                        nRet = MovePositionSafetyZ(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
+                            return -1;
+                        }
+                    }
+
 
                     die.State = DieProcessState.Inspecting;
                     CompleteLoadAligner = true;
@@ -1267,21 +1388,60 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (IsAlignTReady() == false)
                 {
-                    bRtn = MovePositionAlignTReady(bFineSpeed);
+                    nRet = MovePositionAlignTReady(bFineSpeed);
                 }
                 if (IsPositionAlignZSafety() == false)
                 {
-                    bRtn += MovePositionSafetyZ(bFineSpeed);
+                    nRet += MovePositionSafetyZ(bFineSpeed);
                 }
-                if (bRtn != 0)
+                if (nRet != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
+                    nRet = -1;
                 }
                 CompleteLoadAligner = true;
+
+                // 중요: 재진입 플래그 해제
+                Interlocked.Exchange(ref _mAlignRunFlag, 0);
             }
 
-            return bRtn;
+            return nRet;
         }
+
+        private int MoveSafeAndReadyAndWait(bool bFineSpeed)
+        {
+            Task<int> tz = MovePositionAsyncSafeSafetyZ(bFineSpeed);
+            Task<int> tt = MovePositionAsyncSafeAlignTReady(bFineSpeed);
+
+            Task.WaitAll(tz, tt);
+
+            if (tz.Result != 0 || tt.Result != 0)
+            {
+                Log.Write(UnitName, "MAlign", $"Fail: Move async result tz={tz.Result}, tt={tt.Result}");
+                return -1;
+            }
+
+            const int timeoutMs = 5000;
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (IsPositionAlignZSafety() && IsAlignTReady())
+                {
+                    return 0;
+                }
+
+                if (IsStop)
+                {
+                    return 0;
+                }
+
+                Thread.Sleep(1);
+            }
+
+            Log.Write(UnitName, "MAlign", "Fail: timeout waiting SafetyZ/AlignTReady in-position");
+            return -1;
+        }
+
 
         private void LogSequence(string log)
         {
@@ -1289,7 +1449,6 @@ namespace QMC.LCP_280.Process.Unit
                     return;
 
                 Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
-
         }
 
         public int GetAlignIndexNo()
@@ -1359,6 +1518,8 @@ namespace QMC.LCP_280.Process.Unit
             _isSafetyMoving = false;
             CompleteLoadAligner = false;
             this.CurrentFunc = null;
+
+            Interlocked.Exchange(ref _mAlignRunFlag, 0);
 
             // 2) 안전 위치 복귀(선택)
             if (moveToSafeReady)
@@ -1497,6 +1658,40 @@ namespace QMC.LCP_280.Process.Unit
                     dLastFoundY = pt.Y;
                     dLastFoundAngle = result.R;
 
+                    
+                    // ==========================================================
+                    // [추가됨] 실패 시 이미지 저장 (날짜시간_밀리초.bmp)
+                    // ==========================================================
+                    if(true)  //파라미터로 OK IMAGE 저장 유/무 설정하자.
+                    {
+                        try
+                        {
+                            // 1. 저장 경로 설정 (D:\Log\Image\{UnitName}\Fail)
+                            string saveFolder = $@"D:\LCP-280\Log\Image\{UnitName}\OK";
+                            // 2. 폴더 없으면 생성
+                            if (!System.IO.Directory.Exists(saveFolder))
+                            {
+                                System.IO.Directory.CreateDirectory(saveFolder);
+                            }
+
+                            // 3. 파일명 생성 (년월일_시분초_밀리초)
+                            string fileName = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".bmp";
+                            string fullPath = System.IO.Path.Combine(saveFolder, fileName);
+
+                            // 4. 저장 실행
+                            if (img != null)
+                            {
+                                img.Save(fullPath, VisionImage.FileFilter.bmp);
+                                Log.Write(UnitName, "AlignXY", $"Saved Fail Image: {fileName}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write(UnitName, "AlignXY", $"Image Save Error: {ex.Message}");
+                        }
+                    }
+                    // ==========================================================
+
                     Log.Write(UnitName, "AlignXY",
                         $"VisionX={dLastFoundX:F4}, VisionY={dLastFoundY:F4}, VisionAngle={dLastFoundAngle:F4}");
                 }
@@ -1513,7 +1708,6 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         // 1. 저장 경로 설정 (D:\Log\Image\{UnitName}\Fail)
                         string saveFolder = $@"D:\LCP-280\Log\Image\{UnitName}\Fail";
-
                         // 2. 폴더 없으면 생성
                         if (!System.IO.Directory.Exists(saveFolder))
                         {

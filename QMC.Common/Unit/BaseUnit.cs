@@ -607,8 +607,9 @@ namespace QMC.Common.Unit
                     continue;
 
                 bool IsAuto = false;
-
-                if (RunMode == UnitRunMode.Auto)
+                if (RunMode == UnitRunMode.Auto ||
+                    RunUnitStatus == UnitStatus.AutoRunning ||
+                    RunUnitStatus == UnitStatus.ManualRunning )
                 {
                     IsAuto = true;
                 }
@@ -628,14 +629,12 @@ namespace QMC.Common.Unit
             {
                 MotionAxis axis = null;
                 double target = kv.Value;
-
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
                 if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis))
                     axis = directAxis;
 
                 if (axis == null)
                     continue;
-
 
                 double timeoutMs = 2000;
                 if (timeoutMs < 0) timeoutMs = axis.Setup.MoveTimeoutMs;
@@ -800,10 +799,9 @@ namespace QMC.Common.Unit
 
             try
             {
-                //LogAxisMove(axis, target, isFine);
                 var cfg = axis.Config;
-                //double cur = axis.GetPosition();
-                double cur = axis.Status.PV.ActualPosition;
+                double cur = axis.GetPosition();
+                //double cur = axis.Status.PV.ActualPosition;
                 if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
                 {
                     return 0;
@@ -811,10 +809,16 @@ namespace QMC.Common.Unit
 
                 int rc = 0;
                 bool IsAuto = false;
-                if (RunMode == UnitRunMode.Auto)
+                if (RunMode == UnitRunMode.Auto ||
+                    RunUnitStatus == UnitStatus.AutoRunning ||
+                    RunUnitStatus == UnitStatus.ManualRunning)
+                {
                     IsAuto = true;
+                }
                 else
+                {
                     IsAuto = false;
+                }
 
                 rc = axis.MoveAbs(target, IsAuto, isFine);
                 if (rc != 0)

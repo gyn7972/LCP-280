@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
+
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class DieIndexSelectControl : UserControl
@@ -66,6 +67,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _labelPositionsInitialized;
         private readonly SizeF _baseSize = new SizeF(400, 300);
 
+        private int _uiRefreshQueued = 0;
+
         public DieIndexSelectControl()
         {
             InitializeComponent();
@@ -78,7 +81,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public void BindRotary(Rotary rotary)
         {
             if (_rotary != null)
+            {
                 _rotary.LoadIndexChanged -= Rotary_LoadIndexChanged;
+                _rotary.SocketChanged -= Rotary_SocketChanged;
+            }
 
             _rotary = rotary;
             RebuildSocketViews();
@@ -86,6 +92,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (_rotary != null)
             {
                 _rotary.LoadIndexChanged += Rotary_LoadIndexChanged;
+                _rotary.SocketChanged += Rotary_SocketChanged;
                 SyncRotationFromLoadIndex(_rotary.GetLoadIndexNo());
             }
 
@@ -112,7 +119,42 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
             SyncRotationFromLoadIndex(loadIndex0Based);
         }
+        private void Rotary_SocketChanged(object sender, Rotary.SocketInfo socket)
+        {
+            QueueUiRefresh();
+        }
 
+        private void QueueUiRefresh()
+        {
+            if (!IsHandleCreated || IsDisposed)
+                return;
+
+            if (Interlocked.Exchange(ref _uiRefreshQueued, 1) == 1)
+                return;
+
+            BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    UpdateInfoPanel();
+                    displayPanel.Invalidate();
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _uiRefreshQueued, 0);
+                }
+            }));
+        }
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            if (_rotary != null)
+            {
+                _rotary.LoadIndexChanged -= Rotary_LoadIndexChanged;
+                _rotary.SocketChanged -= Rotary_SocketChanged;
+            }
+
+            base.OnHandleDestroyed(e);
+        }
         private void SyncRotationFromLoadIndex(int loadIndex0Based)
         {
             // offset 제거: 단순 재계산

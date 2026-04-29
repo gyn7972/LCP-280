@@ -65,6 +65,7 @@ namespace QMC.LCP_280.Process
 
         private TaktMonitorDialog _taktDialog;
         private WaferTotalSummaryViewerForm _waferTotalSummaryViewerForm;
+        private DlgManualSequence _dlgManualSequence;
 
         // Add
         private PKGTester Tester => Equipment.Instance.Tester;
@@ -2047,6 +2048,31 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 Log.Write("Monitoring_Main", nameof(RefreshContactCounterUi), ex.Message);
+            }
+        }
+
+        private void btnManualSeq_Click(object sender, EventArgs e)
+        {
+            //_waferTotalSummaryViewerForm
+            try
+            {
+                if (_dlgManualSequence != null && !_dlgManualSequence.IsDisposed)
+                {
+                    //_dlgManualSequence.RefreshView();
+                    _dlgManualSequence.BringToFront();
+                    _dlgManualSequence.Activate();
+                    return;
+                }
+
+                _dlgManualSequence = new DlgManualSequence();
+                _dlgManualSequence.FormClosed += (s, ev) => { _taktDialog = null; };
+                _dlgManualSequence.Show(this);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Monitoring_Main", "btnManualSeq_Click ", $"exception: {ex}");
+                MessageBox.Show(ex.Message, "_dlgManualSequence error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _dlgManualSequence = null;
             }
         }
     }

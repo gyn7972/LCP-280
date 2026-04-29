@@ -31,45 +31,44 @@ namespace QMC.LCP_280.Process.Unit
             // ===== 기존 알람(의미 유지 / 문구 개선) =====
             Alarm_WaferLoadingFailed = 10101,
             Alarm_BarcodeReadingFailed = 10102,
-            Alarm_StageLoadingFailed,
-            Alarm_StageUnloadingFailed,
-            Alarm_WaferUnloadingFailed,
+            Alarm_StageLoadingFailed = 10103,
+            Alarm_StageUnloadingFailed = 10104,
+            Alarm_WaferUnloadingFailed = 10105,
 
-            Alarm_InputStageInterlockFailed,
+            Alarm_InputStageInterlockFailed = 10106,
 
-            Alarm_GripperClampFailed,
-            Alarm_FeederClampUp,
-            Alarm_IsWaferReadyForLoading,
-            Alarm_WaferLoadingPosition,
-            Alarm_InputCassetteLifterInterlockFailed,
-            Alarm_InputFeederNoPosition,
-            Alarm_InputFeederInterlockFailed,
-            Alarm_GripperUnClampFailed,
-            Alarm_WaferDataFaild,
+            Alarm_GripperClampFailed = 10107,
+            Alarm_FeederClampUp = 10108,
+            Alarm_IsWaferReadyForLoading = 10109,
+            Alarm_WaferLoadingPosition = 10110,
+            Alarm_InputCassetteLifterInterlockFailed = 10111,
+            Alarm_InputFeederNoPosition = 10112,
+            Alarm_InputFeederInterlockFailed = 10113,
+            Alarm_GripperUnClampFailed = 10114,
+            Alarm_WaferDataFaild = 10115,
 
             // ===== 추가/명확화(현 코드에서 실제로 구분 필요) =====
-            Alarm_FeederLiftUpTimeout,
-            Alarm_FeederLiftDownTimeout,
-            Alarm_FeederClampTimeout,
-            Alarm_FeederUnclampTimeout,
+            Alarm_FeederLiftUpTimeout = 10116,
+            Alarm_FeederLiftDownTimeout = 10117,
+            Alarm_FeederClampTimeout = 10118,
+            Alarm_FeederUnclampTimeout = 10119,
 
-            Alarm_WaferMissingAfterStageToFeeder,
-            Alarm_WaferMissingAfterFeederToCassette,
-            Alarm_WaferSensorDataMismatch,
+            Alarm_WaferMissingAfterStageToFeeder = 10120,
+            Alarm_WaferMissingAfterFeederToCassette = 10121,
+            Alarm_WaferSensorDataMismatch = 10122,
 
             // ===== 기존에 값이 명시되지 않아 위험하던 항목 =====
-            Alarm_VerifyWaferMovedStageToFeeder,
-            Alarm_AlignT,
+            Alarm_VerifyWaferMovedStageToFeeder = 10123,
+            Alarm_AlignT = 10124,
+            Alarm_UnloadTargetSlotInvalid = 10125,
+            Alarm_CassetteSlotNotEmptyForUnload = 10126,
+            Alarm_CassetteMoveToSlotFailedForUnload = 10127,
 
-            Alarm_UnloadTargetSlotInvalid,
-            Alarm_CassetteSlotNotEmptyForUnload,
-            Alarm_CassetteMoveToSlotFailedForUnload,
-
-            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed,
-            Alarm_UnloadFeederToCassette_UnclampFailed,
-            Alarm_UnloadFeederToCassette_WaferDataInvalid,
-            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed,
-            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed,
+            Alarm_UnloadFeederToCassette_MoveFeederToCassettePosFailed = 10128,
+            Alarm_UnloadFeederToCassette_UnclampFailed = 10129,
+            Alarm_UnloadFeederToCassette_WaferDataInvalid = 10130,
+            Alarm_UnloadFeederToCassette_MoveStandbyBarcodeFailed = 10131,
+            Alarm_UnloadFeederToCassette_MoveStandbyReadyFailed = 10132,
 
             //IsRingPresent
             Alarm_RingPresentFailed = 10133,
@@ -79,6 +78,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             string source = "Wafer_Feeder";
             base.InitAlarm();
+            LogDuplicateAlarmCodes();
 
             // 1. 공용 파일 로더에서 알람 목록 가져오기
             var loadedAlarms = GlobalAlarmTable.Instance.GetAlarmsForSource(source);
@@ -271,8 +271,26 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
+        }
+        //enum 코드 중복 진단 로그 추가
+        private void LogDuplicateAlarmCodes()
+        {
+            try
+            {
+                var dup = Enum.GetValues(typeof(AlarmKeys))
+                    .Cast<int>()
+                    .GroupBy(v => v)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
 
-
+                if (dup.Count > 0)
+                    Log.Write(UnitName, $"[Alarm] Duplicate alarm codes detected: {string.Join(",", dup)}");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
         #endregion
 
@@ -293,6 +311,7 @@ namespace QMC.LCP_280.Process.Unit
 
         // Safety 동작 중 여부
         private bool _isSafetyMoving = false;
+        private const int PollSleepMs = 5;  
 
         #region IO Domain Members
         private Cylinder _feederLift; // Up/Down
@@ -301,7 +320,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Constructor / Initialization
         public InputFeeder(InputFeederConfig config = null)
-            : base(new InputFeederConfig())
+            : base(config ?? new InputFeederConfig())
         {
             AddComponents();
         }
@@ -616,18 +635,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if(IsUnClamped() == false)
-            {
-                PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
-                Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
-                return -1;
-            }
-
+            // Ready 이동 중에는 Unclamp 상태가 필수
             if (IsUnClamped() == false)
             {
                 AxisInputFeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
-                Log.Write(UnitName, "IsMoveInterLockReady", "Feeder Clamp 닫혀 있음. (Wafer 잡고 있는지 확인 필요)");
+                PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
                 nRet = -1;
                 return nRet;
             }
@@ -1228,7 +1241,8 @@ namespace QMC.LCP_280.Process.Unit
                 return _loadStep;
 
             // Feeder에 wafer가 남아 있으면 Stage로 올리는 Step03부터 재개
-            bool feederHasWafer = GetMaterial() is MaterialWafer;
+            bool feederHasWafer = HasValidWaferOnFeederForTransfer(); 
+            //bool feederHasWafer = GetMaterial() is MaterialWafer;
             if (feederHasWafer)
                 return LoadFlowStep.Step03;
 
@@ -1483,7 +1497,6 @@ namespace QMC.LCP_280.Process.Unit
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.Error ||
-                this.RunUnitStatus == UnitStatus.CycleStop ||
                 this.RunUnitStatus == UnitStatus.ManualRunning)
             {
                 this.State = ProcessState.Stop;
@@ -1833,6 +1846,30 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        //Step 재개에는 strict 판정 사용.
+        private bool HasValidWaferOnFeederForTransfer()
+        {
+            try
+            {
+                var equipment = Equipment.Instance;
+                bool isDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+                bool sim = (Config.IsSimulation || Config.IsDryRun || isDryRunEqp);
+
+                var obj = GetMaterial() as MaterialWafer;
+                bool sensor = IsRingPresent();
+
+                if (sim)
+                    return obj != null;
+
+                // 실기에서는 센서+객체 모두 만족해야 "전달 가능한 정상 wafer"로 판단
+                return (obj != null) && sensor;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         // Ready 이동이 가능한 "안전 상태"인지 판단
         // 현재 코드 기준: Ready로 갈 때 UnClamp 상태를 요구하므로 그 조건을 명확히 둠
         private bool IsSafeToMoveReady()
@@ -2124,7 +2161,7 @@ namespace QMC.LCP_280.Process.Unit
             // [Smart Resume]
             // 만약 Feeder에 이미 웨이퍼가 있다면(이전 로딩 중단 등), 
             // 카세트에서 꺼내는 동작(Step01/02)을 건너뛰고 Feeder->Stage(Step03)부터 시작
-            if (HasWaferOnFeeder())
+            if (HasValidWaferOnFeederForTransfer()) //if (HasWaferOnFeeder())
             {
                 Log.Write(UnitName, "Manual_Load_Batch", "Wafer detected on Feeder. Resuming from Step03.");
                 _loadStep = LoadFlowStep.Step03;
@@ -2519,6 +2556,7 @@ namespace QMC.LCP_280.Process.Unit
                                     {
                                         if (IsRingPresent())
                                         {
+                                            // 잡고 있던 못잡고 있던 일단 cassette 위치로 이동해서 내려놓고 시작하자.
                                             if (IsUnClamped() == false || IsUnClamped() == true)
                                             {
                                                 nRet = MovePositionCassette();
@@ -2706,6 +2744,7 @@ namespace QMC.LCP_280.Process.Unit
                                     {
                                         if (IsRingPresent())
                                         {
+                                            // 잡고 있던 못잡고 있던 일단 cassette 위치로 이동해서 내려놓고 시작하자.
                                             if (IsUnClamped() == false || IsUnClamped() == true)
                                             {
                                                 nRet = MovePositionCassette();
@@ -3375,19 +3414,11 @@ namespace QMC.LCP_280.Process.Unit
             if (nRet != 0)
             {
                 AxisInputFeederY?.EmgStop();
-                DownFeeder();
+                //DownFeeder(); // 실패 시 다운 시도는 오히려 위험할 수 있어서 제거. (실패 원인에 따라선 다운도 안될 수 있고, 중간에 멈추면 더 위험)
                 Log.Write(this, "Feeder Up Failed");
                 return -1;
             }
             return 0;
-            //if (!IsFeederUp())
-            //{
-            //    Log.Write(this, "Feeder Up Failed");
-            //    PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
-            //    nRet = -1;
-            //    return nRet;
-            //}
-            //return nRet;
         }
         public int DownFeeder()
         {
@@ -3397,20 +3428,11 @@ namespace QMC.LCP_280.Process.Unit
             if (nRet != 0)
             {
                 AxisInputFeederY?.EmgStop();
-                UpFeeder();
+                //UpFeeder(); // 실패 시 업 시도는 오히려 위험할 수 있어서 제거. (실패 원인에 따라선 업도 안될 수 있고, 중간에 멈추면 더 위험)
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
                 return -1;
             }
             return 0;
-            //if (!IsFeederDown())
-            //{
-            //    AxisInputFeederY.EmgStop();
-            //    Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
-            //    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
-            //    nRet = -1;
-            //    return nRet;
-            //}
-            //return nRet;
         }
 
         public int MoveToCassette(bool isFine = false)
@@ -3749,6 +3771,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     if (IsRingPresent())
                     {
+                        // 잡고 있던 못잡고 있던 일단 cassette 위치로 이동해서 내려놓고 시작하자.
                         if (IsUnClamped() == false || IsUnClamped() == true)
                         {
                             nRet = MovePositionCassette();

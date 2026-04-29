@@ -302,7 +302,6 @@ namespace QMC.Common.VisionPart
         public int OnSearch(Point startRoiPoint, Point endRoiPoint, MultiPatternMatchingParameters parameter, IlluminationDataSet illuminationData, VisionImage visionImage)
         {
             int ret = 0;
-
             if (Simulated)
             {
                 visionImage = TestImage;
@@ -333,43 +332,73 @@ namespace QMC.Common.VisionPart
             m_RoiInspect.Parameter.StartLocation = startRoiPoint;
             m_RoiInspect.Parameter.EndLocation = endRoiPoint;
 
-            // Train 이미지: 0번 고정 대신 '첫 유효 이미지' 선택
-            VisionImage train = null;
-            if (parameter?.TrainImages != null)
-            {
-                for (int i = 0; i < parameter.TrainImages.Count; i++)
-                {
-                    var ti = parameter.TrainImages[i];
-                    if (ti != null && ti.GetImage() != null) 
-                    { train = ti; break; }
-                }
-            }
-            if (train == null)
-            {
-                Log.Write(this.Name, "유효한 Train Image가 없습니다.");
-                return -100; // 적절한 에러 코드
-            }
-            m_MultiPatternMatchingTool.SubTools.InputImage = train;
-
             m_RoiTrain.Parameter.IsFull = true;
             m_RoiInspect.InputImage = visionImage;
             m_RoiInspect.Parameter.IsFull = false;
 
-            if ((ret = m_RoiInspect.Run()) != 0) 
+            if ((ret = m_RoiInspect.Run()) != 0)
                 return ret;
 
-            m_MultiPatternMatchingTool.InputImage = m_RoiInspect.OutputImage;
+            // 등록된 모든 TrainImage 대상으로 검색 -> 최고 Score 마크 선택
+            VisionImage bestTrainImage = null;
+            int bestTrainIndex = -1;
+            double bestScore = double.MinValue;
 
-            if ((ret = m_MultiPatternMatchingTool.Run()) != 0) 
-                return ret;
-
-            if (m_MultiPatternMatchingTool.Result.Values.Count <= 0)
+            if (parameter == null || parameter.TrainImages == null || parameter.TrainImages.Count == 0)
             {
-                Log.Write(this.Name, "MultiPatternMatching is Failed");
-                return ret;
+                Log.Write(this.Name, "등록된 Train Image가 없습니다.");
+                return -100;
             }
 
-            // 기존 'ROI 결과 좌표 -> 항상 절대좌표로 변환' 블럭을 아래로 교체
+            for (int i = 0; i < parameter.TrainImages.Count; i++)
+            {
+                VisionImage train = parameter.TrainImages[i];
+                if (train == null || train.GetImage() == null)
+                    continue;
+
+                m_MultiPatternMatchingTool.SubTools.InputImage = train;
+                m_MultiPatternMatchingTool.InputImage = m_RoiInspect.OutputImage;
+
+                ret = m_MultiPatternMatchingTool.Run();
+                if (ret != 0)
+                    continue;
+
+                PatternMatchingResult result = m_MultiPatternMatchingTool.Result;
+                if (result == null || result.Values == null || result.Values.Count <= 0)
+                    continue;
+
+                for (int j = 0; j < result.Values.Count; j++)
+                {
+                    if (result.Values[j].Score > bestScore)
+                    {
+                        bestScore = result.Values[j].Score;
+                        bestTrainImage = train;
+                        bestTrainIndex = i;
+                    }
+                }
+            }
+
+            if (bestTrainImage == null)
+            {
+                Log.Write(this.Name, "모든 Train Image 검색 실패 (유효 결과 없음).");
+                return -101;
+            }
+
+            // 최고 Score를 낸 TrainImage로 한 번 더 실행하여 결과를 최종 저장
+            m_MultiPatternMatchingTool.SubTools.InputImage = bestTrainImage;
+            m_MultiPatternMatchingTool.InputImage = m_RoiInspect.OutputImage;
+
+            if ((ret = m_MultiPatternMatchingTool.Run()) != 0)
+                return ret;
+
+            if (m_MultiPatternMatchingTool.Result == null || m_MultiPatternMatchingTool.Result.Values.Count <= 0)
+            {
+                Log.Write(this.Name, "MultiPatternMatching is Failed");
+                return -102;
+            }
+
+            Log.Write(this.Name, string.Format("Best TrainImage Index: {0}, Best Score: {1:F4}", bestTrainIndex, bestScore));
+
             // ROI 상대/절대 자동 판별 후 필요 시 1회만 offset
             if (m_MultiPatternMatchingTool.Result != null &&
                 (startRoiPoint.X != 0 || startRoiPoint.Y != 0))
@@ -383,7 +412,6 @@ namespace QMC.Common.VisionPart
                         int roiW = Math.Max(1, endRoiPoint.X - startRoiPoint.X + 1);
                         int roiH = Math.Max(1, endRoiPoint.Y - startRoiPoint.Y + 1);
 
-                        // 좌표 범위 스캔
                         double minX = double.MaxValue, maxX = double.MinValue;
                         double minY = double.MaxValue, maxY = double.MinValue;
                         for (int i = 0; i < values.Count; i++)
@@ -395,12 +423,11 @@ namespace QMC.Common.VisionPart
                             if (v.Y > maxY) maxY = v.Y;
                         }
 
-                        // 허용 오차(+/-2픽셀) 안에 전부 들어가면 'ROI 상대' 후보
                         bool insideRelativeBox =
                             minX >= -2 && minY >= -2 &&
                             maxX <= roiW + 2 && maxY <= roiH + 2;
 
-                        if (res.ResultOverlays != null)
+                        if (insideRelativeBox && res.ResultOverlays != null)
                         {
                             foreach (var ov in res.ResultOverlays)
                             {
@@ -421,8 +448,134 @@ namespace QMC.Common.VisionPart
                 }
                 catch { }
             }
+
             return ret;
         }
+
+        // 기존 코드
+        //public int OnSearch(Point startRoiPoint, Point endRoiPoint, MultiPatternMatchingParameters parameter, IlluminationDataSet illuminationData, VisionImage visionImage)
+        //{
+        //    int ret = 0;
+        //    if (Simulated)
+        //    {
+        //        visionImage = TestImage;
+        //    }
+
+        //    // Tool/ROI Parameter 보장 (VisionPro 전용 타입)
+        //    if (m_MultiPatternMatchingTool == null)
+        //        m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
+        //    if (m_MultiPatternMatchingTool.Parameter == null)
+        //        m_MultiPatternMatchingTool.Parameter = new VisionProPatternMatchingVisionToolParameter();
+        //    if (m_RoiInspect == null)
+        //        m_RoiInspect = new VisionProRoiVisionTool();
+        //    if (m_RoiInspect.Parameter == null)
+        //        m_RoiInspect.Parameter = new VisionProRoiVisionToolParameter();
+        //    if (m_RoiTrain == null)
+        //        m_RoiTrain = new VisionProRoiVisionTool();
+        //    if (m_RoiTrain.Parameter == null)
+        //        m_RoiTrain.Parameter = new VisionProRoiVisionToolParameter();
+
+        //    // 파라미터 적용
+        //    m_MultiPatternMatchingTool.Parameter.AngleTolerance = new RangeD(parameter.MinTolerance, parameter.MaxTolerance);
+        //    m_MultiPatternMatchingTool.Parameter.DuplicateChecked = parameter.DuplicateChecked;
+        //    m_MultiPatternMatchingTool.Parameter.MaxInstance = parameter.MaxInstance;
+        //    m_MultiPatternMatchingTool.Parameter.MinScore = parameter.MinScore;
+        //    m_MultiPatternMatchingTool.Parameter.MaskRegion = parameter.MaskRegion;
+        //    m_MultiPatternMatchingTool.Parameter.UseMaskImage = parameter.UseMaskImage;
+
+        //    m_RoiInspect.Parameter.StartLocation = startRoiPoint;
+        //    m_RoiInspect.Parameter.EndLocation = endRoiPoint;
+
+        //    // Train 이미지: 0번 고정 대신 '첫 유효 이미지' 선택
+        //    VisionImage train = null;
+        //    if (parameter?.TrainImages != null)
+        //    {
+        //        for (int i = 0; i < parameter.TrainImages.Count; i++)
+        //        {
+        //            var ti = parameter.TrainImages[i];
+        //            if (ti != null && ti.GetImage() != null) 
+        //            { train = ti; break; }
+        //        }
+        //    }
+        //    if (train == null)
+        //    {
+        //        Log.Write(this.Name, "유효한 Train Image가 없습니다.");
+        //        return -100; // 적절한 에러 코드
+        //    }
+        //    m_MultiPatternMatchingTool.SubTools.InputImage = train;
+
+        //    m_RoiTrain.Parameter.IsFull = true;
+        //    m_RoiInspect.InputImage = visionImage;
+        //    m_RoiInspect.Parameter.IsFull = false;
+
+        //    if ((ret = m_RoiInspect.Run()) != 0) 
+        //        return ret;
+
+        //    m_MultiPatternMatchingTool.InputImage = m_RoiInspect.OutputImage;
+
+        //    if ((ret = m_MultiPatternMatchingTool.Run()) != 0) 
+        //        return ret;
+
+        //    if (m_MultiPatternMatchingTool.Result.Values.Count <= 0)
+        //    {
+        //        Log.Write(this.Name, "MultiPatternMatching is Failed");
+        //        return ret;
+        //    }
+
+        //    // 기존 'ROI 결과 좌표 -> 항상 절대좌표로 변환' 블럭을 아래로 교체
+        //    // ROI 상대/절대 자동 판별 후 필요 시 1회만 offset
+        //    if (m_MultiPatternMatchingTool.Result != null &&
+        //        (startRoiPoint.X != 0 || startRoiPoint.Y != 0))
+        //    {
+        //        try
+        //        {
+        //            var res = m_MultiPatternMatchingTool.Result;
+        //            var values = res.Values;
+        //            if (values != null && values.Count > 0)
+        //            {
+        //                int roiW = Math.Max(1, endRoiPoint.X - startRoiPoint.X + 1);
+        //                int roiH = Math.Max(1, endRoiPoint.Y - startRoiPoint.Y + 1);
+
+        //                // 좌표 범위 스캔
+        //                double minX = double.MaxValue, maxX = double.MinValue;
+        //                double minY = double.MaxValue, maxY = double.MinValue;
+        //                for (int i = 0; i < values.Count; i++)
+        //                {
+        //                    var v = values[i];
+        //                    if (v.X < minX) minX = v.X;
+        //                    if (v.X > maxX) maxX = v.X;
+        //                    if (v.Y < minY) minY = v.Y;
+        //                    if (v.Y > maxY) maxY = v.Y;
+        //                }
+
+        //                // 허용 오차(+/-2픽셀) 안에 전부 들어가면 'ROI 상대' 후보
+        //                bool insideRelativeBox =
+        //                    minX >= -2 && minY >= -2 &&
+        //                    maxX <= roiW + 2 && maxY <= roiH + 2;
+
+        //                if (res.ResultOverlays != null)
+        //                {
+        //                    foreach (var ov in res.ResultOverlays)
+        //                    {
+        //                        try
+        //                        {
+        //                            var f = ov as FrameVisionImageOverlay;
+        //                            if (f != null)
+        //                            {
+        //                                f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
+        //                                f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
+        //                                f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+        //                            }
+        //                        }
+        //                        catch { }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //        catch { }
+        //    }
+        //    return ret;
+        //}
 
         public virtual void SetParameter(double dTolerance, int nMaxInstance, double dMinScore, bool bDuplicateChecked, bool bUseMaskImage)
         {

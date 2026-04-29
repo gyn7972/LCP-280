@@ -442,18 +442,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (OutputCassetteLifter != null)
                 {
-                    manualSequenceControlOutputCassette.ParentUnit = OutputCassetteLifter;
+                    ManualControlOutputCassette.ParentUnit = OutputCassetteLifter;
                 }
 
                 if (OutputFeeder != null)
                 {
                     //manualSequenceControlInputWafer.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
-                    manualSequenceControlOutputFeeder.ParentUnit = OutputFeeder;
+                    ManualOutputFeeder.ParentUnit = OutputFeeder;
                 }
 
                 if (OutputStage != null)
                 {
-                    manualSequenceControlOutputBinStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
+                    ManualControlOutputBinStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch (Exception ex)

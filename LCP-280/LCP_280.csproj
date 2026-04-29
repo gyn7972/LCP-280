@@ -215,6 +215,12 @@
     <Compile Include="Component\FormDlg\DisplayView_DieScanMap.Designer.cs">
       <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\FormDlg\DlgManualSequence.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\DlgManualSequence.Designer.cs">
+      <DependentUpon>DlgManualSequence.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\FormDlg\FormInputWaferID.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -226,6 +232,12 @@
     </Compile>
     <Compile Include="Component\FormDlg\FormMapMatchManual.Designer.cs">
       <DependentUpon>FormMapMatchManual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\FormDlg\ManualSequenceControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\FormDlg\ManualSequenceControl.Designer.cs">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\FormDlg\TaktMonitorAllDialog.cs">
       <SubType>Form</SubType>
@@ -266,11 +278,11 @@
     <Compile Include="Component\InterlockManager.cs" />
     <Compile Include="Component\MachineHomeCoordinator.cs" />
     <Compile Include="Component\ManualSeqReproTestRunner.cs" />
-    <Compile Include="Component\FormDlg\ManualSequenceControl.cs">
+    <Compile Include="Component\FormDlg\ManualControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Component\FormDlg\ManualSequenceControl.Designer.cs">
-      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    <Compile Include="Component\FormDlg\ManualControl.Designer.cs">
+      <DependentUpon>ManualControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\FormDlg\JogControl.cs">
       <SubType>UserControl</SubType>
@@ -817,6 +829,10 @@
     <EmbeddedResource Include="Component\FormDlg\DisplayView_DieScanMap.resx">
       <DependentUpon>DisplayView_DieScanMap.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\DlgManualSequence.resx">
+      <DependentUpon>DlgManualSequence.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\FormDlg\FormInputWaferID.resx">
       <DependentUpon>FormInputWaferID.cs</DependentUpon>
     </EmbeddedResource>
@@ -826,11 +842,14 @@
     <EmbeddedResource Include="Component\FormDlg\IndexCalibrationDialog.resx">
       <DependentUpon>IndexCalibrationDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Component\FormDlg\ManualSequenceControl.resx">
-      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    <EmbeddedResource Include="Component\FormDlg\ManualControl.resx">
+      <DependentUpon>ManualControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\FormDlg\JogControl.resx">
       <DependentUpon>JogControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\FormDlg\ManualSequenceControl.resx">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\FormDlg\MapMatchDecisionDialog.resx">
       <DependentUpon>MapMatchDecisionDialog.cs</DependentUpon>

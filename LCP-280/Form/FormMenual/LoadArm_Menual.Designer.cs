@@ -26,7 +26,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBoxManualTrSeq = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControl = new QMC.LCP_280.Process.Component.ManualControl();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.label1 = new System.Windows.Forms.Label();
@@ -55,11 +55,9 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxImageView.Controls.Add(this.tableLayoutPanel4);
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxImageView.Location = new System.Drawing.Point(713, 2);
-            this.groupBoxImageView.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxImageView.Location = new System.Drawing.Point(696, 3);
             this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxImageView.Size = new System.Drawing.Size(470, 465);
+            this.groupBoxImageView.Size = new System.Drawing.Size(456, 557);
             this.groupBoxImageView.TabIndex = 15;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
@@ -71,14 +69,14 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.Controls.Add(this._ChipLoadingCameraviewer, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.tableLayoutPanel5, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 25);
-            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 3;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(466, 438);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(450, 524);
             this.tableLayoutPanel4.TabIndex = 15;
             // 
             // _ChipLoadingCameraviewer
@@ -91,12 +89,11 @@ namespace QMC.LCP_280.Process.Unit
             this._ChipLoadingCameraviewer.FrameRate = 1D;
             this._ChipLoadingCameraviewer.InputImage = null;
             this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(2, 2);
-            this._ChipLoadingCameraviewer.Margin = new System.Windows.Forms.Padding(2);
+            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(3, 3);
             this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
             this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(462, 346);
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(444, 413);
             this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ChipLoadingCameraviewer.TabIndex = 12;
             this._ChipLoadingCameraviewer.TabStop = false;
@@ -111,12 +108,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.Controls.Add(this._btnVisionSetting, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.buttonDataManual, 1, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(4, 354);
-            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(4, 423);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 1;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(458, 57);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(442, 70);
             this.tableLayoutPanel5.TabIndex = 15;
             // 
             // _btnVisionSetting
@@ -132,10 +129,9 @@ namespace QMC.LCP_280.Process.Unit
             this._btnVisionSetting.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this._btnVisionSetting.ForeColor = System.Drawing.Color.Black;
             this._btnVisionSetting.ImageSize = new System.Drawing.Size(45, 45);
-            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
-            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
+            this._btnVisionSetting.Location = new System.Drawing.Point(3, 3);
             this._btnVisionSetting.Name = "_btnVisionSetting";
-            this._btnVisionSetting.Size = new System.Drawing.Size(225, 53);
+            this._btnVisionSetting.Size = new System.Drawing.Size(215, 64);
             this._btnVisionSetting.TabIndex = 34;
             this._btnVisionSetting.TabStop = false;
             this._btnVisionSetting.Text = "VisionSetting";
@@ -155,10 +151,9 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonDataManual.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonDataManual.ForeColor = System.Drawing.Color.Black;
             this.buttonDataManual.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonDataManual.Location = new System.Drawing.Point(231, 2);
-            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonDataManual.Location = new System.Drawing.Point(224, 3);
             this.buttonDataManual.Name = "buttonDataManual";
-            this.buttonDataManual.Size = new System.Drawing.Size(225, 53);
+            this.buttonDataManual.Size = new System.Drawing.Size(215, 64);
             this.buttonDataManual.TabIndex = 35;
             this.buttonDataManual.TabStop = false;
             this.buttonDataManual.Text = "ManualData";
@@ -178,12 +173,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1.Controls.Add(this.groupBoxImageView, 1, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1580, 939);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1540, 1126);
             this.tableLayoutPanel1.TabIndex = 24;
             // 
             // groupBoxManualTrSeq
@@ -191,11 +186,9 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManualTrSeq.Controls.Add(this.tableLayoutPanel3);
             this.groupBoxManualTrSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxManualTrSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxManualTrSeq.Location = new System.Drawing.Point(1187, 2);
-            this.groupBoxManualTrSeq.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxManualTrSeq.Location = new System.Drawing.Point(1158, 3);
             this.groupBoxManualTrSeq.Name = "groupBoxManualTrSeq";
-            this.groupBoxManualTrSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxManualTrSeq.Size = new System.Drawing.Size(391, 465);
+            this.groupBoxManualTrSeq.Size = new System.Drawing.Size(379, 557);
             this.groupBoxManualTrSeq.TabIndex = 29;
             this.groupBoxManualTrSeq.TabStop = false;
             this.groupBoxManualTrSeq.Text = "ChipLoading Seq.";
@@ -204,36 +197,33 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.tableLayoutPanel3.ColumnCount = 1;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Controls.Add(this.manualSequenceControl, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.manualControl, 0, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 25);
-            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(387, 438);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(373, 524);
             this.tableLayoutPanel3.TabIndex = 20;
             // 
-            // manualSequenceControl
+            // manualControl
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControl.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(383, 434);
-            this.manualSequenceControl.TabIndex = 19;
+            this.manualControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControl.Location = new System.Drawing.Point(3, 3);
+            this.manualControl.Name = "manualControl";
+            this.manualControl.ParentUnit = null;
+            this.manualControl.Size = new System.Drawing.Size(367, 518);
+            this.manualControl.TabIndex = 19;
             // 
             // groupBoxManual
             // 
             this.groupBoxManual.Controls.Add(this.tableLayoutPanel2);
             this.groupBoxManual.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxManual.Location = new System.Drawing.Point(713, 471);
-            this.groupBoxManual.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxManual.Location = new System.Drawing.Point(696, 566);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxManual.Size = new System.Drawing.Size(470, 466);
+            this.groupBoxManual.Size = new System.Drawing.Size(456, 557);
             this.groupBoxManual.TabIndex = 25;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
@@ -244,7 +234,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 25F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tableLayoutPanel2.Controls.Add(this.label1, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.buttonTest, 0, 8);
             this.tableLayoutPanel2.Controls.Add(this.btnTest, 1, 8);
@@ -254,8 +244,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Controls.Add(this.btnDieLoading, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this.btnDieUnloading, 1, 1);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 25);
-            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 10;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
@@ -267,8 +257,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 25F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(466, 439);
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(450, 524);
             this.tableLayoutPanel2.TabIndex = 34;
             // 
             // label1
@@ -276,12 +266,11 @@ namespace QMC.LCP_280.Process.Unit
             this.label1.AutoSize = true;
             this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label1.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label1.Location = new System.Drawing.Point(2, 0);
-            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label1.Location = new System.Drawing.Point(3, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(151, 46);
+            this.label1.Size = new System.Drawing.Size(144, 54);
             this.label1.TabIndex = 41;
-            this.label1.Text = "Slot";
+            this.label1.Text = "Load Slot";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // buttonTest
@@ -297,10 +286,9 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonTest.ForeColor = System.Drawing.Color.Black;
             this.buttonTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonTest.Location = new System.Drawing.Point(2, 370);
-            this.buttonTest.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonTest.Location = new System.Drawing.Point(3, 435);
             this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(151, 42);
+            this.buttonTest.Size = new System.Drawing.Size(144, 48);
             this.buttonTest.TabIndex = 37;
             this.buttonTest.TabStop = false;
             this.buttonTest.Text = "SEQ STOP";
@@ -320,10 +308,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnTest.ForeColor = System.Drawing.Color.Black;
             this.btnTest.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnTest.Location = new System.Drawing.Point(157, 370);
-            this.btnTest.Margin = new System.Windows.Forms.Padding(2);
+            this.btnTest.Location = new System.Drawing.Point(153, 435);
             this.btnTest.Name = "btnTest";
-            this.btnTest.Size = new System.Drawing.Size(151, 42);
+            this.btnTest.Size = new System.Drawing.Size(144, 48);
             this.btnTest.TabIndex = 33;
             this.btnTest.TabStop = false;
             this.btnTest.Text = "test1";
@@ -343,10 +330,9 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest2.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonTest2.ForeColor = System.Drawing.Color.Black;
             this.buttonTest2.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonTest2.Location = new System.Drawing.Point(312, 370);
-            this.buttonTest2.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonTest2.Location = new System.Drawing.Point(303, 435);
             this.buttonTest2.Name = "buttonTest2";
-            this.buttonTest2.Size = new System.Drawing.Size(152, 42);
+            this.buttonTest2.Size = new System.Drawing.Size(144, 48);
             this.buttonTest2.TabIndex = 34;
             this.buttonTest2.TabStop = false;
             this.buttonTest2.Text = "Test2";
@@ -366,10 +352,9 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNeedle_Move.Font = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonPickUpNeedle_Move.ForeColor = System.Drawing.Color.Black;
             this.buttonPickUpNeedle_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonPickUpNeedle_Move.Location = new System.Drawing.Point(312, 324);
-            this.buttonPickUpNeedle_Move.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonPickUpNeedle_Move.Location = new System.Drawing.Point(303, 381);
             this.buttonPickUpNeedle_Move.Name = "buttonPickUpNeedle_Move";
-            this.buttonPickUpNeedle_Move.Size = new System.Drawing.Size(152, 42);
+            this.buttonPickUpNeedle_Move.Size = new System.Drawing.Size(144, 48);
             this.buttonPickUpNeedle_Move.TabIndex = 36;
             this.buttonPickUpNeedle_Move.TabStop = false;
             this.buttonPickUpNeedle_Move.Text = "PickUp && Niddle Move";
@@ -390,10 +375,9 @@ namespace QMC.LCP_280.Process.Unit
             "6",
             "7",
             "8"});
-            this.cbLoadIndex.Location = new System.Drawing.Point(157, 2);
-            this.cbLoadIndex.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.cbLoadIndex.Location = new System.Drawing.Point(153, 3);
             this.cbLoadIndex.Name = "cbLoadIndex";
-            this.cbLoadIndex.Size = new System.Drawing.Size(151, 31);
+            this.cbLoadIndex.Size = new System.Drawing.Size(144, 36);
             this.cbLoadIndex.TabIndex = 40;
             // 
             // btnDieLoading
@@ -407,10 +391,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnDieLoading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDieLoading.ForeColor = System.Drawing.Color.Black;
             this.btnDieLoading.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDieLoading.Location = new System.Drawing.Point(2, 48);
-            this.btnDieLoading.Margin = new System.Windows.Forms.Padding(2);
+            this.btnDieLoading.Location = new System.Drawing.Point(3, 57);
             this.btnDieLoading.Name = "btnDieLoading";
-            this.btnDieLoading.Size = new System.Drawing.Size(151, 42);
+            this.btnDieLoading.Size = new System.Drawing.Size(144, 48);
             this.btnDieLoading.TabIndex = 38;
             this.btnDieLoading.TabStop = false;
             this.btnDieLoading.Text = "Die PickUp";
@@ -428,10 +411,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnDieUnloading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDieUnloading.ForeColor = System.Drawing.Color.Black;
             this.btnDieUnloading.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDieUnloading.Location = new System.Drawing.Point(157, 48);
-            this.btnDieUnloading.Margin = new System.Windows.Forms.Padding(2);
+            this.btnDieUnloading.Location = new System.Drawing.Point(153, 57);
             this.btnDieUnloading.Name = "btnDieUnloading";
-            this.btnDieUnloading.Size = new System.Drawing.Size(151, 42);
+            this.btnDieUnloading.Size = new System.Drawing.Size(144, 48);
             this.btnDieUnloading.TabIndex = 39;
             this.btnDieUnloading.TabStop = false;
             this.btnDieUnloading.Text = "Die PlaceDown";
@@ -442,11 +424,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(2, 473);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.dioControl.Location = new System.Drawing.Point(3, 567);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(707, 462);
+            this.dioControl.Size = new System.Drawing.Size(687, 555);
             this.dioControl.TabIndex = 24;
             // 
             // teachingPositionControl
@@ -454,22 +436,21 @@ namespace QMC.LCP_280.Process.Unit
             this.teachingPositionControl.AxisDisplayFont = null;
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);
-            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.teachingPositionControl.Location = new System.Drawing.Point(3, 4);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(707, 461);
+            this.teachingPositionControl.Size = new System.Drawing.Size(687, 555);
             this.teachingPositionControl.TabIndex = 18;
             this.teachingPositionControl.UnitName = null;
             // 
             // LoadArm_Menual
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1580, 939);
+            this.ClientSize = new System.Drawing.Size(1540, 1126);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "LoadArm_Menual";
             this.Text = "ChipLoading Working";
             this.groupBoxImageView.ResumeLayout(false);
@@ -508,7 +489,7 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton buttonPickUpNeedle_Move;
         private GroupBox groupBoxManualTrSeq;
         private TableLayoutPanel tableLayoutPanel3;
-        private ManualSequenceControl manualSequenceControl;
+        private ManualControl manualControl;
         private IndividualMenuButton btnDieUnloading;
         private IndividualMenuButton btnDieLoading;
         private ComboBox cbLoadIndex;

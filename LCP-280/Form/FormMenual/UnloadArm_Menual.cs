@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using QMC.Common;
 using QMC.Common.Component;
+using QMC.Common.IOUtil;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
@@ -715,7 +716,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (OutputDieTransfer != null)
                 {
-                    manualSequenceControl.ParentUnit = OutputDieTransfer; // 시퀀스 등록 대상 유닛 지정
+                    manualControl.ParentUnit = OutputDieTransfer; // 시퀀스 등록 대상 유닛 지정
                 }
 
             }
@@ -841,96 +842,142 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             }
         }
 
+        //private int GetSelectedUnloadIndex()
+        //{
+        //    if (cbUnloadIndex == null) 
+        //        return -1;
+
+        //    if (cbUnloadIndex.InvokeRequired)
+        //    {
+        //        try
+        //        {
+        //            var idx = (int)cbUnloadIndex.Invoke(new Func<int>(() => cbUnloadIndex.SelectedIndex));
+        //            return idx < 0 ? -1 : idx;
+        //        }
+        //        catch
+        //        {
+        //            return -1;
+        //        }
+        //    }
+
+        //    var selected = cbUnloadIndex.SelectedIndex;
+        //    return selected < 0 ? -1 : selected;
+        //}
+
         private int PickDieFromIndex(CancellationToken ct)
         {
             int nRet = 0;
-
-            // 1. Ready Position으로 이동 (안전 확인 포함)
-            nRet = OutputDieTransfer.MovePositionReady();
-            if (nRet != 0)
+            try
             {
-                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "MovePositionReady failed");
-                this.Invoke((MethodInvoker)delegate {
-                    new MessageBoxOk().ShowDialog("Error", "MovePositionReady failed in PickDieFromIndex.");
-                });
+                int targetSocket = GetSelectedUnloadIndex();
+
+                ct.ThrowIfCancellationRequested();
+                nRet = MoveRotaryToUnloadSocket(targetSocket, ct);
+                //int targetIdx0 = (targetSocket + 8) % 8; // 0~7
+                //for (int i = 0; i < 16; i++)
+                //{
+                //    ct.ThrowIfCancellationRequested();
+                //    int cur = OutputDieTransfer.GetUnloaderIndexNo();   //Rotary.GetLoadIndexNo();
+                //    if (cur == targetIdx0)
+                //    {
+                //        break;
+                //        //return 0;
+                //    }
+
+                //    int rc = Rotary.MovePositionRotate();
+                //    if (rc != 0)
+                //        return -1;
+
+                //    rc = Rotary.WaitIndexMoveDone();
+                //    if (rc != 0)
+                //        return -1;
+                //}
+
+                MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
+                if (DieIndex == null)
+                    return -1;
+
+                // 1. Ready Position으로 이동 (안전 확인 포함)
+                nRet = OutputDieTransfer.MovePositionReady();
+                if (nRet != 0)
+                {
+                    Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "MovePositionReady failed");
+                    this.Invoke((MethodInvoker)delegate {
+                        new MessageBoxOk().ShowDialog("Error", "MovePositionReady failed in PickDieFromIndex.");
+                    });
+                    return -1;
+                }
+
+                ct.ThrowIfCancellationRequested();
+
+                // 2. Pick Down 동작 (ToolT를 인덱스 위치로 회전 후 PickZ 하강, 진공 켬)
+                nRet = OutputDieTransfer.PickDownDie();
+                if (nRet != 0)
+                {
+                    Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickDownDie failed");
+                    this.Invoke((MethodInvoker)delegate {
+                        new MessageBoxOk().ShowDialog("Error", "PickDownDie failed in PickDieFromIndex.");
+                    });
+                    return -1;
+                }
+
+                ct.ThrowIfCancellationRequested();
+
+                // 3. Pick Up 동작 (진공 확인 후 PickZ 상승)
+                nRet = OutputDieTransfer.PickUpDie();
+                if (nRet != 0)
+                {
+                    Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickUpDie failed");
+                    this.Invoke((MethodInvoker)delegate {
+                        new MessageBoxOk().ShowDialog("Error", "PickUpDie failed in PickDieFromIndex.");
+                    });
+                    return -1;
+                }
+
+                bool vac = OutputDieTransfer.IsVacuumOK(0);
+                if (vac == false)
+                {
+                    return -1;
+                }
+
+                Rotary.MoveMaterialToOutputDieTransfer();
+                DieIndex.State = DieProcessState.Picked;
+                DieIndex.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                DieIndex.Presence = Material.MaterialPresence.Exist;
+                return 0;
+            }
+            catch(Exception ex)
+            {
+                Log.Write(ex);
                 return -1;
             }
-
-            ct.ThrowIfCancellationRequested();
-
-            // 2. Pick Down 동작 (ToolT를 인덱스 위치로 회전 후 PickZ 하강, 진공 켬)
-            nRet = OutputDieTransfer.PickDownDie();
-            if (nRet != 0)
+            finally
             {
-                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickDownDie failed");
-                this.Invoke((MethodInvoker)delegate {
-                    new MessageBoxOk().ShowDialog("Error", "PickDownDie failed in PickDieFromIndex.");
-                });
-                return -1;
+                if (!OutputDieTransfer.IsPositionPlaceZSafety() || 
+                    !OutputDieTransfer.IsPositionPickZSafety())
+                {
+                    nRet = OutputDieTransfer.MovePositionSafetyZ();
+                    if (nRet != 0)
+                    {
+                        Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "MovePositionSafetyZ faild");
+                    }
+                }
             }
-
-            ct.ThrowIfCancellationRequested();
-
-            // 3. Pick Up 동작 (진공 확인 후 PickZ 상승)
-            nRet = OutputDieTransfer.PickUpDie();
-            if (nRet != 0)
-            {
-                Log.Write(OutputDieTransfer.UnitName, "PickDieFromIndex", "PickUpDie failed");
-                this.Invoke((MethodInvoker)delegate {
-                    new MessageBoxOk().ShowDialog("Error", "PickUpDie failed in PickDieFromIndex.");
-                });
-                return -1;
-            }
-
-            return 0;
+            
         }
 
         // Rotary를 목표 UnloadIndex로 이동 (회전 + 대기) - 동기 방식으로 변경
         private int MoveRotaryToUnloadSocket(int targetSocket, CancellationToken ct)
         {
-            int targetIdx0 = (targetSocket + 8) % 8; // 0~7
-            for (int i = 0; i < 16; i++)
-            {
-                ct.ThrowIfCancellationRequested();
+            if (Rotary == null)
+                return -1;
 
-                // 현재 Unloader Index 위치를 가져와서 목표 인덱스와 일치하는지 확인
-                int unloaderIdx = OutputDieTransfer.GetUnloaderIndexNo();
-                if (unloaderIdx == targetIdx0)
-                    return 0;
-
-                // 일치하지 않으면 다음 위치로 1 Step 회전
-                int rc = Rotary.MovePositionRotate();
-                if (rc != 0)
-                {
-                    Log.Write(Rotary.UnitName, "MoveRotaryToUnloadSocket", "MovePositionRotate failed");
-                    this.Invoke((MethodInvoker)delegate {
-                        new MessageBoxOk().ShowDialog("Error", "Rotary MovePositionRotate failed.");
-                    });
-                    return -1;
-                }
-
-                rc = Rotary.WaitIndexMoveDone();
-                if (rc != 0)
-                {
-                    Log.Write(Rotary.UnitName, "MoveRotaryToUnloadSocket", "WaitIndexMoveDone failed");
-                    this.Invoke((MethodInvoker)delegate {
-                        new MessageBoxOk().ShowDialog("Error", "Rotary WaitIndexMoveDone failed.");
-                    });
-                    return -1;
-                }
-
-                // Task.Delay 대신 CancellationToken의 WaitHandle을 사용하여 동기적으로 대기 (취소 즉시 응답)
-                if (ct.WaitHandle.WaitOne(50))
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-            }
-
-            // 16번 루프(타임아웃)를 넘겨도 목표 인덱스에 도달하지 못했을 때
-            this.Invoke((MethodInvoker)delegate {
-                new MessageBoxOk().ShowDialog("Error", "Target index movement timed out in MoveRotaryToUnloadSocket.");
-            });
-            return -1;
+            return Rotary.MoveToSocket(
+                targetSocket,
+                Rotary.IndexReference.Unload,
+                ct,
+                maxStep: 16,
+                settleMs: 50);
         }
 
         private int PlaceDieFromArmToOutStage(CancellationToken ct)
@@ -949,6 +996,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             }
 
             ct.ThrowIfCancellationRequested();
+
+            MaterialDie die = OutputDieTransfer.GetMaterial() as MaterialDie;
+            if(die == null)
+            {
+                return -1;
+            }
 
             // 2. Arm을 Place 위치로 이동 (ToolT / PlaceZ)
             nRet = OutputDieTransfer.PlaceDie_ToolT();
@@ -973,6 +1026,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 });
                 return -1;
             }
+
+            
+            die.State = DieProcessState.Placed;
+            die.ProcessSatate = Material.MaterialProcessSatate.Completed;
+            die.Presence = Material.MaterialPresence.Exist;
+            Log.Write(OutputDieTransfer.UnitName, "PlaceStart", $"Die Index={die.Index} Presence=Exist Placed");
+
+            OutputStage.PlaceDie(die);
+            OutputDieTransfer.SetMaterial(null);
 
             return 0;
         }
@@ -1120,22 +1182,23 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 try
                 {
+                    // 1) Die pickUp에 있어야지 이건.
                     // 1) 선택된 Probe Index로 이동(선택 없으면 현재 유지)
-                    int selectedProbeIndex = GetSelectedUnloadIndex();
-                    if (selectedProbeIndex >= 0)
-                    {
-                        token.ThrowIfCancellationRequested();
-                        nRet = MoveRotaryToUnloadSocket(selectedProbeIndex, token);
-                        if (nRet != 0)
-                        {
-                            Log.Write(OutputDieTransfer.UnitName, "btnDiePlaceDown_Click", "MoveRotaryToUnloadSocket failed");
-                            return nRet;
-                        }
-                    }
-                    else
-                    {
-                        return -1;
-                    }
+                    //int selectedProbeIndex = GetSelectedUnloadIndex();
+                    //if (selectedProbeIndex >= 0)
+                    //{
+                    //    token.ThrowIfCancellationRequested();
+                    //    nRet = MoveRotaryToUnloadSocket(selectedProbeIndex, token);
+                    //    if (nRet != 0)
+                    //    {
+                    //        Log.Write(OutputDieTransfer.UnitName, "btnDiePlaceDown_Click", "MoveRotaryToUnloadSocket failed");
+                    //        return nRet;
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    return -1;
+                    //}
 
                     nRet = PlaceDieFromArmToOutStage(token);
                     if (nRet != 0)

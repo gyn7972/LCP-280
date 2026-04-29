@@ -1070,10 +1070,16 @@ namespace QMC.LCP_280.Process.Unit
             {
                 ret = 0;
                 bool IsAuto = false;
-                if (RunMode == UnitRunMode.Auto)
+                if (RunMode == UnitRunMode.Auto ||
+                    RunUnitStatus == UnitStatus.AutoRunning ||
+                    RunUnitStatus == UnitStatus.ManualRunning)
+                {
                     IsAuto = true;
+                }
                 else
+                {
                     IsAuto = false;
+                }
 
                 ret = this.AxisX.MoveAbs(x, IsAuto, bFineSpeed);
                 if (ret != 0)
@@ -1853,8 +1859,18 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "T_Align", $"Target out of limit: {target:F4}");
                 return -1;
             }
-
-            int rc = AxisT.MoveAbs(target, RunMode == UnitRunMode.Auto, bFineSpeed);
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
+                IsAuto = true;
+            }
+            else
+            {
+                IsAuto = false;
+            }
+            int rc = AxisT.MoveAbs(target, IsAuto, bFineSpeed);
             if (rc != 0) return -1;
 
             rc = WaitUntil(() => InPos(AxisT, target), MoveTimeoutMs);
@@ -1903,6 +1919,18 @@ namespace QMC.LCP_280.Process.Unit
                 maxAttempts = 5;
             }
 
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
+                IsAuto = true;
+            }
+            else
+            {
+                IsAuto = false;
+            }
+
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 // 1. 측정 (Measure)
@@ -1945,7 +1973,7 @@ namespace QMC.LCP_280.Process.Unit
                             // A. 보정 (Correction)
                             // ApplyThetaCorrection 내부 로직(AngleMaxApplyDeg 제한 등) 활용
                             double fixCorrection = -residualDeg * AngleApplyGain;
-                            int rcFix = ApplyThetaCorrection(useXAxis, fixCorrection, RunMode == UnitRunMode.Auto, bFineSpeed);
+                            int rcFix = ApplyThetaCorrection(useXAxis, fixCorrection, IsAuto, bFineSpeed);
                             if (rcFix != 0)
                             {
                                 Log.Write(UnitName, "ThetaRefine", "Fail: ApplyThetaCorrection");
@@ -1974,8 +2002,7 @@ namespace QMC.LCP_280.Process.Unit
                 // 3. 마지막 시도가 아닐 경우 (for문 중간 단계) -> 일반 보정 수행 후 다음 루프로
                 double correction = -residualDeg;
                 correction *= AngleApplyGain;
-
-                int rc = ApplyThetaCorrection(useXAxis, correction, RunMode == UnitRunMode.Auto, bFineSpeed);
+                int rc = ApplyThetaCorrection(useXAxis, correction, IsAuto, bFineSpeed);
                 if (rc != 0)
                 {
                     return -1;
@@ -2130,8 +2157,38 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            nRet = MoveStage(die.CenterX, die.CenterY, false);
-            return nRet;
+
+            if(false)
+            {
+                nRet = MoveStage(die.CenterX, die.CenterY, false);
+                return nRet;
+
+            }
+            else
+            {
+                //NextDie 이동 시 Offset Data
+                double dOffsetX = 0, dOffsetY = 0;
+                double dMoveX = 0, dMoveY = 0;
+
+                dOffsetX = this.Config.dOffsetDieX;
+                dOffsetY = this.Config.dOffsetDieY;
+
+                //
+                if(Math.Abs(dOffsetX) > 0.5 ||
+                   Math.Abs(dOffsetY) > 0.5  )
+                {
+                    dMoveX = die.CenterX;
+                    dMoveY = die.CenterY;
+                }
+                else
+                {
+                    dMoveX = die.CenterX + dOffsetX;
+                    dMoveY = die.CenterY + dOffsetY;
+                }
+
+                nRet = MoveStage(dMoveX, dMoveY, false);
+                return nRet;
+            }
         }
 
         #endregion
@@ -4464,7 +4521,6 @@ namespace QMC.LCP_280.Process.Unit
 
             if (result.Success)
             {
-                // 기존 코드
                 foreach (var v in result.Matches)
                 {
                     lock (points)

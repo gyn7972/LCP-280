@@ -1,7 +1,11 @@
-namespace QMC.LCP_280.Process.Component.FormDlg
+//using System.Windows.Forms;
+//using System.Drawing;
+//using System.ComponentModel;
+
+namespace QMC.LCP_280.Process.Component
 {
 
-    partial class ManualSequenceControl
+    partial class ManualControl
     {
         /// <summary> 
         /// 필수 디자이너 변수
@@ -185,9 +189,9 @@ namespace QMC.LCP_280.Process.Component.FormDlg
         private System.Windows.Forms.ListBox _lstSteps;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private QMC.Common.IndividualMenuButton btnRun;
-        private QMC.Common.IndividualMenuButton btnPlay;
-        private QMC.Common.IndividualMenuButton btnStop;
-        private QMC.Common.IndividualMenuButton _btnNext;
+        private Common.IndividualMenuButton btnRun;
+        private Common.IndividualMenuButton btnPlay;
+        private Common.IndividualMenuButton btnStop;
+        private Common.IndividualMenuButton _btnNext;
     }
 }

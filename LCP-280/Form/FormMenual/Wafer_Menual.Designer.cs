@@ -50,11 +50,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
             this.tabControlManualSeqInputWafer = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlInputCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlInputCassette = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlInputFeeder = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlInputFeeder = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlInputWaferStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualControlInputWaferStage = new QMC.LCP_280.Process.Component.ManualControl();
             this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -378,7 +378,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.manualSequenceControlInputCassette);
+            this.tabPage1.Controls.Add(this.manualControlInputCassette);
             this.tabPage1.Location = new System.Drawing.Point(4, 39);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage1.Name = "tabPage1";
@@ -390,18 +390,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // manualSequenceControlInputCassette
             // 
-            this.manualSequenceControlInputCassette.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlInputCassette.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlInputCassette.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlInputCassette.MinimumSize = new System.Drawing.Size(358, 150);
-            this.manualSequenceControlInputCassette.Name = "manualSequenceControlInputCassette";
-            this.manualSequenceControlInputCassette.ParentUnit = null;
-            this.manualSequenceControlInputCassette.Size = new System.Drawing.Size(449, 502);
-            this.manualSequenceControlInputCassette.TabIndex = 14;
+            this.manualControlInputCassette.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControlInputCassette.Location = new System.Drawing.Point(2, 2);
+            this.manualControlInputCassette.Margin = new System.Windows.Forms.Padding(2);
+            this.manualControlInputCassette.MinimumSize = new System.Drawing.Size(358, 150);
+            this.manualControlInputCassette.Name = "manualSequenceControlInputCassette";
+            this.manualControlInputCassette.ParentUnit = null;
+            this.manualControlInputCassette.Size = new System.Drawing.Size(449, 502);
+            this.manualControlInputCassette.TabIndex = 14;
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.manualSequenceControlInputFeeder);
+            this.tabPage2.Controls.Add(this.manualControlInputFeeder);
             this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
@@ -413,18 +413,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // manualSequenceControlInputFeeder
             // 
-            this.manualSequenceControlInputFeeder.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlInputFeeder.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlInputFeeder.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlInputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
-            this.manualSequenceControlInputFeeder.Name = "manualSequenceControlInputFeeder";
-            this.manualSequenceControlInputFeeder.ParentUnit = null;
-            this.manualSequenceControlInputFeeder.Size = new System.Drawing.Size(449, 502);
-            this.manualSequenceControlInputFeeder.TabIndex = 15;
+            this.manualControlInputFeeder.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControlInputFeeder.Location = new System.Drawing.Point(2, 2);
+            this.manualControlInputFeeder.Margin = new System.Windows.Forms.Padding(2);
+            this.manualControlInputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
+            this.manualControlInputFeeder.Name = "manualSequenceControlInputFeeder";
+            this.manualControlInputFeeder.ParentUnit = null;
+            this.manualControlInputFeeder.Size = new System.Drawing.Size(449, 502);
+            this.manualControlInputFeeder.TabIndex = 15;
             // 
             // tabPage3
             // 
-            this.tabPage3.Controls.Add(this.manualSequenceControlInputWaferStage);
+            this.tabPage3.Controls.Add(this.manualControlInputWaferStage);
             this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
@@ -436,14 +436,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // manualSequenceControlInputWaferStage
             // 
-            this.manualSequenceControlInputWaferStage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlInputWaferStage.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlInputWaferStage.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlInputWaferStage.MinimumSize = new System.Drawing.Size(358, 300);
-            this.manualSequenceControlInputWaferStage.Name = "manualSequenceControlInputWaferStage";
-            this.manualSequenceControlInputWaferStage.ParentUnit = null;
-            this.manualSequenceControlInputWaferStage.Size = new System.Drawing.Size(449, 502);
-            this.manualSequenceControlInputWaferStage.TabIndex = 16;
+            this.manualControlInputWaferStage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualControlInputWaferStage.Location = new System.Drawing.Point(2, 2);
+            this.manualControlInputWaferStage.Margin = new System.Windows.Forms.Padding(2);
+            this.manualControlInputWaferStage.MinimumSize = new System.Drawing.Size(358, 300);
+            this.manualControlInputWaferStage.Name = "manualSequenceControlInputWaferStage";
+            this.manualControlInputWaferStage.ParentUnit = null;
+            this.manualControlInputWaferStage.Size = new System.Drawing.Size(449, 502);
+            this.manualControlInputWaferStage.TabIndex = 16;
             // 
             // tableLayoutPanel9
             // 
@@ -496,16 +496,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.TabPage tabPage1;
-        private ManualSequenceControl manualSequenceControlInputCassette;
+        private ManualControl manualControlInputCassette;
         private System.Windows.Forms.TabPage tabPage2;
-        private ManualSequenceControl manualSequenceControlInputFeeder;
+        private ManualControl manualControlInputFeeder;
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel6;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel8;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel9;
         private Common.IndividualMenuButton buttonMoveToSlot;
         private System.Windows.Forms.TabControl tabControlManualSeqInputWafer;
-        private ManualSequenceControl manualSequenceControlInputWaferStage;
+        private ManualControl manualControlInputWaferStage;
         private System.Windows.Forms.ComboBox comboBoxSlot;
         private Common.IndividualMenuButton btnTest;
         //private WaferMapView waferMapView_InputWafer;

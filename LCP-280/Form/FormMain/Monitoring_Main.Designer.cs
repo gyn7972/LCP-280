@@ -56,14 +56,15 @@ namespace QMC.LCP_280.Process
             this.outputWaferCarrierControl1 = new QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnTack = new QMC.Common.IndividualMenuButton();
-            this.btnMapMatch = new QMC.Common.IndividualMenuButton();
-            this.btnProcessStatus = new QMC.Common.IndividualMenuButton();
             this.btnTack2 = new QMC.Common.IndividualMenuButton();
-            this.lbContactTitle = new System.Windows.Forms.Label();
+            this.btnProcessStatus = new QMC.Common.IndividualMenuButton();
+            this.btnTack = new QMC.Common.IndividualMenuButton();
             this.lbContactValue = new System.Windows.Forms.Label();
+            this.lbContactTitle = new System.Windows.Forms.Label();
+            this.btnMapMatch = new QMC.Common.IndividualMenuButton();
             this.groupBox_SequenceAuto = new System.Windows.Forms.GroupBox();
             this.sequenceAutoControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl();
+            this.btnManualSeq = new QMC.Common.IndividualMenuButton();
             this.groupBoxdieInputControl.SuspendLayout();
             this.groupBoxdieIndexSelectControl.SuspendLayout();
             this.groupBoxdieOutputControl.SuspendLayout();
@@ -284,6 +285,7 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel8.Controls.Add(this.lbContactValue, 0, 9);
             this.tableLayoutPanel8.Controls.Add(this.lbContactTitle, 0, 8);
             this.tableLayoutPanel8.Controls.Add(this.btnMapMatch, 0, 7);
+            this.tableLayoutPanel8.Controls.Add(this.btnManualSeq, 0, 6);
             this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel8.Location = new System.Drawing.Point(1713, 4);
             this.tableLayoutPanel8.Margin = new System.Windows.Forms.Padding(6, 4, 6, 4);
@@ -301,6 +303,48 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel8.Size = new System.Drawing.Size(177, 555);
             this.tableLayoutPanel8.TabIndex = 21;
+            // 
+            // btnTack2
+            // 
+            this.btnTack2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTack2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnTack2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnTack2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTack2.CustomForeColor = System.Drawing.Color.Black;
+            this.btnTack2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTack2.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTack2.ForeColor = System.Drawing.Color.Black;
+            this.btnTack2.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnTack2.Location = new System.Drawing.Point(6, 116);
+            this.btnTack2.Margin = new System.Windows.Forms.Padding(6);
+            this.btnTack2.Name = "btnTack2";
+            this.btnTack2.Size = new System.Drawing.Size(165, 43);
+            this.btnTack2.TabIndex = 23;
+            this.btnTack2.TabStop = false;
+            this.btnTack2.Text = "Sub T/T";
+            this.btnTack2.UseVisualStyleBackColor = false;
+            this.btnTack2.Click += new System.EventHandler(this.btnTack2_Click);
+            // 
+            // btnProcessStatus
+            // 
+            this.btnProcessStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProcessStatus.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnProcessStatus.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnProcessStatus.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProcessStatus.CustomForeColor = System.Drawing.Color.Black;
+            this.btnProcessStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnProcessStatus.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnProcessStatus.ForeColor = System.Drawing.Color.Black;
+            this.btnProcessStatus.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnProcessStatus.Location = new System.Drawing.Point(6, 6);
+            this.btnProcessStatus.Margin = new System.Windows.Forms.Padding(6);
+            this.btnProcessStatus.Name = "btnProcessStatus";
+            this.btnProcessStatus.Size = new System.Drawing.Size(165, 43);
+            this.btnProcessStatus.TabIndex = 21;
+            this.btnProcessStatus.TabStop = false;
+            this.btnProcessStatus.Text = "Status";
+            this.btnProcessStatus.UseVisualStyleBackColor = false;
+            this.btnProcessStatus.Click += new System.EventHandler(this.btnProcessStatus_Click);
             // 
             // btnTack
             // 
@@ -322,6 +366,30 @@ namespace QMC.LCP_280.Process
             this.btnTack.Text = "ToTal T/T";
             this.btnTack.UseVisualStyleBackColor = false;
             this.btnTack.Click += new System.EventHandler(this.btnTack_Click);
+            // 
+            // lbContactValue
+            // 
+            this.lbContactValue.AutoSize = true;
+            this.lbContactValue.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbContactValue.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbContactValue.Location = new System.Drawing.Point(3, 495);
+            this.lbContactValue.Name = "lbContactValue";
+            this.lbContactValue.Size = new System.Drawing.Size(171, 28);
+            this.lbContactValue.TabIndex = 25;
+            this.lbContactValue.Text = "99999999999";
+            this.lbContactValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbContactTitle
+            // 
+            this.lbContactTitle.AutoSize = true;
+            this.lbContactTitle.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lbContactTitle.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbContactTitle.Location = new System.Drawing.Point(3, 467);
+            this.lbContactTitle.Name = "lbContactTitle";
+            this.lbContactTitle.Size = new System.Drawing.Size(171, 28);
+            this.lbContactTitle.TabIndex = 24;
+            this.lbContactTitle.Text = "Contact Count";
+            this.lbContactTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // btnMapMatch
             // 
@@ -345,72 +413,6 @@ namespace QMC.LCP_280.Process
             this.btnMapMatch.Visible = false;
             this.btnMapMatch.Click += new System.EventHandler(this.btnMapMatch_Click);
             // 
-            // btnProcessStatus
-            // 
-            this.btnProcessStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnProcessStatus.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnProcessStatus.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnProcessStatus.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnProcessStatus.CustomForeColor = System.Drawing.Color.Black;
-            this.btnProcessStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnProcessStatus.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnProcessStatus.ForeColor = System.Drawing.Color.Black;
-            this.btnProcessStatus.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnProcessStatus.Location = new System.Drawing.Point(6, 6);
-            this.btnProcessStatus.Margin = new System.Windows.Forms.Padding(6);
-            this.btnProcessStatus.Name = "btnProcessStatus";
-            this.btnProcessStatus.Size = new System.Drawing.Size(165, 43);
-            this.btnProcessStatus.TabIndex = 21;
-            this.btnProcessStatus.TabStop = false;
-            this.btnProcessStatus.Text = "Status";
-            this.btnProcessStatus.UseVisualStyleBackColor = false;
-            this.btnProcessStatus.Click += new System.EventHandler(this.btnProcessStatus_Click);
-            // 
-            // btnTack2
-            // 
-            this.btnTack2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnTack2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnTack2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnTack2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTack2.CustomForeColor = System.Drawing.Color.Black;
-            this.btnTack2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnTack2.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTack2.ForeColor = System.Drawing.Color.Black;
-            this.btnTack2.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnTack2.Location = new System.Drawing.Point(6, 116);
-            this.btnTack2.Margin = new System.Windows.Forms.Padding(6);
-            this.btnTack2.Name = "btnTack2";
-            this.btnTack2.Size = new System.Drawing.Size(165, 43);
-            this.btnTack2.TabIndex = 23;
-            this.btnTack2.TabStop = false;
-            this.btnTack2.Text = "Sub T/T";
-            this.btnTack2.UseVisualStyleBackColor = false;
-            this.btnTack2.Click += new System.EventHandler(this.btnTack2_Click);
-            // 
-            // lbContactTitle
-            // 
-            this.lbContactTitle.AutoSize = true;
-            this.lbContactTitle.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lbContactTitle.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lbContactTitle.Location = new System.Drawing.Point(3, 467);
-            this.lbContactTitle.Name = "lbContactTitle";
-            this.lbContactTitle.Size = new System.Drawing.Size(171, 28);
-            this.lbContactTitle.TabIndex = 24;
-            this.lbContactTitle.Text = "Contact Count";
-            this.lbContactTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbContactValue
-            // 
-            this.lbContactValue.AutoSize = true;
-            this.lbContactValue.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lbContactValue.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lbContactValue.Location = new System.Drawing.Point(3, 495);
-            this.lbContactValue.Name = "lbContactValue";
-            this.lbContactValue.Size = new System.Drawing.Size(171, 28);
-            this.lbContactValue.TabIndex = 25;
-            this.lbContactValue.Text = "99999999999";
-            this.lbContactValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
             // groupBox_SequenceAuto
             // 
             this.groupBox_SequenceAuto.Controls.Add(this.sequenceAutoControl);
@@ -432,6 +434,27 @@ namespace QMC.LCP_280.Process
             this.sequenceAutoControl.Name = "sequenceAutoControl";
             this.sequenceAutoControl.Size = new System.Drawing.Size(177, 523);
             this.sequenceAutoControl.TabIndex = 1;
+            // 
+            // btnManualSeq
+            // 
+            this.btnManualSeq.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnManualSeq.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnManualSeq.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnManualSeq.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnManualSeq.CustomForeColor = System.Drawing.Color.Black;
+            this.btnManualSeq.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnManualSeq.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnManualSeq.ForeColor = System.Drawing.Color.Black;
+            this.btnManualSeq.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnManualSeq.Location = new System.Drawing.Point(6, 336);
+            this.btnManualSeq.Margin = new System.Windows.Forms.Padding(6);
+            this.btnManualSeq.Name = "btnManualSeq";
+            this.btnManualSeq.Size = new System.Drawing.Size(165, 43);
+            this.btnManualSeq.TabIndex = 26;
+            this.btnManualSeq.TabStop = false;
+            this.btnManualSeq.Text = "ManualSeq";
+            this.btnManualSeq.UseVisualStyleBackColor = false;
+            this.btnManualSeq.Click += new System.EventHandler(this.btnManualSeq_Click);
             // 
             // Monitoring_Main
             // 
@@ -472,5 +495,6 @@ namespace QMC.LCP_280.Process
         private Common.IndividualMenuButton btnTack2;
         private Label lbContactTitle;
         private Label lbContactValue;
+        private Common.IndividualMenuButton btnManualSeq;
     }
 }

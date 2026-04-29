@@ -46,6 +46,7 @@ namespace QMC.LCP_280.Process.Unit
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
                 Log.Write("AlarmInit", $"Could not find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
+                
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
@@ -54,6 +55,7 @@ namespace QMC.LCP_280.Process.Unit
                 alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
                 m_dicAlarms.Add(alarm.Code, alarm);
 
+                alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryNotSafety;
                 alarm.Title = "Rotary Not Safety Pos.";
                 alarm.Cause = "Rotary is not in safety position. Please check the position and restart.";
@@ -181,7 +183,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public IndexChipProbeController(IndexChipProbeControllerConfig config = null) : base(new IndexChipProbeControllerConfig())
+        public IndexChipProbeController(IndexChipProbeControllerConfig config = null)
+            : base(config ?? new IndexChipProbeControllerConfig())
         {
             AddComponents();
         }
@@ -292,6 +295,7 @@ namespace QMC.LCP_280.Process.Unit
         public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
         {
             bool bRet = base.IsInterlockOK(baseComponent, e);
+
             if (baseComponent == this.AxisProbeCardZ || baseComponent == this.AxisProbeZ)
             {
                 if (_isSafetyMoving)
@@ -349,30 +353,6 @@ namespace QMC.LCP_280.Process.Unit
                 // AxisSphereZ 축 이동시 별도 인터락 없음
             }
             return bRet;
-        }
-
-        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 2)
-        {
-            var sw = Stopwatch.StartNew();
-            while (true)
-            {
-                // Auto 모드에서 Stop 신호 시 즉시 반환
-                if (RunMode == UnitRunMode.Auto && IsStop)
-                    return 0;
-
-                // 즉시 확인 API 사용(알람 미발행)
-                if (this.Rotary.IsIndexMoving() == false)
-                {
-                    return 0;
-                }
-
-                if (timeoutMs >= 0 && sw.ElapsedMilliseconds >= timeoutMs)
-                {
-                    Log.Write(UnitName, nameof(WaitForRotaryIdle), $"Timeout waiting Rotary idle ({timeoutMs} ms)");
-                    return -1;
-                }
-                Thread.Sleep(pollMs);
-            }
         }
 
         public int MovePositionSafetyZ(bool isFine = false)
@@ -461,117 +441,6 @@ namespace QMC.LCP_280.Process.Unit
                     _isSafetyMoving = false;
                 }
             }
-            //else // 병렬 방식
-            //{
-            //    try
-            //    {
-            //        string tpName = $"SafetyZone";
-            //        var tpObj = GetTeachingPosition(tpName);
-            //        if (tpObj == null)
-            //        {
-            //            Log.Write(UnitName, $"[OnMovePosition_SafetyZone] Teaching not found: {tpName}");
-            //            return -1;
-            //        }
-
-            //        double dZPos = 0.0;
-            //        Task<int> taskReady = null;
-            //        bool isGripperXStarted = false;
-
-            //        TaktStart("ProbeCardZSafety");
-            //        // 1. ProbeCardZ축 안전위치(하강) 목표 위치 및 시작 위치 획득
-            //        dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-            //        double startZ = AxisProbeCardZ.GetPosition();
-
-            //        // 안전 기준: 전체 Z축 이동 거리의 50% (필요시 0.5 값을 변경하여 시작 시점을 조절하세요)
-            //        double safeMoveDist = Math.Abs(dZPos - startZ) * 0.3;
-
-            //        // 2. ProbeCardZ축 하강 비동기 시작
-            //        Task<int> taskProbeCardZ = Task.Run(() =>
-            //        {
-            //            return OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
-            //        });
-
-            //        // 3. ProbeCardZ축 이동 거리를 실시간으로 감시하며 GripperX 이동 시작 시점 판단
-            //        while (IsEndTask(taskProbeCardZ) == false)
-            //        {
-            //            if (!isGripperXStarted)
-            //            {
-            //                double currentZ = AxisProbeCardZ.GetPosition();
-            //                double movedDist = Math.Abs(currentZ - startZ);
-
-            //                // 지정된 안전 깊이 이상 하강했거나, 이미 인포지션인 경우 Gripper 동작 시작
-            //                if (movedDist >= safeMoveDist || AxisProbeCardZ.InPosition(dZPos))
-            //                {
-            //                    TaktStart("GripperXReady");
-            //                    taskReady = MovePositionAsyncGripperXReady();
-            //                    isGripperXStarted = true;
-            //                }
-            //            }
-
-            //            // 이동 중 인터락 지속 감시 (위반 시 탈출)
-            //            if (IsMoveInterLockSafetyZ() != 0)
-            //            {
-            //                break;
-            //            }
-            //            Thread.Sleep(1);
-            //        }
-
-            //        // 4. ProbeCardZ 이동 완전 종료 대기 및 결과 체크
-            //        if (taskProbeCardZ.Result != 0)
-            //        {
-            //            Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed tp={tpName} posZ={dZPos}");
-            //            return -1;
-            //        }
-            //        TaktEnd("ProbeCardZSafety");
-
-            //        // (방어 코드) 만약 Z축 거리가 너무 짧아 루프가 빨리 끝났다면 직접 GripperX 시작
-            //        if (!isGripperXStarted)
-            //        {
-            //            TaktStart("GripperXReady");
-            //            taskReady = MovePositionAsyncGripperXReady();
-            //        }
-
-            //        // 5. GripperX Ready 동작이 완전히 끝날 때까지 대기
-            //        if (taskReady != null)
-            //        {
-            //            while (IsEndTask(taskReady) == false)
-            //            {
-            //                if (IsMoveInterLockGripperXReady() != 0) break;
-            //                Thread.Sleep(1);
-            //            }
-            //            if (taskReady.Result != 0)
-            //            {
-            //                Log.Write(UnitName, $"[OnMovePositionSafetyZ] move failed: MovePositionGripperXReady async");
-            //                return -1;
-            //            }
-            //        }
-            //        TaktEnd("GripperXReady");
-
-
-            //        TaktStart("ProbeZSafety");
-            //        // 6. 모든 위치가 안전해지면 ProbeZ 안전위치로 이동
-            //        if (IsPositionProbeCardZSafety() == false)
-            //        {
-            //            Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed - IsPositionProbeCardZSafety");
-            //            return -1;
-            //        }
-
-            //        dZPos = GetTP(tpName, AxisNames.ProbeZ);
-            //        nRet = OnMoveAxisPositionOne(AxisProbeZ, dZPos);
-            //        if (nRet != 0)
-            //        {
-            //            Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeZ move failed tp={tpName} posZ={dZPos}");
-            //            return -1;
-            //        }
-            //        TaktEnd("ProbeZSafety");
-
-            //        return nRet;
-            //    }
-            //    finally
-            //    {
-            //        _isSafetyMoving = false;
-            //    }
-            //}
         }
 
         private int IsMoveInterLockSafetyZ()
@@ -1849,7 +1718,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
             // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
-            const double zeroTolerance = 0.003;
+            double zeroTolerance = AxisProbeZ.Config.InposTolerance; // 또는 0.005;
             if (Math.Abs(currentPos) <= zeroTolerance)
             {
                 return true;
@@ -1875,7 +1744,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
             // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
-            const double zeroTolerance = 0.003;
+            double zeroTolerance = AxisProbeCardZ.Config.InposTolerance; // 또는 0.005;
             if (Math.Abs(currentPos) <= zeroTolerance)
             {
                 return true;
@@ -2249,6 +2118,7 @@ namespace QMC.LCP_280.Process.Unit
         // [ADD] 측정 1회 + 결과 BinType 보고 NG면 재시도
         private int MeasureChipWithNgRetry(MaterialDie die, int maxRetry, int retryDelayMs = 10)
         {
+            int nRet = -1; //여기는 OK안되면 -1 로 나가야함.
             // maxRetry=2 => 총 3회 시도
             if (maxRetry < 0)
                 maxRetry = 0;
@@ -2263,7 +2133,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
                         $"MeasureChip failed. attempt={attempt + 1}/{maxRetry + 1} rc={rc}");
-                    return -1;
+                    nRet = -1;  //return - 1;
                 }
 
                 // [ADD] Simulation/DryRun: BinType을 랜덤으로 강제 세팅해서 NG/Retry 테스트
@@ -2276,7 +2146,7 @@ namespace QMC.LCP_280.Process.Unit
                         //시뮬 측정 택타임
                         if(Config.IsSimulation)
                         {
-                            Thread.Sleep(200);
+                            Thread.Sleep(150);
                         }
                         
                         try
@@ -2285,7 +2155,6 @@ namespace QMC.LCP_280.Process.Unit
                             double p = SimulationGoodProbability;
                             if (p < 0.0) p = 0.0;
                             if (p > 1.0) p = 1.0;
-
                             bool isGood;
                             lock (_simRandLock)
                             {
@@ -2312,7 +2181,7 @@ namespace QMC.LCP_280.Process.Unit
                         die.State = DieProcessState.Inspected;
                         Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
                             $"Measure OK. BinType={binType} attempt={attempt + 1}/{maxRetry + 1}");
-                        return 0;
+                        nRet = 0;  //return 0;
                     }
 
                     //여기에서 결과값을 확인 후에 검사 결과 및 Retry 처리
@@ -2333,20 +2202,27 @@ namespace QMC.LCP_280.Process.Unit
                         $"Measure result NG -> retry. attempt={attempt + 1}/{maxRetry + 1}");
 
                     if (attempt < maxRetry)
+                    {
                         Thread.Sleep(Math.Max(0, retryDelayMs));
+                    }
+                    else
+                    {
+                        return nRet;
+                    }
                 }
                 else
                 {
                     // Bin 정보를 못 읽으면 기존 정책대로 "성공"으로 처리(현장 정책에 따라 NG 처리로 바꿀 수 있음)
                     Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
                         $"Measure OK but BinType not available -> treat as success.");
+                    nRet = 0;
                     return 0;
                 }
             }
 
             // 여기까지 오면 "계속 NG"
             die.SetReject("Error_Measure");
-            return -1;
+            return nRet;
         }
 
 
@@ -2667,7 +2543,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
-                        return -1;
+                        nRet = -1;  //return -1;
                     }
                 }
                 else
@@ -2684,7 +2560,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
-                        return -1;
+                        nRet = -1;  //return -1;
                     }
                 }
 
@@ -2724,7 +2600,9 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-                SetProbeVac(false);
+                if (IsTopRequired() == false)
+                    SetProbeVac(false);
+
                 probeSocket.SetState(Rotary.RotarySocketState.Probed);
                 LogSequence("End");
                 return nRet;
@@ -2735,7 +2613,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                SetProbeVac(false);
+                if (IsTopRequired() == false)
+                    SetProbeVac(false);
+
                 if (this.IsProbeSafetyAxisPos() == false)
                 {
                     nRet = MovePositionSafetyZ();
@@ -2768,54 +2648,35 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-                //Log.Write("kkkkkkProb", "Start4");
                 int nIndex = GetProbeIndexNo();
-
-                //Log.Write("kkkkkkProb", "Start5");
-                //nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
-                //if (nRet != 0)
-                //{
-                //    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] MovePositionBottomContact_Index_Ready failed");
-                //    return -1;
-                //}
-
-                //Log.Write("kkkkkkProb", "Start6");
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
                     return -1;
                 }
-
-                //Log.Write("kkkkkkProb", "Start7");
                 WaitByTime(Config.UpperWaitTime);
-
-                //카메라로 컨택 확인 하고 싶을때 모드
-                //if (Config.ViewMode == false)
+                // 6) 검사 요구 동기 처리
+                // [CHG] NG면 Retry
+                var die = Rotary != null ? Rotary.GetProbeSocketMaterial() : null;
+                nRet = MeasureChipWithNgRetry(die, maxRetry: 0, retryDelayMs: 50);
+                if (nRet != 0)
                 {
-                    // 6) 검사 요구 동기 처리
-                    // [CHG] NG면 Retry
-                    var die = Rotary != null ? Rotary.GetProbeSocketMaterial() : null;
-                    nRet = MeasureChipWithNgRetry(die, maxRetry: 1, retryDelayMs: 50);
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[TopContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
-                        return -1;
-                    }
-
-                    if (nRet == 0)
-                    {
-                        long c = _contactCounter.Increase();
-                        Log.Write(UnitName, nameof(TopContactAndMeasureOnce), $"ContactCount++ => {c}");
-                    }
-
-                    if (Config.ViewMode)
-                    {
-                        // [ADD] 검사 완료 후 결과 이미지 저장
-                        SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");
-                    }
+                    Log.Write(UnitName, "[TopContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
+                    nRet = -1;  // return - 1;
                 }
-                //Log.Write("kkkkkkProb", "Start9");
+
+                if (nRet == 0)
+                {
+                    long c = _contactCounter.Increase();
+                    Log.Write(UnitName, nameof(TopContactAndMeasureOnce), $"ContactCount++ => {c}");
+                }
+
+                if (Config.ViewMode)
+                {
+                    // [ADD] 검사 완료 후 결과 이미지 저장
+                    SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");
+                }
             }
             catch (Exception ex)
             {
@@ -3031,19 +2892,22 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[BottomContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
                     TaktEnd("Measure");
 
-                    MoveToSafetyZSync(ref nRet);
-
-                    return -1;
+                    //MoveToSafetyZSync(ref nRet);
+                    //우선 그냥 정상적으로 처리해 보자.
+                    //return 0; //return -2;  //검사 NG는 -2로 바꿔서 처리하자.
                 }
-                TaktEnd("Measure");
+                else
+                {
+                    TaktEnd("Measure");
+                }
 
-                if (nRet == 0)
+                //if (nRet == 0)
                 {
                     long c = _contactCounter.Increase();
                     Log.Write(UnitName, nameof(BottomContactAndMeasureOnce), $"ContactCount++ => {c}");
                 }
 
-                if (Config.ViewMode)
+                if (Config.ViewMode) 
                 {
                     // [ADD] 검사 완료 후 결과 이미지 저장
                     SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");

@@ -157,18 +157,14 @@ namespace QMC.Common.Keithley
 
                 if (!Communicator.OpenSession(Config.ResourceName))
                 {
-                    Log.Write(this.Name, "Initialize", $"Failed to open session. (ResourceName: {Config.ResourceName})");
-                    return -1;
-                    //throw new Exception($"Failed to open session. (ResourceName: {Config.ResourceName})");
+                    throw new Exception($"Failed to open session. (ResourceName: {Config.ResourceName})");
                 }
 
                 // Query Identification
                 string identification = "";
                 if (!Communicator.Query("*IDN?", ref identification))
                 {
-                    Log.Write(this.Name, "Initialize", $"Failed to get identification.");
-                    return -1;
-                    //throw new Exception($"Failed to get identification.");
+                    throw new Exception($"Failed to get identification.");
                 }
 
                 string[] items = identification.Split(',');
@@ -180,33 +176,25 @@ namespace QMC.Common.Keithley
                 }
                 else
                 {
-                    Log.Write(this.Name, "Initialize", $"[{Name}] is not keithley sourcemeter.");
-                    return -1;
-                    //throw new Exception($"[{Name}] is not keithley sourcemeter.");
+                    throw new Exception($"[{Name}] is not keithley sourcemeter.");
                 }    
 
                 // Load Script
                 if (SendUserScript() != 0)
                 {
-                    Log.Write(this.Name, "Initialize", $"Failed to send user script. (FileName: {Config.ScriptFileName})");
-                    return -1;
-                    //throw new Exception($"Failed to send user script. (FileName: {Config.ScriptFileName})");
+                    throw new Exception($"Failed to send user script. (FileName: {Config.ScriptFileName})");
                 }
 
                 // Initialize
                 if (Init() != 0)
                 {
-                    Log.Write(this.Name, "Initialize", "Failed to initialize sourcemeter.");
-                    return -1;
-                    //throw new Exception("Failed to initialize sourcemeter.");
+                    throw new Exception("Failed to initialize sourcemeter.");
                 }
 
                 // Apply SMU Config 
                 if (ApplyConfig() != 0)
                 {
-                    Log.Write(this.Name, "Initialize", "Failed to apply parameter.");
-                    return -1;
-                    //throw new Exception("Failed to apply parameter.");
+                    throw new Exception("Failed to apply parameter.");
                 }
 
                 OnInitialized?.Invoke(this, EventArgs.Empty);
@@ -216,7 +204,7 @@ namespace QMC.Common.Keithley
                 ModelName = "";
                 SerialNo = "";
                 FirmwareRevision = "";
-                Log.Write(this.Name, "Initialize", "Exception");
+
                 Log.Write(ex);
                 return -1;
             }

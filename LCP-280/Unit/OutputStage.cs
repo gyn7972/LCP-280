@@ -1706,6 +1706,7 @@ namespace QMC.LCP_280.Process.Unit
             MaterialDie slot = null;
 
             lock (_reserveLock)
+            {
                 lock (wafer.Dies)
                 {
                     Log.Write(UnitName, "PlaceDie", "[Processing]01");
@@ -1783,6 +1784,8 @@ namespace QMC.LCP_280.Process.Unit
 
                     _currentDie = slot;
 
+                    //마지막 칩을 안하면.. 요거 안타넹. 
+                    //그러면 wafer completed가 안되서 배출이 안됨. 
                     // 5) Completed 판정
                     if (wafer.Dies.All(d => d != null && d.State == DieProcessState.Placed))
                         wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
@@ -1791,6 +1794,7 @@ namespace QMC.LCP_280.Process.Unit
 
                     allPlacedOrRejected = (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed);
                 }
+            }
 
             // ============================================================
             // [패치 핵심] 비동기 큐에 저장 요청 (Deep Copy는 내부에서 처리됨)
@@ -1824,45 +1828,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "PlaceDie_EnqueueError", ex.Message);
             }
 
-            //Task.Run(() =>
-            //{
-            //    try
-            //    {
-            //        // 6) 저장/로그/GUI는 slot 기준으로 수행해야 최종 MapX/MapY가 input과 동일
-            //        Equipment.Instance.ResultWriterManager.CurrentTestConditionSet = Equipment.Instance.Tester.ConditionSet;
-            //        Equipment.Instance.ResultWriterManager.AccumulateDie(slot);
-
-            //        int rc = AssignDataToMaterialObject(slot);
-            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
-            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AssignDataToMaterialObject");
-
-            //        rc = Equipment.Instance.ResultWriterManager.AppendTxTDie(slot); // Data 업데이트까지 OK
-            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
-            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendTxTDie");
-
-            //        rc = Equipment.Instance.ResultWriterManager.AppendPrdDie(slot);
-            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
-            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendPrdDie");
-
-            //        rc = Equipment.Instance.ResultWriterManager.AppendWafDie(slot);
-            //        if (rc != 0) { PostAlarm((int)AlarmKeys.eNotReadyToMeasure); return; }
-            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendWafDie");
-
-            //        Equipment.Instance.ResultWriterManager.AppendBinDie(slot); // Data 업데이트까지 OK
-            //        Equipment.Instance.ResultWriterManager.FinalizeSummary();
-            //        Equipment.Instance.ResultWriterManager.WriteSumFile(slot);
-            //        //Log.Write(UnitName, "PlaceDie", "[Processing] AppendBinDie");
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Log.Write(ex);
-            //    }
-            //});
-
             UpdateUI();
             OnDiePlaced(slot);
             RecordDiePlaceTakt(slot);
-            //Log.Write(UnitName, "PlaceDie", "[OK]");
             try
             {
                 var ctx = Equipment.Instance.SummaryContext;

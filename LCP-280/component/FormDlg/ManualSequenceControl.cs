@@ -1,447 +1,887 @@
-using QMC.Common;
-using QMC.Common.Sequence;
-using QMC.Common.UI;
+Ôªøusing QMC.Common.Alarm;
 using QMC.Common.Unit;
-using QMC.LCP_280.Process.Unit;
 using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D; // ±◊∑°«» ∞Ê∑Œ ªÁøÎ¿ª ¿ß«ÿ √ﬂ∞°
-using System.Linq;
+using System.Drawing.Drawing2D;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
-namespace QMC.LCP_280.Process.Component
+namespace QMC.LCP_280.Process.Component.FormDlg
 {
     public partial class ManualSequenceControl : UserControl
     {
-        private BaseUnit m_ParentUnit;
-        int SelectedIndex = -1;
-
-        // ==========================================
-        // [µ¿⁄¿Œ º≥¡§] æ÷«√ Ω∫≈∏¿œ (Apple-like)
-        // ==========================================
-        // ±‚∫ª πË∞Ê: æ∆¡÷ ø¨«— »∏ªˆ (±Ú≤˚«‘ ¿Ø¡ˆ)
-        private Color _normalBackColor = Color.White;
-        private Color _normalBorderColor = Color.FromArgb(220, 220, 220);
-        private Color _normalTextColor = Color.FromArgb(50, 50, 50);
-
-        // º±≈√ πË∞Ê: æ÷«√ ∆Ø¿Ø¿« ∫ŒµÂ∑ØøÓ ∆ƒ∂ıªˆ
-        private Color _selectedBackColor = Color.FromArgb(0, 122, 255);
-        private Color _selectedBorderColor = Color.FromArgb(0, 122, 255);
-        private Color _selectedTextColor = Color.White;
-
-        // «ˆ¿Á Ω««‡ ¡ﬂ¿Œ «◊∏Ò (≥Ïªˆ ∞Ëø≠ ∆˜¿Œ∆Æ)
-        private Color _runningTextColor = Color.FromArgb(52, 199, 89);
-
-        // ∆˘∆Æ: ∏º¿∫ ∞ÌµÒ
-        private Font _itemFont = new Font("∏º¿∫ ∞ÌµÒ", 10f, FontStyle.Regular);
-        private Font _selectedItemFont = new Font("∏º¿∫ ∞ÌµÒ", 10f, FontStyle.Bold);
-
-        // [√ﬂ∞°] ±◊∑°«» ∞¥√º ƒ≥ΩÃ (πÃ∏Æ º±æ)
-        private SolidBrush _brushNormalBack;
-        private SolidBrush _brushSelectedBack;
-        private Pen _penNormalBorder;
-        private Pen _penSelectedBorder;
-        private SolidBrush _brushNormalText;
-        private SolidBrush _brushSelectedText;
-        private SolidBrush _brushRunningText;
-
-        public BaseUnit ParentUnit
+        public sealed class ManualStep
         {
-            get { return m_ParentUnit; }
-            set
+            public string DisplayName { get; }
+            public string UnitKey { get; }
+            public string MethodName { get; }
+            public Func<int> IndexProvider { get; }
+            public Func<object, int, Task<int>> Executor { get; }
+            public Func<object, int, CancellationToken, Task<int>> CancellableExecutor { get; }
+
+            public ManualStep(string displayName, string unitKey, string methodName, Func<int> indexProvider = null)
             {
-                m_ParentUnit = value;
-                UpdateSeqList();
+                DisplayName = displayName;
+                UnitKey = unitKey;
+                MethodName = methodName;
+                IndexProvider = indexProvider;
+            }
+
+            // Í∏∞Ï°¥ Îç∏Î¶¨Í≤åÏù¥Ìä∏ Î∞©Ïãù
+            public ManualStep(string displayName, string unitKey, Func<object, int, Task<int>> executor, Func<int> indexProvider = null)
+            {
+                DisplayName = displayName;
+                UnitKey = unitKey;
+                MethodName = "Delegate";
+                Executor = executor;
+                CancellableExecutor = (unit, index, token) => executor(unit, index);
+                IndexProvider = indexProvider;
+            }
+
+            // Ï∑®ÏÜå ÌÜ†ÌÅ∞ ÏßÄÏõê Îç∏Î¶¨Í≤åÏù¥Ìä∏ Î∞©Ïãù
+            public ManualStep(string displayName, string unitKey, Func<object, int, CancellationToken, Task<int>> executor, Func<int> indexProvider = null)
+            {
+                DisplayName = displayName;
+                UnitKey = unitKey;
+                MethodName = "Delegate";
+                CancellableExecutor = executor;
+                Executor = (unit, index) => executor(unit, index, CancellationToken.None);
+                IndexProvider = indexProvider;
+            }
+
+            // sync / no index
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, int> executor, Func<int> indexProvider = null)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => Task.Run(() => executor((TUnit)unit), token),
+                    indexProvider);
+            }
+
+            // sync / with index
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, int, int> executor, Func<int> indexProvider)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => Task.Run(() => executor((TUnit)unit, index), token),
+                    indexProvider);
+            }
+
+            // async / no index
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, Task<int>> executor, Func<int> indexProvider = null)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => executor((TUnit)unit),
+                    indexProvider);
+            }
+
+            // async / with index
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, int, Task<int>> executor, Func<int> indexProvider)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => executor((TUnit)unit, index),
+                    indexProvider);
+            }
+
+            // async / no index / cancellation
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, CancellationToken, Task<int>> executor, Func<int> indexProvider = null)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => executor((TUnit)unit, token),
+                    indexProvider);
+            }
+
+            // async / with index / cancellation
+            public static ManualStep Create<TUnit>(string displayName, string unitKey, Func<TUnit, int, CancellationToken, Task<int>> executor, Func<int> indexProvider)
+            {
+                return new ManualStep(
+                    displayName,
+                    unitKey,
+                    (unit, index, token) => executor((TUnit)unit, index, token),
+                    indexProvider);
             }
         }
 
-        private void UpdateSeqList()
-        {
-            if (m_ParentUnit == null) return;
-            this._lstSteps.Items.Clear();
-            SelectedIndex = -1;
-            foreach (var v in m_ParentUnit.SequencePlayers)
-            {
-                int Index = this._lstSteps.Items.Add(v.Method.Name);
-                if (m_ParentUnit.CurrentFunc != null)
-                {
-                    if (m_ParentUnit.CurrentFunc.Method.Name == v.Method.Name)
-                    {
-                        SelectedIndex = Index;
-                    }
-                }
-            }
-            this._lstSteps.SelectedIndex = SelectedIndex;
-            this._lstSteps.Invalidate(); // ∏ÆΩ∫∆Æ ∞ªΩ≈ Ω√ ¥ŸΩ√ ±◊∏Æ±‚
-        }
+        private CancellationTokenSource _executionCts;
+        private BaseUnit _executingUnit;
+        private readonly List<BaseUnit> _statusSyncUnits = new List<BaseUnit>();
+        public BaseUnit StatusSyncMasterUnit { get; set; }
+
+        private readonly List<string> _steps = new List<string>(); // legacy
+        private readonly List<ManualStep> _manualSteps = new List<ManualStep>(); // multi-unit
+        private readonly Dictionary<string, object> _units = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        private int _selectedIndex = -1;
+        private int _runningIndex = -1;
+
+        public object ParentUnit { get; set; } // legacy
+        public Func<int> IndexProvider { get; set; } = () => 0; // legacy
+
+        private readonly Timer _playTimer = new Timer();
+        private bool _isPlaying;
+        private bool _isExecuting;
+
+        private Form _runningDialog;
+        private Label _runningLabel;
+        private ProgressBar _runningProgress;
 
         public ManualSequenceControl()
         {
             InitializeComponent();
+            InitializeListBoxStyle();
+            InitializeControlStyle();
 
-            // [√ﬂ∞°] ±◊∑°«» ∞¥√º √ ±‚»≠
-            _brushNormalBack = new SolidBrush(_normalBackColor);
-            _brushSelectedBack = new SolidBrush(_selectedBackColor);
-            _penNormalBorder = new Pen(_normalBorderColor, 1);
-            _penSelectedBorder = new Pen(_selectedBorderColor, 1);
-            _brushNormalText = new SolidBrush(_normalTextColor);
-            _brushSelectedText = new SolidBrush(_selectedTextColor);
-            _brushRunningText = new SolidBrush(_runningTextColor);
+            // ÌïÑÏöî Ïãú UIÏóêÏÑú Î∞îÎ°ú Î≥¥Ïù¥ÎèÑÎ°ù
+            _btnNext.Visible = true;
+            btnPlay.Visible = true;
 
-            InitializeListBoxStyle(); // Ω∫≈∏¿œ √ ±‚»≠ »£√‚
+            // ÏïåÎûå Î∞úÏÉù Ïãú ÏàòÎèô ÏãúÌÄÄÏä§ Í∞ïÏ†ú Ï†ïÏßÄ
+            AlarmManager.Instance.AlarmAdded += OnAlarmAdded;
+
+            _playTimer.Interval = 500;
+            _playTimer.Tick += async (s, e) =>
+            {
+                if (_isExecuting)
+                {
+                    return;
+                }
+
+                // ÏïåÎûå ÌôúÏÑ± ÏÉÅÌÉúÎ©¥ ÏûêÎèô ÏßÑÌñâ Ï§ëÏßÄ
+                if (AlarmManager.Instance.IsAlarm)
+                {
+                    RequestStop("ÏïåÎûå ÌôúÏÑ± ÏÉÅÌÉúÎ°ú ÏûêÎèô Ïã§ÌñâÏù¥ Ï§ëÏßÄÎêòÏóàÏäµÎãàÎã§.");
+                    return;
+                }
+
+                int count = GetStepCount();
+                if (count == 0)
+                {
+                    return;
+                }
+
+                _selectedIndex = (_selectedIndex + 1) % count;
+                _lstSteps.SelectedIndex = _selectedIndex;
+                await ExecuteCurrentStepAsync();
+            };
+        }
+        private void OnAlarmAdded(AlarmInfo alarm)
+        {
+            if (alarm == null || IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action<AlarmInfo>(OnAlarmAdded), alarm);
+                }
+                catch
+                {
+                }
+
+                return;
+            }
+
+            RequestStop($"ÏïåÎûå Î∞úÏÉùÏúºÎ°ú Ï†ïÏßÄ ÏöîÏ≤≠Îê®... [{alarm.Source}] {alarm.Title}");
         }
 
-        // [√ﬂ∞°] ƒ¡∆Æ∑— º“∏Í Ω√ ∏Æº“Ω∫ «ÿ¡¶ « ºˆ
+        private void RequestStop(string message)
+        {
+            _isPlaying = false;
+            _playTimer.Stop();
+            _runningIndex = -1;
+            _lstSteps.Invalidate();
+
+            if (!_isExecuting)
+            {
+                CloseRunningDialog();
+                return;
+            }
+
+            try
+            {
+                _executionCts?.Cancel();
+            }
+            catch
+            {
+            }
+
+            if (_executingUnit != null)
+            {
+                _executingUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopping;
+                TryStopAxes(_executingUnit);
+
+                if (ReferenceEquals(_executingUnit, StatusSyncMasterUnit))
+                {
+                    foreach (var syncUnit in _statusSyncUnits)
+                    {
+                        if (syncUnit == null || ReferenceEquals(syncUnit, _executingUnit))
+                        {
+                            continue;
+                        }
+
+                        syncUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopping;
+                        TryStopAxes(syncUnit);
+                    }
+                }
+            }
+
+            if (_runningLabel != null && !string.IsNullOrWhiteSpace(message))
+            {
+                _runningLabel.Text = message;
+            }
+        }
+        public void SetStatusSyncUnits(BaseUnit masterUnit, params BaseUnit[] syncUnits)
+        {
+            StatusSyncMasterUnit = masterUnit;
+            _statusSyncUnits.Clear();
+
+            if (syncUnits == null)
+            {
+                return;
+            }
+
+            foreach (var unit in syncUnits)
+            {
+                if (unit == null)
+                {
+                    continue;
+                }
+
+                if (!_statusSyncUnits.Contains(unit))
+                {
+                    _statusSyncUnits.Add(unit);
+                }
+            }
+        }
+
+        private void InitializeControlStyle()
+        {
+            BackColor = Color.FromArgb(246, 246, 248);
+            tableLayoutPanel1.BackColor = BackColor;
+            tableLayoutPanel2.BackColor = BackColor;
+            tableLayoutPanel1.Padding = new Padding(10, 8, 10, 10);
+
+            _lstSteps.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+            _lstSteps.ForeColor = Color.FromArgb(28, 28, 30);
+            _lstSteps.BackColor = Color.FromArgb(250, 250, 252);
+
+            StyleActionButton(btnRun, Color.FromArgb(0, 122, 255), Color.White);
+            StyleActionButton(_btnNext, Color.FromArgb(10, 132, 255), Color.White);
+            StyleActionButton(btnPlay, Color.FromArgb(52, 199, 89), Color.White);
+            StyleActionButton(btnStop, Color.FromArgb(255, 69, 58), Color.White);
+
+            var dbProp = typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (dbProp != null)
+            {
+                dbProp.SetValue(_lstSteps, true, null);
+            }
+        }
+        private static void StyleActionButton(QMC.Common.IndividualMenuButton button, Color backColor, Color foreColor)
+        {
+            button.BackColor = backColor;
+            button.CustomBackColor = backColor;
+            button.ForeColor = foreColor;
+            button.CustomForeColor = foreColor;
+
+            var font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            button.Font = font;
+            button.CustomFont = font;
+
+            button.Margin = new Padding(6);
+        }
+
+
+        // ---------- New API ----------
+        public void RegisterUnit(string unitKey, object unit)
+        {
+            if (string.IsNullOrWhiteSpace(unitKey) || unit == null)
+            {
+                return;
+            }
+
+            _units[unitKey] = unit;
+        }
+
+        public void SetSteps(IEnumerable<ManualStep> steps)
+        {
+            _manualSteps.Clear();
+            _steps.Clear();
+            _lstSteps.Items.Clear();
+
+            if (steps != null)
+            {
+                foreach (var step in steps)
+                {
+                    if (step == null || string.IsNullOrWhiteSpace(step.DisplayName))
+                    {
+                        continue;
+                    }
+
+                    _manualSteps.Add(step);
+                    _lstSteps.Items.Add(step.DisplayName);
+                }
+            }
+
+            _selectedIndex = _manualSteps.Count > 0 ? 0 : -1;
+            _lstSteps.SelectedIndex = _selectedIndex;
+            _lstSteps.Invalidate();
+        }
+
+        // ---------- Legacy API ----------
+        public void BindUnit(object parentUnit, IEnumerable<string> stepMethodNames)
+        {
+            ParentUnit = parentUnit;
+            SetSteps(stepMethodNames);
+        }
+
+        public void SetSteps(IEnumerable<string> steps)
+        {
+            _manualSteps.Clear();
+            _steps.Clear();
+            _lstSteps.Items.Clear();
+
+            if (steps != null)
+            {
+                foreach (var step in steps)
+                {
+                    if (!string.IsNullOrWhiteSpace(step))
+                    {
+                        _steps.Add(step);
+                        _lstSteps.Items.Add(step);
+                    }
+                }
+            }
+
+            _selectedIndex = _steps.Count > 0 ? 0 : -1;
+            _lstSteps.SelectedIndex = _selectedIndex;
+            _lstSteps.Invalidate();
+        }
+
+        private int GetStepCount()
+        {
+            return _manualSteps.Count > 0 ? _manualSteps.Count : _steps.Count;
+        }
+
+        private async Task<int> ExecuteCurrentStepAsync()
+        {
+            if (_isExecuting)
+            {
+                return -1;
+            }
+
+            // ÏãúÏûë Ï†Ñ ÏïåÎûå ÌôúÏÑ± ÏÉÅÌÉú Ï∞®Îã®
+            if (AlarmManager.Instance.IsAlarm)
+            {
+                RequestStop("ÏïåÎûå ÌôúÏÑ± ÏÉÅÌÉúÏóêÏÑúÎäî ÏàòÎèô ÏãúÌÄÄÏä§Î•º Ïã§ÌñâÌï† Ïàò ÏóÜÏäµÎãàÎã§.");
+                return -1;
+            }
+
+            if (_selectedIndex < 0 || _selectedIndex >= GetStepCount())
+            {
+                return -1;
+            }
+
+            object unit;
+            string methodName;
+            string unitKey;
+            Func<int> idxProvider;
+            Func<object, int, CancellationToken, Task<int>> cancellableExecutor = null;
+
+            if (_manualSteps.Count > 0)
+            {
+                var ms = _manualSteps[_selectedIndex];
+                if (!_units.TryGetValue(ms.UnitKey, out unit) || unit == null)
+                {
+                    return -1;
+                }
+
+                methodName = string.IsNullOrWhiteSpace(ms.MethodName) ? ms.DisplayName : ms.MethodName;
+                unitKey = ms.UnitKey;
+                idxProvider = ms.IndexProvider ?? IndexProvider;
+                cancellableExecutor = ms.CancellableExecutor;
+            }
+            else
+            {
+                if (ParentUnit == null)
+                {
+                    return -1;
+                }
+
+                unit = ParentUnit;
+                methodName = _steps[_selectedIndex];
+                unitKey = ParentUnit.GetType().Name;
+                idxProvider = IndexProvider;
+            }
+
+            _executionCts?.Dispose();
+            _executionCts = new CancellationTokenSource();
+            CancellationToken token = _executionCts.Token;
+
+            _isExecuting = true;
+            SetButtonsEnabled(false);
+            ShowRunningDialog(unitKey, methodName);
+
+            var baseUnit = unit as BaseUnit;
+            _executingUnit = baseUnit;
+            bool manualStatusApplied = false;
+            var syncedUnitsApplied = new List<BaseUnit>();
+            try
+            {
+                if (baseUnit != null)
+                {
+                    baseUnit.CalcelToken = _executionCts;
+                    baseUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
+                    manualStatusApplied = true;
+                    if (ReferenceEquals(baseUnit, StatusSyncMasterUnit))
+                    {
+                        foreach (var syncUnit in _statusSyncUnits)
+                        {
+                            if (syncUnit == null || ReferenceEquals(syncUnit, baseUnit))
+                            {
+                                continue;
+                            }
+
+                            syncUnit.CalcelToken = _executionCts;
+                            syncUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
+                            syncedUnitsApplied.Add(syncUnit);
+                        }
+                    }
+
+                }
+
+                int rc;
+                int index = idxProvider != null ? idxProvider() : 0;
+                if (cancellableExecutor != null)
+                {
+                    rc = await cancellableExecutor(unit, index, token);
+                }
+                else
+                {
+                    var method = unit.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+                    if (method == null)
+                    {
+                        return -1;
+                    }
+
+                    if (!TryBuildMethodArgs(method.GetParameters(), index, token, out var args))
+                    {
+                        return -1;
+                    }
+
+                    rc = await InvokeMethodAsync(unit, method, args, token);
+                }
+
+                if (rc == 0)
+                {
+                    _runningIndex = _selectedIndex;
+                    _lstSteps.Invalidate();
+                }
+
+                return rc;
+            }
+            catch (OperationCanceledException)
+            {
+                return -2;
+            }
+            catch
+            {
+                return -1;
+            }
+            finally
+            {
+                if (manualStatusApplied && baseUnit != null)
+                {
+                    baseUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
+                    baseUnit.CalcelToken = null;
+                }
+
+                foreach (var syncUnit in syncedUnitsApplied)
+                {
+                    syncUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
+                    syncUnit.CalcelToken = null;
+                }
+
+                _executingUnit = null;
+                _isExecuting = false;
+                SetButtonsEnabled(true);
+
+                if (!_isPlaying)
+                {
+                    CloseRunningDialog();
+                }
+            }
+        }
+        private static bool TryBuildMethodArgs(ParameterInfo[] ps, int index, CancellationToken token, out object[] args)
+        {
+            args = null;
+
+            if (ps.Length == 0)
+            {
+                args = new object[0];
+                return true;
+            }
+
+            if (ps.Length == 1)
+            {
+                if (ps[0].ParameterType == typeof(bool))
+                {
+                    args = new object[] { false };
+                    return true;
+                }
+
+                if (ps[0].ParameterType == typeof(int))
+                {
+                    args = new object[] { index };
+                    return true;
+                }
+
+                if (ps[0].ParameterType == typeof(CancellationToken))
+                {
+                    args = new object[] { token };
+                    return true;
+                }
+            }
+
+            if (ps.Length == 2)
+            {
+                if (ps[0].ParameterType == typeof(int) && ps[1].ParameterType == typeof(bool))
+                {
+                    args = new object[] { index, false };
+                    return true;
+                }
+
+                if (ps[0].ParameterType == typeof(int) && ps[1].ParameterType == typeof(CancellationToken))
+                {
+                    args = new object[] { index, token };
+                    return true;
+                }
+
+                if (ps[0].ParameterType == typeof(bool) && ps[1].ParameterType == typeof(CancellationToken))
+                {
+                    args = new object[] { false, token };
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static async Task<int> InvokeMethodAsync(object unit, MethodInfo method, object[] args, CancellationToken token)
+        {
+            if (typeof(Task).IsAssignableFrom(method.ReturnType))
+            {
+                var result = method.Invoke(unit, args);
+
+                if (result is Task<int> taskInt)
+                {
+                    return await taskInt;
+                }
+
+                if (result is Task task)
+                {
+                    await task;
+                    return 0;
+                }
+
+                return 0;
+            }
+
+            return await Task.Run(() =>
+            {
+                token.ThrowIfCancellationRequested();
+
+                var result = method.Invoke(unit, args);
+
+                if (result is int n)
+                {
+                    return n;
+                }
+
+                return 0;
+            }, token);
+        }
+        private static void TryStopAxes(BaseUnit unit)
+        {
+            if (unit == null)
+            {
+                return;
+            }
+
+            foreach (var axis in unit.Axes.Values)
+            {
+                try
+                {
+                    axis?.Stop();
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private void ShowRunningDialog(string unitKey, string methodName)
+        {
+            if (_runningDialog == null || _runningDialog.IsDisposed)
+            {
+                _runningDialog = new Form
+                {
+                    Text = "Manual Sequence Running",
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    MaximizeBox = false,
+                    MinimizeBox = false,
+                    ShowInTaskbar = false,
+                    StartPosition = FormStartPosition.CenterParent,
+                    ClientSize = new Size(420, 112),
+                    BackColor = Color.FromArgb(246, 246, 248)
+                };
+
+                _runningLabel = new Label
+                {
+                    Dock = DockStyle.Top,
+                    Height = 58,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(28, 28, 30)
+                };
+
+                _runningProgress = new ProgressBar
+                {
+                    Dock = DockStyle.Bottom,
+                    Height = 20,
+                    Style = ProgressBarStyle.Marquee,
+                    MarqueeAnimationSpeed = 30
+                };
+
+                _runningDialog.Controls.Add(_runningLabel);
+                _runningDialog.Controls.Add(_runningProgress);
+            }
+
+            _runningLabel.Text = $"Ïã§Ìñâ Ï§ë: [{unitKey}] {methodName}";
+
+            if (!_runningDialog.Visible)
+            {
+                var owner = FindForm();
+                if (owner != null)
+                {
+                    _runningDialog.Show(owner);
+                }
+                else
+                {
+                    _runningDialog.Show();
+                }
+            }
+        }
+
+        private void CloseRunningDialog()
+        {
+            if (_runningDialog != null && !_runningDialog.IsDisposed && _runningDialog.Visible)
+            {
+                _runningDialog.Hide();
+            }
+        }
+
+        private void SetButtonsEnabled(bool enabled)
+        {
+            btnRun.Enabled = enabled;
+            _btnNext.Enabled = enabled;
+            btnPlay.Enabled = enabled;
+            btnStop.Enabled = true;
+        }
+
+        private async void _btnRun_Click(object sender, EventArgs e)
+        {
+            if (GetStepCount() == 0)
+            {
+                return;
+            }
+
+            if (_lstSteps.SelectedIndex < 0)
+            {
+                _lstSteps.SelectedIndex = 0;
+            }
+
+            _selectedIndex = _lstSteps.SelectedIndex;
+            await ExecuteCurrentStepAsync();
+        }
+
+        private async void _btnNext_Click(object sender, EventArgs e)
+        {
+            int count = GetStepCount();
+            if (count == 0)
+            {
+                return;
+            }
+
+            _selectedIndex = (_selectedIndex + 1) % count;
+            _lstSteps.SelectedIndex = _selectedIndex;
+            await ExecuteCurrentStepAsync();
+        }
+
+        private void _btnPlay_Click(object sender, EventArgs e)
+        {
+            _isPlaying = !_isPlaying;
+            if (_isPlaying)
+            {
+                _playTimer.Start();
+            }
+            else
+            {
+                _playTimer.Stop();
+                if (!_isExecuting)
+                {
+                    CloseRunningDialog();
+                }
+            }
+        }
+
+        private void _btnStop_Click(object sender, EventArgs e)
+        {
+            RequestStop("Ï†ïÏßÄ ÏöîÏ≤≠Îê®... Ï∑®ÏÜå/Ï∂ï Ï†ïÏßÄ ÏßÑÌñâ Ï§ë");
+        }
+
+        private void InitializeListBoxStyle()
+        {
+            // Ìñâ ÎÜíÏù¥ÎèÑ Í∞ôÏù¥ ÌÇ§Ïõå Í∞ÄÎèÖÏÑ± ÌôïÎ≥¥
+            _lstSteps.ItemHeight = 35;
+            _lstSteps.DrawMode = DrawMode.OwnerDrawFixed;
+            _lstSteps.BorderStyle = BorderStyle.None;
+            _lstSteps.BackColor = Color.FromArgb(250, 250, 252);
+
+            _lstSteps.DrawItem -= _lstSteps_DrawItem;
+            _lstSteps.DrawItem += _lstSteps_DrawItem;
+
+            _lstSteps.SelectedIndexChanged -= _lstSteps_SelectedIndexChanged;
+            _lstSteps.SelectedIndexChanged += _lstSteps_SelectedIndexChanged;
+        }
+
+        private void _lstSteps_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _selectedIndex = _lstSteps.SelectedIndex;
+            _lstSteps.Invalidate();
+        }
+
+        private void _lstSteps_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0 || e.Index >= _lstSteps.Items.Count)
+            {
+                return;
+            }
+
+            bool isSelected = e.Index == _selectedIndex;
+            bool isRunning = e.Index == _runningIndex;
+
+            var itemBounds = new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 4, e.Bounds.Width - 12, e.Bounds.Height - 8);
+
+            // ÏÑ†ÌÉùÏÉâ ÏµúÏö∞ÏÑ†
+            Color fillColor;
+            Color borderColor;
+            Color accentColor;
+
+            if (isSelected)
+            {
+                fillColor = Color.FromArgb(0, 122, 255);      // ÏÑ†ÌÉù ÏÜåÏºì Í∞ïÏ°∞ÏÉâ(ÏµúÏö∞ÏÑ†)
+                borderColor = Color.FromArgb(0, 95, 204);
+                accentColor = Color.FromArgb(255, 255, 255);
+            }
+            else if (isRunning)
+            {
+                fillColor = Color.FromArgb(230, 242, 255);
+                borderColor = Color.FromArgb(0, 122, 255);
+                accentColor = Color.FromArgb(0, 122, 255);
+            }
+            else
+            {
+                fillColor = Color.White;
+                borderColor = Color.FromArgb(226, 226, 230);
+                accentColor = Color.FromArgb(210, 210, 214);
+            }
+
+            SmoothingMode oldMode = e.Graphics.SmoothingMode;
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            using (var path = CreateRoundedRectanglePath(itemBounds, 12))
+            using (var fillBrush = new SolidBrush(fillColor))
+            using (var borderPen = new Pen(borderColor, isSelected ? 2.2f : 1.2f))
+            {
+                e.Graphics.FillPath(fillBrush, path);
+                e.Graphics.DrawPath(borderPen, path);
+            }
+
+            // Ï¢åÏ∏° ÏÑ†ÌÉù Í∞ïÏ°∞Î∞î (ÏÑ†ÌÉù Ïù∏ÏßÄÏÑ± Í∞ïÌôî)
+            var accentRect = new Rectangle(itemBounds.X + 2, itemBounds.Y + 6, 6, itemBounds.Height - 12);
+            using (var accentBrush = new SolidBrush(accentColor))
+            {
+                e.Graphics.FillRectangle(accentBrush, accentRect);
+            }
+
+            e.Graphics.SmoothingMode = oldMode;
+
+            string text = _lstSteps.Items[e.Index].ToString();
+
+            // ÏÑ†ÌÉù ÌëúÏãúÎ•º Î™ÖÌôïÌïòÍ≤å
+            if (isSelected)
+            {
+                text = "‚úì " + text;
+            }
+            else if (isRunning)
+            {
+                text = "‚óè " + text;
+            }
+
+            var textRect = new Rectangle(itemBounds.X + 18, itemBounds.Y, itemBounds.Width - 24, itemBounds.Height);
+            TextRenderer.DrawText(
+                e.Graphics,
+                text,
+                _lstSteps.Font,
+                textRect,
+                isSelected ? Color.White : Color.FromArgb(28, 28, 30),
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        }
+        private static GraphicsPath CreateRoundedRectanglePath(Rectangle bounds, int radius)
+        {
+            var path = new GraphicsPath();
+            int d = radius * 2;
+
+            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
+            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
+            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
+            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+
+            return path;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _brushNormalBack?.Dispose();
-                _brushSelectedBack?.Dispose();
-                _penNormalBorder?.Dispose();
-                _penSelectedBorder?.Dispose();
-                _brushNormalText?.Dispose();
-                _brushSelectedText?.Dispose();
-                _brushRunningText?.Dispose();
+                _playTimer.Stop();
+                AlarmManager.Instance.AlarmAdded -= OnAlarmAdded;
 
-                if (components != null) components.Dispose();
+                if (_runningDialog != null && !_runningDialog.IsDisposed)
+                {
+                    _runningDialog.Close();
+                    _runningDialog.Dispose();
+                }
             }
+
             base.Dispose(disposing);
-        }
-
-        // ∏ÆΩ∫∆Æπ⁄Ω∫ √ ±‚»≠ º≥¡§
-        private void InitializeListBoxStyle()
-        {
-            // æ∆¿Ã≈€ ≥Ù¿Ã∏¶ ≥À≥À«œ∞‘ º≥¡§«œø© πˆ∆∞ ¥¿≥¶ ¡¶∞¯
-            _lstSteps.ItemHeight = 36;
-
-            // ªÁøÎ¿⁄ ¡§¿« ±◊∏Æ±‚ ∏µÂ »∞º∫»≠
-            _lstSteps.DrawMode = DrawMode.OwnerDrawFixed;
-
-            // ≈◊µŒ∏Æ æ¯æ÷±‚ (Flat Ω∫≈∏¿œ)
-            _lstSteps.BorderStyle = BorderStyle.None;
-            _lstSteps.BackColor = Color.FromArgb(245, 245, 247); // ¿¸√º πË∞Êªˆ (ø¨«— »∏ªˆ)
-
-            // ±◊∏Æ±‚ ¿Ã∫•∆Æ ø¨∞·
-            _lstSteps.DrawItem += _lstSteps_DrawItem;
-        }
-
-        // [ºˆ¡§] DrawItem ∏ﬁº≠µÂ √÷¿˚»≠
-        private void _lstSteps_DrawItem(object sender, DrawItemEventArgs e)
-        {
-            if (e.Index < 0) return;
-
-            // πË∞Ê¿ª ∏≈π¯ ¡ˆøÏ¡ˆ æ ∞Ì øÏ∏Æ∞° ¡˜¡¢ ¥Ÿ ±◊∏Æπ«∑Œ DrawBackground ª˝∑´ ∞°¥…«œ¡ˆ∏∏, æ»¿¸«œ∞‘ ¿Ø¡ˆ
-            e.DrawBackground();
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            string text = _lstSteps.Items[e.Index].ToString();
-            bool isRunning = false;
-
-            if (m_ParentUnit != null && m_ParentUnit.CurrentFunc != null &&
-                m_ParentUnit.CurrentFunc.Method.Name == text)
-            {
-                isRunning = true;
-            }
-
-            Rectangle bounds = e.Bounds;
-            Rectangle buttonRect = new Rectangle(bounds.X + 4, bounds.Y + 2, bounds.Width - 8, bounds.Height - 4);
-
-            // [∫Ø∞Ê] ƒ≥ΩÃµ» ∞¥√º ªÁøÎ
-            SolidBrush backBrush = isSelected ? _brushSelectedBack : _brushNormalBack;
-            Pen borderPen = isSelected ? _penSelectedBorder : _penNormalBorder;
-            SolidBrush textBrush;
-            Font currentFont;
-
-            if (isSelected)
-            {
-                textBrush = _brushSelectedText;
-                currentFont = _selectedItemFont;
-            }
-            else
-            {
-                textBrush = isRunning ? _brushRunningText : _brushNormalText;
-                currentFont = _itemFont;
-            }
-
-            // using ∫Ì∑œ ¡¶∞≈ (ƒ≥ΩÃµ» ∞¥√º¿Ãπ«∑Œ Dispose «œ∏È æ» µ )
-            using (GraphicsPath path = GetRoundedRect(buttonRect, 8))
-            {
-                g.FillPath(backBrush, path);
-                g.DrawPath(borderPen, path);
-            }
-
-            if (isRunning) text = "¢∫ " + text;
-
-            TextFormatFlags flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis;
-
-            // TextRenderer¥¬ Color ±∏¡∂√º∏¶ πﬁ¿∏π«∑Œ Brush.Color ªÁøÎ
-            TextRenderer.DrawText(g, text, currentFont, buttonRect, textBrush.Color, flags);
-        }
-
-        // µ’±Ÿ ªÁ∞¢«¸ ∞Ê∑Œ ª˝º∫ «Ô∆€
-        private GraphicsPath GetRoundedRect(Rectangle rect, int radius)
-        {
-            int diameter = radius * 2;
-            Size size = new Size(diameter, diameter);
-            Rectangle arc = new Rectangle(rect.Location, size);
-            GraphicsPath path = new GraphicsPath();
-
-            if (radius == 0)
-            {
-                path.AddRectangle(rect);
-                return path;
-            }
-
-            // Top-Left
-            path.AddArc(arc, 180, 90);
-
-            // Top-Right
-            arc.X = rect.Right - diameter;
-            path.AddArc(arc, 270, 90);
-
-            // Bottom-Right
-            arc.Y = rect.Bottom - diameter;
-            path.AddArc(arc, 0, 90);
-
-            // Bottom-Left
-            arc.X = rect.Left;
-            path.AddArc(arc, 90, 90);
-
-            path.CloseFigure();
-            return path;
-        }
-
-        private void _btnNext_Click(object sender, EventArgs e)
-        {
-            if (m_ParentUnit == null)
-                return;
-
-            this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
-            this._lstSteps.SelectedIndex = this.SelectedIndex;
-            if (this._lstSteps.SelectedIndex < 0)
-            {
-                this._lstSteps.SelectedIndex = 0;
-            }
-
-            if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
-            {
-                var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
-                if (func != null)
-                {
-                    Task<int> t = m_ParentUnit.RunManualFunction(func);
-                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
-
-                    UpdateSeqList();
-                    ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
-                    if (t != null)
-                    {
-                        try
-                        {
-                            form.ShowDialog();
-                            if (form.DialogResult == DialogResult.Cancel)
-                            {
-                                m_ParentUnit.CancelSequence();
-                            }
-
-                            if (t.Status == TaskStatus.RanToCompletion && t.Result == 0)
-                            {
-                                this.SelectedIndex++;
-                                this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
-                                this._lstSteps.SelectedIndex = this.SelectedIndex;
-                                Log.Write("LCP_280", "_btnNext_Click", $"{func.ToString()},{this.SelectedIndex}");
-                            }
-                            else if (t.IsFaulted)
-                            {
-                                // øπø‹ ∏ﬁΩ√¡ˆ «•Ω√
-                                var mb = new MessageBoxOk();
-                                mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Write(ex);
-                        }
-                    }
-                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
-                }
-            }
-        }
-
-
-        private void _btnRun_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Question", "Ω√¿€ «œΩ√∞⁄Ω¿¥œ±Ó?") != DialogResult.Yes)
-            {
-                return;
-            }
-
-            if (m_ParentUnit == null)
-                return;
-
-            if (this._lstSteps.SelectedIndex < 0)
-            {
-                this._lstSteps.SelectedIndex = 0;
-            }
-
-            if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
-            {
-                var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
-
-                Task<int> t = m_ParentUnit.RunManualFunction(func);
-                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.ManualRunning;
-
-                SelectedIndex = this._lstSteps.SelectedIndex;
-                UpdateSeqList();
-                ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
-                form.ShowDialog();
-                if (form.DialogResult == DialogResult.Cancel)
-                {
-                    m_ParentUnit.CancelSequence();
-                }
-
-                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
-            }
-        }
-
-
-        private async void _btnPlay_Click(object sender, EventArgs e)
-        {
-            if (m_ParentUnit == null)
-                return;
-
-            try
-            {
-                var eq = Equipment.Instance;
-                if (eq == null)
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"Equipment ¿ŒΩ∫≈œΩ∫∞° √ ±‚»≠µ«¡ˆ æ æ“Ω¿¥œ¥Ÿ.");
-                    return;
-                }
-
-                if (!eq.EnsureAxisReadyForAutoOrMove("Play"))
-                    return;
-
-                var ask = new MessageBoxYesNo();
-                if (ask.ShowDialog("»Æ¿Œ", "Ω√ƒ¡Ω∫∏¶ ¡¯«‡«œΩ√∞⁄Ω¿¥œ±Ó?") != DialogResult.Yes)
-                    return;
-
-                var unitName = m_ParentUnit.UnitName;
-                if (string.IsNullOrEmpty(unitName))
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"UnitName ¿Ã ∫ÒæÓ¿÷Ω¿¥œ¥Ÿ.");
-                    return;
-                }
-
-                // ¿ÃπÃ Ω««‡ ¡ﬂ¿Œ¡ˆ ∞£¥‹ √º≈© (RunStatus ªÁøÎ ∞°¥… Ω√)
-                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.ManualRunning)
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Info!", $"Unit '{unitName}' ¥¬ ¿ÃπÃ Ω««‡ ¡ﬂ¿‘¥œ¥Ÿ.");
-
-                    return;
-                }
-
-                var btn = sender as Button;
-                bool restore = false;
-                if (btn != null && btn.Enabled)
-                {
-                    btn.Enabled = false;
-                    restore = true;
-                }
-                Cursor prev = Cursor.Current;
-                Cursor.Current = Cursors.WaitCursor;
-
-                //bool ok = await eq.StartUnitAsync(unitName);
-                bool ok = await eq.SequenceStartAsync(unitName, CancellationToken.None);
-                if (!ok)
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"Unit '{unitName}' Ω√¿€ Ω«∆–.");
-                }
-                else
-                {
-                    // « ø‰ Ω√ ∏Ò∑œ/ªÛ≈¬ ∞ªΩ≈
-                    UpdateSeqList();
-                }
-
-                Cursor.Current = prev;
-                if (restore)
-                    btn.Enabled = true;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
-        }
-
-        private async void _btnStop_Click(object sender, EventArgs e)
-        {
-            if (m_ParentUnit == null)
-                return;
-
-            try
-            {
-                var eq = Equipment.Instance;
-                if (eq == null)
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"Equipment ¿ŒΩ∫≈œΩ∫∞° æ¯Ω¿¥œ¥Ÿ.");
-
-                    return;
-                }
-
-                var unitName = m_ParentUnit.UnitName;
-                if (string.IsNullOrEmpty(unitName))
-                {
-                    var mb = new MessageBoxOk();
-                    mb.ShowDialog("Error!", $"UnitName ¿Ã ∫ÒæÓ ¿÷Ω¿¥œ¥Ÿ.");
-                    return;
-                }
-
-                var btn = sender as Button;
-                bool restore = false;
-                if (btn != null && btn.Enabled)
-                {
-                    btn.Enabled = false;
-                    restore = true;
-                }
-                var prevCursor = Cursor.Current;
-                Cursor.Current = Cursors.WaitCursor;
-
-                //bool ok = await eq.StopUnitAsync(unitName);
-                await eq.SequenceStopAsync(unitName, CancellationToken.None);
-                //if (!ok)
-                //{
-                //    var mb = new MessageBoxOk();
-                //    mb.ShowDialog("Error!", $"Unit '{unitName}' ¡§¡ˆ Ω«∆–.");
-                //}
-                //else
-                {
-                    UpdateSeqList();
-                }
-
-                Cursor.Current = prevCursor;
-                if (restore) btn.Enabled = true;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-
-                var mb = new MessageBoxOk();
-                mb.ShowDialog("Error!", ex.Message);
-            }
         }
     }
 }

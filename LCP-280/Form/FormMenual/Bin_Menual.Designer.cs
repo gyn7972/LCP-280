@@ -52,11 +52,11 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tabControlManualSeqOutputWafer = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlOutputCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.ManualControlOutputCassette = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlOutputFeeder = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.ManualOutputFeeder = new QMC.LCP_280.Process.Component.ManualControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.manualSequenceControlOutputBinStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.ManualControlOutputBinStage = new QMC.LCP_280.Process.Component.ManualControl();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
@@ -484,7 +484,7 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.manualSequenceControlOutputCassette);
+            this.tabPage1.Controls.Add(this.ManualControlOutputCassette);
             this.tabPage1.Location = new System.Drawing.Point(4, 39);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage1.Name = "tabPage1";
@@ -496,18 +496,18 @@
             // 
             // manualSequenceControlOutputCassette
             // 
-            this.manualSequenceControlOutputCassette.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlOutputCassette.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlOutputCassette.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlOutputCassette.MinimumSize = new System.Drawing.Size(358, 150);
-            this.manualSequenceControlOutputCassette.Name = "manualSequenceControlOutputCassette";
-            this.manualSequenceControlOutputCassette.ParentUnit = null;
-            this.manualSequenceControlOutputCassette.Size = new System.Drawing.Size(459, 512);
-            this.manualSequenceControlOutputCassette.TabIndex = 14;
+            this.ManualControlOutputCassette.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ManualControlOutputCassette.Location = new System.Drawing.Point(2, 2);
+            this.ManualControlOutputCassette.Margin = new System.Windows.Forms.Padding(2);
+            this.ManualControlOutputCassette.MinimumSize = new System.Drawing.Size(358, 150);
+            this.ManualControlOutputCassette.Name = "manualSequenceControlOutputCassette";
+            this.ManualControlOutputCassette.ParentUnit = null;
+            this.ManualControlOutputCassette.Size = new System.Drawing.Size(459, 512);
+            this.ManualControlOutputCassette.TabIndex = 14;
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.manualSequenceControlOutputFeeder);
+            this.tabPage2.Controls.Add(this.ManualOutputFeeder);
             this.tabPage2.Location = new System.Drawing.Point(4, 39);
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
@@ -519,18 +519,18 @@
             // 
             // manualSequenceControlOutputFeeder
             // 
-            this.manualSequenceControlOutputFeeder.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlOutputFeeder.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlOutputFeeder.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlOutputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
-            this.manualSequenceControlOutputFeeder.Name = "manualSequenceControlOutputFeeder";
-            this.manualSequenceControlOutputFeeder.ParentUnit = null;
-            this.manualSequenceControlOutputFeeder.Size = new System.Drawing.Size(459, 512);
-            this.manualSequenceControlOutputFeeder.TabIndex = 15;
+            this.ManualOutputFeeder.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ManualOutputFeeder.Location = new System.Drawing.Point(2, 2);
+            this.ManualOutputFeeder.Margin = new System.Windows.Forms.Padding(2);
+            this.ManualOutputFeeder.MinimumSize = new System.Drawing.Size(358, 300);
+            this.ManualOutputFeeder.Name = "manualSequenceControlOutputFeeder";
+            this.ManualOutputFeeder.ParentUnit = null;
+            this.ManualOutputFeeder.Size = new System.Drawing.Size(459, 512);
+            this.ManualOutputFeeder.TabIndex = 15;
             // 
             // tabPage3
             // 
-            this.tabPage3.Controls.Add(this.manualSequenceControlOutputBinStage);
+            this.tabPage3.Controls.Add(this.ManualControlOutputBinStage);
             this.tabPage3.Location = new System.Drawing.Point(4, 39);
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
@@ -542,14 +542,14 @@
             // 
             // manualSequenceControlOutputBinStage
             // 
-            this.manualSequenceControlOutputBinStage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlOutputBinStage.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControlOutputBinStage.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControlOutputBinStage.MinimumSize = new System.Drawing.Size(358, 300);
-            this.manualSequenceControlOutputBinStage.Name = "manualSequenceControlOutputBinStage";
-            this.manualSequenceControlOutputBinStage.ParentUnit = null;
-            this.manualSequenceControlOutputBinStage.Size = new System.Drawing.Size(459, 512);
-            this.manualSequenceControlOutputBinStage.TabIndex = 16;
+            this.ManualControlOutputBinStage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ManualControlOutputBinStage.Location = new System.Drawing.Point(2, 2);
+            this.ManualControlOutputBinStage.Margin = new System.Windows.Forms.Padding(2);
+            this.ManualControlOutputBinStage.MinimumSize = new System.Drawing.Size(358, 300);
+            this.ManualControlOutputBinStage.Name = "manualSequenceControlOutputBinStage";
+            this.ManualControlOutputBinStage.ParentUnit = null;
+            this.ManualControlOutputBinStage.Size = new System.Drawing.Size(459, 512);
+            this.ManualControlOutputBinStage.TabIndex = 16;
             // 
             // Bin_Menual
             // 
@@ -589,11 +589,11 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.TabControl tabControlManualSeqOutputWafer;
         private System.Windows.Forms.TabPage tabPage1;
-        private Component.ManualSequenceControl manualSequenceControlOutputCassette;
+        private Component.ManualControl ManualControlOutputCassette;
         private System.Windows.Forms.TabPage tabPage2;
-        private Component.ManualSequenceControl manualSequenceControlOutputFeeder;
+        private Component.ManualControl ManualOutputFeeder;
         private System.Windows.Forms.TabPage tabPage3;
-        private Component.ManualSequenceControl manualSequenceControlOutputBinStage;
+        private Component.ManualControl ManualControlOutputBinStage;
         //private Component.WaferMapView waferMapView_OutputWafer;
         private QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl waferMapView_OutputWafer;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel6;

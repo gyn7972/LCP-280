@@ -266,10 +266,16 @@ namespace QMC.LCP_280.Process.Unit
                 return;
 
             bool IsAuto = false;
-            if (RunMode == UnitRunMode.Auto)
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
                 IsAuto = true;
+            }
             else
+            {
                 IsAuto = false;
+            }
 
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
                 ax.MoveAbs(target, IsAuto, isFine);
@@ -521,10 +527,16 @@ namespace QMC.LCP_280.Process.Unit
 
 
             bool IsAuto = false;
-            if (RunMode == UnitRunMode.Auto)
+            if (RunMode == UnitRunMode.Auto ||
+                RunUnitStatus == UnitStatus.AutoRunning ||
+                RunUnitStatus == UnitStatus.ManualRunning)
+            {
                 IsAuto = true;
+            }
             else
+            {
                 IsAuto = false;
+            }
             int ret = this.BinLifterZ.MoveAbs(axisPos, IsAuto, isFine);
 
             Thread.Sleep(10);

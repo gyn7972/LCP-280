@@ -1,14 +1,11 @@
 ﻿using QMC.Common;
-using QMC.Common.Controls;
 using QMC.Common.Motions;
 using QMC.Common.UI;
-using QMC.Common.Unit;
 using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -16,7 +13,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.FormMain;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
-using static QMC.LCP_280.Process.Unit.InputStage;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
@@ -44,11 +40,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _initialized;
         private bool _preloadRequested;
         private bool _deferredInitDone;
-        private bool _isLayoutEditMode;
-
-        // Auto Sequence 상태
-        private bool _autoReady = false;
-        private bool _autoStarting = false;
 
         // 기존 Form 내부 상태 HashSet은 더 이상 “진짜 상태”가 아니므로 제거/최소화
         // UI 토글 처리를 위해서만 유지(권장: Equipment Snapshot 기반으로 UI 갱신)
@@ -294,65 +285,130 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private void OnMarksFound(object sender, PatternMarksFoundEventArgs e)
         {
             VisionImageViewer viewer = null;
-            if (sender == (object)InputStage) 
+            bool useXAxisRoi = true;
+
+            if (sender == (object)InputStage)
+            {
                 viewer = InputWaferCamera;
-            else if (sender == (object)IndexUnloadAligner) 
+                useXAxisRoi = true;
+            }
+            else if (sender == (object)IndexUnloadAligner)
+            {
                 viewer = IndexOutputCamera;
+                useXAxisRoi = true;
+            }
             else if (sender == (object)IndexLoadAligner)
+            {
                 viewer = IndexMAlignCamera;
-            
-            if (viewer == null || viewer.IsDisposed) 
+                useXAxisRoi = true;
+            }
+
+            if (viewer == null || viewer.IsDisposed)
                 return;
 
-            
-            Action apply = () => ApplyMarkOverlays(viewer, e);
-            if (viewer.InvokeRequired) viewer.BeginInvoke(apply);
-            else apply();
+            // Hub로만 오버레이 적용
+            VisionRunnerHub.ApplyMarksFoundOverlays(
+                viewer,
+                e,
+                new VisionRunnerHub.MarksOverlayOptions
+                {
+                    UseXAxisRoi = useXAxisRoi,
+
+                    // (권장) 텍스트 위치/멀티라인 때문에 조금 아래로
+                    TextLocation = new Point(10, 50),
+                    ShowTextInfo = true,
+
+                    // ROI 제공: 가능하면 유닛별 Recipe ROI를 넘김 (없으면 Hub가 CenterROI fallback)
+                    RecipeInspectRoiProvider = () => TryGetInspectRoiFromUnit(sender)
+                });
         }
 
-        private void ApplyMarkOverlays(VisionImageViewer viewer, PatternMarksFoundEventArgs e)
+        private (Point start, Point end)? TryGetInspectRoiFromUnit(object sender)
         {
             try
             {
-                // 최신 이미지 갱신 가능 시
-                if (e.Image != null)
+                // 1) InputStage는 이미 접근 가능
+                if (sender == (object)InputStage && InputStage?.PmRunner != null)
                 {
-                    // 프로젝트의 이미지 설정 메서드에 맞게 적용하세요.
-                    // 예: viewer.InputImage = e.Image.GetImage();
+                    var s = InputStage.PmRunner._Roi.InspectStart;
+                    var e = InputStage.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
                 }
 
-                // ResultOverlays 컬렉션 존재 시 사용
-                var overlaysProp = viewer.GetType().GetProperty("ResultOverlays");
-                var list = overlaysProp?.GetValue(viewer) as System.Collections.IList;
-                if (list != null)
+                // 2) IndexUnloadAligner / IndexLoadAligner는 reflection fallback
+                if (sender == (object)IndexUnloadAligner && IndexUnloadAligner != null)
                 {
-                    lock (list)
-                    {
-                        list?.Clear();
-                        for (int i = 0; i < e.Marks.Count; i++)
-                        {
-                            var m = e.Marks[i];
+                    var s = IndexUnloadAligner.PmRunner._Roi.InspectStart;
+                    var e = IndexUnloadAligner.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
 
-                            var ov = new QMC.Common.Vision.PatternMatchResultOverlay
-                            {
-                                Center = new PointD((float)m.X, (float)m.Y),
-                                PatternWidth = m.TrainW > 0 ? m.TrainW : 40,
-                                PatternHeight = m.TrainH > 0 ? m.TrainH : 40,
-                                AngleDeg = (float)m.AngleDeg,
-                                CrossHalfLenPx = (i == e.RepresentativeIndex) ? 24 : 16,
-                                Highlight = (i == e.RepresentativeIndex),
-                                Index = i,
-                                Color = (i == e.RepresentativeIndex) ? Color.Yellow : Color.Lime,
-                                Thickness = (i == e.RepresentativeIndex) ? 2f : 1f,
-                                Visible = true
-                            };
-                            list?.Add(ov);
-                        }
-                    }
+                    //if (TryGetRunnerInspectRoiViaReflection(IndexUnloadAligner, out var s, out var e))
+                    //    return (s, e);
                 }
-                viewer.ResumeDisplay();
+
+                if (sender == (object)IndexLoadAligner && IndexLoadAligner != null)
+                {
+                    var s = IndexLoadAligner.PmRunner._Roi.InspectStart;
+                    var e = IndexLoadAligner.PmRunner._Roi.InspectEnd;
+                    if (!(s.IsEmpty && e.IsEmpty))
+                        return (s, e);
+
+                    //if (TryGetRunnerInspectRoiViaReflection(IndexLoadAligner, out var s, out var e))
+                    //    return (s, e);
+                }
             }
             catch { }
+
+            return null; // Hub가 CenterROI fallback 사용
+        }
+
+        // [ADD] IndexUnloadAligner/IndexLoadAligner에 Runner/ROI 접근자가 없을 수 있어서 reflection로 읽음
+        private bool TryGetRunnerInspectRoiViaReflection(object unit, out Point start, out Point end)
+        {
+            start = Point.Empty;
+            end = Point.Empty;
+            if (unit == null) return false;
+
+            try
+            {
+                // unit.PmRunner 또는 unit._pmRunner 같은 프로퍼티/필드 탐색
+                var t = unit.GetType();
+                object runner = null;
+
+                var p = t.GetProperty("PmRunner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                if (p != null) runner = p.GetValue(unit, null);
+
+                if (runner == null)
+                {
+                    var f = t.GetField("_pmRunner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (f != null) runner = f.GetValue(unit);
+                }
+                if (runner == null) return false;
+
+                // runner._Roi.InspectStart/InspectEnd 탐색
+                var rt = runner.GetType();
+                var roiField = rt.GetField("_Roi", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                if (roiField == null) return false;
+
+                var roi = roiField.GetValue(runner);
+                if (roi == null) return false;
+
+                var roiType = roi.GetType();
+                var ps = roiType.GetProperty("InspectStart");
+                var pe = roiType.GetProperty("InspectEnd");
+                if (ps == null || pe == null) return false;
+
+                start = (Point)ps.GetValue(roi, null);
+                end = (Point)pe.GetValue(roi, null);
+
+                return !(start.IsEmpty && end.IsEmpty);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private async void StartDeferredInit()
@@ -719,14 +775,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-
-
-
-
-
         #region 비즈니스 로직
         private CancellationTokenSource _readyCts;
-        private bool _readyBusy;
         #endregion
 
         // Jog Popup
@@ -1046,6 +1096,50 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         }
                     }
 
+                    //초기화 잡을때 ProbeCardX, Y를 Ready 위치로 이동.
+                    if (IndexChipProbeController != null)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        // XY만 이동 (요청사항)
+                        var rc = await IndexChipProbeController
+                            .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
+                            .ConfigureAwait(false);
+
+                        if (rc != 0)
+                        {
+                            failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready_XYOnly)";
+                            return -1;
+                        }
+
+                        // 필요 시 SafetyZ 별도 수행 (원하면 유지)
+                        rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
+                        if (rc != 0)
+                        {
+                            failureSummary = "IndexChipProbeController(MovePositionSafetyZ)";
+                            return -1;
+                        }
+                    }
+                    //재 확인 필요.
+                    //if(IndexChipProbeController != null)
+                    //{
+                    //    token.ThrowIfCancellationRequested();
+
+                    //    var rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready(0), token).ConfigureAwait(false);
+                    //    if (rc != 0)
+                    //    {
+                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready)";
+                    //        return -1;
+                    //    }
+
+                    //    rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncSafetyZ(), token).ConfigureAwait(false);
+                    //    if (rc != 0)
+                    //    {
+                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncSafetyProbeCardZ)";
+                    //        return -1;
+                    //    }
+                    //}
+
                     // 3) InputStageEjector (단독, CheckReady)
                     if (InputStageEjector != null)
                     {
@@ -1187,6 +1281,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             try
             {
                 var mb = new MessageBoxOk();
+                if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+                    Equipment.Instance.EqState == EquipmentState.Starting)
+                {
+                    mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
+                    return;
+                }
 
                 // [ADD] 장비(보드/축 목록) 초기화가 안 됐으면 Home 자체도 불가
                 if (_Equipment == null || !_Equipment.IsEquipmentInitialized)

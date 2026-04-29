@@ -6,6 +6,7 @@ using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
@@ -14,6 +15,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using static QMC.Common.FormMenual;
+using static QMC.Common.Unit.BaseUnit;
+using static System.Windows.Forms.AxHost;
 using MessageBox = System.Windows.Forms.MessageBox;
 using Point = System.Drawing.Point;
 using Size = System.Drawing.Size;
@@ -681,7 +684,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (InputDieTransfer != null)
                 {
-                    manualSequenceControl.ParentUnit = InputDieTransfer; // 시퀀스 등록 대상 유닛 지정
+                    manualControl.ParentUnit = InputDieTransfer; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch { }
@@ -1009,25 +1012,35 @@ namespace QMC.LCP_280.Process.Unit
         // Rotary를 목표 LoadIndex로 이동(회전 + 대기)
         private async Task<int> MoveRotaryToLoadSocketAsync(int targetSocket, CancellationToken ct)
         {
-            int targetIdx0 = (targetSocket + 8) % 8; // 0~7
-            for (int i = 0; i < 16; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-                int cur = Rotary.GetLoadIndexNo();
-                if (cur == targetIdx0)
-                    return 0;
+            if (Rotary == null)
+                return -1;
 
-                int rc = Rotary.MovePositionRotate();
-                if (rc != 0)
-                    return -1;
+            return Rotary.MoveToSocket(
+                targetSocket,
+                Rotary.IndexReference.Load,
+                ct,
+                maxStep: 16,
+                settleMs: 50);
 
-                rc = Rotary.WaitIndexMoveDone();
-                if (rc != 0)
-                    return -1;
+            //int targetIdx0 = (targetSocket + 8) % 8; // 0~7
+            //for (int i = 0; i < 16; i++)
+            //{
+            //    ct.ThrowIfCancellationRequested();
+            //    int cur = Rotary.GetLoadIndexNo();
+            //    if (cur == targetIdx0)
+            //        return 0;
 
-                await Task.Delay(50, ct).ConfigureAwait(false);
-            }
-            return -1;
+            //    int rc = Rotary.MovePositionRotate();
+            //    if (rc != 0)
+            //        return -1;
+
+            //    rc = Rotary.WaitIndexMoveDone();
+            //    if (rc != 0)
+            //        return -1;
+
+            //    await Task.Delay(50, ct).ConfigureAwait(false);
+            //}
+            //return -1;
         }
 
         private async Task<int> PickDieFromWaferAsync(CancellationToken ct)
@@ -1036,17 +1049,37 @@ namespace QMC.LCP_280.Process.Unit
             {
                 int nRet = 0;
 
+                int nArmIndex = InputDieTransfer.GetInputTrArmIndex();
+                MaterialDie DieTr = InputDieTransfer.GetMaterial() as MaterialDie;
+                InputDieTransfer.SetVacuum(nArmIndex, true);
+                Thread.Sleep(10);
+                if (DieTr != null && InputDieTransfer.IsVacuumOK(nArmIndex))
+                {
+                    // 제품 들고 있음.
+                    return 0;
+                }
+
+                if (InputStage.IsRingPresent() == false
+                    && InputStage.IsPlateUp() == false)
+                {
+                    InputDieTransfer.AxisPickZ?.EmgStop();
+                    InputDieTransfer.AxisToolT?.EmgStop();
+                    InputDieTransfer.PostAlarm((int)InputDieTransfer.AlarmKeys.eInputStageVaccum);
+                    Log.Write("LoadArmMenual", "PickDieFromWaferAsync", "Wafer None failed");
+                    return -1;
+                }
+
                 nRet = InputDieTransfer.MovePositionReady();
                 if (nRet != 0)
                 {
-                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
+                    Log.Write("LoadArmMenual", "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
                     return -1;
                 }
 
                 nRet = InputDieTransfer.RecheckDieAndAlign();
                 if (nRet != 0)
                 {
-                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
+                    Log.Write("LoadArmMenual", "PickDieFromWaferAsync", "RecheckDieAndAlign failed");
                     return -1;
                 }
 
@@ -1055,7 +1088,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     MessageBoxOk mb = new MessageBoxOk();
                     mb.ShowDialog("PrepareNextDie", "PrepareNextDie Fial.");
-                    Log.Write(InputDieTransfer.UnitName, "PickDieFromWaferAsync", "PrepareNextDie");
+                    Log.Write("LoadArmMenual", "PickDieFromWaferAsync", "PrepareNextDie");
                     return -1;
                 }
 
@@ -1063,6 +1096,15 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = InputDieTransfer.PickDownDie(); if (nRet != 0) return -1;
                 nRet = InputDieTransfer.SyncPickUpDie(); if (nRet != 0) return -1;
                 nRet = InputDieTransfer.SyncPickDieRetreat(); if (nRet != 0) return -1;
+
+                //bool bRet = InputDieTransfer.EjectorVaccumOff();
+                //if (bRet == false)
+                //{
+                //    InputDieTransfer.PostAlarm((int)InputDieTransfer.AlarmKeys.eInputStageVaccum);
+                //    Log.Write("LoadArmMenual", "OnRunWork", "[OnRunWork] EjectorVacuumOff failed");
+                //    return -1;
+                //}
+
                 nRet = InputDieTransfer.CommitPickedDie(); if (nRet != 0) return -1;
                 return 0;
             }, ct).ConfigureAwait(false);
@@ -1074,7 +1116,11 @@ namespace QMC.LCP_280.Process.Unit
             return await Task.Run(() =>
             {
                 int nRet = 0;
-
+                MaterialDie TrDie = (InputDieTransfer.GetMaterial() as MaterialDie);
+                if (TrDie == null || TrDie.Presence != Material.MaterialPresence.Exist)
+                {
+                    return 0;
+                }
                 //nRet = InputDieTransfer.IsVacuumOK(0) ? 0 : -1;
                 //if (nRet != 0)
                 //{
@@ -1087,7 +1133,16 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = InputDieTransfer.PlaceDie_ToolT(); if (nRet != 0) return -1;
                 nRet = InputDieTransfer.PlaceDownDie(); if (nRet != 0) return -1;
                 nRet = InputDieTransfer.PlaceUp(); if (nRet != 0) return -1; // 암 Off, 로터리 Vac On
+
+                
+                // Place 완료 후 Rotary로 다이 이동
+                TrDie.State = DieProcessState.Inspecting;
+                TrDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                TrDie.Presence = Material.MaterialPresence.Exist;
+                InputDieTransfer.MoveMaterial(TrDie, this.Rotary);
+                InputDieTransfer.SetMaterial(null);
                 return 0;
+
             }, ct).ConfigureAwait(false);
         }
 

@@ -1282,7 +1282,11 @@ namespace QMC.Common.Spectrometer
         private void SetDeviceParameter(int what, double value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                Log.Write(this.Name, "SetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             int result = CAS4DLL.casSetDeviceParameter(deviceId, what, value);
             CheckCASErrorAndThrow(result);
@@ -1290,7 +1294,11 @@ namespace QMC.Common.Spectrometer
         private void SetDeviceParameter(int what, string value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                Log.Write(this.Name, "SetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             int result = CAS4DLL.casSetDeviceParameterString(deviceId, what, value);
             CheckCASErrorAndThrow(result);
@@ -1298,7 +1306,12 @@ namespace QMC.Common.Spectrometer
         private void GetDeviceParameter(int what, ref double value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                value = -1;
+                Log.Write(this.Name, "GetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             double result = CAS4DLL.casGetDeviceParameter(deviceId, what);
             CheckCASErrorAndThrow();
@@ -1307,7 +1320,12 @@ namespace QMC.Common.Spectrometer
         private void GetDeviceParameter(int what, ref string value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                value = "";
+                Log.Write(this.Name, "GetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             StringBuilder sb = new StringBuilder(256);
             int result = CAS4DLL.casGetDeviceParameterString(deviceId, what, sb, sb.Capacity);
@@ -1317,7 +1335,12 @@ namespace QMC.Common.Spectrometer
         private void SetMeasurementParameter(int what, double value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                value = -1;
+                Log.Write(this.Name, "GetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             int result = CAS4DLL.casSetMeasurementParameter(deviceId, what, value);
             CheckCASErrorAndThrow(result);
@@ -1325,7 +1348,12 @@ namespace QMC.Common.Spectrometer
         private void GetMeasurementParameter(int what, ref double value)
         {
             if (!IsCreated())
-                throw new InvalidOperationException("The Device was not created.");
+            {
+                value = -1;
+                Log.Write(this.Name, "GetDeviceParameter", "The Device was not created.");
+                return;
+                //throw new InvalidOperationException("The Device was not created.");
+            }
 
             double result = CAS4DLL.casGetMeasurementParameter(deviceId, what);
             CheckCASErrorAndThrow();

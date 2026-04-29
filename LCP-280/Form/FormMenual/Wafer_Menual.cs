@@ -211,7 +211,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         InputFeeder,
                         () => InputFeeder.Config?.TeachingPositions,
                         (name, vel) => InputFeeder.MoveToTeachingPosition(name, false),
-                        //(name, vel) => InputFeeder.MoveTeachingPositionOnce(name, vel),
                         tp => InputFeeder.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
@@ -509,18 +508,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 
                 if (InputCassetteLifter != null)
                 {
-                    manualSequenceControlInputCassette.ParentUnit = InputCassetteLifter;
+                    manualControlInputCassette.ParentUnit = InputCassetteLifter;
                 }
 
                 if (InputFeeder != null)
                 {
                     //manualSequenceControlInputWafer.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
-                    manualSequenceControlInputFeeder.ParentUnit = InputFeeder;
+                    manualControlInputFeeder.ParentUnit = InputFeeder;
                 }
 
                 if (InputStage != null)
                 {
-                    manualSequenceControlInputWaferStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
+                    manualControlInputWaferStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch (Exception ex)

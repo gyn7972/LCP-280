@@ -40,6 +40,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _initialized;
         private bool _preloadRequested;
         private bool _deferredInitDone;
+        private string _lastHomeFailureDetail;
+        private string _lastReadyFailureDetail;
 
         // 기존 Form 내부 상태 HashSet은 더 이상 “진짜 상태”가 아니므로 제거/최소화
         // UI 토글 처리를 위해서만 유지(권장: Equipment Snapshot 기반으로 UI 갱신)
@@ -888,6 +890,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private async Task<int> RunHomeSequenceWithDialogAsync(CancellationToken token)
         {
             HomeProgressForm dlg = null;
+            _lastHomeFailureDetail = null;
+
             try
             {
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(_Equipment);
@@ -916,25 +920,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 dlg.Show(this);
                 dlg.BringToFront();
 
-                // 취소/완료 중 먼저 끝난 것 대기
                 var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
                 if (completed != runTask)
                 {
-                    // 취소됨: 2초 유예 후 여전히 미완료면 더 기다리지 않고 종료
                     var grace = await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
                     if (grace != runTask)
                     {
-                        dlg.SafeUpdate(new OperationProgress
-                        {
-                            OperationId = "HOME",
-                            Title = "Home",
-                            StepIndex = seq.TotalSteps - 1,
-                            TotalSteps = seq.TotalSteps,
-                            IsCompleted = true,
-                            IsCanceled = true,
-                            IsAborted = true,
-                            Message = "Canceled"
-                        });
+                        _lastHomeFailureDetail = "Home 작업이 취소되어 완료되지 않았습니다.";
                         throw new OperationCanceledException();
                     }
                 }
@@ -956,9 +948,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 int notStarted = results.Count(r => !r.Started);
                 int fail = results.Count - success - notStarted;
 
-                string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
-
-                if (fail > 0 || notStarted > 0)
+                if (fail > 0 || notStarted > 0 || seq.Aborted)
                 {
                     var detailList = new List<string>();
                     foreach (var r in results)
@@ -971,29 +961,140 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         else if (r.Started)
                         {
                             status = (r.Error != null && r.Error.Message != null)
-                                ? r.Error.Message
-                                : "rc=" + r.ReturnCode;
+                                ? ("EX: " + r.Error.Message)
+                                : ("rc=" + r.ReturnCode);
                         }
                         else
                         {
                             status = "NOT STARTED (" + r.FailReason + ")";
                         }
+
                         detailList.Add("- " + r.AxisName + ": " + status);
                     }
-                    var detail = string.Join("\r\n", detailList);
-                    msg += "\r\n\r\n" + detail;
+
+                    _lastHomeFailureDetail =
+                        $"Home 실패 상세 (성공:{success}, 실패:{fail}, 미시작:{notStarted}, Aborted:{seq.Aborted})\r\n" +
+                        string.Join("\r\n", detailList);
+
+                    Log.Write("Operator_Main", _lastHomeFailureDetail);
+                    return -1;
                 }
 
-                // 결과 표시(요약)
-                //MessageBox.Show(msg, "Home");
-
-                // 반환: 모두 성공(미시작/실패 없음) 시 0, 아니면 -1
-                return (fail == 0 && notStarted == 0 && !seq.Aborted) ? 0 : -1;
+                _lastHomeFailureDetail = null;
+                return 0;
             }
             finally
             {
                 try { dlg?.Close(); dlg?.Dispose(); } catch { }
             }
+
+            //HomeProgressForm dlg = null;
+            //try
+            //{
+            //    var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(_Equipment);
+
+            //    dlg = new HomeProgressForm();
+            //    dlg.InitializeProgress("Machine Home", seq.TotalSteps);
+
+            //    seq.OnProgress(p =>
+            //    {
+            //        dlg.SafeUpdate(p);
+            //    });
+
+            //    dlg.CancelRequested += () =>
+            //    {
+            //        try { _homeCts.Cancel(); } catch { }
+            //        try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+            //    };
+
+            //    dlg.ForceStopRequested += () =>
+            //    {
+            //        try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+            //    };
+
+            //    var runTask = seq.RunAsync(token);
+
+            //    dlg.Show(this);
+            //    dlg.BringToFront();
+
+            //    // 취소/완료 중 먼저 끝난 것 대기
+            //    var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
+            //    if (completed != runTask)
+            //    {
+            //        // 취소됨: 2초 유예 후 여전히 미완료면 더 기다리지 않고 종료
+            //        var grace = await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
+            //        if (grace != runTask)
+            //        {
+            //            dlg.SafeUpdate(new OperationProgress
+            //            {
+            //                OperationId = "HOME",
+            //                Title = "Home",
+            //                StepIndex = seq.TotalSteps - 1,
+            //                TotalSteps = seq.TotalSteps,
+            //                IsCompleted = true,
+            //                IsCanceled = true,
+            //                IsAborted = true,
+            //                Message = "Canceled"
+            //            });
+            //            throw new OperationCanceledException();
+            //        }
+            //    }
+
+            //    var results = await runTask.ConfigureAwait(true);
+            //    dlg.SafeUpdate(new OperationProgress
+            //    {
+            //        OperationId = "HOME",
+            //        Title = "Home",
+            //        StepIndex = seq.TotalSteps - 1,
+            //        TotalSteps = seq.TotalSteps,
+            //        IsCompleted = true,
+            //        IsCanceled = token.IsCancellationRequested,
+            //        IsAborted = seq.Aborted,
+            //        Message = seq.AbortReason
+            //    });
+
+            //    int success = results.Count(r => r.Success);
+            //    int notStarted = results.Count(r => !r.Started);
+            //    int fail = results.Count - success - notStarted;
+
+            //    string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+
+            //    if (fail > 0 || notStarted > 0)
+            //    {
+            //        var detailList = new List<string>();
+            //        foreach (var r in results)
+            //        {
+            //            string status;
+            //            if (r.Success)
+            //            {
+            //                status = "OK";
+            //            }
+            //            else if (r.Started)
+            //            {
+            //                status = (r.Error != null && r.Error.Message != null)
+            //                    ? r.Error.Message
+            //                    : "rc=" + r.ReturnCode;
+            //            }
+            //            else
+            //            {
+            //                status = "NOT STARTED (" + r.FailReason + ")";
+            //            }
+            //            detailList.Add("- " + r.AxisName + ": " + status);
+            //        }
+            //        var detail = string.Join("\r\n", detailList);
+            //        msg += "\r\n\r\n" + detail;
+            //    }
+
+            //    // 결과 표시(요약)
+            //    //MessageBox.Show(msg, "Home");
+
+            //    // 반환: 모두 성공(미시작/실패 없음) 시 0, 아니면 -1
+            //    return (fail == 0 && notStarted == 0 && !seq.Aborted) ? 0 : -1;
+            //}
+            //finally
+            //{
+            //    try { dlg?.Close(); dlg?.Dispose(); } catch { }
+            //}
         }
 
         private async Task<int> RunRotaryInitializeAfterHomeAsync(CancellationToken token)
@@ -1046,39 +1147,60 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private async Task<int> MoveUnitsToReadyAsync(CancellationToken token)
         {
             string failureSummary = null;
+            _lastReadyFailureDetail = null;
 
             var t = Task.Run(async () =>
             {
+                void SetFailure(string step, string target, int rc, Exception ex = null)
+                {
+                    if (ex != null)
+                    {
+                        failureSummary = $"[{step}] {target} 예외: {ex.Message}";
+                        Log.Write(ex);
+                    }
+                    else
+                    {
+                        failureSummary = $"[{step}] {target} 실패 (rc={rc})";
+                    }
+
+                    _lastReadyFailureDetail = failureSummary;
+                    Log.Write("Operator_Main", failureSummary);
+                }
+
+                async Task<(string Name, int Rc, Exception Ex)> RunActionAsync(string name, Func<int> action)
+                {
+                    try
+                    {
+                        var rc = await Task.Run(action, token).ConfigureAwait(false);
+                        return (name, rc, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        return (name, -9999, ex);
+                    }
+                }
+
                 try
                 {
                     // 1) InputDieTransfer + OutputDieTransfer (동시)
                     {
                         token.ThrowIfCancellationRequested();
 
-                        var tasks = new List<Task<int>>();
-                        var names = new List<string>();
+                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
 
                         if (InputDieTransfer != null)
-                        {
-                            tasks.Add(Task.Run(() => InputDieTransfer.EnsureReady(), token));
-                            names.Add("InputDieTransfer");
-                        }
+                            tasks.Add(RunActionAsync("InputDieTransfer.EnsureReady", () => InputDieTransfer.EnsureReady()));
+
                         if (OutputDieTransfer != null)
-                        {
-                            tasks.Add(Task.Run(() => OutputDieTransfer.EnsureReady(), token));
-                            names.Add("OutputDieTransfer");
-                        }
+                            tasks.Add(RunActionAsync("OutputDieTransfer.EnsureReady", () => OutputDieTransfer.EnsureReady()));
 
                         if (tasks.Count > 0)
                         {
                             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            for (int i = 0; i < results.Length; i++)
+                            foreach (var r in results)
                             {
-                                if (results[i] != 0)
-                                {
-                                    failureSummary = names[i];
-                                    return -1; // 첫 실패 시 즉시 NG
-                                }
+                                if (r.Ex != null) { SetFailure("Step1", r.Name, r.Rc, r.Ex); return -1; }
+                                if (r.Rc != 0) { SetFailure("Step1", r.Name, r.Rc); return -1; }
                             }
                         }
                     }
@@ -1091,56 +1213,43 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
                         if (rc != 0)
                         {
-                            failureSummary = "Rotary(ExecuteUnitActionReady)";
+                            SetFailure("Step2", "Rotary.ExecuteUnitActionReady", rc);
                             return -1;
                         }
                     }
 
-                    //초기화 잡을때 ProbeCardX, Y를 Ready 위치로 이동.
+                    // 3) IndexChipProbeController
                     if (IndexChipProbeController != null)
                     {
                         token.ThrowIfCancellationRequested();
 
-                        // XY만 이동 (요청사항)
-                        var rc = await IndexChipProbeController
-                            .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
-                            .ConfigureAwait(false);
-
-                        if (rc != 0)
+                        try
                         {
-                            failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready_XYOnly)";
-                            return -1;
+                            var rc = await IndexChipProbeController
+                                .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
+                                .ConfigureAwait(false);
+
+                            if (rc != 0)
+                            {
+                                SetFailure("Step3", "IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready_XYOnly", rc);
+                                return -1;
+                            }
+
+                            rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
+                            if (rc != 0)
+                            {
+                                SetFailure("Step3", "IndexChipProbeController.MovePositionSafetyZ", rc);
+                                return -1;
+                            }
                         }
-
-                        // 필요 시 SafetyZ 별도 수행 (원하면 유지)
-                        rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
-                        if (rc != 0)
+                        catch (Exception ex)
                         {
-                            failureSummary = "IndexChipProbeController(MovePositionSafetyZ)";
+                            SetFailure("Step3", "IndexChipProbeController", -9999, ex);
                             return -1;
                         }
                     }
-                    //재 확인 필요.
-                    //if(IndexChipProbeController != null)
-                    //{
-                    //    token.ThrowIfCancellationRequested();
 
-                    //    var rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready(0), token).ConfigureAwait(false);
-                    //    if (rc != 0)
-                    //    {
-                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready)";
-                    //        return -1;
-                    //    }
-
-                    //    rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncSafetyZ(), token).ConfigureAwait(false);
-                    //    if (rc != 0)
-                    //    {
-                    //        failureSummary = "IndexChipProbeController(MovePositionAsyncSafetyProbeCardZ)";
-                    //        return -1;
-                    //    }
-                    //}
-
-                    // 3) InputStageEjector (단독, CheckReady)
+                    // 4) InputStageEjector (단독)
                     if (InputStageEjector != null)
                     {
                         token.ThrowIfCancellationRequested();
@@ -1148,76 +1257,58 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         var rc = await Task.Run(() => InputStageEjector.CheckReady(), token).ConfigureAwait(false);
                         if (rc != 0)
                         {
-                            failureSummary = "InputStageEjector(CheckReady)";
+                            SetFailure("Step4", "InputStageEjector.CheckReady", rc);
                             return -1;
                         }
                     }
 
-                    // 4) InputFeeder + OutputFeeder (동시)
+                    // 5) InputFeeder + OutputFeeder (동시)
                     {
                         token.ThrowIfCancellationRequested();
 
-                        var tasks = new List<Task<int>>();
-                        var names = new List<string>();
+                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
 
                         if (InputFeeder != null)
-                        {
-                            tasks.Add(Task.Run(() => InputFeeder.EnsureReady(), token));
-                            names.Add("InputFeeder");
-                        }
+                            tasks.Add(RunActionAsync("InputFeeder.EnsureReady", () => InputFeeder.EnsureReady()));
+
                         if (OutputFeeder != null)
-                        {
-                            tasks.Add(Task.Run(() => OutputFeeder.EnsureReady(), token));
-                            names.Add("OutputFeeder");
-                        }
+                            tasks.Add(RunActionAsync("OutputFeeder.EnsureReady", () => OutputFeeder.EnsureReady()));
 
                         if (tasks.Count > 0)
                         {
                             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            for (int i = 0; i < results.Length; i++)
+                            foreach (var r in results)
                             {
-                                if (results[i] != 0)
-                                {
-                                    failureSummary = names[i];
-                                    return -1;
-                                }
+                                if (r.Ex != null) { SetFailure("Step5", r.Name, r.Rc, r.Ex); return -1; }
+                                if (r.Rc != 0) { SetFailure("Step5", r.Name, r.Rc); return -1; }
                             }
                         }
                     }
 
-                    // 5) InputStage + OutputStage (동시)
+                    // 6) InputStage + OutputStage (동시)
                     {
                         token.ThrowIfCancellationRequested();
 
-                        var tasks = new List<Task<int>>();
-                        var names = new List<string>();
+                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
 
                         if (InputStage != null)
-                        {
-                            tasks.Add(Task.Run(() => InputStage.MoveToStageReadyPosition(), token));
-                            names.Add("InputStage");
-                        }
+                            tasks.Add(RunActionAsync("InputStage.MoveToStageReadyPosition", () => InputStage.MoveToStageReadyPosition()));
+
                         if (OutputStage != null)
-                        {
-                            tasks.Add(Task.Run(() => OutputStage.MoveToStageReadyPosition(), token));
-                            names.Add("OutputStage");
-                        }
+                            tasks.Add(RunActionAsync("OutputStage.MoveToStageReadyPosition", () => OutputStage.MoveToStageReadyPosition()));
 
                         if (tasks.Count > 0)
                         {
                             var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            for (int i = 0; i < results.Length; i++)
+                            foreach (var r in results)
                             {
-                                if (results[i] != 0)
-                                {
-                                    failureSummary = names[i];
-                                    return -1;
-                                }
+                                if (r.Ex != null) { SetFailure("Step6", r.Name, r.Rc, r.Ex); return -1; }
+                                if (r.Rc != 0) { SetFailure("Step6", r.Name, r.Rc); return -1; }
                             }
                         }
                     }
 
-                    return 0; // 모두 OK
+                    return 0;
                 }
                 catch (OperationCanceledException)
                 {
@@ -1225,8 +1316,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 }
                 catch (Exception ex)
                 {
-                    Log.Write(ex);
-                    failureSummary = "Ready 이동 중 예외";
+                    SetFailure("MoveUnitsToReady", "Unhandled", -9999, ex);
                     return -1;
                 }
             }, token);
@@ -1237,8 +1327,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 form.ShowDialog();
                 if (form.DialogResult == DialogResult.Cancel)
                 {
-                    // 사용자가 Stop을 눌렀을 가능성 → 상위 토큰 취소 시도(있으면)
                     try { _homeCts?.Cancel(); } catch { }
+                    _lastReadyFailureDetail = "사용자 취소로 중단됨";
                     return -1;
                 }
 
@@ -1251,20 +1341,22 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                 if (t.IsCanceled)
                 {
+                    _lastReadyFailureDetail = "토큰 취소로 중단됨";
                     Log.Write("Operator_Main", "MoveUnitsToReady 취소됨");
                     return -1;
-                    //throw new OperationCanceledException();
                 }
 
                 var rc = await t.ConfigureAwait(true);
                 if (rc != 0)
                 {
-                    MessageBox.Show("Ready 이동 실패: " + (failureSummary ?? string.Empty),
+                    MessageBox.Show("Ready 이동 실패: " + (_lastReadyFailureDetail ?? failureSummary ?? string.Empty),
                         "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
                     return -1;
                 }
-                return rc;
+
+                _lastReadyFailureDetail = null;
+                return 0;
             }
             catch (Exception ex)
             {
@@ -1274,6 +1366,237 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 return -1;
             }
         }
+        //private async Task<int> MoveUnitsToReadyAsync(CancellationToken token)
+        //{
+        //    string failureSummary = null;
+
+        //    var t = Task.Run(async () =>
+        //    {
+        //        try
+        //        {
+        //            // 1) InputDieTransfer + OutputDieTransfer (동시)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                var tasks = new List<Task<int>>();
+        //                var names = new List<string>();
+
+        //                if (InputDieTransfer != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => InputDieTransfer.EnsureReady(), token));
+        //                    names.Add("InputDieTransfer");
+        //                }
+        //                if (OutputDieTransfer != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => OutputDieTransfer.EnsureReady(), token));
+        //                    names.Add("OutputDieTransfer");
+        //                }
+
+        //                if (tasks.Count > 0)
+        //                {
+        //                    var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        //                    for (int i = 0; i < results.Length; i++)
+        //                    {
+        //                        if (results[i] != 0)
+        //                        {
+        //                            failureSummary = names[i];
+        //                            return -1; // 첫 실패 시 즉시 NG
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            // 2) Rotary (단독)
+        //            if (Rotary != null)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
+        //                if (rc != 0)
+        //                {
+        //                    failureSummary = "Rotary(ExecuteUnitActionReady)";
+        //                    return -1;
+        //                }
+        //            }
+
+        //            //초기화 잡을때 ProbeCardX, Y를 Ready 위치로 이동.
+        //            if (IndexChipProbeController != null)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                // XY만 이동 (요청사항)
+        //                var rc = await IndexChipProbeController
+        //                    .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
+        //                    .ConfigureAwait(false);
+
+        //                if (rc != 0)
+        //                {
+        //                    failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready_XYOnly)";
+        //                    return -1;
+        //                }
+
+        //                // 필요 시 SafetyZ 별도 수행 (원하면 유지)
+        //                rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
+        //                if (rc != 0)
+        //                {
+        //                    failureSummary = "IndexChipProbeController(MovePositionSafetyZ)";
+        //                    return -1;
+        //                }
+        //            }
+        //            //재 확인 필요.
+        //            //if(IndexChipProbeController != null)
+        //            //{
+        //            //    token.ThrowIfCancellationRequested();
+
+        //            //    var rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready(0), token).ConfigureAwait(false);
+        //            //    if (rc != 0)
+        //            //    {
+        //            //        failureSummary = "IndexChipProbeController(MovePositionAsyncBottomContact_Index_Ready)";
+        //            //        return -1;
+        //            //    }
+
+        //            //    rc = await Task.Run(() => IndexChipProbeController.MovePositionAsyncSafetyZ(), token).ConfigureAwait(false);
+        //            //    if (rc != 0)
+        //            //    {
+        //            //        failureSummary = "IndexChipProbeController(MovePositionAsyncSafetyProbeCardZ)";
+        //            //        return -1;
+        //            //    }
+        //            //}
+
+        //            // 3) InputStageEjector (단독, CheckReady)
+        //            if (InputStageEjector != null)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                var rc = await Task.Run(() => InputStageEjector.CheckReady(), token).ConfigureAwait(false);
+        //                if (rc != 0)
+        //                {
+        //                    failureSummary = "InputStageEjector(CheckReady)";
+        //                    return -1;
+        //                }
+        //            }
+
+        //            // 4) InputFeeder + OutputFeeder (동시)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                var tasks = new List<Task<int>>();
+        //                var names = new List<string>();
+
+        //                if (InputFeeder != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => InputFeeder.EnsureReady(), token));
+        //                    names.Add("InputFeeder");
+        //                }
+        //                if (OutputFeeder != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => OutputFeeder.EnsureReady(), token));
+        //                    names.Add("OutputFeeder");
+        //                }
+
+        //                if (tasks.Count > 0)
+        //                {
+        //                    var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        //                    for (int i = 0; i < results.Length; i++)
+        //                    {
+        //                        if (results[i] != 0)
+        //                        {
+        //                            failureSummary = names[i];
+        //                            return -1;
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            // 5) InputStage + OutputStage (동시)
+        //            {
+        //                token.ThrowIfCancellationRequested();
+
+        //                var tasks = new List<Task<int>>();
+        //                var names = new List<string>();
+
+        //                if (InputStage != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => InputStage.MoveToStageReadyPosition(), token));
+        //                    names.Add("InputStage");
+        //                }
+        //                if (OutputStage != null)
+        //                {
+        //                    tasks.Add(Task.Run(() => OutputStage.MoveToStageReadyPosition(), token));
+        //                    names.Add("OutputStage");
+        //                }
+
+        //                if (tasks.Count > 0)
+        //                {
+        //                    var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        //                    for (int i = 0; i < results.Length; i++)
+        //                    {
+        //                        if (results[i] != 0)
+        //                        {
+        //                            failureSummary = names[i];
+        //                            return -1;
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            return 0; // 모두 OK
+        //        }
+        //        catch (OperationCanceledException)
+        //        {
+        //            throw;
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Log.Write(ex);
+        //            failureSummary = "Ready 이동 중 예외";
+        //            return -1;
+        //        }
+        //    }, token);
+
+        //    var form = new ProgressForm("Manual Running", "MoveUnitsToReady", t, token);
+        //    try
+        //    {
+        //        form.ShowDialog();
+        //        if (form.DialogResult == DialogResult.Cancel)
+        //        {
+        //            // 사용자가 Stop을 눌렀을 가능성 → 상위 토큰 취소 시도(있으면)
+        //            try { _homeCts?.Cancel(); } catch { }
+        //            return -1;
+        //        }
+
+        //        if (t.IsFaulted)
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Ready 이동 중 예외!", t.Exception?.GetBaseException().Message);
+        //            return -1;
+        //        }
+
+        //        if (t.IsCanceled)
+        //        {
+        //            Log.Write("Operator_Main", "MoveUnitsToReady 취소됨");
+        //            return -1;
+        //            //throw new OperationCanceledException();
+        //        }
+
+        //        var rc = await t.ConfigureAwait(true);
+        //        if (rc != 0)
+        //        {
+        //            MessageBox.Show("Ready 이동 실패: " + (failureSummary ?? string.Empty),
+        //                "Ready 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+        //            return -1;
+        //        }
+        //        return rc;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //        MessageBox.Show("Ready 이동 처리 중 예외: " + ex.Message, "Error",
+        //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return -1;
+        //    }
+        //}
 
         // === HomeAll: Entrypoint ===
         private async void btnHomeAll_Click(object sender, EventArgs e)
@@ -1288,8 +1611,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     return;
                 }
 
-                // [ADD] 장비(보드/축 목록) 초기화가 안 됐으면 Home 자체도 불가
-                if (_Equipment == null || !_Equipment.IsEquipmentInitialized)
+                if (_Equipment == null || _Equipment.IsEquipmentInitialized == false)
                 {
                     mb.TopMost = true;
                     mb.ShowDialog("초기화 필요", "장비 초기화(InitializeEquipment) 후에 Home이 가능");
@@ -1297,40 +1619,35 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     return;
                 }
 
-                // 1) 사용자 확인
-                if (!ConfirmHome()) 
+                if (!ConfirmHome())
                     return;
 
-                // 2) 취소 토큰 준비
                 var token = PrepareNewHomeToken();
-
                 _Equipment.ResetAxisHomed();
 
-                // 3) 축 알람 초기화 및 서보 ON
-                if (!TryServoOnAllAxes()) 
+                if (TryServoOnAllAxes() == false)
+                {
                     return;
+                }
 
-                // 4) 홈 시퀀스 실행(다이얼로그 포함)
                 var rcHome = await RunHomeSequenceWithDialogAsync(token).ConfigureAwait(true);
                 if (rcHome != 0)
                 {
                     mb.TopMost = true;
-                    mb.ShowDialog("초기화 실패", "Home 실패 또는 미완료");
+                    mb.ShowDialog("초기화 실패", "Home 실패 또는 미완료\r\n" + (_lastHomeFailureDetail ?? string.Empty));
                     mb.TopMost = false;
                     return;
                 }
 
-                // 6) 전 유닛 Ready 이동 → int 반환
                 var rcReady = await MoveUnitsToReadyAsync(token).ConfigureAwait(true);
                 if (rcReady != 0)
                 {
                     mb.TopMost = true;
-                    mb.ShowDialog("초기화 실패", "일부 유닛 Ready 이동 실패");
+                    mb.ShowDialog("초기화 실패", "일부 유닛 Ready 이동 실패\r\n" + (_lastReadyFailureDetail ?? string.Empty));
                     mb.TopMost = false;
                     return;
                 }
 
-                // 5) Rotary InitializeAfterHome → int 반환
                 var rcRot = await RunRotaryInitializeAfterHomeAsync(token).ConfigureAwait(true);
                 if (rcRot != 0)
                 {
@@ -1340,11 +1657,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     return;
                 }
 
-                // [ADD] 여기까지 오면 "축 Home + 후처리" 성공으로 간주
                 Thread.Sleep(500);
                 _Equipment.MarkAxisHomed();
-                
-                // 7) 결과 표시
+
                 mb.TopMost = true;
                 mb.ShowDialog("초기화 성공", "초기화 완료");
                 mb.TopMost = false;
@@ -1358,6 +1673,90 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 MessageBox.Show("Home 오류: " + ex.Message);
             }
         }
+
+        //private async void btnHomeAll_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        var mb = new MessageBoxOk();
+        //        if (Equipment.Instance.EqState == EquipmentState.AutoRunning ||
+        //            Equipment.Instance.EqState == EquipmentState.Starting)
+        //        {
+        //            mb.ShowDialog("Warring", "The equipment is currently running in automatic mode.Please stop it and try again.");
+        //            return;
+        //        }
+
+        //        // [ADD] 장비(보드/축 목록) 초기화가 안 됐으면 Home 자체도 불가
+        //        if (_Equipment == null || _Equipment.IsEquipmentInitialized == false)
+        //        {
+        //            mb.TopMost = true;
+        //            mb.ShowDialog("초기화 필요", "장비 초기화(InitializeEquipment) 후에 Home이 가능");
+        //            mb.TopMost = false;
+        //            return;
+        //        }
+
+        //        // 1) 사용자 확인
+        //        if (!ConfirmHome()) 
+        //            return;
+
+        //        // 2) 취소 토큰 준비
+        //        var token = PrepareNewHomeToken();
+        //        _Equipment.ResetAxisHomed();
+
+        //        // 3) 축 알람 초기화 및 서보 ON
+        //        if (TryServoOnAllAxes() == false)
+        //        {
+        //            return;
+        //        }
+
+        //        // 4) 홈 시퀀스 실행(다이얼로그 포함)
+        //        var rcHome = await RunHomeSequenceWithDialogAsync(token).ConfigureAwait(true);
+        //        if (rcHome != 0)
+        //        {
+        //            mb.TopMost = true;
+        //            mb.ShowDialog("초기화 실패", "Home 실패 또는 미완료");
+        //            mb.TopMost = false;
+        //            return;
+        //        }
+
+        //        // 6) 전 유닛 Ready 이동 → int 반환
+        //        var rcReady = await MoveUnitsToReadyAsync(token).ConfigureAwait(true);
+        //        if (rcReady != 0)
+        //        {
+        //            mb.TopMost = true;
+        //            mb.ShowDialog("초기화 실패", "일부 유닛 Ready 이동 실패");
+        //            mb.TopMost = false;
+        //            return;
+        //        }
+
+        //        // 5) Rotary InitializeAfterHome → int 반환
+        //        var rcRot = await RunRotaryInitializeAfterHomeAsync(token).ConfigureAwait(true);
+        //        if (rcRot != 0)
+        //        {
+        //            mb.TopMost = true;
+        //            mb.ShowDialog("초기화 실패", "Index 초기화 실패");
+        //            mb.TopMost = false;
+        //            return;
+        //        }
+
+        //        // [ADD] 여기까지 오면 "축 Home + 후처리" 성공으로 간주
+        //        Thread.Sleep(500);
+        //        _Equipment.MarkAxisHomed();
+
+        //        // 7) 결과 표시
+        //        mb.TopMost = true;
+        //        mb.ShowDialog("초기화 성공", "초기화 완료");
+        //        mb.TopMost = false;
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //        MessageBox.Show("Home 취소됨");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("Home 오류: " + ex.Message);
+        //    }
+        //}
 
         private MeasurementResultForm _measurementResultForm;
         private void BtnMeasurementResult_Click(object sender, EventArgs e)

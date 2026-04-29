@@ -249,9 +249,7 @@ namespace QMC.Common.PKGTester
         public int LoadTestConditionSet(string filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
-            {
                 return -1;
-            }
 
             TestConditionSet tmp = new TestConditionSet();
             if (tmp.LoadFromFile(filePath) != 0)

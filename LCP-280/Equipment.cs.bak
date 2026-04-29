@@ -34,6 +34,8 @@ using System.Windows.Forms;
 using static QMC.Common.Unit.BaseUnit;
 using QMC.Common.GEMSecs;
 using System.Diagnostics;
+using System.Drawing;
+using QMC.Common.Alarm;
 
 namespace QMC.LCP_280.Process
 {
@@ -605,65 +607,6 @@ namespace QMC.LCP_280.Process
             _lastBroadcastUnitStatus[unitName] = newState;
 
             OnUnitStateChanged(unitName, newState);
-
-
-            //if (Units != null && Units.TryGetValue(unitName, out var u) && u is BaseUnit bu)
-            //{
-            //    if (bu.RunUnitStatus != newState)
-            //    {
-            //        bu.RunUnitStatus = newState;
-            //    }
-
-            //    switch (newState)
-            //    {
-            //        case UnitStatus.Starting:
-            //            bu.RunUnitStatus = UnitStatus.Starting;
-            //            EqState = EquipmentState.Starting;
-            //            break;
-            //        case UnitStatus.AutoRunning:
-            //            bu.RunUnitStatus = UnitStatus.AutoRunning;
-            //            EqState = EquipmentState.AutoRunning;
-            //            break;
-            //        case UnitStatus.ManualRunning:
-            //            bu.RunUnitStatus = UnitStatus.ManualRunning;
-            //            EqState = EquipmentState.ManualRunning;
-            //            break;
-            //        case UnitStatus.Stopping:
-            //            bu.RunUnitStatus = UnitStatus.Stopping;
-            //            EqState = EquipmentState.Stopping;
-            //            break;
-            //        case UnitStatus.CycleStop:
-            //            bu.RunUnitStatus = UnitStatus.CycleStop;
-            //            EqState = EquipmentState.CycleStop;
-            //            break;
-            //        case UnitStatus.Stopped:
-            //            bu.RunUnitStatus = UnitStatus.Stopped;
-            //            EqState = EquipmentState.Stopped;
-            //            break;
-            //        case UnitStatus.Error:
-            //            bu.RunUnitStatus = UnitStatus.Error;
-            //            EqState = EquipmentState.Error;
-            //            break;
-            //        case UnitStatus.Unknown:
-            //            bu.RunUnitStatus = UnitStatus.Unknown;
-            //            EqState = EquipmentState.Unknown;
-            //            break;
-            //    }
-            //}
-            //if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
-            //{
-            //    bool running = (newState == UnitStatus.AutoRunning || newState == UnitStatus.Starting);
-            //    if (exec.IsRunning != running)
-            //    {
-            //        exec.IsRunning = running;
-            //        if (running) exec.StartTime = DateTime.Now;
-            //        else exec.StopTime = DateTime.Now;
-            //    }
-            //}
-            //if (_lastBroadcastUnitStatus.TryGetValue(unitName, out var last) && last == newState)
-            //    return;
-            //_lastBroadcastUnitStatus[unitName] = newState;
-            //OnUnitStateChanged(unitName, newState);
         }
 
         private void OnUnitStateChanged(string unitName, UnitStatus newState)
@@ -825,7 +768,10 @@ namespace QMC.LCP_280.Process
         public EquipmentConfig EquipmentConfig { get; set; }
         public EquipmentRecipe EquipmentRecipe { get; set; }
         public string ICurrentRecipe { get; set; }
-        
+
+        // [ADD] 현재 사용자 ID 보관용 프로퍼티 (ResultWriterManager 등에서 참조)
+        public string UserId { get; set; }
+
         public bool m_bBuzzerOff { get; set; } = false;
         public bool bIndexCal { get; set; } = true; //재현성및 1:1모드
 
@@ -1218,15 +1164,15 @@ namespace QMC.LCP_280.Process
                             mb.ShowDialog("Error!", "Failed to apply binning spec (from ExcelBinningModel).");
                         }
                     }
-                    else
-                    {
-                        // 폴백: 기존 방식(레거시 파일일 수 있음)
-                        if (Tester.LoadBinningSpecSheet(specPath) != 0)
-                        {
-                            var mb = new MessageBoxOk();
-                            mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-                        }
-                    }
+                    //else
+                    //{
+                    //    // 폴백: 기존 방식(레거시 파일일 수 있음)
+                    //    if (Tester.LoadBinningSpecSheet(specPath) != 0)
+                    //    {
+                    //        var mb = new MessageBoxOk();
+                    //        mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                    //    }
+                    //}
                 }
             }
             catch (Exception ex)
@@ -1423,6 +1369,9 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                string alarmFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Alarms.csv");
+                GlobalAlarmTable.Instance.LoadAlarmsFromFile(alarmFilePath);
+
                 InitializePreconditions();
 
                 InitializeCoreContainers();
@@ -1434,8 +1383,42 @@ namespace QMC.LCP_280.Process
                 InitializeDevices();
 
                 InitializeUnits();
-
                 InitializeRecipes();
+
+                // 여기서 VisionRunnerHub 1회 초기화하자.
+                try
+                {
+                    var currentRecipe = EquipmentRecipe?.CurrentRecipe.Name;
+                    var recipeBase = PatternMatchingRecipeStore.NormalizeRecipeBaseName(currentRecipe);
+                    var recipeRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recipes", recipeBase, "PatternMatching");
+                    VisionRunnerHub.InitializeOnce(cam =>
+                    {
+                        return new PatternMatchingRunner.RunnerOptions
+                        {
+                            AutoLoadRecipe = false,
+                            RecipeRootDirectory = recipeRoot,
+                            RecipeName = currentRecipe,//"Default", // fallback
+                            UseInspectRoi = true,
+                            Mode = PatternMatchingRunner.SearchMode.All,
+                            DrawCrossOnViewer = false,
+                            CrossColor = Color.Lime,
+                            CrossHalfLength = 15,
+                            EnableSaveImage = false
+                        };
+                    },
+                    defaultViewerOptions: new PatternMatchingRunner.ViewerDisplayOptions
+                    {
+                        DrawCrossOnViewer = false,
+                        HighlightReferenceMatch = true,
+                        ShowMatchIndexes = false
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // Hub 초기화 실패가 설비 초기화를 막지 않도록 로그만 남김
+                    Log.Write("Equipment", "VisionRunnerHub.InitializeOnce error: " + ex.Message);
+                }
+
 
                 StartEquipmentStatusUnit();
 
@@ -1445,6 +1428,10 @@ namespace QMC.LCP_280.Process
                 FinalizeInitialization();
 
                 HookAlarmCountToSummaryOnce();
+
+                // 30일이 지난 로그 삭제
+                Log.DeleteOldLogs(5);  //Test 5일 지난 파일
+
             }
             catch (Exception ex)
             {
@@ -1454,137 +1441,6 @@ namespace QMC.LCP_280.Process
                 OnErrorOccurred($"설비 초기화 중 오류 발생: {ex.Message}");
                 //throw;
             }
-
-            //try
-            //{
-            //    // [ADD] 초기화 시작 시점에 false로 리셋(부분 실패 시에도 잠김 유지)
-            //    _isEquipmentInitialized = false;
-            //    _isAxisHomed = false; // [ADD] 재기동/재초기화 시 Home 다시 요구
-
-            //    // [ADD] ThreadPool 워밍업 및 최소 스레드 수 상향 (Task.Run 첫 호출 지연 감소)
-            //    try
-            //    {
-            //        WarmupThreadPoolIfNeeded();
-            //    }
-            //    catch { }
-
-            //    // 보강: Locator 초기화
-            //    if (!EquipmentLocator.IsInitialized)
-            //    {
-            //        EquipmentLocator.Initialize(this);
-            //    }
-
-            //    Units = new ConcurrentDictionary<string, IUnit>();
-            //    _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-            //    EqState = EquipmentState.Stopped;
-
-            //    ConfigManager = new EquipmentConfigManager();
-            //    EquipmentConfig = new EquipmentConfig();
-            //    EquipmentRecipe = new EquipmentRecipe();
-
-            //    _resultWriterManager = new ResultWriterManager();
-
-            //    OnStateChanged(EquipmentState.Initializing);
-
-            //    // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
-            //    BootstrapAxesDirect();
-
-            //    BootstrapIODirect();
-
-            //    // === 카메라 초기화 ===
-            //    InitializeCameras();
-
-            //    // === 조명 초기화 === , 기존 구성되어 있느 부분하고 동일하게 작업
-            //    InitializeLightControllers();
-
-            //    // === 바코드 초기화 ===
-            //    InitializeBarcoderControllers();
-
-            //    // === Sourcemeter 초기화 ===
-            //    InitializeSourcemeters();
-
-            //    // === Spectrometer 초기화 ===
-            //    InitializeSpectrometers();
-
-            //    // === PKG Tester 초기화 ===
-            //    InitializePKGTester();
-
-            //    // === Strain Gage 초기화 ===
-            //    InitializeStrainGages();
-
-            //    // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
-            //    AutoRegisterUnits();
-
-            //    BindUnit();
-
-            //    // 3) 설비 Config + 메인 Recipe 로드
-            //    EquipmentRecipe.InitGlobalRecipe();
-            //    // ★ [ADD] 프로그램 시작 시점: 현재 레시피 기준 TeachingRecipe 전부 로드 + 축 바인딩
-            //    try
-            //    {
-            //        PreloadAllTeachingUnitRecipes();
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Log.Write("Equipment", nameof(PreloadAllTeachingUnitRecipes), ex.Message);
-            //    }
-
-            //    // [ADD] EquipmentStatus 즉시 시작 (장비 Ready 이전에 상태 수집 시작)
-            //    try
-            //    {
-            //        if (Units.ContainsKey(UnitKeys.EquipmentStatus))
-            //        {
-            //            var ok = StartUnitAsync(UnitKeys.EquipmentStatus).GetAwaiter().GetResult();
-            //            if (!ok)
-            //                OnErrorOccurred("EquipmentStatus Unit 시작 실패");
-            //        }
-            //        else
-            //        {
-            //            OnErrorOccurred("EquipmentStatus Unit 미등록 상태");
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        OnErrorOccurred("EquipmentStatus Unit 시작 중 예외: " + ex.Message);
-            //    }
-
-
-            //    // ===== GEM 초기화/시작 =====
-            //    // 64bIT 지원 안함.!
-
-            //    // 홈 후처리 글로벌 구독(1회)
-            //    HomeHooks.EnsureSubscribed();
-
-            //    // PKG Tester Load Recipe
-            //    var currentRecipe = EquipmentRecipe?.CurrentRecipe;
-            //    if (currentRecipe != null && Tester != null)
-            //    {
-            //        var mb = new MessageBoxOk();
-
-            //        if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetFile) != 0)
-            //        {
-            //            mb.ShowDialog("Error!", $"Failed to load test condition set.");
-            //        }
-            //        if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
-            //        {
-            //            mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-            //        }
-            //    }
-
-            //    _motionSafetyStopIssued = false;
-            //    _isEquipmentInitialized = true; // 모든 초기화가 성공적으로 끝났음을 표시
-            //    OnStateChanged(EquipmentState.Ready);
-
-            //    BindWaferSummaryHooksOnce();
-            //}
-            //catch (Exception ex)
-            //{
-            //    _isEquipmentInitialized = false;
-            //    _isAxisHomed = false; // [ADD]
-            //    OnStateChanged(EquipmentState.Error);
-            //    OnErrorOccurred($"설비 초기화 중 오류 발생: {ex.Message}");
-            //    //throw;
-            //}
         }
 
         private void InitializePreconditions()
@@ -1715,10 +1571,10 @@ namespace QMC.LCP_280.Process
                 {
                     mb.ShowDialog("Error!", $"Failed to load test condition set.");
                 }
-                if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
-                {
-                    mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
-                }
+                //if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetFile) != 0)
+                //{
+                //    mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
+                //}
             }
 
             _motionSafetyStopIssued = false;
@@ -1923,6 +1779,12 @@ namespace QMC.LCP_280.Process
                         Log.Write(ex);
                     }
                 }
+                else
+                {
+                    Log.Write("LCP-280", "BootstrapAxesDirect", "Faild: LCP-280.mot");
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error", "Faild: LCP-280.mot");
+                }
             }
             if (_ckdDriver == null)
             {
@@ -1938,7 +1800,8 @@ namespace QMC.LCP_280.Process
             // [MOD] 기존 지역 변수 scanner → 필드 보관
             if (_motionStatusScanner == null)
             {
-                _motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                //_motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                _motionStatusScanner = new MotionStatusScanner(_axisManager, 15);
 
                 _motionStatusScanner.AxisStatusUpdated += (axis, status) =>
                 {
@@ -2084,9 +1947,11 @@ namespace QMC.LCP_280.Process
                 Directory.CreateDirectory(_dioRoot);
                 var setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
                 _unitIO = DIOUnit.LoadOrCreateDefault(setupPath, "Unit", 32, 32, "DB64R");
+                //파일없으면 프로그램 다운됨.
                 _dioScan = new DioScanService(_unitIO, _dio);
-                _dioScan.Start(10);
+                _dioScan.Start(15);
             }
+
             IoBindings.RegisterAll();
 
             bool bIsOpen = false;
