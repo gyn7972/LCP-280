@@ -60,7 +60,16 @@ namespace QMC.LCP_280.Process.Unit
             { "UseOffset", "Use Offset" },
             { "Gain", "Gain" },
             { "Offset", "Offset" },
+
+            // Wave 요약 컬럼(그리드 전용)
+            { ColWaveWp, "WP" },
+            { ColWaveCri, "CRI" },
+            { ColWaveCct, "CCT" },
         };
+
+        private const string ColWaveWp = "Wave_WP";
+        private const string ColWaveCri = "Wave_CRI";
+        private const string ColWaveCct = "Wave_CCT";
 
         public TestConditionSetPage()
         {
@@ -130,26 +139,22 @@ namespace QMC.LCP_280.Process.Unit
         {
             dataGrid.Font = new Font("맑은 고딕", 8);
 
-            // [추가] 다중 선택 및 키보드 입력 허용
             dataGrid.MultiSelect = true;
             dataGrid.ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText;
 
-            // 키보드 이벤트 연결 (기존에 연결되어 있지 않다면 추가)
-            dataGrid.KeyDown -= DataGrid_KeyDown; // 중복 방지
+            dataGrid.KeyDown -= DataGrid_KeyDown;
             dataGrid.KeyDown += DataGrid_KeyDown;
-
 
             dataGrid.Columns.Clear();
             var pdcol = TypeDescriptor.GetProperties(new TestConditionItem(""));
-            
+
             // Name first
             PropertyDescriptor pdName = pdcol.Find("Name", false);
             if (pdName != null)
             {
                 DataGridViewColumn col = new DataGridViewTextBoxColumn();
                 col.Name = pdName.Name;
-                //col.HeaderText = pdName.DisplayName;
-                col.HeaderText = headerConv[pdName.Name];
+                col.HeaderText = headerConv.ContainsKey(pdName.Name) ? headerConv[pdName.Name] : pdName.Name;
                 col.ReadOnly = true;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGrid.Columns.Add(col);
@@ -162,14 +167,22 @@ namespace QMC.LCP_280.Process.Unit
                 if (pd.Name == "Unit")
                     continue;
 
+                // headerConv에 정의된 항목만 컬럼화 (신규 내부 필드 노출 방지)
+                if (!headerConv.ContainsKey(pd.Name))
+                    continue;
+
                 DataGridViewColumn col = new DataGridViewTextBoxColumn();
                 col.Name = pd.Name;
-                //col.HeaderText = pd.DisplayName;
                 col.HeaderText = headerConv[pd.Name];
                 col.ReadOnly = true;
                 col.SortMode = DataGridViewColumnSortMode.NotSortable;
                 dataGrid.Columns.Add(col);
             }
+
+            // Wave 요약 컬럼(읽기 전용)
+            AddReadOnlySummaryColumn(ColWaveWp, headerConv[ColWaveWp]);
+            AddReadOnlySummaryColumn(ColWaveCri, headerConv[ColWaveCri]);
+            AddReadOnlySummaryColumn(ColWaveCct, headerConv[ColWaveCct]);
         }
 
         private void DataGrid_KeyDown(object sender, KeyEventArgs e)
@@ -385,6 +398,15 @@ namespace QMC.LCP_280.Process.Unit
                                 break;
                         }
                     }
+
+                    if (dataGrid.Columns.Contains(ColWaveWp))
+                        row.Cells[ColWaveWp].Value = GetWaveMetricSummary(item, "WP");
+
+                    if (dataGrid.Columns.Contains(ColWaveCri))
+                        row.Cells[ColWaveCri].Value = GetWaveMetricSummary(item, "CRI");
+
+                    if (dataGrid.Columns.Contains(ColWaveCct))
+                        row.Cells[ColWaveCct].Value = GetWaveMetricSummary(item, "CCT");
                 }
 
                 // 3) 선택 복구
@@ -619,14 +641,14 @@ namespace QMC.LCP_280.Process.Unit
                 if (IsDesignMode()) return;
 
                 dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
-                dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+                dialog.Filter = "Condition Set files (*.json;*.it2)|*.json;*.it2|JSON files (*.json)|*.json|IT2 files (*.it2)|*.it2|All files (*.*)|*.*";
                 dialog.Title = "Open Test Condition Set";
+
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     var filePath = dialog.FileName;
                     if (tempSet.LoadFromFile(filePath) == 0)
                     {
-                        // Apply
                         equipment.Tester.LoadTestConditionSet(filePath);
                         if (currentRecipe != null)
                         {
@@ -650,7 +672,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnSaveSet_Click(object sender, EventArgs e)
         {
-            if (IsDesignMode()) 
+            if (IsDesignMode())
                 return;
 
             if (!tempSet.Validate())
@@ -662,16 +684,17 @@ namespace QMC.LCP_280.Process.Unit
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
                 dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
-                dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+                dialog.Filter = "Condition Set files (*.json;*.it2)|*.json;*.it2|JSON files (*.json)|*.json|IT2 files (*.it2)|*.it2|All files (*.*)|*.*";
                 dialog.Title = "Save Test Condition Set";
-                dialog.FileName = "*.json";
+                dialog.FileName = Path.GetFileName(filePath);
+                dialog.DefaultExt = "json";
+                dialog.AddExtension = true;
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     var filePath = dialog.FileName;
                     if (tempSet.SaveToFile(filePath) == 0)
                     {
-                        // Apply
                         equipment.Tester.LoadTestConditionSet(filePath);
                         if (currentRecipe != null)
                         {
@@ -742,7 +765,38 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        // 클래스 내부 메서드 추가
+        private void AddReadOnlySummaryColumn(string name, string headerText)
+        {
+            if (dataGrid.Columns.Contains(name))
+                return;
 
+            var col = new DataGridViewTextBoxColumn();
+            col.Name = name;
+            col.HeaderText = headerText;
+            col.ReadOnly = true;
+            col.SortMode = DataGridViewColumnSortMode.NotSortable;
+            dataGrid.Columns.Add(col);
+        }
 
+        private string GetWaveMetricSummary(TestConditionItem item, string key)
+        {
+            if (item == null)
+                return "-";
+
+            if (item.GetTestItemCategory() != TestItemCategory.Optical)
+                return "-";
+
+            if (item.WaveMetrics == null)
+                return "-";
+
+            It2MetricSpec metric;
+            if (!item.WaveMetrics.TryGetValue(key, out metric) || metric == null)
+                return "-";
+
+            return metric.Use
+                ? string.Format("{0} ~ {1}", metric.LowLevel, metric.HighLevel)
+                : "-";
+        }
     }
 }

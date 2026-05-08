@@ -47,7 +47,7 @@ namespace QMC.LCP_280.Process.Unit
             if (loadedAlarms == null || loadedAlarms.Count == 0)
             {
                 Log.Write("AlarmInit", $"Could not find alarms for source '{source}' in the alarm file. Only default alarms will be registered.");
-                
+
                 AlarmInfo alarm = new AlarmInfo();
                 alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
                 alarm.Title = "Rotary Axis Moving";
@@ -981,7 +981,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-            if(Config.overdriveUse == true) //Overdrive 사용
+            if (Config.overdriveUse == true) //Overdrive 사용
             {
                 double overdriveDist = Config.overdriveDist;
                 if (overdriveDist > 0.5)
@@ -1002,7 +1002,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
             }
-                
+
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1412,7 +1412,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // QMC Motion API의 MoveAbs 오버로딩 중 속도/가감속을 명시할 수 있는 메서드를 호출합니다.
             // (만약 오버로딩이 없다면 rc |= probeZ.MoveAbs(targetProbeZ, RunMode == UnitRunMode.Auto, isFine); 로 변경)
-            
+
             //파라미터로..빼놓자.. 사용/미사용 기능 적용하고...
             rc |= probeZ.MoveAbs(targetProbeZ, vel, acc, dec, probeZ.Config.AccJerkPercent);
             double dvel = probeCardZ.Config.MaxVelocity * 1.5;
@@ -1427,7 +1427,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[MoveProbeZAndProbeCardZSync] MoveAbs start failed rc=" + rc);
                 return -1;
             }
-           
+
             var sw = timeoutMs > 0 ? Stopwatch.StartNew() : null;
             while (true)
             {
@@ -1546,7 +1546,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"[OnMovePositionProbeZGripperIndexUp] Teaching not found: {tpName}");
                 return -1;
             }
-            
+
             dZPos = GetTP(tpName, AxisNames.ProbeZ);
             nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
             if (nRet != 0)
@@ -2000,7 +2000,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool SetSphereFB(bool bFwdBwd)
         {
-            if (_cylSphere == null) 
+            if (_cylSphere == null)
                 return false;
 
             if (bFwdBwd)
@@ -2134,8 +2134,6 @@ namespace QMC.LCP_280.Process.Unit
         // [ADD] 측정 1회 + 결과 BinType 보고 NG면 재시도
         private int MeasureChipWithNgRetry(MaterialDie die, int maxRetry, int retryDelayMs = 10)
         {
-            int nRet = -1; //여기는 OK안되면 -1 로 나가야함.
-            // maxRetry=2 => 총 3회 시도
             if (maxRetry < 0)
                 maxRetry = 0;
 
@@ -2146,97 +2144,195 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
                         $"MeasureChip failed. attempt={attempt + 1}/{maxRetry + 1} rc={rc}");
-                    nRet = -1;  //return - 1;
+                    return -1;
                 }
 
-                // [ADD] Simulation/DryRun: BinType을 랜덤으로 강제 세팅해서 NG/Retry 테스트
                 var equipment = Equipment.Instance;
-                bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
-                if ((Config.IsSimulation || Config.IsDryRun || IsDryRunEqp) && die != null)
+                bool isDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+
+                if ((Config.IsSimulation || Config.IsDryRun || isDryRunEqp) && die != null)
                 {
-                    if (true)
+                    try
                     {
-                        //시뮬 측정 택타임
-                        if(Config.IsSimulation)
+                        double p = SimulationGoodProbability;
+                        if (p < 0.0) p = 0.0;
+                        if (p > 1.0) p = 1.0;
+
+                        bool isGood;
+                        lock (_simRandLock)
                         {
-                            Thread.Sleep(150);
+                            isGood = _simRand.NextDouble() < p;
                         }
-                        
-                        try
+
+                        if (die.TesterResult != null && die.TesterResult.BinningResult != null)
                         {
-                            // 확률 클램프
-                            double p = SimulationGoodProbability;
-                            if (p < 0.0) p = 0.0;
-                            if (p > 1.0) p = 1.0;
-                            bool isGood;
-                            lock (_simRandLock)
-                            {
-                                isGood = _simRand.NextDouble() < p;
-                            }
-
                             die.TesterResult.BinningResult.BinType = isGood ? BinningType.GoodBin : BinningType.NgBin;
-
                             Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
                                 $"[SIM] Forced BinType={die.TesterResult.BinningResult.BinType} pGood={p:0.###} attempt={attempt + 1}/{maxRetry + 1}");
                         }
-                        catch (Exception ex)
-                        {
-                            Log.Write(UnitName, nameof(MeasureChipWithNgRetry), $"[SIM] Failed to force BinType: {ex.Message}");
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(UnitName, nameof(MeasureChipWithNgRetry), $"[SIM] Failed to force BinType: {ex.Message}");
                     }
                 }
 
-                // BinType 확인
-                if (TryGetDieBinType(die, out var binType))
+                if (!TryGetDieBinType(die, out var binType))
                 {
-                    if (binType != QMC.Common.PKGTester.BinningType.NgBin)
-                    {
+                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+                        "Measure OK but BinType not available -> treat as success.");
+                    if (die != null)
                         die.State = DieProcessState.Inspected;
-                        Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
-                            $"Measure OK. BinType={binType} attempt={attempt + 1}/{maxRetry + 1}");
-                        nRet = 0;  //return 0;
-                    }
-
-                    //여기에서 결과값을 확인 후에 검사 결과 및 Retry 처리
-                    if (true)
-                    {
-                        Log.Write(UnitName, "[MeasureChip] AddContactRetry");
-                        try
-                        {
-                            var ctx = Equipment.Instance.SummaryContext;
-                            ctx.GetCurrentSummaryOrNull()?.AddContactRetry();
-                        }
-                        catch (Exception ex)
-                        { Log.Write(ex); }
-                    }
-
-                    // NG면 재시도
-                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
-                        $"Measure result NG -> retry. attempt={attempt + 1}/{maxRetry + 1}");
-
-                    if (attempt < maxRetry)
-                    {
-                        Thread.Sleep(Math.Max(0, retryDelayMs));
-                    }
-                    else
-                    {
-                        return nRet;
-                    }
-                }
-                else
-                {
-                    // Bin 정보를 못 읽으면 기존 정책대로 "성공"으로 처리(현장 정책에 따라 NG 처리로 바꿀 수 있음)
-                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
-                        $"Measure OK but BinType not available -> treat as success.");
-                    nRet = 0;
                     return 0;
                 }
+
+                if (binType != BinningType.NgBin)
+                {
+                    if (die != null)
+                        die.State = DieProcessState.Inspected;
+
+                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+                        $"Measure OK. BinType={binType} attempt={attempt + 1}/{maxRetry + 1}");
+                    return 0;
+                }
+
+                // 여기부터 진짜 NG
+                if (attempt < maxRetry)
+                {
+                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+                        $"Measure NG -> retry. attempt={attempt + 1}/{maxRetry + 1}");
+
+                    try
+                    {
+                        var ctx = Equipment.Instance.SummaryContext;
+                        ctx.GetCurrentSummaryOrNull()?.AddContactRetry();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+
+                    Thread.Sleep(Math.Max(0, retryDelayMs));
+                    continue;
+                }
+
+                Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+                    $"Measure NG(final). attempt={attempt + 1}/{maxRetry + 1}");
+
+                if (die != null)
+                    die.SetReject("Error_Measure");
+
+                return -1;
             }
 
-            // 여기까지 오면 "계속 NG"
-            die.SetReject("Error_Measure");
-            return nRet;
+            return -1;
         }
+
+        //private int MeasureChipWithNgRetry(MaterialDie die, int maxRetry, int retryDelayMs = 10)
+        //{
+        //    int nRet = -1; //여기는 OK안되면 -1 로 나가야함.
+        //    // maxRetry=2 => 총 3회 시도
+        //    if (maxRetry < 0)
+        //        maxRetry = 0;
+
+        //    for (int attempt = 0; attempt <= maxRetry; attempt++)
+        //    {
+        //        int rc = IndexChipProber.MeasureChip();
+        //        if (rc != 0)
+        //        {
+        //            Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+        //                $"MeasureChip failed. attempt={attempt + 1}/{maxRetry + 1} rc={rc}");
+        //            nRet = -1;  //return - 1;
+        //        }
+
+        //        // [ADD] Simulation/DryRun: BinType을 랜덤으로 강제 세팅해서 NG/Retry 테스트
+        //        var equipment = Equipment.Instance;
+        //        bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+        //        if ((Config.IsSimulation || Config.IsDryRun || IsDryRunEqp) && die != null)
+        //        {
+        //            if (true)
+        //            {
+        //                //시뮬 측정 택타임
+        //                if (Config.IsSimulation)
+        //                {
+        //                    Thread.Sleep(150);
+        //                }
+
+        //                try
+        //                {
+        //                    // 확률 클램프
+        //                    double p = SimulationGoodProbability;
+        //                    if (p < 0.0) p = 0.0;
+        //                    if (p > 1.0) p = 1.0;
+        //                    bool isGood;
+        //                    lock (_simRandLock)
+        //                    {
+        //                        isGood = _simRand.NextDouble() < p;
+        //                    }
+
+        //                    die.TesterResult.BinningResult.BinType = isGood ? BinningType.GoodBin : BinningType.NgBin;
+
+        //                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+        //                        $"[SIM] Forced BinType={die.TesterResult.BinningResult.BinType} pGood={p:0.###} attempt={attempt + 1}/{maxRetry + 1}");
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    Log.Write(UnitName, nameof(MeasureChipWithNgRetry), $"[SIM] Failed to force BinType: {ex.Message}");
+        //                }
+        //            }
+        //        }
+
+        //        // BinType 확인
+        //        if (TryGetDieBinType(die, out var binType))
+        //        {
+        //            if (binType != QMC.Common.PKGTester.BinningType.NgBin)
+        //            {
+        //                die.State = DieProcessState.Inspected;
+        //                Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+        //                    $"Measure OK. BinType={binType} attempt={attempt + 1}/{maxRetry + 1}");
+        //                nRet = 0;  //return 0;
+        //            }
+
+        //            //여기에서 결과값을 확인 후에 검사 결과 및 Retry 처리
+        //            if (true)
+        //            {
+        //                Log.Write(UnitName, "[MeasureChip] AddContactRetry");
+        //                try
+        //                {
+        //                    var ctx = Equipment.Instance.SummaryContext;
+        //                    ctx.GetCurrentSummaryOrNull()?.AddContactRetry();
+        //                }
+        //                catch (Exception ex)
+        //                { Log.Write(ex); }
+        //            }
+
+        //            // NG면 재시도
+        //            Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+        //                $"Measure result NG -> retry. attempt={attempt + 1}/{maxRetry + 1}");
+
+        //            if (attempt < maxRetry)
+        //            {
+        //                Thread.Sleep(Math.Max(0, retryDelayMs));
+        //            }
+        //            else
+        //            {
+        //                return nRet;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            // Bin 정보를 못 읽으면 기존 정책대로 "성공"으로 처리(현장 정책에 따라 NG 처리로 바꿀 수 있음)
+        //            Log.Write(UnitName, nameof(MeasureChipWithNgRetry),
+        //                $"Measure OK but BinType not available -> treat as success.");
+        //            nRet = 0;
+        //            return 0;
+        //        }
+        //    }
+
+        //    // 여기까지 오면 "계속 NG"
+        //    die.SetReject("Error_Measure");
+        //    return nRet;
+        //}
 
 
         private void LogSequence(string log)
@@ -2925,13 +3021,64 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+        // 클래스 내부 적절한 위치(예: IsRotaryIdle 아래)에 추가
+        private bool WaitRotaryIdleStable(int timeoutMs, int stableMs, int pollMs, out string reason)
+        {
+            reason = string.Empty;
 
+            if (Rotary == null)
+            {
+                reason = "Rotary is null";
+                return false;
+            }
+
+            if (pollMs < 1)
+                pollMs = 1;
+
+            if (stableMs < 0)
+                stableMs = 0;
+
+            var sw = Stopwatch.StartNew();
+            var swStable = Stopwatch.StartNew();
+            swStable.Reset();
+
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                if (IsStop)
+                {
+                    reason = "Stop requested";
+                    return false;
+                }
+
+                bool moving = Rotary.IsIndexMoving();
+                if (!moving)
+                {
+                    if (!swStable.IsRunning)
+                        swStable.Start();
+
+                    if (swStable.ElapsedMilliseconds >= stableMs)
+                        return true;
+                }
+                else
+                {
+                    swStable.Reset();
+                }
+
+                Thread.Sleep(pollMs);
+            }
+
+            reason = Rotary.GetIndexMovingDebugText();
+            return false;
+        }
+
+        // 기존 TopContactAndMeasureOnce 전체 교체
         public int TopContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
             try
             {
                 this.CurrentFunc = TopContactAndMeasureOnce;
+
                 while (IsRotaryIdle() != 0)
                 {
                     if (IsStop)
@@ -2941,25 +3088,66 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(5);
                 }
 
+                string idleReason;
+                if (!WaitRotaryIdleStable(1500, 30, 2, out idleReason))
+                {
+                    Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                        $"Rotary idle stable check failed. reason={idleReason}");
+                    return -1;
+                }
+
                 LogSequence("Start");
+
                 int nIndex = GetProbeIndexNo();
+                int nIndexNow = GetProbeIndexNo();
+                if (nIndexNow != nIndex)
+                {
+                    Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                        $"ProbeIndex changed before move. old={nIndex}, now={nIndexNow}");
+                    nIndex = nIndexNow;
+                }
+
+                bool movingBeforeMove = Rotary != null && Rotary.IsIndexMoving();
+                Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                    $"Before MovePositionTopContact_Index_Up: idx={nIndex}, moving={movingBeforeMove}, dbg={Rotary?.GetIndexMovingDebugText()}");
+
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
-                    Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
-                    nRet = -1; //return -1;
+                    Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                        $"[TopContactOnce] OnMovePositionTopContact_Index_Up failed. idx={nIndex}, dbg={Rotary?.GetIndexMovingDebugText()}");
+
+                    // Rotary moving race로 판단되면 1회 재시도
+                    if (Rotary != null && Rotary.IsIndexMoving())
+                    {
+                        string retryReason;
+                        if (WaitRotaryIdleStable(1000, 30, 2, out retryReason))
+                        {
+                            int retryIdx = GetProbeIndexNo();
+                            Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                                $"Retry MovePositionTopContact_Index_Up. idx={retryIdx}");
+
+                            nRet = MovePositionTopContact_Index_Up(retryIdx, bFineSpeed);
+                        }
+                        else
+                        {
+                            Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
+                                $"Retry skipped. Rotary not stable. reason={retryReason}");
+                        }
+                    }
+
+                    if (nRet != 0)
+                        nRet = -1;
                 }
 
                 WaitByTime(Config.UpperWaitTime);
 
-                // 6) 검사 요구 동기 처리
-                // [CHG] NG면 Retry
                 var die = Rotary != null ? Rotary.GetProbeSocketMaterial() : null;
                 nRet = MeasureChipWithNgRetry(die, maxRetry: 0, retryDelayMs: 50);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[TopContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
-                    nRet = -1; //return - 1;
+                    nRet = -1;
                 }
 
                 if (nRet == 0)
@@ -2970,9 +3158,9 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (Config.ViewMode)
                 {
-                    // [ADD] 검사 완료 후 결과 이미지 저장
                     SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");
                 }
+
                 return nRet;
             }
             catch (Exception ex)
@@ -2985,6 +3173,66 @@ namespace QMC.LCP_280.Process.Unit
                 LogSequence("End");
             }
         }
+
+        //public int TopContactAndMeasureOnce(bool bFineSpeed = false)
+        //{
+        //    int nRet = 0;
+        //    try
+        //    {
+        //        this.CurrentFunc = TopContactAndMeasureOnce;
+        //        while (IsRotaryIdle() != 0)
+        //        {
+        //            if (IsStop)
+        //            {
+        //                return 0;
+        //            }
+        //            Thread.Sleep(5);
+        //        }
+
+        //        LogSequence("Start");
+        //        int nIndex = GetProbeIndexNo();
+        //        nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
+        //        if (nRet != 0)
+        //        {
+        //            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
+        //            nRet = -1; //return -1;
+        //        }
+
+        //        WaitByTime(Config.UpperWaitTime);
+
+        //        // 6) 검사 요구 동기 처리
+        //        // [CHG] NG면 Retry
+        //        var die = Rotary != null ? Rotary.GetProbeSocketMaterial() : null;
+        //        nRet = MeasureChipWithNgRetry(die, maxRetry: 0, retryDelayMs: 50);
+        //        if (nRet != 0)
+        //        {
+        //            Log.Write(UnitName, "[TopContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
+        //            nRet = -1; //return - 1;
+        //        }
+
+        //        if (nRet == 0)
+        //        {
+        //            long c = _contactCounter.Increase();
+        //            Log.Write(UnitName, nameof(TopContactAndMeasureOnce), $"ContactCount++ => {c}");
+        //        }
+
+        //        if (Config.ViewMode)
+        //        {
+        //            // [ADD] 검사 완료 후 결과 이미지 저장
+        //            SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");
+        //        }
+        //        return nRet;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //        return -1;
+        //    }
+        //    finally
+        //    {
+        //        LogSequence("End");
+        //    }
+        //}
 
         /// <summary>
         /// Bottom Contact 1개 소켓 검사 시컨스
@@ -3026,7 +3274,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if(true)
+                if (true)
                 {
                     // 동기 방식
                     TaktStart("SyncProbeZUpAndBottomProbeZReady");
@@ -3104,7 +3352,7 @@ namespace QMC.LCP_280.Process.Unit
                         // 안전 기준: 전체 이동 거리의 50% 이상 이동했을 때 (비율 대신 상수로 넣으려면 5.0 등 mm 단위 사용)
                         double ClampXMoveDist = Config.ClampXMoveDist;
                         ClampXMoveDist = ClampXMoveDist / 100.0; // Config가 % 단위로 들어온다고 가정
-                        if(ClampXMoveDist <= 0.0)
+                        if (ClampXMoveDist <= 0.0)
                         {
                             ClampXMoveDist = 1.0;
                         }
@@ -3203,7 +3451,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, nameof(BottomContactAndMeasureOnce), $"ContactCount++ => {c}");
                 }
 
-                if (Config.ViewMode) 
+                if (Config.ViewMode)
                 {
                     // [ADD] 검사 완료 후 결과 이미지 저장
                     SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");

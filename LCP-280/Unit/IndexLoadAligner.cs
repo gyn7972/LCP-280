@@ -882,7 +882,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             // 요구사항: 실제 위치가 0(또는 매우 근접) 이면 Safety 로 간주
             // 허용 오차는 장비 정밀도에 따라 조정(예: 0.005 이하)
-            const double zeroTolerance = 0.007;
+            const double zeroTolerance = 0.001;
             if (Math.Abs(currentPos) <= zeroTolerance)
             {
                 return true;
@@ -1098,6 +1098,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             this.CurrentFunc = RunAlignSocketOnce;
+            
             LogSequence("Start");
             int nIndex = GetAlignIndexNo();
             try
@@ -1164,8 +1165,8 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
 
-                socket.SetState(Rotary.RotarySocketState.MAligning);
                 TaktStart("One Cycle");
+                socket.SetState(Rotary.RotarySocketState.MAligning);
                 // === 동작 수행 (Z Up -> T Fwd -> T Bwd -> T Ready -> Z Safe) ===
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 TaktStart("AlignTReady");
@@ -1276,13 +1277,13 @@ namespace QMC.LCP_280.Process.Unit
                 WaitByTime(Config.WaitTime2Step);
                 TaktEnd("WaitTime2Step");
 
-                nRet = MovePositionAlignTForward(bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
-                    return -1;
-                }
-                WaitByTime(Config.WaitTime3Step);
+                //nRet = MovePositionAlignTForward(bFineSpeed);
+                //if (nRet != 0)
+                //{
+                //    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward2");
+                //    return -1;
+                //}
+                //WaitByTime(Config.WaitTime3Step);
 
                 //Ready Skip
                 TaktStart("AlignTReady2");
@@ -1294,57 +1295,58 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 TaktEnd("AlignTReady2");
 
+                //20260507 GYN - 정상적일때 주석 해제.
                 //// Vision Align 검사 추가.
-                if (true)
-                {
-                    TaktStart("AlignXY_Vision");
-                    nRet = AlignXY(bFineSpeed);
-                    TaktEnd("AlignXY_Vision");
-                }
+                //if (true)
+                //{
+                //    TaktStart("AlignXY_Vision");
+                //    nRet = AlignXY(bFineSpeed);
+                //    TaktEnd("AlignXY_Vision");
+                //}
 
-                TaktStart("SafetyZ");
-                if (nRet != 0)
-                {
-                    try
-                    {
-                        var ctx = Equipment.Instance.SummaryContext;
-                        ctx.GetCurrentSummaryOrNull()?.AddAlignVisionAsMiss();
-                    }
-                    catch (Exception ex)
-                    { Log.Write(ex); }
+                //TaktStart("SafetyZ");
+                //if (nRet != 0)
+                //{
+                //    try
+                //    {
+                //        var ctx = Equipment.Instance.SummaryContext;
+                //        ctx.GetCurrentSummaryOrNull()?.AddAlignVisionAsMiss();
+                //    }
+                //    catch (Exception ex)
+                //    { Log.Write(ex); }
 
-                    if(false)
-                    {
-                        nRet = MoveSafeAndReadyAndWait(bFineSpeed);
-                        if (nRet != 0)
-                        {
-                            return -1;
-                        }
-                    }
-                    else
-                    {
-                        nRet = MovePositionAlignTReady(bFineSpeed);
-                        if (nRet != 0)
-                        {
-                            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
-                            nRet = -1;
-                        }
-                        nRet = MovePositionSafetyZ(bFineSpeed);
-                        if (nRet != 0)
-                        {
-                            Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
-                            return -1;
-                        }
-                    }
+                //    if(false)
+                //    {
+                //        nRet = MoveSafeAndReadyAndWait(bFineSpeed);
+                //        if (nRet != 0)
+                //        {
+                //            return -1;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        nRet = MovePositionAlignTReady(bFineSpeed);
+                //        if (nRet != 0)
+                //        {
+                //            Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                //            nRet = -1;
+                //        }
+                //        nRet = MovePositionSafetyZ(bFineSpeed);
+                //        if (nRet != 0)
+                //        {
+                //            Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
+                //            return -1;
+                //        }
+                //    }
 
-                    CompleteLoadAligner = true;
-                    die.Presence = Material.MaterialPresence.Exist;
-                    die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
-                    die.State = DieProcessState.Skip;
-                    socket.SetState(Rotary.RotarySocketState.Error);
-                    LogSequence("End");
-                }
-                else
+                //    CompleteLoadAligner = true;
+                //    die.Presence = Material.MaterialPresence.Exist;
+                //    die.ProcessSatate = Material.MaterialProcessSatate.Skipped;
+                //    die.State = DieProcessState.Skip;
+                //    socket.SetState(Rotary.RotarySocketState.Error);
+                //    LogSequence("End");
+                //}
+                //else
                 {
                     if (false)
                     {
@@ -1425,16 +1427,15 @@ namespace QMC.LCP_280.Process.Unit
             var sw = Stopwatch.StartNew();
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
-                if (IsPositionAlignZSafety() && IsAlignTReady())
-                {
-                    return 0;
-                }
-
                 if (IsStop)
                 {
                     return 0;
                 }
 
+                if (IsPositionAlignZSafety() && IsAlignTReady())
+                {
+                    return 0;
+                }
                 Thread.Sleep(1);
             }
 

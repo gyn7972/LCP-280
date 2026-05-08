@@ -4437,17 +4437,18 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                 }
                             }
-
                         }
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 die = null;
+                Log.Write(ex);
             }
             return die;
         }
+
         private int WaitUntil(Func<bool> cond, int timeoutMs, int? pollMs = null, int stableHoldMs = 1, CancellationToken ct = default(CancellationToken))
         {
             if (cond == null)
@@ -4589,7 +4590,7 @@ namespace QMC.LCP_280.Process.Unit
         private void ResetChipMappingState()
         {
             InputDieTransfer.taskPrepareNextDie = null;
-
+            
             // 맵핑 상태/커서/결과 초기화
             ChipMappingDone = false;
             _chipPickupCursor = 0;

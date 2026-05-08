@@ -1021,26 +1021,6 @@ namespace QMC.LCP_280.Process.Unit
                 ct,
                 maxStep: 16,
                 settleMs: 50);
-
-            //int targetIdx0 = (targetSocket + 8) % 8; // 0~7
-            //for (int i = 0; i < 16; i++)
-            //{
-            //    ct.ThrowIfCancellationRequested();
-            //    int cur = Rotary.GetLoadIndexNo();
-            //    if (cur == targetIdx0)
-            //        return 0;
-
-            //    int rc = Rotary.MovePositionRotate();
-            //    if (rc != 0)
-            //        return -1;
-
-            //    rc = Rotary.WaitIndexMoveDone();
-            //    if (rc != 0)
-            //        return -1;
-
-            //    await Task.Delay(50, ct).ConfigureAwait(false);
-            //}
-            //return -1;
         }
 
         private async Task<int> PickDieFromWaferAsync(CancellationToken ct)

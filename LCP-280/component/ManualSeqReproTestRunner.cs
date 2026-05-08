@@ -200,35 +200,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     bVacuumOK = _rotary.IsVacuumOK(i);
                                     bVacuumOn = _rotary.IsOutVacummOn(i);
 
-                                    if (bVacuumOn)//&& bVacuumOn)
+                                    if (bVacuumOn)
                                     {
                                         int nRet = 0;
-
-                                        //로더 위치로
                                         nRet = await MoveRotaryToSocketAsync(i, ct).ConfigureAwait(false);
                                         if (nRet != 0)
                                         {
                                             Log.Write("ReproTest", $"Rotary 이동 실패 (socket={currentSocket})");
                                             break;
                                         }
+
                                         currentSocket = i;
-
-                                        // [추가] 로딩 전에 얼라인 1회(옵션)
-                                        //if (AlignBeforeLoad)
-                                        //{
-                                        //    int arc = await AlignCurrentSocketOnceAsync(ct).ConfigureAwait(false);
-                                        //    if (arc != 0)
-                                        //    {
-                                        //        Log.Write("ReproTest", "사전 얼라인 실패");
-                                        //        break;
-                                        //    }
-                                        //}
-
                                         if (currentSocket < 8)
                                         {
                                             while (true)
                                             {
-                                                if (_rotary.IsIndexMoving() == false)
+                                                if (_rotary.IsStop)
+                                                    return;
+
+                                                if (_rotary.IsIndexReadyForUnitAction(out string reason))
                                                 {
                                                     int idx = _dieTransfer.GetLoadIndexNo(); // 0~7
                                                     if (currentSocket == idx)
@@ -237,15 +227,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                                     }
                                                     else
                                                     {
+                                                        Log.Write("ReproTest", "Start", $"ExecuteUnitAction skipped. {reason}");
                                                         Log.Write(_tester, $"현재 소켓:{currentSocket}, 다이전달기 로드 인덱스:{idx} 불일치, 재대기");
-                                                        break;
+                                                        return;
                                                     }
                                                 }
-                                                if (_rotary.IsStop)
-                                                {
-                                                    break;
-                                                }
-                                                Thread.Sleep(1);
+
+                                                Thread.Sleep(2);
                                             }
 
                                             nRet = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
@@ -282,15 +270,19 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 var armDie = GetCurrentArmDie();
                                 while (true)
                                 {
-                                    if (_rotary.IsIndexMoving() == false)
+                                    if (_rotary.IsStop)
+                                        return;
+
+                                    if (_rotary.IsIndexReadyForUnitAction(out string reason))
                                     {
                                         break;
                                     }
-                                    if (_rotary.IsStop)
+                                    else
                                     {
-                                        return;
+                                        Log.Write("ReproTest", "Start", $"IsIndexReadyForUnitAction skipped. {reason}");
                                     }
-                                    Thread.Sleep(1);
+
+                                    Thread.Sleep(2);
                                 }
 
                                 // 1) 암에 다이가 없으면 웨이퍼에서 새 다이 픽 → 현재 소켓에 배치
@@ -346,11 +338,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 }
 
                                 // 3) 얼라인 위치 이동(1 step) → 얼라인 수행
-                                rc = await MoveRotaryStepsAsync(1, ct).ConfigureAwait(false);
+                                // 로터리 Load 위치를 현재 소켓으로 이동 (0 기반 사용)
+                                rc = await MoveRotaryToSocketAsync(currentSocket + 1, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
                                     FailAndStop("Index Cal Fail");
-                                    Log.Write("ReproTest", "로딩 얼라인 위치 이동 실패");
+                                    Log.Write("ReproTest", $"Rotary 이동 실패 (M-Align 위치)");
                                     return;
                                 }
 
@@ -363,14 +356,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 }
 
                                 // 4) 프로브 위치 이동(1 step) → 검사
-                                rc = await MoveRotaryStepsAsync(1, ct).ConfigureAwait(false);
+                                // 로터리 Load 위치를 현재 소켓으로 이동 (0 기반 사용)
+                                rc = await MoveRotaryToSocketAsync(currentSocket + 2, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
                                     FailAndStop("Index Cal Fail");
-                                    Log.Write("ReproTest", "프로브 위치 이동 실패");
+                                    Log.Write("ReproTest", $"Rotary 이동 실패 (프로브 위치)");
                                     return;
                                 }
-
                                 rc = await RunProbeAsyncAndLog(currentSocket, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
@@ -400,11 +393,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 }
 
                                 // 5) Load 위치 복귀(6 step)
-                                rc = await MoveRotaryStepsAsync(6, ct).ConfigureAwait(false);
+                                // 로터리 Load 위치를 현재 소켓으로 이동 (0 기반 사용)
+                                rc = await MoveRotaryToSocketAsync(currentSocket, ct).ConfigureAwait(false);
                                 if (rc != 0)
                                 {
                                     FailAndStop("Index Cal Fail");
-                                    Log.Write("ReproTest", "로딩 위치 복귀 실패");
+                                    Log.Write("ReproTest", $"Rotary 이동 실패 (Load 위치)");
                                     return;
                                 }
 
@@ -413,7 +407,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 {
                                     while (true)
                                     {
-                                        if (_rotary.IsIndexMoving() == false)
+                                        if (_rotary.IsStop)
+                                            return;
+
+                                        if (_rotary.IsIndexReadyForUnitAction(out string reason))
                                         {
                                             int idx = _dieTransfer.GetLoadIndexNo(); // 0~7
                                             if (currentSocket == idx)
@@ -426,11 +423,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                                 return;
                                             }
                                         }
-                                        if (_rotary.IsStop)
-                                        {
-                                            return;
-                                        }
-                                        Thread.Sleep(1);
+                                        
+                                        Thread.Sleep(2);
                                     }
 
                                     rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
@@ -454,117 +448,54 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                 else //마지막 소켓 : 
                                 {
                                     // 마지막 소켓: 회수만 하고 암에 유지 (웨이퍼 복귀는 runCount 완료 후 1회)
-                                    if(true)
+                                    const int timeoutMs = 3000;
+                                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                                    while(true)
                                     {
-                                        const int timeoutMs = 3000;
-                                        var sw = System.Diagnostics.Stopwatch.StartNew();
-                                        while (_rotary.IsIndexMoving())
-                                        {
-                                            if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs) break;
-                                            Thread.Sleep(2);
-                                        }
-
-                                        rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
-                                        if (rc != 0)
-                                        {
-                                            FailAndStop("Index Cal Fail");
-                                            Log.Write("ReproTest", "마지막 소켓 다이 픽 실패");
-                                            return;
-                                        }
-
-                                        var pickedLast = PickupDieFromSocket(currentSocket);
-                                        if (pickedLast == null)
-                                        {
-                                            Log.Write("ReproTest", "마지막 소켓 PickupDieFromSocket null");
+                                        if (_rotary.IsIndexReadyForUnitAction(out string reason))
                                             break;
-                                        }
 
-                                        _dieTransfer.SetMaterial(pickedLast);
-                                        _holdingDieOnArm = true;
+                                        if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs)
+                                            break;
 
-                                        // 소켓 IO 안전화만 수행
-                                        try
-                                        {
-                                            var s = _rotary.GetSocket(currentSocket);
-                                            if (s != null)
-                                            {
-                                                s.SetMaterialDie(null);
-                                                s.SetState(Rotary.RotarySocketState.Empty);
-                                            }
-                                            _rotary.SetVacuum(currentSocket, false);
-                                            _rotary.SetVent(currentSocket, false);
-                                            _rotary.SetBlow(currentSocket, false);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            FailAndStop("Index Cal Fail");
-                                            Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
-                                        }
+                                        Thread.Sleep(2);
                                     }
-                                    else
+
+                                    rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
+                                    if (rc != 0)
                                     {
-                                        // [변경] 마지막 소켓 종료 시: 칩을 원래 웨이퍼 위치로 되돌려 놓기
-                                        var lastDie = GetCurrentArmDie(); // 마지막 소켓에서 검사 후 로딩 위치 복귀 상태
+                                        FailAndStop("Index Cal Fail");
+                                        Log.Write("ReproTest", "마지막 소켓 다이 픽 실패");
+                                        return;
+                                    }
 
-                                        // 로터리 Load 인덱스와 다이전달기 인덱스 일치 대기(최대 타임아웃)
-                                        const int timeoutMs = 3000;
-                                        var sw = System.Diagnostics.Stopwatch.StartNew();
-                                        while (_rotary.IsIndexMoving())
+                                    var pickedLast = PickupDieFromSocket(currentSocket);
+                                    if (pickedLast == null)
+                                    {
+                                        Log.Write("ReproTest", "마지막 소켓 PickupDieFromSocket null");
+                                        break;
+                                    }
+
+                                    _dieTransfer.SetMaterial(pickedLast);
+                                    _holdingDieOnArm = true;
+
+                                    // 소켓 IO 안전화만 수행
+                                    try
+                                    {
+                                        var s = _rotary.GetSocket(currentSocket);
+                                        if (s != null)
                                         {
-                                            if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs) break;
-                                            Thread.Sleep(2);
+                                            s.SetMaterialDie(null);
+                                            s.SetState(Rotary.RotarySocketState.Empty);
                                         }
-
-                                        if (lastDie != null)
-                                        {
-                                            // 마지막 소켓에서 픽하지 않았으면 소켓에서 픽해서 들고간다.
-                                            // 걍 가지고 와야지?
-                                            rc = await PickDieFromCurrentSocketAsync(ct).ConfigureAwait(false);
-                                            if (rc == 0)
-                                            {
-                                                lastDie = PickupDieFromSocket(currentSocket);
-                                                if (lastDie != null)
-                                                    _dieTransfer.SetMaterial(lastDie);
-                                            }
-                                        }
-
-                                        if (lastDie != null)
-                                        {
-                                            int prc = await ReturnDieToWaferOriginalAsync(lastDie, ct).ConfigureAwait(false);
-                                            if (prc != 0)
-                                            {
-                                                Log.Write("ReproTest", "마지막 다이 웨이퍼 복귀 실패");
-                                            }
-                                        }
-                                        //_holdingDieOnArm = false; // 마지막 소켓은 회수 없이 종료
-
-                                        // [중요] 로터리 소켓 상태/IO를 안전 상태로 리셋
-                                        try
-                                        {
-                                            var s = _rotary.GetSocket(currentSocket);
-                                            if (s != null)
-                                            {
-                                                s.SetMaterialDie(null);
-                                                s.SetState(Rotary.RotarySocketState.Empty);
-                                            }
-                                            // IO 안전화
-                                            _rotary.SetVacuum(currentSocket, false);
-                                            _rotary.SetVent(currentSocket, false);
-                                            _rotary.SetBlow(currentSocket, false);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            FailAndStop("Index Cal Fail");
-                                            Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
-                                        }
-
-                                        // 암 상태/플래그 초기화
-                                        try { _dieTransfer.SetMaterial(null); } catch { }
-                                        _holdingDieOnArm = false;
-
-                                        // [권장] 유닛 안전 위치로
-                                        try { _dieTransfer.MovePositionSafetyZ(); } catch { }
-                                        try { _dieTransfer.MovePositionReady(); } catch { }
+                                        _rotary.SetVacuum(currentSocket, false);
+                                        _rotary.SetVent(currentSocket, false);
+                                        _rotary.SetBlow(currentSocket, false);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        FailAndStop("Index Cal Fail");
+                                        Log.Write("ReproTest", $"[LastSocketReset] Rotary 소켓/IO 리셋 실패: {ex.Message}");
                                     }
                                 }
 
@@ -824,56 +755,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                 if (cur == targetIdx0)
                     return 0;
 
-                int rc = _rotary.MovePositionRotate();
-                if (rc != 0) 
-                    return -1;
-
-                rc = _rotary.WaitIndexMoveDone();
+                int rc = _rotary.Rotate(true);
                 if (rc != 0)
+                {
+                    Log.Write(_rotary.UnitName, "MoveRotaryToSocketAsync", $"Rotate failed. rc={rc}");
                     return -1;
+                }
 
                 await Task.Delay(50, ct).ConfigureAwait(false);
             }
             return -1;
-        }
-
-        private async Task<int> MoveRotaryStepsAsync(int stepCount, CancellationToken ct)
-        {
-            for (int i = 0; i < stepCount; i++)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                Log.Write(_rotary.UnitName, "MovePositionRotate", "Start");
-                int rc = _rotary.MovePositionRotate();
-                if (rc != 0)
-                { return -1;}
-
-                rc = _rotary.WaitIndexMoveDone();
-                if (rc != 0)
-                { return -1; }
-                
-                while (true)
-                {
-                    if(_rotary.IsStop)
-                    {
-                        return 0;
-                    }
-
-                    if (_rotary.IsIndexMoving() == false)
-                    {
-                        Thread.Sleep(200);
-                        if (_rotary.IsIndexMoving() == false)
-                        {
-                            break;
-                        }
-                    }
-                    Thread.Sleep(2);
-                }
-                Log.Write(_rotary.UnitName, "MovePositionRotate", "End");
-
-                await Task.Delay(50, ct).ConfigureAwait(false);
-            }
-            return 0;
         }
 
         private async Task<int> PickDieFromWaferAsync(CancellationToken ct)

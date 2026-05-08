@@ -326,6 +326,7 @@ namespace QMC.LCP_280.Process.Unit
             _pickUpDone = false;
         }
 
+
         public OutputDieTransfer(OutputDieTransferRecipe config = null)
             : base(new OutputDieTransferConfig())
         {
@@ -1856,10 +1857,10 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     // 0. Rotary Index 동작 중인지 확인 - 이건 무조건.
-                    if (Rotary != null && this.Rotary.IsIndexMoving())
-                    {
-                        return 0;
-                    }
+                    //if (Rotary != null && this.Rotary.IsIndexMoving())
+                    //{
+                    //    return 0;
+                    //}
 
                     if (DeiOutTr == null
                         || DeiOutTr.State != DieProcessState.Picked
@@ -1905,6 +1906,26 @@ namespace QMC.LCP_280.Process.Unit
                             // 타임아웃 처리. 보통 그냥 return 0 하여 다음 사이클에 다시 대기
                             Log.Write(UnitName, "OnRunWork", "[OutputDieTransfer] WaitPickupStartEvent timeout");
                             return 0;
+                        }
+
+                        if (Rotary != null)
+                        {
+                            sw = Stopwatch.StartNew();
+                            timeoutMs = 1000;
+                            while (Rotary.IsIndexMoving())
+                            {
+                                if (IsStop)
+                                    return 0;
+
+                                if (sw.ElapsedMilliseconds > timeoutMs)
+                                {
+                                    Log.Write(UnitName, nameof(OnRunWork),
+                                        $"Wait rotary idle timeout. {Rotary.GetIndexMovingDebugText()}");
+                                    return 0; // 바로 알람보다 다음 cycle 재시도 권장
+                                }
+
+                                Thread.Sleep(2);
+                            }
                         }
 
                         // 1.Unload Socket의 Die Index 정보 확인 - 현재 픽업 대상 Die
@@ -2032,10 +2053,11 @@ namespace QMC.LCP_280.Process.Unit
                             TaktEnd("PickUpDie");
                         }
 
+                        //20260507 GYN - 정상적일때 주석 해제.
                         //버큠 형성이 안되었으면 안가져다 놓으면 된다. 
                         // 2.5 [중요] Vacuum 최종 확인 및 분기 처리
-                        vac = this.IsVacuumOK(nArmIndex);
-                        if (vac == true)
+                        //vac = this.IsVacuumOK(nArmIndex);
+                        //if (vac == true)
                         {
                             // [ADD] 성공 시에도 처리된 Index 기록
                             _lastProcessedDieIndex = DieIndex.Index;
@@ -2100,72 +2122,72 @@ namespace QMC.LCP_280.Process.Unit
                             State = ProcessState.Complete;
                             Log.Write(UnitName, "PickSuccess", $"Die Index={DieIndex.Index} marked Presence=Exist");
                         }
-                        else
-                        {
-                            // [ADD] 성공 시에도 처리된 Index 기록
-                            _lastProcessedDieIndex = DieIndex.Index;
-                            // [실패 케이스 수정: Load Align 실패 / Pick Miss]
-                            Log.Write(UnitName, "PickFail", "Vacuum Fail -> Skip Probe/Unloader sequence");
-                            // 픽 실패 시 현재 예약 슬롯을 Rejected 처리해 다음 슬롯으로 진행할 수 있게 함
-                            OutputStage?.MarkCurrentReservedMissing();
-                            // Rotary에 자재가 그대로 있다고 처리 (혹은 ReMoveMaterialToOutputDieTransfer 로직 확인 필요)
-                            // 여기서는 픽업 실패했으므로 Rotary 소켓에 자재가 남아야 함.
-                            // Rotary.ReMoveMaterialToOutputDieTransfer(); // <- 이 함수 이름이 헷갈림. "Rotary에 자재 복구" 의미라면 맞음.
+                        //else
+                        //{
+                        //    // [ADD] 성공 시에도 처리된 Index 기록
+                        //    _lastProcessedDieIndex = DieIndex.Index;
+                        //    // [실패 케이스 수정: Load Align 실패 / Pick Miss]
+                        //    Log.Write(UnitName, "PickFail", "Vacuum Fail -> Skip Probe/Unloader sequence");
+                        //    // 픽 실패 시 현재 예약 슬롯을 Rejected 처리해 다음 슬롯으로 진행할 수 있게 함
+                        //    OutputStage?.MarkCurrentReservedMissing();
+                        //    // Rotary에 자재가 그대로 있다고 처리 (혹은 ReMoveMaterialToOutputDieTransfer 로직 확인 필요)
+                        //    // 여기서는 픽업 실패했으므로 Rotary 소켓에 자재가 남아야 함.
+                        //    // Rotary.ReMoveMaterialToOutputDieTransfer(); // <- 이 함수 이름이 헷갈림. "Rotary에 자재 복구" 의미라면 맞음.
 
-                            // 3. Die 정보 업데이트
-                            DieIndex.State = DieProcessState.Rejected; // Rejected로 마킹
-                            DieIndex.RejectReason = "PickFail";        // 사유 입력
+                        //    // 3. Die 정보 업데이트
+                        //    DieIndex.State = DieProcessState.Rejected; // Rejected로 마킹
+                        //    DieIndex.RejectReason = "PickFail";        // 사유 입력
 
-                            if (taskOutStageMoveToNextDIe != null)
-                            {
-                                taskOutStageMoveToNextDIe.Wait();
-                            }
+                        //    if (taskOutStageMoveToNextDIe != null)
+                        //    {
+                        //        taskOutStageMoveToNextDIe.Wait();
+                        //    }
 
-                            //여기서 Ready? 위치로 가서 제품 버려야 겠다.
-                            //제품을 가지고 있다고 착각한다. 
-                            nRet = MovePositionReady();
-                            if (nRet != 0)
-                            {
-                                SetPickUpDone();
-                                AxisOutputPickZ?.EmgStop();
-                                AxisOutputToolT?.EmgStop();
-                                PostAlarm((int)AlarmKeys.eOutputDieTransferError);
-                                Log.Write(UnitName, "[OnRunWork] MovePositionReady failed");
-                                return -1;
-                            }
+                        //    //여기서 Ready? 위치로 가서 제품 버려야 겠다.
+                        //    //제품을 가지고 있다고 착각한다. 
+                        //    nRet = MovePositionReady();
+                        //    if (nRet != 0)
+                        //    {
+                        //        SetPickUpDone();
+                        //        AxisOutputPickZ?.EmgStop();
+                        //        AxisOutputToolT?.EmgStop();
+                        //        PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+                        //        Log.Write(UnitName, "[OnRunWork] MovePositionReady failed");
+                        //        return -1;
+                        //    }
 
-                            // (4) IO 정리: Vacuum 끄고 Blow 살짝
-                            this.SetVacuum(nArmIndex, false);
-                            this.SetBlow(nArmIndex, true);
-                            Thread.Sleep(100); //Vaccum Fail시에. 
-                            this.SetBlow(nArmIndex, false);
+                        //    // (4) IO 정리: Vacuum 끄고 Blow 살짝
+                        //    this.SetVacuum(nArmIndex, false);
+                        //    this.SetBlow(nArmIndex, true);
+                        //    Thread.Sleep(100); //Vaccum Fail시에. 
+                        //    this.SetBlow(nArmIndex, false);
 
-                            //정보를 버리고 ==
-                            this.SetMaterial(null);
-                            State = ProcessState.None;
-                            _lastPickSucceeded = true;
+                        //    //정보를 버리고 ==
+                        //    this.SetMaterial(null);
+                        //    State = ProcessState.None;
+                        //    _lastPickSucceeded = true;
 
-                            Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} Process Pass(Rejected).");
-                            try
-                            {
-                                var ctx = Equipment.Instance.SummaryContext;
-                                ctx.GetCurrentSummaryOrNull()?.AddULdPickAsMiss();
+                        //    Log.Write(UnitName, "PickFail", $"Die Index={DieIndex.Index} Process Pass(Rejected).");
+                        //    try
+                        //    {
+                        //        var ctx = Equipment.Instance.SummaryContext;
+                        //        ctx.GetCurrentSummaryOrNull()?.AddULdPickAsMiss();
 
-                                AxisOutputPickZ?.EmgStop();
-                                AxisOutputToolT?.EmgStop();
-                                PostAlarm((int)AlarmKeys.eOutputDieTransferLdPickAsMissError);
-                            }
-                            catch (Exception ex)
-                            { Log.Write(ex); }
+                        //        AxisOutputPickZ?.EmgStop();
+                        //        AxisOutputToolT?.EmgStop();
+                        //        PostAlarm((int)AlarmKeys.eOutputDieTransferLdPickAsMissError);
+                        //    }
+                        //    catch (Exception ex)
+                        //    { Log.Write(ex); }
 
-                            //미리 키고 대기.
-                            this.SetVacuum(nArmIndex, true);
+                        //    //미리 키고 대기.
+                        //    this.SetVacuum(nArmIndex, true);
 
-                            SetPickUpDone();
+                        //    SetPickUpDone();
 
-                            // [핵심] return -1 (에러 정지) 대신 return 0 (정상 진행)으로 변경
-                            return 0;
-                        }
+                        //    // [핵심] return -1 (에러 정지) 대신 return 0 (정상 진행)으로 변경
+                        //    return 0;
+                        //}
                     }
                 }
                 catch (Exception ex)

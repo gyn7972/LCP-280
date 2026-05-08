@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace QMC.Common.PKGTester
 {
@@ -56,8 +57,37 @@ namespace QMC.Common.PKGTester
         public double[] Gain { get; set; } = new double[8];
         public double[] Offset { get; set; } = new double[8];
 
-        
+        // TestConditionItem 클래스 Properties 영역에 추가
+        public int KeyChNo { get; set; }
+        public int OpenCheckFlag { get; set; }
+        public int SourceRange { get; set; }
+        public int MeasureRange { get; set; }
+        public int MeasureUnit { get; set; }
 
+        public bool Optical { get; set; }
+        public int OpticDCUsed { get; set; }
+        public int NGSkip { get; set; }
+
+        public int WaveCount { get; set; }
+        public int ExposeCount { get; set; }
+        public int IvRange { get; set; }
+        public int Polarity { get; set; }
+
+        public double FullRangeMin { get; set; }
+        public double FullRangeMax { get; set; }
+        public double SecondRangeMin { get; set; }
+        public double SecondRangeMax { get; set; }
+
+        public int IntegrationTime { get; set; }
+        public string ItemName2 { get; set; }
+
+        // OpticItemRaw/Pd/R3
+        public Dictionary<string, It2MetricSpec> OpticMetrics { get; set; } = new Dictionary<string, It2MetricSpec>(StringComparer.OrdinalIgnoreCase);
+
+        // WaveItemWP/WH/WX/WY/WD/WPU/CCT/CIE/CRI/CRI9/2ndP/3ndP
+        public Dictionary<string, It2MetricSpec> WaveMetrics { get; set; } = new Dictionary<string, It2MetricSpec>(StringComparer.OrdinalIgnoreCase);
+
+        public int LegacyItemCode { get; set; }
         #endregion
 
         #region Constructor
@@ -100,6 +130,40 @@ namespace QMC.Common.PKGTester
                 Gain[i] = 1;
                 Offset[i] = 0;
             }
+
+            // TestConditionItem 클래스 Reset 메서드 수정
+            KeyChNo = 0;
+            OpenCheckFlag = 0;
+            SourceRange = 0;
+            MeasureRange = 0;
+            MeasureUnit = 0;
+
+            Optical = false;
+            OpticDCUsed = 0;
+            NGSkip = 0;
+
+            WaveCount = 0;
+            ExposeCount = 0;
+            IvRange = 0;
+            Polarity = 0;
+
+            FullRangeMin = 0;
+            FullRangeMax = 0;
+            SecondRangeMin = 0;
+            SecondRangeMax = 0;
+
+            IntegrationTime = 0;
+            ItemName2 = "";
+            
+            OpticMetrics.Clear();
+            WaveMetrics.Clear();
+
+            // PropertyView 편집 대상 기본 생성
+            GetOrCreateWaveMetric("WP", "WP");
+            GetOrCreateWaveMetric("CRI", "CRI");
+            GetOrCreateWaveMetric("CCT", "CCT");
+
+            LegacyItemCode = -1;
         }
         public /*override*/ bool Validate()
         {
@@ -229,6 +293,23 @@ namespace QMC.Common.PKGTester
                         pc.Add("Measure");
                         pc.Add("Measure Low", GetMeasureUnitFromType(), MeasureLow);
                         pc.Add("Measure High", GetMeasureUnitFromType(), MeasureHigh);
+
+                        var wp = GetOrCreateWaveMetric("WP", "WP");
+                        var cri = GetOrCreateWaveMetric("CRI", "CRI");
+                        var cct = GetOrCreateWaveMetric("CCT", "CCT");
+
+                        pc.Add("Wave Metrics");
+                        pc.Add("WP Use", "", wp.Use);
+                        pc.Add("WP Low", "", wp.LowLevel);
+                        pc.Add("WP High", "", wp.HighLevel);
+
+                        pc.Add("CRI Use", "", cri.Use);
+                        pc.Add("CRI Low", "", cri.LowLevel);
+                        pc.Add("CRI High", "", cri.HighLevel);
+
+                        pc.Add("CCT Use", "", cct.Use);
+                        pc.Add("CCT Low", "", cct.LowLevel);
+                        pc.Add("CCT High", "", cct.HighLevel);
                     }
                     break;
                 case TestItemCategory.UserDefined:
@@ -298,8 +379,14 @@ namespace QMC.Common.PKGTester
                 return -1;
             try
             {
+                var legacyItemCode = LegacyItemCode;
+                var optical = Optical;
+
                 Name = "";
                 Reset();
+
+                LegacyItemCode = legacyItemCode;
+                Optical = optical;
 
                 Name = pc.GetValue<string>("Name");
                 Type = pc.GetValue<TestItemType>("Type");
@@ -332,6 +419,21 @@ namespace QMC.Common.PKGTester
                         {
                             MeasureLow = pc.GetValue<double>("Measure Low");
                             MeasureHigh = pc.GetValue<double>("Measure High");
+
+                            var wp = GetOrCreateWaveMetric("WP", "WP");
+                            wp.Use = pc.GetValue<bool>("WP Use");
+                            wp.LowLevel = pc.GetValue<double>("WP Low");
+                            wp.HighLevel = pc.GetValue<double>("WP High");
+
+                            var cri = GetOrCreateWaveMetric("CRI", "CRI");
+                            cri.Use = pc.GetValue<bool>("CRI Use");
+                            cri.LowLevel = pc.GetValue<double>("CRI Low");
+                            cri.HighLevel = pc.GetValue<double>("CRI High");
+
+                            var cct = GetOrCreateWaveMetric("CCT", "CCT");
+                            cct.Use = pc.GetValue<bool>("CCT Use");
+                            cct.LowLevel = pc.GetValue<double>("CCT Low");
+                            cct.HighLevel = pc.GetValue<double>("CCT High");
                         }
                         break;
                     case TestItemCategory.UserDefined:
@@ -490,6 +592,32 @@ namespace QMC.Common.PKGTester
                     return "";
             }
         }
+
+        private It2MetricSpec GetOrCreateWaveMetric(string key, string defaultName)
+        {
+            if (WaveMetrics == null)
+                WaveMetrics = new Dictionary<string, It2MetricSpec>(StringComparer.OrdinalIgnoreCase);
+
+            It2MetricSpec metric;
+            if (!WaveMetrics.TryGetValue(key, out metric) || metric == null)
+            {
+                metric = new It2MetricSpec
+                {
+                    Name = defaultName,
+                    Use = false,
+                    LowLevel = 0d,
+                    HighLevel = 0d
+                };
+                WaveMetrics[key] = metric;
+            }
+            else if (string.IsNullOrWhiteSpace(metric.Name))
+            {
+                metric.Name = defaultName;
+            }
+
+            return metric;
+        }
+
         #endregion
     }
 
@@ -502,6 +630,10 @@ namespace QMC.Common.PKGTester
 
         #region Proerties
         public IReadOnlyList<TestConditionItem> Items => items.AsReadOnly();
+
+        private Dictionary<string, string> lastIt2RawMap = null;
+        public int ContactOP { get; private set; } = 0;
+        public List<It2ContactRule> ContactRules { get; private set; } = new List<It2ContactRule>();
         #endregion
 
         #region Constructor
@@ -608,6 +740,40 @@ namespace QMC.Common.PKGTester
                 if (!System.IO.File.Exists(filePath))
                     return -1;
 
+                string ext = System.IO.Path.GetExtension(filePath);
+                if (string.Equals(ext, ".it2", StringComparison.OrdinalIgnoreCase))
+                    return LoadFromIt2(filePath);
+
+                return LoadFromJson(filePath);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        public int SaveToFile(string filePath)
+        {
+            try
+            {
+                string ext = System.IO.Path.GetExtension(filePath);
+                if (string.Equals(ext, ".it2", StringComparison.OrdinalIgnoreCase))
+                    return SaveToIt2(filePath);
+
+                return SaveToJson(filePath);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        private int LoadFromJson(string filePath)
+        {
+            try
+            {
                 var json = System.IO.File.ReadAllText(filePath, Encoding.UTF8);
                 var settings = new Newtonsoft.Json.JsonSerializerSettings();
                 settings.Converters.Add(new StringEnumConverter());
@@ -617,6 +783,7 @@ namespace QMC.Common.PKGTester
 
                 items.Clear();
                 items.AddRange(data.Items);
+                lastIt2RawMap = null;
                 return 0;
             }
             catch (Exception ex)
@@ -625,7 +792,8 @@ namespace QMC.Common.PKGTester
                 return -1;
             }
         }
-        public int SaveToFile(string filePath)
+
+        private int SaveToJson(string filePath)
         {
             try
             {
@@ -645,6 +813,395 @@ namespace QMC.Common.PKGTester
                 Log.Write(ex);
                 return -1;
             }
+        }
+
+        private int LoadFromIt2(string filePath)
+        {
+            try
+            {
+                var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var lines = System.IO.File.ReadAllLines(filePath, Encoding.Default);
+
+                foreach (var raw in lines)
+                {
+                    if (string.IsNullOrWhiteSpace(raw))
+                        continue;
+                    if (raw.StartsWith("["))
+                        continue;
+
+                    int eqIndex = raw.IndexOf('=');
+                    if (eqIndex <= 0)
+                        continue;
+
+                    string key = raw.Substring(0, eqIndex).Trim();
+                    string value = raw.Substring(eqIndex + 1);
+                    map[key] = value;
+                }
+
+                int itemCount = ParseInt(GetValue(map, "ItemCount"), -1);
+                if (itemCount <= 0)
+                    return -1;
+
+                var loaded = new List<TestConditionItem>();
+                for (int i = 0; i < itemCount; i++)
+                {
+                    string name = GetIndexedValue(map, "ItemName", i);
+                    if (string.IsNullOrWhiteSpace(name))
+                        name = "Item" + (i + 1).ToString(CultureInfo.InvariantCulture);
+
+                    var item = new TestConditionItem(name.Trim());
+
+                    // LoadFromIt2() item 루프에서 type/optical 세팅 순서 보강(가독성/안전성)
+                    string legacyType = GetIndexedValue(map, "Item", i);
+                    string opticalFlag = GetIndexedValue(map, "Optical", i);
+
+                    item.LegacyItemCode = ParseInt(legacyType, -1);
+                    item.Optical = ParseBool01(opticalFlag, false);
+                    item.Type = ParseLegacyType(legacyType, item.Name, opticalFlag);
+
+                    item.SourceValue = ParseDouble(GetIndexedValue(map, "SourceValue", i), 0d);
+                    item.SourceTime = ParseDouble(GetIndexedValue(map, "SreDelay", i), 0d);
+                    item.WaitTime = ParseDouble(GetIndexedValue(map, "WaitTime", i), 0d);
+                    item.OffTime = ParseDouble(GetIndexedValue(map, "OffTime", i), 0d);
+
+                    item.MeasureTime = ParseDouble(GetIndexedValue(map, "NplcTime", i), 0d);
+                    item.MeasureLow = ParseDouble(GetIndexedValue(map, "MeasureLow", i), 0d);
+                    item.MeasureHigh = ParseDouble(GetIndexedValue(map, "MeasureHigh", i), 0d);
+                    item.MeasureLimit = ParseDouble(GetIndexedValue(map, "MeasureLimit", i), 0d);
+
+                    item.Unit = (GetIndexedValue(map, "StrSourceUnit", i) ?? string.Empty).Trim();
+
+                    // LoadFromIt2() 의 item 루프 내부 loaded.Add(item); 직전에 추가
+                    item.KeyChNo = ParseInt(GetIndexedValue(map, "KeyChNo", i), 0);
+                    item.OpenCheckFlag = ParseInt(GetIndexedValue(map, "OpenCheckFlag", i), 0);
+                    item.SourceRange = ParseInt(GetIndexedValue(map, "SourceRange", i), 0);
+                    item.MeasureRange = ParseInt(GetIndexedValue(map, "MeasureRange", i), 0);
+                    item.MeasureUnit = ParseInt(GetIndexedValue(map, "MeasureUnit", i), 0);
+
+                    item.ItemName2 = (GetIndexedValue(map, "ItemName2", i) ?? string.Empty).TrimEnd();
+                    item.Optical = ParseBool01(GetIndexedValue(map, "Optical", i), false);
+                    item.OpticDCUsed = ParseInt(GetIndexedValue(map, "OpticDCUsed", i), 0);
+                    item.NGSkip = ParseInt(GetIndexedValue(map, "NGSkip", i), 0);
+
+                    item.WaveCount = ParseInt(GetIndexedValue(map, "WaveCount", i), 0);
+                    item.ExposeCount = ParseInt(GetIndexedValue(map, "ExposeCount", i), 0);
+                    item.IvRange = ParseInt(GetIndexedValue(map, "IvRange", i), 0);
+                    item.Polarity = ParseInt(GetIndexedValue(map, "Polarity", i), 0);
+
+                    item.FullRangeMin = ParseDouble(GetIndexedValue(map, "Full RangeMin", i), 0d);
+                    item.FullRangeMax = ParseDouble(GetIndexedValue(map, "Full RangeMax", i), 0d);
+                    item.SecondRangeMin = ParseDouble(GetIndexedValue(map, "2nd RangeMin", i), 0d);
+                    item.SecondRangeMax = ParseDouble(GetIndexedValue(map, "2nd RangeMax", i), 0d);
+
+                    item.IntegrationTime = ParseInt(GetIndexedValue(map, "IntegrationTime", i), 0);
+
+                    ReadMetric(item.OpticMetrics, "Raw", map, "OpticItemRaw", i);
+                    ReadMetric(item.OpticMetrics, "Pd", map, "OpticItemPd", i);
+                    ReadMetric(item.OpticMetrics, "R3", map, "OpticItemR3", i);
+
+                    ReadMetric(item.WaveMetrics, "WP", map, "WaveItemWP", i);
+                    ReadMetric(item.WaveMetrics, "WH", map, "WaveItemWH", i);
+                    ReadMetric(item.WaveMetrics, "WX", map, "WaveItemWX", i);
+                    ReadMetric(item.WaveMetrics, "WY", map, "WaveItemWY", i);
+                    ReadMetric(item.WaveMetrics, "WD", map, "WaveItemWD", i);
+                    ReadMetric(item.WaveMetrics, "WPU", map, "WaveItemWPU", i);
+                    ReadMetric(item.WaveMetrics, "CCT", map, "WaveItemCCT", i);
+                    ReadMetric(item.WaveMetrics, "CIE", map, "WaveItemCIE", i);
+                    ReadMetric(item.WaveMetrics, "CRI", map, "WaveItemCRI", i);
+                    ReadMetric(item.WaveMetrics, "CRI9", map, "WaveItemCRI9", i);
+                    ReadMetric(item.WaveMetrics, "2ndP", map, "WaveItem2ndP", i);
+                    ReadMetric(item.WaveMetrics, "3ndP", map, "WaveItem3ndP", i);
+
+                    loaded.Add(item);
+                }
+
+                items.Clear();
+                items.AddRange(loaded);
+                lastIt2RawMap = map;
+
+                // LoadFromIt2() 마지막 items 갱신 직전/직후에 추가
+                ContactOP = ParseInt(GetValue(map, "ContactOP"), 0);
+                ContactRules.Clear();
+
+                int totalCount = ParseInt(GetValue(map, "TotalCount"), items.Count);
+                if (totalCount < 0) totalCount = 0;
+
+                for (int i = 0; i < totalCount; i++)
+                {
+                    var c = new It2ContactRule
+                    {
+                        Use = ParseBoolTextOr01(GetIndexedValue(map, "ContactUse", i), false),
+                        FailOnSkip = ParseBoolTextOr01(GetIndexedValue(map, "FailOnSkip", i), false),
+                        Low = ParseDouble(GetIndexedValue(map, "ContactLow", i), 0d),
+                        High = ParseDouble(GetIndexedValue(map, "ContactHigh", i), 0d),
+                        Op1 = ParseInt(GetIndexedValue(map, "ContactOp1", i), 0),
+                        Op2 = ParseInt(GetIndexedValue(map, "ContactOp2", i), 0),
+                        Ok = ParseBoolTextOr01(GetIndexedValue(map, "ContactOK", i), false)
+                    };
+                    ContactRules.Add(c);
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        private int SaveToIt2(string filePath)
+        {
+            try
+            {
+                var map = lastIt2RawMap != null
+                    ? new Dictionary<string, string>(lastIt2RawMap, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                map["ItemCount"] = items.Count.ToString(CultureInfo.InvariantCulture);
+                if (!map.ContainsKey("TotalCount"))
+                    map["TotalCount"] = (items.Count + 1).ToString(CultureInfo.InvariantCulture);
+                if (!map.ContainsKey("OpticStart"))
+                    map["OpticStart"] = items.Count.ToString(CultureInfo.InvariantCulture);
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    map["Item[" + i + "]"] = ToLegacyTypeCode(item).ToString(CultureInfo.InvariantCulture);
+                    map["ItemName[" + i + "]"] = item.Name ?? string.Empty;
+                    map["SourceValue[" + i + "]"] = item.SourceValue.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["SreDelay[" + i + "]"] = item.SourceTime.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["WaitTime[" + i + "]"] = item.WaitTime.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["OffTime[" + i + "]"] = item.OffTime.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["NplcTime[" + i + "]"] = item.MeasureTime.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["MeasureLow[" + i + "]"] = item.MeasureLow.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["MeasureHigh[" + i + "]"] = item.MeasureHigh.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["MeasureLimit[" + i + "]"] = item.MeasureLimit.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["StrSourceUnit[" + i + "]"] = string.IsNullOrWhiteSpace(item.Unit) ? string.Empty : item.Unit;
+                    map["Optical[" + i + "]"] = item.GetTestItemCategory() == TestItemCategory.Optical ? "1" : "0";
+
+                    // SaveToIt2() item loop 내부에 추가
+                    map["ItemName2[" + i + "]"] = item.ItemName2 ?? string.Empty;
+
+                    map["KeyChNo[" + i + "]"] = item.KeyChNo.ToString(CultureInfo.InvariantCulture);
+                    map["OpenCheckFlag[" + i + "]"] = item.OpenCheckFlag.ToString(CultureInfo.InvariantCulture);
+                    map["SourceRange[" + i + "]"] = item.SourceRange.ToString(CultureInfo.InvariantCulture);
+                    map["MeasureRange[" + i + "]"] = item.MeasureRange.ToString(CultureInfo.InvariantCulture);
+                    map["MeasureUnit[" + i + "]"] = item.MeasureUnit.ToString(CultureInfo.InvariantCulture);
+
+                    map["OpticDCUsed[" + i + "]"] = item.OpticDCUsed.ToString(CultureInfo.InvariantCulture);
+                    map["NGSkip[" + i + "]"] = item.NGSkip.ToString(CultureInfo.InvariantCulture);
+
+                    map["WaveCount[" + i + "]"] = item.WaveCount.ToString(CultureInfo.InvariantCulture);
+                    map["ExposeCount[" + i + "]"] = item.ExposeCount.ToString(CultureInfo.InvariantCulture);
+                    map["IvRange[" + i + "]"] = item.IvRange.ToString(CultureInfo.InvariantCulture);
+                    map["Polarity[" + i + "]"] = item.Polarity.ToString(CultureInfo.InvariantCulture);
+
+                    map["Full RangeMin[" + i + "]"] = item.FullRangeMin.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["Full RangeMax[" + i + "]"] = item.FullRangeMax.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["2nd RangeMin[" + i + "]"] = item.SecondRangeMin.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+                    map["2nd RangeMax[" + i + "]"] = item.SecondRangeMax.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+
+                    map["IntegrationTime[" + i + "]"] = item.IntegrationTime.ToString(CultureInfo.InvariantCulture);
+
+                    WriteMetric(item.OpticMetrics, "Raw", map, "OpticItemRaw", i);
+                    WriteMetric(item.OpticMetrics, "Pd", map, "OpticItemPd", i);
+                    WriteMetric(item.OpticMetrics, "R3", map, "OpticItemR3", i);
+
+                    WriteMetric(item.WaveMetrics, "WP", map, "WaveItemWP", i);
+                    WriteMetric(item.WaveMetrics, "WH", map, "WaveItemWH", i);
+                    WriteMetric(item.WaveMetrics, "WX", map, "WaveItemWX", i);
+                    WriteMetric(item.WaveMetrics, "WY", map, "WaveItemWY", i);
+                    WriteMetric(item.WaveMetrics, "WD", map, "WaveItemWD", i);
+                    WriteMetric(item.WaveMetrics, "WPU", map, "WaveItemWPU", i);
+                    WriteMetric(item.WaveMetrics, "CCT", map, "WaveItemCCT", i);
+                    WriteMetric(item.WaveMetrics, "CIE", map, "WaveItemCIE", i);
+                    WriteMetric(item.WaveMetrics, "CRI", map, "WaveItemCRI", i);
+                    WriteMetric(item.WaveMetrics, "CRI9", map, "WaveItemCRI9", i);
+                    WriteMetric(item.WaveMetrics, "2ndP", map, "WaveItem2ndP", i);
+                    WriteMetric(item.WaveMetrics, "3ndP", map, "WaveItem3ndP", i);
+                }
+
+                // SaveToIt2() item loop 이후에 추가 (Contact 저장)
+                map["ContactOP"] = ContactOP.ToString(CultureInfo.InvariantCulture);
+
+                int contactCount = ContactRules != null ? ContactRules.Count : 0;
+                if (contactCount == 0)
+                {
+                    int totalCount = ParseInt(GetValue(map, "TotalCount"), items.Count);
+                    contactCount = totalCount > 0 ? totalCount : items.Count;
+                }
+                map["TotalCount"] = contactCount.ToString(CultureInfo.InvariantCulture);
+
+                for (int i = 0; i < contactCount; i++)
+                {
+                    It2ContactRule c = (ContactRules != null && i < ContactRules.Count) ? ContactRules[i] : new It2ContactRule();
+
+                    map["ContactUse[" + i + "]"] = c.Use ? "true" : "false";
+                    map["FailOnSkip[" + i + "]"] = c.FailOnSkip ? "true" : "false";
+                    map["ContactLow[" + i + "]"] = c.Low.ToString("0.000000", CultureInfo.InvariantCulture);
+                    map["ContactHigh[" + i + "]"] = c.High.ToString("0.000000", CultureInfo.InvariantCulture);
+                    map["ContactOp1[" + i + "]"] = c.Op1.ToString(CultureInfo.InvariantCulture);
+                    map["ContactOp2[" + i + "]"] = c.Op2.ToString(CultureInfo.InvariantCulture);
+                    map["ContactOK[" + i + "]"] = c.Ok ? "true" : "false";
+                }
+
+                var sb = new StringBuilder();
+                sb.AppendLine("[TESTER_DATA]");
+                foreach (var kv in map.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    sb.Append(kv.Key).Append('=').AppendLine(kv.Value ?? string.Empty);
+                }
+
+                System.IO.File.WriteAllText(filePath, sb.ToString(), Encoding.Default);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        // TestConditionSet 클래스 helper 메서드로 추가
+        private static void ReadMetric(Dictionary<string, It2MetricSpec> target, string key, Dictionary<string, string> map, string prefix, int index)
+        {
+            if (target == null)
+                return;
+
+            var metric = new It2MetricSpec
+            {
+                LowLevel = ParseDouble(GetIndexedValue(map, prefix + "Level", index), 0d),
+                HighLevel = ParseDouble(GetIndexedValue(map, prefix + "HighLevel", index), 0d),
+                Name = (GetIndexedValue(map, prefix + "Name", index) ?? string.Empty).TrimEnd(),
+                Use = ParseBool01(GetIndexedValue(map, prefix + "Use", index), false)
+            };
+
+            target[key] = metric;
+        }
+
+        private static void WriteMetric(Dictionary<string, It2MetricSpec> source, string key, Dictionary<string, string> map, string prefix, int index)
+        {
+            if (source == null)
+                return;
+
+            It2MetricSpec metric;
+            if (!source.TryGetValue(key, out metric) || metric == null)
+                return;
+
+            map[prefix + "Level[" + index + "]"] = metric.LowLevel.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+            map[prefix + "HighLevel[" + index + "]"] = metric.HighLevel.ToString("0.000000E+000", CultureInfo.InvariantCulture);
+            map[prefix + "Name[" + index + "]"] = metric.Name ?? string.Empty;
+            map[prefix + "Use[" + index + "]"] = metric.Use ? "1" : "0";
+        }
+
+        private static bool ParseBool01(string text, bool defaultValue)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return defaultValue;
+
+            text = text.Trim();
+            if (text == "1")
+                return true;
+            if (text == "0")
+                return false;
+
+            bool b;
+            if (bool.TryParse(text, out b))
+                return b;
+
+            int i;
+            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out i))
+                return i != 0;
+
+            return defaultValue;
+        }
+
+        private static bool ParseBoolTextOr01(string text, bool defaultValue)
+        {
+            return ParseBool01(text, defaultValue);
+        }
+        private static string GetValue(Dictionary<string, string> map, string key)
+        {
+            string value;
+            return map.TryGetValue(key, out value) ? value : null;
+        }
+
+        private static string GetIndexedValue(Dictionary<string, string> map, string key, int index)
+        {
+            return GetValue(map, key + "[" + index + "]");
+        }
+
+        private static int ParseInt(string text, int defaultValue)
+        {
+            int value;
+            return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)
+                ? value
+                : defaultValue;
+        }
+
+        private static double ParseDouble(string text, double defaultValue)
+        {
+            double value;
+            return double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out value)
+                ? value
+                : defaultValue;
+        }
+
+        // TestConditionSet 클래스 내부 기존 ParseLegacyType 메서드 교체
+        private static TestItemType ParseLegacyType(string legacyCode, string itemName, string opticalFlag)
+        {
+            // 1) Optical 플래그가 켜져 있으면 우선 Optical 타입으로 해석
+            if (ParseBool01(opticalFlag, false))
+                return TestItemType.WP; // Optical category 확보용 기본 타입
+
+            // 2) 그 외는 이름 기반 해석
+            string name = (itemName ?? string.Empty).Trim().ToUpperInvariant();
+
+            if (name.StartsWith("VF")) return TestItemType.VF;
+            if (name.StartsWith("VR")) return TestItemType.VR;
+            if (name.StartsWith("IF")) return TestItemType.IF;
+            if (name.StartsWith("IR")) return TestItemType.IR;
+            if (name.StartsWith("KELFS")) return TestItemType.KELFS;
+            if (name.StartsWith("KELDG")) return TestItemType.KELDG;
+            if (name.StartsWith("WP")) return TestItemType.WP;
+            if (name.StartsWith("FWHM")) return TestItemType.FWHM;
+            if (name.StartsWith("CCT")) return TestItemType.CCT;
+            if (name.StartsWith("CRI")) return TestItemType.CRI;
+
+            // 3) 코드 기반 해석
+            int code;
+            if (int.TryParse(legacyCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out code))
+            {
+                switch (code)
+                {
+                    case 0: return TestItemType.VF;
+                    case 1: return TestItemType.VR;
+                    case 2: return TestItemType.IF;
+                    case 3: return TestItemType.IR;
+                    case 4: return TestItemType.WP; // legacy optical
+                    default: break;
+                }
+            }
+
+            return TestItemType.None;
+        }
+
+        private static int ToLegacyTypeCode(TestConditionItem item)
+        {
+            switch (item.Type)
+            {
+                case TestItemType.VF: return 0;
+                case TestItemType.VR: return 1;
+                case TestItemType.IF: return 2;
+                case TestItemType.IR: return 3;
+            }
+
+            // 매핑 불가 타입은 원본 legacy 코드 보존
+            if (item != null && item.LegacyItemCode >= 0)
+                return item.LegacyItemCode;
+
+            return 4;
         }
         #endregion
 
@@ -742,5 +1299,32 @@ namespace QMC.Common.PKGTester
             return true;
         }
         #endregion
+    }
+
+    public class It2MetricSpec
+    {
+        public string Name { get; set; }
+        public bool Use { get; set; }
+        public double LowLevel { get; set; }
+        public double HighLevel { get; set; }
+
+        public It2MetricSpec()
+        {
+            Name = string.Empty;
+            Use = false;
+            LowLevel = 0d;
+            HighLevel = 0d;
+        }
+    }
+
+    public class It2ContactRule
+    {
+        public bool Use { get; set; }
+        public bool FailOnSkip { get; set; }
+        public double Low { get; set; }
+        public double High { get; set; }
+        public int Op1 { get; set; }
+        public int Op2 { get; set; }
+        public bool Ok { get; set; }
     }
 }

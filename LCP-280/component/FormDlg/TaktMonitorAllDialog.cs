@@ -38,15 +38,27 @@ namespace QMC.LCP_280.Process.Component.FormDlg
                 new List<string>
                 {
                     "One Cycle",
-                    "Wafer Pick Die",
+                    "PickUp_Wait",
+                    "SetVacuum_On",
+                    "PositionToolTPickup",
                     "PrepareNextDie",
+                    "Wafer Pick Die",
                     "RaiseEjectorForPick",
                     "PickDownDie",
                     "SyncPickUpDie",
                     "SyncPickDieRetreat",
+                    "AfterPick_EjectorVacuumOff",
+                    "AfterPick_VacuumCheck_Commit",
+                    "AfterPick_VacuumFail_Recover",
                     "PlaceDie_ToolT",
+                    "DiePlace_Wait",
+                    "DiePlace_NextDie_Req",
+                    "StartPrepareNextDieTask",
+                    "DiePlace_Vacuum_Check",
+                    "WaitPrepareNextDieTask_Miss",
                     "PlaceDownDie",
-                    "PlaceUp"
+                    "PlaceUp",
+                    "PlaceUp_AfterProcess"
                 }
             },
 

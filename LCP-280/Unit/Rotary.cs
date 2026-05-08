@@ -792,7 +792,9 @@ namespace QMC.LCP_280.Process.Unit
         private int _pendingStepDir = 0;          // -1 / +1
         private double GetAxisDeg()
         {
-            if (AxisIndexT == null) return 0.0;
+            if (AxisIndexT == null) 
+                return 0.0;
+
             double p = AxisIndexT.GetPosition();
             return Config.IsSimulation ? p : (p * 1000.0);
         }
@@ -867,83 +869,27 @@ namespace QMC.LCP_280.Process.Unit
 
             SetPendingMoveTarget(targetDeg, stepDir);
             _moveStartTime = DateTime.Now;
-
-            //Thread.Sleep(100); //100->50
-            //var swStart = Stopwatch.StartNew();
-            //while (this.AxisIndexT.IsMoveDone() && swStart.ElapsedMilliseconds < 50)
-            //{
-            //    Thread.Sleep(1);
-            //}
-            //Thread.Sleep(50); //100->50
-            //_moveStartTime = DateTime.Now;
-            // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
-            //Task.Run(() =>
-            //{
-            //    //Thread.Sleep(70); //100->50->70
-            //    // Done + InPosition 동시 확인(가능하면 목표각 기반, 실패 시 기존 방식 fallback)
-            //    int wrc = WaitIndexMoveDone();
-            //    if (wrc == 0)
-            //    {
-            //        try
-            //        {
-            //            OnLoadIndexChanged(GetLoadIndexNo());
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            Log.Write("Rotary", $"LoadIndexChanged dispatch fail: {ex.Message}");
-            //        }
-            //    }
-            //    else
-            //    {
-            //        Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
-            //    }
-            //});
             return true;
         }
 
         // [수정 1] WaitIndexMoveDone: 무한 대기 방지 및 타임아웃 적용
         public int WaitIndexMoveDone(int timeoutMs = 10000, int pollMs = 2) // 기본 타임아웃 10초 설정
         {
-            int nRet = 0;
             if (AxisIndexT == null)
-            {
-                nRet = -1;
                 return -1;
-            }
 
             try
             {
-                if (pollMs < 1) pollMs = 1;
-                if (timeoutMs <= 0) timeoutMs = 10000;
+                if (pollMs < 1) 
+                    pollMs = 1;
+
+                if (timeoutMs <= 0) 
+                    timeoutMs = 15000;
 
                 var sw = Stopwatch.StartNew();
                 double tolDeg = AxisIndexT.Config?.InposTolerance ?? 0.005;
                 while (sw.ElapsedMilliseconds <= timeoutMs)
                 {
-                    // 정지 요청 우선 처리
-                    var eqState = Equipment.Instance?.EqState ?? EquipmentState.Unknown;
-                    if (eqState == EquipmentState.Starting ||
-                        eqState == EquipmentState.AutoRunning ||
-                        eqState == EquipmentState.ManualRunning)
-                    {
-                        if (IsStop)
-                        {
-                            ClearPendingMoveTarget();
-                            nRet = -1;
-                            return -1;
-                        }
-                    }
-
-                    //bool bInpos = false;
-                    //while(true)
-                    //{
-                    //    bInpos = IsIndexMoving();
-                    //    if(bInpos == false)
-                    //    {
-                    //        break;
-                    //    }
-                    //}
-                    
                     // 핵심: -1(사실상 장시간 블로킹) 금지
                     // MotionAxis.WaitMoveDone 내부에서 Done + 위치 보조 판단 수행
                     int rc = AxisIndexT.WaitMoveDone(pollMs);
@@ -970,14 +916,6 @@ namespace QMC.LCP_280.Process.Unit
                             return 0;
                         }
                     }
-                    //if (rc == 0)
-                    //{
-                    //    ClearPendingMoveTarget();
-                    //    OnLoadIndexChanged(GetLoadIndexNo());
-                    //    nRet = 0;
-                    //    return 0; // 기존 호환
-                    //}
-
                     Thread.Sleep(pollMs);
                 }
 
@@ -985,7 +923,6 @@ namespace QMC.LCP_280.Process.Unit
                     $"Timeout ({timeoutMs}ms) axis={AxisIndexT?.Name}");
                 ClearPendingMoveTarget();
 
-                nRet = -1;
                 return -1;
             }
             catch (Exception ex)
@@ -1004,73 +941,134 @@ namespace QMC.LCP_280.Process.Unit
             return err;
         }
 
+        private int _indexMovingSampleCount = 0;
+        private DateTime _indexMovingFirstDetectedAt = DateTime.MinValue;
+        private int IndexMovingConfirmCount = 3;   // 연속 3회
+        private int IndexMovingConfirmMs = 15;     // 또는 15ms 이상
+
         public bool IsIndexMoving()
         {
             var ax = AxisIndexT;
-            if (ax == null) return false;
+            if (ax == null)
+                return false;
 
-            //lock이 필요한가?
+            // 기존 원신호(위치판단 제외)
+            bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+            bool moveDone = ax.IsMoveDone();
+            bool rawMoving = driverMoving || !moveDone;
             lock (_lockIndexMoving)
             {
-                // 공통 tolerance
-                double tolDeg = ax.Config?.InposTolerance ?? 0.002;
-                // 1) 목표각이 있으면 목표각 기준이 최우선 (기존 WaitIndexMoveDone과 동일 철학)
-                if (TryGetPendingMoveTarget(out double targetDeg))
+                if (!rawMoving)
                 {
-                    double cur = NormalizeAngle(GetAxisDeg());
-                    double err = GetAngularErrorDeg(cur, targetDeg);
-                    bool inTarget = (err <= tolDeg);
-                    bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-
-                    // 목표 미도달 또는 드라이버 moving이면 moving
-                    if (!inTarget || driverMoving)
-                    {
-                        return true;
-                    }
-
+                    // 정지 신호 들어오면 즉시 리셋
+                    _indexMovingSampleCount = 0;
+                    _indexMovingFirstDetectedAt = DateTime.MinValue;
                     return false;
                 }
-                else // 아래 구문 지우면 안됨... 흠.. targetDeg fail 나는 경우 있음.. 
-                {
-                    // 1) 1차: 드라이버 상태
-                    bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-                    //if (driverMoving == true)
-                    //{
-                    //    return true;
-                    //}
-                    //else
-                    {
-                        // 2) 드라이버가 moving이라도, "인덱스 위치에 충분히 근접"하면 정지로 간주(상태 지연 보정)
-                        double stepDeg = 360.0 / GetIndexCount(); // 45
-                        // 현재 각도(deg). (단위는 질문에서 맞다고 했으니 그대로 사용)
-                        double curDeg = 0;
-                        if (Config.IsSimulation)
-                        {
-                            curDeg = ax.GetPosition();// * 1000.0;
-                        }
-                        else
-                        {
-                            //확인 필요.  아래가 맞겠는데...
-                            curDeg = ax.GetPosition() * 1000.0;
-                        }
 
-                        // 0~step 구간 잔여
-                        double remain = curDeg % stepDeg;
-                        if (remain < 0)
-                            remain += stepDeg;
+                // moving 원신호가 들어온 경우: 연속성/시간 확인
+                if (_indexMovingSampleCount == 0)
+                    _indexMovingFirstDetectedAt = DateTime.Now;
 
-                        // 가장 가까운 인덱스까지의 오차 (0 근처 OR step 근처 모두 허용)
-                        double err = Math.Min(remain, stepDeg - remain);
+                _indexMovingSampleCount++;
 
-                        // err이 tolerance 이하면 "실질적으로 멈춤"으로 판단
-                        if (err >= tolDeg)
-                        {
-                            return true;
-                        }
-                    }
+                bool byCount = _indexMovingSampleCount >= IndexMovingConfirmCount;
+                bool byTime = (DateTime.Now - _indexMovingFirstDetectedAt).TotalMilliseconds >= IndexMovingConfirmMs;
 
-                    return false;
-                }
+                return byCount || byTime;
+            }
+        }
+
+        //public bool IsIndexMoving()
+        //{
+        //    var ax = AxisIndexT;
+        //    if (ax == null)
+        //        return false;
+
+        //    //실제로 Done 신호가 늦게 들어오니깐. Inposition만 확인해 보자.
+        //    //함수보니깐.. 두개 똑같음. 하나만 봐도 된다.
+        //    bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+        //    bool moveDone = ax.IsMoveDone();
+        //    return driverMoving || !moveDone;
+
+        //}
+        public bool IsIndexAtStation(out string reason)
+        {
+            reason = string.Empty;
+
+            var ax = AxisIndexT;
+            if (ax == null)
+            {
+                reason = "AxisIndexT is null";
+                return false;
+            }
+
+            double tolDeg = ax.Config?.InposTolerance ?? 0.007;
+            double stepDeg = 360.0 / GetIndexCount();
+
+            double curDeg = NormalizeAngle(GetAxisDeg());
+            double remain = curDeg % stepDeg;
+            if (remain < 0)
+                remain += stepDeg;
+
+            double err = Math.Min(remain, stepDeg - remain);
+
+            if (err > tolDeg)
+            {
+                reason = $"Index position error. Cur={curDeg:F4}, Step={stepDeg:F4}, Err={err:F4}, Tol={tolDeg:F4}";
+                return false;
+            }
+
+            return true;
+        }
+        public bool IsIndexReadyForUnitAction(out string reason)
+        {
+            reason = string.Empty;
+            if (IsIndexMoving())
+            {
+                reason = $"Index moving. {GetIndexMovingDebugText()}";
+                return false;
+            }
+
+            if (IsIndexAtStation(out reason) == false)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        public string GetIndexMovingDebugText()
+        {
+            try
+            {
+                var ax = AxisIndexT;
+                if (ax == null)
+                    return "AxisIndexT=null";
+
+                bool hasTarget = TryGetPendingMoveTarget(out double targetDeg);
+                double cur = NormalizeAngle(GetAxisDeg());
+                double tol = ax.Config?.InposTolerance ?? 0.01;
+                bool driverMoving = IsAxisMoving(AxisNames.IndexT);
+                bool moveDone = ax.IsMoveDone();
+
+                double targetErr = hasTarget ? GetAngularErrorDeg(cur, targetDeg) : 0.0;
+
+                double stepDeg = 360.0 / GetIndexCount();
+                double remain = cur % stepDeg;
+                if (remain < 0)
+                    remain += stepDeg;
+
+                double stationErr = Math.Min(remain, stepDeg - remain);
+
+                return
+                    $"HasTarget={hasTarget}, " +
+                    $"Cur={cur:F4}, Target={targetDeg:F4}, TargetErr={targetErr:F4}, " +
+                    $"StationErr={stationErr:F4}, Tol={tol:F4}, " +
+                    $"DriverMoving={driverMoving}, MoveDone={moveDone}";
+            }
+            catch (Exception ex)
+            {
+                return $"GetIndexMovingDebugText Exception={ex.Message}";
             }
         }
         #endregion
@@ -1445,8 +1443,9 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRet = 0;
-                if (IsIndexMoving())
+                if (!IsIndexReadyForUnitAction(out string reason))
                 {
+                    Log.Write(UnitName, "OnRunWork", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
                 }
 
@@ -1486,8 +1485,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 인덱스 이동 중이면 대기
-                if (IsIndexMoving())
+                if (!IsIndexReadyForUnitAction(out string reason))
                 {
+                    Log.Write(UnitName, "OnRunWork", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
                 }
 
@@ -1686,11 +1686,12 @@ namespace QMC.LCP_280.Process.Unit
 
                 try
                 {
-                    if (IsIndexMoving())
+                    if (!IsIndexReadyForUnitAction(out string rotaryReadyReason))
                     {
+                        Log.Write(UnitName, "OnRunWork",
+                            $"Skip ExecuteUnitAction: {rotaryReadyReason}");
                         return 0;
                     }
-                    Log.Write(UnitName, "OnRunWork", "ExecuteUnitAction");
                     nRet = ExecuteUnitAction();
                 }
                 catch (Exception ex)
@@ -2009,310 +2010,6 @@ namespace QMC.LCP_280.Process.Unit
                 return OnExecuteUnitAction(isFine);
             });
         }
-        //병렬로 동시에 시작되게 바꿔야 겠다. 
-        //순차적으로 돌리면서 느리다. 
-        //protected int OnExecuteUnitAction(bool isFine = false)
-        //{
-        //    bool pickupStartSet = false;
-        //    try
-        //    {
-        //        Log.Write(UnitName, "OnExecuteUnitAction", "Start");
-        //        // ====== 병렬로 동시에 시작 ======
-        //        var tLoadAlign = (IndexLoadAligner != null)
-        //            ? Task.Run(() =>
-        //            {
-        //                try
-        //                {
-        //                    TaktStart("M-Align");
-        //                    var th = Thread.CurrentThread;
-        //                    if (th.Name == null) th.Name = "RunAlignSocketOnce(LoadAligner)";
-        //                    try { return IndexLoadAligner.RunAlignSocketOnce(); }
-        //                    catch (Exception ex) { Log.Write(ex); return -1; }
-        //                }
-        //                finally
-        //                {
-        //                    TaktEnd("M-Align");
-        //                }
-        //            })
-        //            : Task.FromResult(0);
-
-        //        var tProbe = (IndexChipProbeController != null)
-        //            ? Task.Run(() =>
-        //            {
-        //                try
-        //                {
-        //                    TaktStart("Plobe Inspection");
-        //                    var th = Thread.CurrentThread;
-        //                    if (th.Name == null) th.Name = "RunInspection(ProbeController)";
-        //                    try { return IndexChipProbeController.RunInspection(); }
-        //                    catch (Exception ex) { Log.Write(ex); return -1; }
-        //                }
-        //                finally
-        //                {
-        //                    TaktEnd("Plobe Inspection");
-        //                }
-        //            })
-        //            : Task.FromResult(0);
-
-        //        var tUnloadAlign = (IndexUnloadAligner != null)
-        //            ? Task.Run(() =>
-        //            {
-        //                try
-        //                {
-        //                    TaktStart("UnloadAlign");
-        //                    var th = Thread.CurrentThread;
-        //                    if (th.Name == null) th.Name = "RunAlignSocketOnce(UnloadAligner)";
-        //                    try { return IndexUnloadAligner.RunAlignSocketOnce(); }
-        //                    catch (Exception ex) { Log.Write(ex); return -1; }
-        //                }
-        //                finally
-        //                {
-        //                    TaktEnd("UnloadAlign");
-        //                }
-        //            })
-        //            : Task.FromResult(0);
-
-        //        var tTrash = Task.Run(() =>
-        //        {
-        //            try
-        //            {
-        //                TaktStart("TrashCan");
-        //                var th = Thread.CurrentThread;
-        //                if (th.Name == null) th.Name = "RunTrashCanSocketOnce(Rotary)";
-        //                try { return RunTrashCanSocketOnce(); }
-        //                catch (Exception ex) { Log.Write(ex); return -1; }
-        //            }
-        //            finally
-        //            {
-        //                TaktEnd("TrashCan");
-        //            }
-        //        });
-
-        //        // ====== OutputDieTransfer (언로더 완료 후 처리) ======
-        //        var odtTask = Task.Run(() =>
-        //        {
-        //            try
-        //            {
-        //                TaktStart("Pick Die");
-
-        //                // 언로더가 완료된 후 진행
-        //                if (tUnloadAlign.IsCompleted == false)
-        //                {
-        //                    if (tUnloadAlign.Wait(30000) == false) // 30초 등 안전 타임아웃 설정 권장
-        //                    {
-        //                        Log.Write(UnitName, "OnExecuteUnitAction", "IndexUnloadAligner Wait Timeout");
-        //                        return -1;
-        //                    }
-        //                }
-
-        //                int rUnload1 = tUnloadAlign.Result;
-        //                if (rUnload1 != 0)
-        //                {
-        //                    Log.Write(UnitName, "OnExecuteUnitAction", "IndexUnloadAligner Failed before ODT pick");
-        //                    return -1;
-        //                }
-
-        //                if (OutputDieTransfer == null)
-        //                    return 0;
-
-        //                // Unloader 위치에 Die 존재하는지 확인
-        //                MaterialDie unloadDie = null;
-        //                try
-        //                {
-        //                    unloadDie = GetUnloadSocketMaterial();
-        //                }
-        //                catch (Exception ex)
-        //                {
-        //                    Log.Write(ex);
-        //                }
-
-        //                bool hasDie = unloadDie != null
-        //                              && unloadDie.Presence == Material.MaterialPresence.Exist;
-        //                if (!hasDie)
-        //                {
-        //                    return 0;
-        //                }
-
-        //                // 3. [수정] 핸드쉐이크 시작 전, Done 이벤트를 미리 리셋하여 이전 신호 제거
-        //                //OutputDieTransfer.ResetPickUpHandshake(); // done/request 모두 초기화
-        //                OutputDieTransfer.RequestPickUp();        // 요청 ON
-        //                pickupStartSet = true;
-
-        //                var sw = System.Diagnostics.Stopwatch.StartNew();
-        //                double timeoutMs = 10000;
-        //                bool done = false;
-        //                while (sw.ElapsedMilliseconds < timeoutMs)
-        //                {
-        //                    if (IsStop)
-        //                    {
-        //                        pickupStartSet = false;
-        //                        return 0;
-        //                    }
-
-        //                    // 50ms 동안 대기. 신호 오면 true 반환하고 즉시 탈출.
-        //                    // 신호 안 오면 false 반환하고 루프 다시 돔 (IsStop 체크)
-        //                    //if (OutputDieTransfer.WaitPickupDoneEvent(10))
-        //                    if (OutputDieTransfer.IsPickUpDone) //디버깅때는 10ms, 실제로는 50ms 정도가 적당할 듯 (너무 짧으면 CPU 점유율 상승, 너무 길면 응답성 저하)
-        //                    {
-        //                        done = true;
-        //                        break;
-        //                    }
-        //                }
-
-        //                if (!done)
-        //                {
-        //                    //AxisIndexT.EmgStop();
-        //                    PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
-        //                    Log.Write(UnitName, "OutputDieTransfer Timeout");
-        //                    return -1;
-        //                }
-
-        //                // 픽 성공 여부 확인
-        //                if (OutputDieTransfer.LastPickSucceeded)
-        //                {
-        //                    try
-        //                    {
-        //                        int idx = OutputDieTransfer.GetUnloaderIndexNo();
-        //                        if (idx >= 0 && idx < GetIndexCount())
-        //                        {
-        //                            _sockets[idx].SetMaterialDie(null);
-        //                            _sockets[idx].SetState(RotarySocketState.Empty);
-        //                            Log.Write(UnitName, string.Format("[OutputDieTransfer] Socket {0} -> Empty", idx + 1));
-        //                        }
-        //                        else
-        //                        {
-        //                            Log.Write(UnitName, string.Format("[OutputDieTransfer] Invalid Unloader Index: {0}", idx));
-        //                        }
-        //                    }
-        //                    catch (Exception ex)
-        //                    {
-        //                        Log.Write(ex);
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    Log.Write(UnitName, "[OutputDieTransfer] Pick sequence ended but failed. Socket kept.");
-        //                }
-
-        //                TaktEnd("Pick Die");
-        //                return 0;
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Log.Write(ex);
-        //                return -1;
-        //            }
-        //            finally
-        //            {
-        //                TaktEnd("Pick Die");
-        //            }
-        //        });
-
-        //        TaktStart("WaitAll");
-        //        // ====== 모든 태스크 병렬 실행 후 대기 ======
-        //        // [수정] WaitAll 대신 WhenAll 사용 고려 혹은 안전하게 대기
-        //        // 기존 Task.WaitAll은 예외 발생 시 바로 throw하므로 try-catch로 감싸야 함
-        //        //Task.WaitAll(new Task[] { tLoadAlign, tProbe, tUnloadAlign, tTrash, odtTask });
-        //        var all = Task.WhenAll(tLoadAlign, tProbe, tUnloadAlign, tTrash, odtTask);
-        //        const int waitAllTimeoutMs = 130000;
-        //        bool completed = all.Wait(TimeSpan.FromMilliseconds(waitAllTimeoutMs)); // 장비 택타임 기준으로 조정
-        //        if (!completed)
-        //        {
-        //            // 완료 후 Start 신호 해제 (Output 쪽에서 인식 후 꺼주길 기대하지만, 안전장치로)
-        //            OutputDieTransfer.ResetPickUpHandshake();
-        //            pickupStartSet = false;
-
-        //            PostAlarm((int)AlarmKeys.ExecuteUnitActionError);
-        //            Log.Write(UnitName, "OnExecuteUnitAction", "Task.WhenAll timeout");
-        //            return -1;
-        //        }
-
-        //        // 완료 후 Start 신호 해제 (Output 쪽에서 인식 후 꺼주길 기대하지만, 안전장치로)
-        //        OutputDieTransfer.ResetPickUpRequest();
-        //        pickupStartSet = false;
-
-        //        int rLoad = tLoadAlign.Result;
-        //        int rProbe = tProbe.Result;
-        //        int rUnload = tUnloadAlign.Result;
-        //        int rTrash = tTrash.Result;
-        //        int rOdt = odtTask.Result;
-        //        if (rLoad != 0 || rProbe != 0 || rUnload != 0 || rTrash != 0 || rOdt != 0)
-        //        {
-        //            //이거.. 그냥 정지 시키는거 위험한데.
-        //            //AxisIndexT.EmgStop();
-        //            _executeActionNgLimit = IndexLoadAligner.Config.AlarmCount;
-        //            int ngNow = 0;// IncreaseExecuteActionNgCountAndGet();
-
-        //            //Log.Write(UnitName,
-        //            //    string.Format("OnExecuteUnitAction Fail (LoadAligner={0}, Probe={1}, UnloadAligner={2}, TrashCan={3}, ODT={4})",
-        //            //        rLoad, rProbe, rUnload, rTrash, rOdt));
-
-
-        //            if (rLoad != 0)
-        //            {
-        //                ngNow = IncreaseExecuteActionNgCountAndGet();
-        //                //PostAlarm((int)AlarmKeys.IndexLoadAlignerError);
-        //            }
-        //            else
-        //                ngNow = _executeActionNgCount; // 참고용 로그
-
-        //            Log.Write(UnitName,
-        //                $"OnExecuteUnitAction Fail (LoadAligner={rLoad}, " +
-        //                $"Probe={rProbe}, UnloadAligner={rUnload}, TrashCan={rTrash}, " +
-        //                $"ODT={rOdt}) / NGCount={ngNow}/{_executeActionNgLimit}");
-
-        //            // 누적 횟수 도달 시 알람
-        //            if (ngNow >= _executeActionNgLimit)
-        //            {
-        //                PostAlarm((int)AlarmKeys.IndexLoadAlignerError); // 또는 전용 AlarmKeys 추가 권장
-        //                Log.Write(UnitName, $"[NGCOUNT] ExecuteUnitAction NG limit reached: {ngNow}/{_executeActionNgLimit}");
-
-        //                ResetExecuteActionNgCount("IndexLoadAlignerErrorRaised");
-        //            }
-
-        //            //if(rProbe != 0)
-        //            //{
-        //            //    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
-        //            //}
-
-        //            TaktEnd("WaitAll");
-        //            return -1;
-        //        }
-
-        //        ResetExecuteActionNgCount("OnExecuteUnitActionSuccess");
-
-        //        TaktEnd("WaitAll");
-        //        return 0;
-        //    }
-        //    catch (AggregateException ae) // Task.WaitAll 예외 처리
-        //    {
-        //        //AxisIndexT.EmgStop();
-        //        foreach (var e in ae.InnerExceptions)
-        //        {
-        //            Log.Write(UnitName, $"OnExecuteUnitAction Exception: {e.Message}");
-        //        }
-        //        return -1;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //AxisIndexT.EmgStop();
-        //        Log.Write(ex);
-        //        return -1;
-        //    }
-        //    finally
-        //    {
-        //        if (pickupStartSet)
-        //        {
-        //            try
-        //            {
-        //                OutputDieTransfer.ResetPickUpRequest();
-        //                Log.Write(UnitName, "OnExecuteUnitAction", "OutputDieTransfer.ResetPickUpRequest()");
-        //            }
-        //            catch (Exception ex)
-        //            { Log.Write(ex); }
-        //        }
-        //    }
-        //}
 
         public int RunMechaAlign(int nSocketIndex, bool isFine = false)
         {
@@ -2334,10 +2031,11 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (IsIndexMoving())
+                if (!IsIndexReadyForUnitAction(out string reason))
                 {
-                    Log.Write(UnitName, nameof(RunMechaAlign),
+                    Log.Write(UnitName, "RunMechaAlign",
                         $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
+                    Log.Write(UnitName, "RunMechaAlign", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
                 }
             }
@@ -2372,10 +2070,11 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (IsIndexMoving())
+                if (!IsIndexReadyForUnitAction(out string reason))
                 {
-                    Log.Write(UnitName, nameof(RunProbeInspection),
+                    Log.Write(UnitName, "RunProbeInspection",
                         $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
+                    Log.Write(UnitName, "RunProbeInspection", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
                 }
             }
@@ -2518,7 +2217,7 @@ namespace QMC.LCP_280.Process.Unit
                         Interlocked.Exchange(ref pickupStartFlag, 1);
 
                         var sw = Stopwatch.StartNew();
-                        const int timeoutMs = 10000;
+                        const int timeoutMs = 60000;
 
                         while (sw.ElapsedMilliseconds < timeoutMs)
                         {
@@ -2925,16 +2624,12 @@ namespace QMC.LCP_280.Process.Unit
         public int Rotate(bool isFine = false)
         {
             int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = Rotate;
-            }
+
 
             TaktStart("MoveRotate");
             nRet = MovePositionRotate();
             if (nRet != 0)
             {
-                //AxisIndexT.EmgStop();
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
@@ -2945,14 +2640,47 @@ namespace QMC.LCP_280.Process.Unit
             nRet = WaitIndexMoveDone();
             if (nRet != 0)
             {
-                //AxisIndexT.EmgStop();
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
+            if (WaitIndexReadyStable(300, 30, out string reason) == false)
+            {
+                Log.Write(UnitName, nameof(Rotate), $"Index not stable after rotate. {reason}");
+                PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+                return -1;
+            }
             TaktEnd("WaitDoneRotate");
+            return 0;
+        }
+        public bool WaitIndexReadyStable(int timeoutMs, int stableMs, out string reason)
+        {
+            reason = string.Empty;
 
-            return nRet;
+            var sw = Stopwatch.StartNew();
+            var stable = Stopwatch.StartNew();
+            stable.Reset();
+
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (IsIndexReadyForUnitAction(out reason))
+                {
+                    if (!stable.IsRunning)
+                        stable.Restart();
+
+                    if (stable.ElapsedMilliseconds >= stableMs)
+                        return true;
+                }
+                else
+                {
+                    stable.Reset();
+                }
+
+                Thread.Sleep(2);
+            }
+
+            reason = $"Timeout. Last={GetIndexMovingDebugText()}";
+            return false;
         }
 
         //단위 동작.
@@ -3048,24 +2776,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    // 취소 요청 감지: 예외 대신 정상 종료 코드 반환
-                    //this.CalcelToken?.Token.ThrowIfCancellationRequested();
-                    //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
-                    //if(IsStop)
-                    //{
-                    //    SetTrashVacuum(false);
-                    //    SetTrashEjector(false);
-                    //    SetBlow(CrashCanIdx, false);
-                    //    Log.Write(UnitName, "[InitializeAfterHome] Canceled");
-                    //    return 0;
-                    //}
-                    //이거하면 Manual에 아에 동작을 안하는데...
-                    //이거 진짜 고민 필요하다..
-                    //if (IsStop) { /* IO 복구/정리 */ return 0; }
-
-
                     int CrashCanIdx = GetTrashCanIndexNo();
-
                     SetVacuum(CrashCanIdx, false);
                     Thread.Sleep(1);
                     SetBlow(CrashCanIdx, true);
@@ -3073,22 +2784,13 @@ namespace QMC.LCP_280.Process.Unit
                     WaitByTime(GetClearTimeMs()); // 기본: 500ms
 
                     // 2) 다음 인덱스로 한 칸 이동 (전체 소켓 수 만큼 반복 → 원위치 복귀)
-                    nRet = MovePositionRotate();
+                    nRet = Rotate(isFine);
                     if (nRet != 0)
                     {
-                        Log.Write(UnitName, $"[InitializeAfterHome] Index move start fail: {reason}");
+                        Log.Write(UnitName, $"[InitializeAfterHome] Rotate fail: {reason}");
                         PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                         return -1;
                     }
-
-                    nRet = WaitIndexMoveDone();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] Index move wait timeout");
-                        PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
-                        return -1;
-                    }
-
                     SetBlow(CrashCanIdx, false);
                     Log.Write(UnitName, $"[InitializeAfterHome] Clear Comp. {i}");
                 }
@@ -3297,19 +2999,10 @@ namespace QMC.LCP_280.Process.Unit
                 if (cur == targetIdx0)
                     return 0;
 
-                int rc = MovePositionRotate();
+                int rc = Rotate(true);
                 if (rc != 0)
                 {
-                    Log.Write(UnitName, nameof(MoveToSocket), $"MovePositionRotate failed. rc={rc}");
-                    return -1;
-                }
-
-                //Thread.Sleep(100);
-
-                rc = WaitIndexMoveDone();
-                if (rc != 0)
-                {
-                    Log.Write(UnitName, nameof(MoveToSocket), $"WaitIndexMoveDone failed. rc={rc}");
+                    Log.Write(UnitName, "MoveToSocket", $"Rotate failed. rc={rc}");
                     return -1;
                 }
 
@@ -3401,29 +3094,6 @@ namespace QMC.LCP_280.Process.Unit
         private void Socket_Changed(SocketInfo socket)
         {
             RaiseSocketChanged(socket);
-        }
-
-        public string GetIndexMovingDebugText()
-        {
-            try
-            {
-                var ax = AxisIndexT;
-                if (ax == null)
-                    return "AxisIndexT=null";
-
-                bool hasTarget = TryGetPendingMoveTarget(out double targetDeg);
-                double cur = NormalizeAngle(GetAxisDeg());
-                double err = hasTarget ? GetAngularErrorDeg(cur, targetDeg) : 0.0;
-                double tol = ax.Config?.InposTolerance ?? 0.005;
-                bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-                bool moveDone = ax.IsMoveDone();
-
-                return $"HasTarget={hasTarget}, Cur={cur:F4}, Target={targetDeg:F4}, Err={err:F4}, Tol={tol:F4}, DriverMoving={driverMoving}, MoveDone={moveDone}";
-            }
-            catch (Exception ex)
-            {
-                return $"GetIndexMovingDebugText Exception={ex.Message}";
-            }
         }
     }
 }

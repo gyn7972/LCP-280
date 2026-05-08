@@ -699,25 +699,19 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             for (int i = 0; i < steps; i++)
             {
                 ct.ThrowIfCancellationRequested();
-                // 전진 1 Step (정방향만)
-                nRet = rotary.MovePositionRotate();
+                nRet = rotary.Rotate();
                 if (nRet != 0)
                 {
-                    Log.Write("MeasurementResultForm", $"Rotary 이동 실패");
-                    return -1;
-                }
-
-                nRet = rotary.WaitIndexMoveDone();
-                if (nRet != 0)
-                {
-                    Log.Write("MeasurementResultForm", "Rotary 이동 대기 타임아웃/오류");
+                    Log.Write("MeasurementResultForm", $"Rotary 회전 실패");
                     return -1;
                 }
 
                 // (선택) 조기 종료 확인
                 int newProbeIndex = controller.GetProbeIndexNo();
                 if (newProbeIndex == targetProbeIndex)
+                {
                     break;
+                }
             }
 
             // 최종 확인

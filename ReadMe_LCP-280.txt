@@ -1752,6 +1752,9 @@ Data 검증에서 Skip 하도록 협의 되었습니다.
 ** 칩을 들때는 메뉴얼로 이동 시키고 시작하게?  FailAndStop("Index Cal Fail");
  -> 알람처리완료. Test 필요.
  
+4. 프로그램 초기화 잡고 Ready잡을때 프로바카드 X,Y Ready 위치로 이동 시킬것.
+  -> 수정완료. TEST 필요.
+  
 5. 장비 시작 시 측정기 / 카스 사용 상태 확인 후 진행 여부 판단.
   -> 아니면 그냥 알람. 돌리지 못하게.
   -> 수정완료. TEST 필요.
@@ -1771,41 +1774,124 @@ Data 검증에서 Skip 하도록 협의 되었습니다.
 
 10. 프로브 컨택 횟수 모니터링 기능 구현.
 
-4. 프로그램 초기화 잡고 Ready잡을때 프로바카드 X,Y Ready 위치로 이동 시킬것.
-  -> 수정완료. TEST 필요.
-  -> 2차 수정. Test 필요.
+ 
+Error code 285 / 420
+
+
+금일 미팅 내용 공유 드립니다. 
+현재까지 측정한 Data에 대하여 미비한 점에 대하여 보완하여 
+Data 재 측정 하기로 하였습니다.
+
+현재 측정한 Data로는 분석이 모호하다는 츠헝(부사장)의견으로 
+현장 엔지니어들이 더 세분화하여 분석할 예정입니다. 
+
+우선 저희는 반복/상관성을 확보한 Data를 서울반도체에 전달할 예정입니다.
+이상입니다.
+
+
+높이 일정하게 맞추고 마스터캘, 인덱스캘 완료 후 측정한 결과
+기존 DATA보다 더 안좋게나왔습니다. 
+(WATT - Skew NG, Corr NG ) [기존에는 Skew OK, Corr NG]
+
+클램프 +30mm 더 줘서 1차 재 측정해보았지만 결과가 똑같고
+
+의문이 들어 현재 1000개 정도의 칩이 있는 제품을 인덱스 1번만 다시 측정한 결과
+VF3(정격), WP, WATT 반복성 Data가 NG가 되어서 
+
+마스터 캘을 다시 하여 측정해볼 예정입니다.
+
+다시 테스트 후 내용 공유 드리겠습니다. 
+
 
  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 자사 장비 기준으로 Index #01 ~ #08 반복성 Data Spec In 확보 하였습니다.
+마스터 샘플 캘리브레이션 -> 인덱스#01~#08 캘리브레이션 진행 후 
+서울반도체에서 요청한 시료 측정 진행 하겠습니다.
 
+
+
+안녕하세요. QMC 구영남입니다. 현재 Data 확보가 원활하지 않은 문제에 대해 첨부와 같이 테스트를 진행하였으며, 자사 장비 기준으로 유효한 Data를 확보하였습니다. 세부 내용은 첨부 파일을 참고해 주시기 바라며, 금일 회의에서 보다 자세히 설명드릴 예정입니다. 아울러 관련 Data는 공정 엔지니어에게 별도로 전달드리겠습니다. 감사합니다.
+
+Sharing of Test Results for Data Acquisition
+
+Hello, this is Youngnam Goo from QMC.
+
+Regarding the issue of unstable data acquisition, 
+
+we conducted tests as shown in the attached file and 
+
+were able to secure valid data based on our equipment standard.
+
+Please refer to the attached file for the detailed results. 
+
+I will explain them in more detail during today’s meeting.
+
+In addition, I will separately share the related data with the process engineer.
+
+Thank you.
  
  
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
+P.S. Could you please share the meeting time?
+
+
+안녕하세요. 
+4/13(월) ~ 4/17(금)
+MSL CO2설비 최종검수 ( VarioScan 적용 )
+*이금묵과장이랑 협의 완료.
+동행자: 신가경 사원.
+
+4/20(월) ~ 5/20(수)
+서울반도체(베트남) LCP-280 셋업 완료
+동행자: 이필우부장 or 정정훈부장
+
+위 일정으로 업무 진행하고자 합니다.
+확인 부탁 드립니다. 
+
+
+
+
+1. 연구 목표 : D4848 Model 반복/상관성 측정 Data 검증. SPEC IN DATA 확보
+
+2. 가설 및 실험 방법
+ 1) Socket 흡착 상태에서 D4848 제품을 측정. ( 아래에서 4pin 컨택 후 측정.)
+ 2) Gripper로 D4848 제품을 잡은 상태에서 측정. ( 아래에서 4pin 컨택 후 측정.)
+ 3) 상부쪽에서 2개의 Pin으로 D4848 제품을 누른 상태에서 측정. ( 아래에서 4pin 컨택 후 측정.)
+
+3. 실험 
+ 1) DATA 파일
+ 2) DATA 파일
+ 3) DATA 파일
+
+4. 결과
+ 1) NG
+ 2) NG
+ 3) NG
+
+
  
  
  

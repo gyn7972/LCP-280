@@ -748,19 +748,12 @@ namespace QMC.LCP_280.Process
             if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            int nRet = Rotary.MovePositionRotate();
+            int nRet = Rotary.Rotate();
             if (nRet != 0)
             {
                 MessageBox.Show("로터리 모터 구동 실패 인터락을 확인 하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            nRet = Rotary.WaitIndexMoveDone();
-            if (nRet != 0)
-            {
-                MessageBox.Show("로터리 모터 구동 실패 인터락을 확인 하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             UpdateRotationStatus(Rotary.GetLoadIndexNo() + 1);
         }
 

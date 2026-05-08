@@ -873,26 +873,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 ct.ThrowIfCancellationRequested();
                 nRet = MoveRotaryToUnloadSocket(targetSocket, ct);
-                //int targetIdx0 = (targetSocket + 8) % 8; // 0~7
-                //for (int i = 0; i < 16; i++)
-                //{
-                //    ct.ThrowIfCancellationRequested();
-                //    int cur = OutputDieTransfer.GetUnloaderIndexNo();   //Rotary.GetLoadIndexNo();
-                //    if (cur == targetIdx0)
-                //    {
-                //        break;
-                //        //return 0;
-                //    }
-
-                //    int rc = Rotary.MovePositionRotate();
-                //    if (rc != 0)
-                //        return -1;
-
-                //    rc = Rotary.WaitIndexMoveDone();
-                //    if (rc != 0)
-                //        return -1;
-                //}
-
+                
                 MaterialDie DieIndex = Rotary.GetUnloadSocketMaterial();
                 if (DieIndex == null)
                     return -1;
