@@ -188,8 +188,16 @@ namespace QMC.Common
                 RowCount = 0,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+
+            tableLayoutPanel.ColumnStyles.Clear();
+
+            // 옵션 1) 오른쪽이 전체의 40% (왼쪽 60%)
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+
+            // 옵션 2) "오른쪽이 왼쪽보다 70~80% 더 큼"에 맞추려면 대략 36:64
+            // tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36F));
+            // tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 64F));
 
             EnableFlickerFree(this);
             EnableFlickerFree(scrollPanel);
@@ -362,12 +370,19 @@ namespace QMC.Common
                     {
                         var cb = new CheckBox
                         {
-                            Dock = DockStyle.Left,
-                            AutoSize = true,
-                            Margin = new Padding(4, (textBoxHeight - 18) / 2, 0, 0),
+                            Dock = DockStyle.Fill,
+                            AutoSize = false,
+                            Height = textBoxHeight,
+                            Margin = new Padding(0),
+                            Appearance = Appearance.Button,
+                            FlatStyle = FlatStyle.Flat,
+                            TextAlign = ContentAlignment.MiddleCenter,
+                            UseVisualStyleBackColor = false,
                             Visible = true
                         };
-                        BindCheckBoxToBool(cb, bp); editor = cb; _propTypeOrder.Add(typeof(BoolProperty));
+                        BindCheckBoxToBool(cb, bp);
+                        editor = cb;
+                        _propTypeOrder.Add(typeof(BoolProperty));
                     }
                     else if (prop is IntProperty ip)
                     { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToInt(tb, ip); editor = tb; _propTypeOrder.Add(typeof(IntProperty)); }
@@ -454,6 +469,34 @@ namespace QMC.Common
 
             if (GlobalVerboseLogging)
                 Console.WriteLine($"🔧 SetProperties 완료(FastBuild={FastBuild}): UserControl={this.Size}, Items={properties.Count}");
+        }
+
+        private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
+        {
+            cb.Checked = p.Value;
+            cb.Tag = p;
+            UpdateBoolCheckBoxVisual(cb);
+            cb.CheckedChanged += (s, e) =>
+            {
+                p.Value = cb.Checked;
+                UpdateBoolCheckBoxVisual(cb);
+            };
+        }
+        //private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
+        //{ cb.Checked = p.Value; cb.CheckedChanged += (s, e) => p.Value = cb.Checked; cb.Tag = p; }
+
+        private void UpdateBoolCheckBoxVisual(CheckBox cb)
+        {
+            if (cb == null) return;
+
+            cb.Text = cb.Checked ? "ON" : "OFF";
+            cb.ForeColor = Color.White;
+            cb.BackColor = cb.Checked
+                ? Color.FromArgb(46, 125, 50)   // ON: 녹색
+                : Color.FromArgb(97, 97, 97);   // OFF: 회색
+
+            cb.FlatAppearance.BorderSize = 1;
+            cb.FlatAppearance.BorderColor = Color.DimGray;
         }
 
         private bool TryUpdateInPlace(PropertyCollection properties)
@@ -755,8 +798,7 @@ namespace QMC.Common
         { tb.Text = p.Value.ToString(CultureInfo.InvariantCulture); tb.TextChanged += (s, e) => { if (long.TryParse(tb.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v)) p.Value = v; }; tb.Tag = p; _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)p)); }
         private void BindTextBoxToString(TextBox tb, StringProperty p)
         { tb.Text = p.Value ?? string.Empty; tb.TextChanged += (s, e) => p.Value = tb.Text ?? string.Empty; tb.Tag = p; _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)p)); }
-        private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
-        { cb.Checked = p.Value; cb.CheckedChanged += (s, e) => p.Value = cb.Checked; cb.Tag = p; }
+        
 
         private static void EnableFlickerFree(Control c)
         {
@@ -966,6 +1008,7 @@ namespace QMC.Common
                     else if (editor is CheckBox chk)
                     {
                         chk.Enabled = !ro;
+                        UpdateBoolCheckBoxVisual(chk);
                     }
                     else
                     {

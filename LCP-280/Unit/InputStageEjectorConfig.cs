@@ -99,18 +99,9 @@ namespace QMC.LCP_280.Process.Unit
         [Category("PIckUp"), DisplayName("Up Dec (mm/sec2)")]
         [DefaultValue(0.0)]
         public double dPickUpDec { get; set; } = 0.0;
-
-
-
-
-
-
-
-
         #endregion
 
         public InputStageEjectorConfig() : base("InputStageEjectorConfig") { }
-
 
         /// <summary>
         /// enum 기반 기본 Teaching Position 초기화 + Offset 기본값 구성 (축 매핑 반영)
@@ -281,6 +272,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "PIckUp", 2 }
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -291,8 +283,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 "Name",
                 "Simulation",
-                "SlotPitch (mm)",
-                "SlotCount (ea)"
+                "SeqType",
+                "Up Offset (mm)",
+                "Up Speed (mm/sec)",
+                "Up Acc (mm/sec2)",
+                "Up Dec (mm/sec2)"
             };
         #endregion
     }

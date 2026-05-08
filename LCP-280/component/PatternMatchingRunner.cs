@@ -28,6 +28,20 @@ namespace QMC.LCP_280.Process
         public enum SaveMode { None, OkOnly, NgOnly, All }
         public enum SearchMode { First, All }
 
+        // [ADD] GUI 제어용 ROI 모드
+        public enum RoiSourceMode
+        {
+            Recipe,     // 레시피 ROI 사용
+            Profile     // 모드별 ROI 사용
+        }
+
+        // [ADD] GUI 제어용 실행 프로파일
+        public enum RunnerProfileMode
+        {
+            Normal,
+            Recheck
+        }
+
         public class RunnerOptions
         {
             // Recipe / Search
@@ -37,6 +51,10 @@ namespace QMC.LCP_280.Process
             public bool RetrainAlways = false;
             public bool UseInspectRoi = true;
             public SearchMode Mode = SearchMode.First;
+
+            // [ADD]
+            public RoiSourceMode InspectRoiSourceMode = RoiSourceMode.Recipe;
+            public RunnerProfileMode ProfileMode = RunnerProfileMode.Normal;
 
             // [ADD] 대표 매치 선택 정책(기본값 유지: 기존 동작)
             public bool PreferCenterMostMatch = false;
@@ -239,6 +257,17 @@ namespace QMC.LCP_280.Process
         private readonly object _viewersLock = new object();
         private readonly HashSet<VisionImageViewer> _viewers = new HashSet<VisionImageViewer>();
         private readonly Dictionary<VisionImageViewer, ViewerDisplayOptions> _viewerOptions = new Dictionary<VisionImageViewer, ViewerDisplayOptions>();
+
+        private class ProfileRoiSetting
+        {
+            public bool Enabled;
+            public Point InspectStart;
+            public Point InspectEnd;
+        }
+
+        private RunnerProfileMode _profileMode;
+        private readonly Dictionary<RunnerProfileMode, ProfileRoiSetting> _profileRoiSettings
+            = new Dictionary<RunnerProfileMode, ProfileRoiSetting>();
         #endregion
 
         public MultiPatternMatchingParameters Parameters
@@ -277,6 +306,11 @@ namespace QMC.LCP_280.Process
             _opt = options ?? throw new ArgumentNullException(nameof(options));
             _viewer = viewer; // legacy field reference (kept for minimal change)
 
+            // PatternMatchingRunner(...) 생성자 내부, _viewer 할당 직후 추가
+            _profileMode = _opt.ProfileMode;
+            _profileRoiSettings[RunnerProfileMode.Normal] = new ProfileRoiSetting { Enabled = false };
+            _profileRoiSettings[RunnerProfileMode.Recheck] = new ProfileRoiSetting { Enabled = false };
+
             if (string.IsNullOrWhiteSpace(_opt.RecipeRootDirectory))
             {
                 _opt.RecipeRootDirectory = Path.Combine(
@@ -313,7 +347,6 @@ namespace QMC.LCP_280.Process
                 _opt.RecipeName = PatternMatchingRecipeStore.NormalizeRecipeName(_opt.RecipeName);
             }
             catch { }
-
         }
         #endregion
 
@@ -548,40 +581,6 @@ namespace QMC.LCP_280.Process
             }
         }
 
-
-
-        //private bool IsTemplateModified()
-        //{
-        //    if (_parameters?.TrainImages == null) 
-        //        return false;
-
-        //    var sb = new StringBuilder();
-        //    foreach (var vi in _parameters.TrainImages)
-        //    {
-        //        if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
-        //        try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
-        //    }
-        //    return ComputeSha1(sb.ToString()) != _lastTemplateHash;
-        //}
-        //private void UpdateTemplateHash()
-        //{
-        //    if (_parameters?.TrainImages == null) { _lastTemplateHash = string.Empty; return; }
-        //    var sb = new StringBuilder();
-        //    foreach (var vi in _parameters.TrainImages)
-        //    {
-        //        if (vi == null || vi.GetImage() == null) { sb.Append("NULL;"); continue; }
-        //        try { var img = vi.GetImage(); sb.Append(img.Width).Append('x').Append(img.Height).Append(';'); } catch { sb.Append("ERR;"); }
-        //    }
-        //    _lastTemplateHash = ComputeSha1(sb.ToString());
-        //}
-        //private string ComputeSha1(string text)
-        //{
-        //    using (var sha1 = SHA1.Create())
-        //    {
-        //        var bytes = Encoding.UTF8.GetBytes(text ?? string.Empty);
-        //        return BitConverter.ToString(sha1.ComputeHash(bytes)).Replace("-", "");
-        //    }
-        //}
         private int EnsureTemplatesTrained()
         {
             int count = 0; if (_parameters?.TrainImages == null) return 0;
@@ -1064,137 +1063,6 @@ namespace QMC.LCP_280.Process
             catch { }
         }
 
-        //private void UpdateViewerOverlays(PatternMatchingResult raw, VisionImageViewer viewerOnly = null)
-        //{
-        //    if (raw == null) return;
-        //    List<VisionImageViewer> targets;
-        //    lock (_viewersLock)
-        //    {
-        //        if (viewerOnly != null)
-        //            targets = _viewers.Contains(viewerOnly) ? new List<VisionImageViewer> { viewerOnly } : new List<VisionImageViewer>();
-        //        else
-        //            targets = _viewers.ToList();
-        //    }
-
-        //    foreach (var vw in targets)
-        //    {
-        //        try
-        //        {
-        //            vw.ResultOverlays?.Clear();
-
-        //            // 1) Tool에서 생성한 Overlay 복사
-        //            foreach (var ov in raw.ResultOverlays)
-        //            {
-        //                if (ov == null) continue;
-        //                ov.Visible = true;
-        //                vw.ResultOverlays.Add(ov);
-        //            }
-
-        //            // 2) Cross / Index 표시 (Values는 항상 절대좌표로 확정됨)
-        //            if (_lastRawResult != null && _lastRawResult.Values != null && _lastRawResult.Values.Count > 0)
-        //            {
-        //                int repIdx = (_lastReferenceIndex >= 0 && _lastReferenceIndex < _lastRawResult.Values.Count) ? _lastReferenceIndex : 0;
-        //                int crossLenBase = Math.Max(2, _opt.CrossHalfLength);
-
-        //                for (int i = 0; i < _lastRawResult.Values.Count; i++)
-        //                {
-        //                    var v = _lastRawResult.Values[i];
-        //                    double absX = v.X;
-        //                    double absY = v.Y;
-
-        //                    bool isRep = (i == repIdx);
-        //                    int len = isRep ? (int)(crossLenBase * 1.4) : crossLenBase;
-        //                    int thickness = isRep ? 2 : 1;
-        //                    Color crossColor = _opt.CrossColor;
-
-        //                    // 안해도됨. (지우지는마)
-        //                    //try
-        //                    //{
-        //                    //    var h = new LineFrameVisionImageOverlay($"PM_M{i}_H")
-        //                    //    {
-        //                    //        StartLocation = new Point((int)Math.Round(absX) - len, (int)Math.Round(absY)),
-        //                    //        EndLocation = new Point((int)Math.Round(absX) + len, (int)Math.Round(absY)),
-        //                    //        Color = crossColor,
-        //                    //        DashStyle = DashStyle.Solid,
-        //                    //        Thickness = thickness,
-        //                    //        Visible = true
-        //                    //    };
-        //                    //    vw.ResultOverlays.Add(h);
-        //                    //}
-        //                    //catch { }
-
-        //                    //try
-        //                    //{
-        //                    //    var vert = new LineFrameVisionImageOverlay($"PM_M{i}_V")
-        //                    //    {
-        //                    //        StartLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) - len),
-        //                    //        EndLocation = new Point((int)Math.Round(absX), (int)Math.Round(absY) + len),
-        //                    //        Color = crossColor,
-        //                    //        DashStyle = DashStyle.Solid,
-        //                    //        Thickness = thickness,
-        //                    //        Visible = true
-        //                    //    };
-        //                    //    vw.ResultOverlays.Add(vert);
-        //                    //}
-        //                    //catch { }
-
-        //                    if (_opt.ShowMatchIndexes)
-        //                    {
-        //                        try
-        //                        {
-        //                            // 기본 위치 (우측상단) 계산
-        //                            int tx = (int)Math.Round(absX) + (len + 3);
-        //                            int ty = (int)Math.Round(absY) - (len + 3);
-
-        //                            // 이미지 경계 안으로 클램프 (viewer 이미지 기준 절대좌표)
-        //                            // raw.ResultOverlays 는 원본 이미지 좌표계이므로 간단히 0 이상만 보정
-        //                            if (ty < 0) ty = (int)Math.Round(absY) + (len + 3); // 위로 벗어나면 아래쪽으로 배치
-        //                            if (tx < 0) tx = (int)Math.Round(absX) + 2;         // 왼쪽으로 벗어나면 살짝 오른쪽
-
-        //                            var startPt = new Point(tx, ty);
-        //                            var txtOv = new TextVisionImageOverlay($"PM_M{i}_IDX", startPt)
-        //                            {
-        //                                FontStyle = _indexFont,
-        //                                BrushColor = new SolidBrush(_opt.IndexTextColor),
-        //                                Text = i.ToString(),
-        //                                Color = _opt.IndexTextColor,
-        //                                Visible = true
-        //                            };
-        //                            vw.ResultOverlays.Add(txtOv);
-        //                        }
-        //                        catch { }
-        //                    }
-        //                }
-
-        //                if (_opt.HighlightReferenceMatch && repIdx >= 0 && repIdx < _lastRawResult.Values.Count)
-        //                {
-        //                    try
-        //                    {
-        //                        var rep = _lastRawResult.Values[repIdx];
-        //                        double absX = rep.X;
-        //                        double absY = rep.Y;
-
-        //                        int rad = Math.Max(5, _opt.ReferenceMarkRadius);
-        //                        var rectOv = new RectangleFrameVisionImageOverlay("PM_REF_RING")
-        //                        {
-        //                            StartLocation = new Point((int)Math.Round(absX) - rad, (int)Math.Round(absY) - rad),
-        //                            EndLocation = new Point((int)Math.Round(absX) + rad, (int)Math.Round(absY) + rad),
-        //                            Color = _opt.ReferenceMarkColor,
-        //                            DashStyle = DashStyle.Dash,
-        //                            Thickness = 2,
-        //                            Visible = true
-        //                        };
-        //                        vw.ResultOverlays.Add(rectOv);
-        //                    }
-        //                    catch { }
-        //                }
-        //            }
-
-        //            vw.Invalidate();
-        //        }
-        //        catch { }
-        //    }
-        //}
         #endregion
 
         #region Dispose
@@ -1387,7 +1255,7 @@ namespace QMC.LCP_280.Process
                 _lastReferenceIndex = 0;
 
                 // 오버레이는 1개만 기반으로 그리도록 RawResult도 축소(Values만 복사/대체)
-                //  - ResultOverlays까지 줄일지 여부는 Tool 구현에 따라 다르므로 여기선 Values만 1개로 제한
+                //  - ResultOverlays까지 줄일지 여부는 Tool 구현에 따라 다르므로 여기서는 Values만 1개로 제한
                 try
                 {
                     _lastRawResult = r.RawResult;
@@ -1459,22 +1327,9 @@ namespace QMC.LCP_280.Process
                         }
                         result.TemplateTrainedCount = reTrained;
 
-                        Point searchStart = new Point(0, 0);
-                        Point searchEnd = new Point(src.Header.Width - 1, src.Header.Height - 1);
-                        if (_opt.UseInspectRoi)
-                        {
-                            try
-                            {
-                                var ispStart = _part.GetInspectStartPoint();
-                                var ispEnd = _part.GetInspectEndPoint();
-                                if (ispEnd.X > ispStart.X && ispEnd.Y > ispStart.Y)
-                                {
-                                    searchStart = ispStart;
-                                    searchEnd = ispEnd;
-                                }
-                            }
-                            catch { }
-                        }
+                        Point searchStart;
+                        Point searchEnd;
+                        TryResolveSearchRoi(src, out searchStart, out searchEnd);
 
                         int ret = _part.OnSearch(searchStart, searchEnd, _parameters, null, src);
                         if (ret != 0)
@@ -1576,6 +1431,91 @@ namespace QMC.LCP_280.Process
             double sx = 0, sy = 0, sr = 0, ss = 0; foreach (var m in middle) { sx += m.X; sy += m.Y; sr += m.R; ss += m.Score; }
             int n = middle.Count; result.AvgXExcludingExtremes = sx / n; result.AvgYExcludingExtremes = sy / n; result.AvgRExcludingExtremes = sr / n; result.AvgScoreExcludingExtremes = ss / n;
         }
+
+        private static void ClampPointToImage(ref Point p, int width, int height)
+        {
+            if (p.X < 0) p.X = 0;
+            if (p.Y < 0) p.Y = 0;
+            if (p.X > width - 1) p.X = width - 1;
+            if (p.Y > height - 1) p.Y = height - 1;
+        }
+
+        private static bool IsValidRoi(Point s, Point e)
+        {
+            return e.X > s.X && e.Y > s.Y;
+        }
+
+        private bool TryResolveSearchRoi(VisionImage src, out Point searchStart, out Point searchEnd)
+        {
+            searchStart = new Point(0, 0);
+            searchEnd = new Point(src.Header.Width - 1, src.Header.Height - 1);
+
+            if (_opt.UseInspectRoi == false)
+                return true;
+
+            // 1) Profile ROI 우선
+            if (_opt.InspectRoiSourceMode == RoiSourceMode.Profile)
+            {
+                ProfileRoiSetting cfg;
+                if (_profileRoiSettings.TryGetValue(_profileMode, out cfg) && cfg != null && cfg.Enabled)
+                {
+                    var s = cfg.InspectStart;
+                    var e = cfg.InspectEnd;
+                    ClampPointToImage(ref s, src.Header.Width, src.Header.Height);
+                    ClampPointToImage(ref e, src.Header.Width, src.Header.Height);
+
+                    if (IsValidRoi(s, e))
+                    {
+                        searchStart = s;
+                        searchEnd = e;
+                        return true;
+                    }
+                }
+            }
+
+            // 2) Recipe ROI fallback
+            try
+            {
+                var s = _part.GetInspectStartPoint();
+                var e = _part.GetInspectEndPoint();
+
+                ClampPointToImage(ref s, src.Header.Width, src.Header.Height);
+                ClampPointToImage(ref e, src.Header.Width, src.Header.Height);
+
+                if (IsValidRoi(s, e))
+                {
+                    searchStart = s;
+                    searchEnd = e;
+                }
+            }
+            catch
+            {
+                // full frame 유지
+            }
+
+            return true;
+        }
+
+        // Public API 영역에 추가 (GUI에서 현재값 확인용)
+        public bool TryGetProfileInspectRoi(RunnerProfileMode mode, out Point inspectStart, out Point inspectEnd, out bool enabled)
+        {
+            lock (_sync)
+            {
+                ProfileRoiSetting cfg;
+                if (_profileRoiSettings.TryGetValue(mode, out cfg) && cfg != null)
+                {
+                    inspectStart = cfg.InspectStart;
+                    inspectEnd = cfg.InspectEnd;
+                    enabled = cfg.Enabled;
+                    return true;
+                }
+
+                inspectStart = Point.Empty;
+                inspectEnd = Point.Empty;
+                enabled = false;
+                return false;
+            }
+        }
         #endregion
 
         public PatternMatchRunResult SearchCenterMarkWithTemporaryInspectRoi(
@@ -1607,5 +1547,64 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        // #region Public API 내부 적절한 위치에 추가
+        public void SetProfileMode(RunnerProfileMode mode)
+        {
+            lock (_sync)
+            {
+                _profileMode = mode;
+                _opt.ProfileMode = mode;
+            }
+        }
+
+        public RunnerProfileMode GetProfileMode()
+        {
+            lock (_sync)
+                return _profileMode;
+        }
+
+        public void SetInspectRoiSourceMode(RoiSourceMode mode)
+        {
+            lock (_sync)
+            {
+                _opt.InspectRoiSourceMode = mode;
+            }
+        }
+
+        public RoiSourceMode GetInspectRoiSourceMode()
+        {
+            lock (_sync)
+                return _opt.InspectRoiSourceMode;
+        }
+
+        public void SetProfileInspectRoi(RunnerProfileMode mode, Point inspectStart, Point inspectEnd, bool enabled = true)
+        {
+            lock (_sync)
+            {
+                var s = new Point(Math.Min(inspectStart.X, inspectEnd.X), Math.Min(inspectStart.Y, inspectEnd.Y));
+                var e = new Point(Math.Max(inspectStart.X, inspectEnd.X), Math.Max(inspectStart.Y, inspectEnd.Y));
+
+                _profileRoiSettings[mode] = new ProfileRoiSetting
+                {
+                    Enabled = enabled,
+                    InspectStart = s,
+                    InspectEnd = e
+                };
+            }
+        }
+
+        public void SetProfileInspectRoiEnabled(RunnerProfileMode mode, bool enabled)
+        {
+            lock (_sync)
+            {
+                ProfileRoiSetting cfg;
+                if (_profileRoiSettings.TryGetValue(mode, out cfg) == false || cfg == null)
+                {
+                    cfg = new ProfileRoiSetting();
+                    _profileRoiSettings[mode] = cfg;
+                }
+                cfg.Enabled = enabled;
+            }
+        }
     }
 }

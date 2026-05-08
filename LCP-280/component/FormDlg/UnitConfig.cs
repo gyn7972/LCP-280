@@ -166,20 +166,6 @@ namespace QMC.LCP_280.Process.Component
             {
                 Log.Write(ex);
             }
-
-            //var t = cfg.GetType();
-            //// Saveconfig → Save
-            //var mi = t.GetMethod("Saveconfig", BindingFlags.Public | BindingFlags.Instance)
-            //      ?? t.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance);
-            //try
-            //{
-            //    if (mi != null && mi.GetParameters().Length == 0)
-            //        mi.Invoke(cfg, null);
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
         }
 
         private void InvokeLoad(object cfg)
@@ -228,7 +214,6 @@ namespace QMC.LCP_280.Process.Component
                 Log.Write(ex);
             }
         }
-
         private void RebuildMapperAndView()
         {
             if (_config == null)

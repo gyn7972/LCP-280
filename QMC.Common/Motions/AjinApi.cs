@@ -159,13 +159,6 @@ namespace QMC.Common.Motions
         /// </remarks>
         public static int MoveAbs(int axisNo, double targetPulse, double vel, double acc, double dec, double jerk)
         {
-            // 가속/감속 시간을 0초로 넘겨 내부 프로파일을 사용하도록 위임
-            //return AXM.MovePosition(axisNo, targetPulse, /*velocity*/ 0, TimeSpan.Zero, TimeSpan.Zero);
-
-            //Test
-            //vel = 5;// GetCommandVelocityPps(axisNo);
-            //acc = 10;//Math.Max(vel * 2.0, 1.0);
-            //dec = 10;//acc;
             AXM.SetMaxVelocity(axisNo, vel);
             AXM.SetAbsRelMode(axisNo, true);
             return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
@@ -204,10 +197,6 @@ namespace QMC.Common.Motions
             var rc = AXM.GetInMotion(axisNo, ref inMotion);
             if (rc != 0) return false;
             return !inMotion;
-
-            //bool inMotion = false;
-            //AXM.GetInMotion(axisNo, ref inMotion);
-            //return !inMotion;
         }
 
 

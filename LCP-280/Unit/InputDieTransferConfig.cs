@@ -89,18 +89,22 @@ namespace QMC.LCP_280.Process.Unit
         [Category("PIckUp"), DisplayName("Up Dec (mm/sec2)")]
         [DefaultValue(0.0)]
         public double dPickUpDec { get; set; } = 0.0;
-        [Category("PIckUp"), DisplayName("PickUpWaitTime (ms)")]
+        [Category("PIckUp"), DisplayName("BeforePickUpWaitTime (ms)")]
         [DefaultValue(0)]
-        public int nPickUpWaitTime { get; set; } = 0;
+        public int nBeforePickUpWaitTime { get; set; } = 0;
+        [Category("PIckUp"), DisplayName("AfterPickUpWaitTime (ms)")]
+        [DefaultValue(0)]
+        public int nAfterPickUpWaitTime { get; set; } = 0;
+
         [Category("PlaceUp"), DisplayName("PlaceUpWaitTime (ms)")]
         [DefaultValue(0)]
         public int nPlaceUpWaitTime { get; set; } = 0;
 
-        [Category("PlaceUp"), DisplayName("Before Vac. (ms)")]
+        [Category("PlaceUp"), DisplayName("Before Vent. (ms)")]
         [DefaultValue(0)]
         public int nPlaceBeforeVacWaitTime { get; set; } = 0;
 
-        [Category("PlaceUp"), DisplayName("After Vac. (ms)")]
+        [Category("PlaceUp"), DisplayName("After Vent. (ms)")]
         [DefaultValue(0)]
         public int nPlaceAfterVacWaitTime { get; set; } = 0;
 
@@ -272,15 +276,17 @@ namespace QMC.LCP_280.Process.Unit
                 "Simulation",
                 "DryRun",
                 "IndexOfStart",
+                "Alarm Count",
                 "SeqType",
                 "Up Offset (mm)",
                 "Up Speed (mm/sec)",
                 "Up Acc (mm/sec2)",
                 "Up Dec (mm/sec2)",
-                "PickUpWaitTime (ms)",
+                "BeforePickUpWaitTime (ms)",
+                "AfterPickUpWaitTime (ms)",
                 "PlaceUpWaitTime (ms)",
-                "Before Vac. (ms)",
-                "After Vac. (ms)",
+                "Before Vent. (ms)",
+                "After Vent. (ms)",
                 "Before Blow. (ms)",
                 "After Blow. (ms)"
             };

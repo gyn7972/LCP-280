@@ -5818,11 +5818,17 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
         #region Diagnostics / Recheck
+        // 기존 RecheckDieAndAlign 교체
         public int RecheckDieAndAlign(bool bFineSpeed = false)
         {
             int nRet = 0;
             List<PointD> chips = new List<PointD>();
             Task<int> tImageProcess = null;
+
+            PatternMatchingRunner.RunnerProfileMode prevProfileMode = PatternMatchingRunner.RunnerProfileMode.Normal;
+            PatternMatchingRunner.RoiSourceMode prevRoiSourceMode = PatternMatchingRunner.RoiSourceMode.Recipe;
+            bool switchedRunnerMode = false;
+
             try
             {
                 if (this.IsStop)
@@ -5836,6 +5842,18 @@ namespace QMC.LCP_280.Process.Unit
                 if (this.Config.IsSimulation == false && (this.Config.IsDryRun == false && IsDryRunEqp == false))
                 {
                     Log.Write(UnitName, "RecheckDieAndAlign", "Start");
+
+                    if (UseDedicatedRecheckRoi && PmRunner != null)
+                    {
+                        prevProfileMode = PmRunner.GetProfileMode();
+                        prevRoiSourceMode = PmRunner.GetInspectRoiSourceMode();
+
+                        ConfigureRecheckProfileRoi();
+                        PmRunner.SetProfileMode(PatternMatchingRunner.RunnerProfileMode.Recheck);
+                        PmRunner.SetInspectRoiSourceMode(PatternMatchingRunner.RoiSourceMode.Profile);
+                        switchedRunnerMode = true;
+                    }
+
                     double dpoX = AxisX.GetPosition();
                     double dpoY = AxisY.GetPosition();
 
@@ -5846,34 +5864,35 @@ namespace QMC.LCP_280.Process.Unit
 
                     double dx = dpoX;
                     double dy = dpoY;
+
                     StageCamera.SuspendedImageDisplay = true;
                     StageCamera.GrabSync(out VisionImage grabImage);
-                    //grabImage.Save(VisionImage.FileFilter.bmp);
+
                     tImageProcess = Task.Factory.StartNew(() =>
                     {
                         Log.Write(UnitName, "RecheckDieAndAlign", "SearchDies");
                         return SearchDies(grabImage, ref chips, dx, dy);
                     });
+
                     tImageProcess.Wait();
 
                     var wafer = GetMaterialWafer();
-                    // 병합 임계값 클램프
-                    double tol = DuplicateDistMm;
-                    double pitchMin = double.MaxValue;
-                    if (ChipPitchXmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchXmm);
-                    if (ChipPitchYmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchYmm);
-
+                    if (wafer == null)
+                    {
+                        Log.Write(UnitName, "RecheckDieAndAlign", "Fail: wafer is null");
+                        return -1;
+                    }
 
                     wafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
                     Log.Write(UnitName, "RecheckDieAndAlign", "End");
                 }
+
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
                     return -1;
                 }
 
-                StageCamera.SuspendedImageDisplay = false;
                 return nRet;
             }
             catch (Exception ex)
@@ -5883,9 +5902,90 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
+                if (StageCamera != null)
+                    StageCamera.SuspendedImageDisplay = false;
 
+                if (switchedRunnerMode && RestoreRunnerModeAfterRecheck && PmRunner != null)
+                {
+                    try
+                    {
+                        PmRunner.SetInspectRoiSourceMode(prevRoiSourceMode);
+                        PmRunner.SetProfileMode(prevProfileMode);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(UnitName, "RecheckDieAndAlign", "Runner mode restore failed: " + ex.Message);
+                    }
+                }
             }
         }
+        //public int RecheckDieAndAlign(bool bFineSpeed = false)
+        //{
+        //    int nRet = 0;
+        //    List<PointD> chips = new List<PointD>();
+        //    Task<int> tImageProcess = null;
+        //    try
+        //    {
+        //        if (this.IsStop)
+        //        {
+        //            Log.Write(UnitName, "RecheckDieAndAlign", "IsStop");
+        //            return 0;
+        //        }
+
+        //        var equipment = Equipment.Instance;
+        //        bool IsDryRunEqp = equipment.EquipmentConfig.IsDryRun;
+        //        if (this.Config.IsSimulation == false && (this.Config.IsDryRun == false && IsDryRunEqp == false))
+        //        {
+        //            Log.Write(UnitName, "RecheckDieAndAlign", "Start");
+        //            double dpoX = AxisX.GetPosition();
+        //            double dpoY = AxisY.GetPosition();
+
+        //            if (tImageProcess != null)
+        //            {
+        //                tImageProcess.Wait();
+        //            }
+
+        //            double dx = dpoX;
+        //            double dy = dpoY;
+        //            StageCamera.SuspendedImageDisplay = true;
+        //            StageCamera.GrabSync(out VisionImage grabImage);
+        //            //grabImage.Save(VisionImage.FileFilter.bmp);
+        //            tImageProcess = Task.Factory.StartNew(() =>
+        //            {
+        //                Log.Write(UnitName, "RecheckDieAndAlign", "SearchDies");
+        //                return SearchDies(grabImage, ref chips, dx, dy);
+        //            });
+        //            tImageProcess.Wait();
+
+        //            var wafer = GetMaterialWafer();
+        //            // 병합 임계값 클램프
+        //            double tol = DuplicateDistMm;
+        //            double pitchMin = double.MaxValue;
+        //            if (ChipPitchXmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchXmm);
+        //            if (ChipPitchYmm > 0) pitchMin = Math.Min(pitchMin, ChipPitchYmm);
+
+        //            wafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
+        //            Log.Write(UnitName, "RecheckDieAndAlign", "End");
+        //        }
+        //        if (nRet != 0)
+        //        {
+        //            Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
+        //            return -1;
+        //        }
+
+        //        StageCamera.SuspendedImageDisplay = false;
+        //        return nRet;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //        return -1;
+        //    }
+        //    finally
+        //    {
+
+        //    }
+        //}
         #endregion
 
         #region Reset / UI Helpers
@@ -6735,5 +6835,56 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ReadDieMapLogFile", $"Exception: {ex.Message}");
             }
         }
+
+
+        public bool UseDedicatedRecheckRoi { get; set; } = true;
+        public double RecheckRoiWidthMm { get; set; } = 1.5;
+        public double RecheckRoiHeightMm { get; set; } = 1.5;
+        public bool RestoreRunnerModeAfterRecheck { get; set; } = true;
+
+        // InputStage class 내부 helper 추가
+        private void ConfigureRecheckProfileRoi()
+        {
+            if (PmRunner == null || StageCamera == null || StageCamera.CameraConfig == null)
+                return;
+
+            double mmPerPxX = Math.Abs(StageCamera.CameraConfig.Scale.X);
+            double mmPerPxY = Math.Abs(StageCamera.CameraConfig.Scale.Y);
+
+            if (mmPerPxX <= 0) mmPerPxX = PixelSizeXmm;
+            if (mmPerPxY <= 0) mmPerPxY = PixelSizeYmm;
+            if (mmPerPxX <= 0 || mmPerPxY <= 0)
+                return;
+
+            int imgW = StageCamera.CameraConfig.Resolution.Width;
+            int imgH = StageCamera.CameraConfig.Resolution.Height;
+            if (imgW <= 1 || imgH <= 1)
+                return;
+
+            RecheckRoiWidthMm = 3.0;
+            RecheckRoiHeightMm = 3.0;
+
+            int roiWpx = Math.Max(2, (int)Math.Round(RecheckRoiWidthMm / mmPerPxX));
+            int roiHpx = Math.Max(2, (int)Math.Round(RecheckRoiHeightMm / mmPerPxY));
+
+            int cx = imgW / 2;
+            int cy = imgH / 2;
+
+            int sx = Math.Max(0, cx - roiWpx / 2);
+            int sy = Math.Max(0, cy - roiHpx / 2);
+            int ex = Math.Min(imgW - 1, sx + roiWpx);
+            int ey = Math.Min(imgH - 1, sy + roiHpx);
+
+            if (ex <= sx) ex = Math.Min(imgW - 1, sx + 1);
+            if (ey <= sy) ey = Math.Min(imgH - 1, sy + 1);
+
+            PmRunner.SetProfileInspectRoi(
+                PatternMatchingRunner.RunnerProfileMode.Recheck,
+                new Point(sx, sy),
+                new Point(ex, ey),
+                true);
+        }
+
+
     }
 }

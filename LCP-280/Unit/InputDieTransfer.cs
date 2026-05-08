@@ -1071,19 +1071,12 @@ namespace QMC.LCP_280.Process.Unit
         ///  - timeoutMs > 0 이고 시간 초과 시 -2 반환
         ///  - Interlock 위반 시 두 축 Emergency Stop 후 -1 반환
         /// </summary>
-        public int MovePickZAndPinZByOffset(double pickZOffset,
-                                            double pinZOffset,
-                                            double velPickZ = 0,
-                                            double velPinZ = 0,
-                                            double acc = 0,
-                                            double dec = 0,
-                                            int timeoutMs = 5000,
-                                            bool isFine = false)
+        public int MovePickZAndPinZByOffset(int timeoutMs = 5000, bool isFine = false)
         {
-            var pick = AxisPickZ;
-            var pin = InputStageEjector != null ? InputStageEjector.AxisPinZ : null;
+            var pickZ = AxisPickZ;
+            var Niddlepin = InputStageEjector != null ? InputStageEjector.AxisPinZ : null;
 
-            if (pick == null || pin == null)
+            if (pickZ == null || Niddlepin == null)
             {
                 Log.Write(UnitName, "[MovePickZAndPinZByOffset] Axis null");
                 return -1;
@@ -1111,19 +1104,19 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            pickZOffset = Config.dPickUpOffset;
-            double vPick = Config.dPickUpSpeed;
-            double aPick = Config.dPickUpAcc;
-            double dPick = Config.dPickUpDec;
+            double pickZOffset = this.Config.dPickUpOffset;
+            double vPick = this.Config.dPickUpSpeed;
+            double aPick = this.Config.dPickUpAcc;
+            double dPick = this.Config.dPickUpDec;
 
-            pinZOffset = InputStageEjector.Config.dPickUpOffset;
+            double pinZOffset = InputStageEjector.Config.dPickUpOffset;
             double vPin = InputStageEjector.Config.dPickUpSpeed;
             double aPin = InputStageEjector.Config.dPickUpAcc;
             double dPin = InputStageEjector.Config.dPickUpDec;
 
             // 시작 위치 저장 -> 목표 위치 계산
-            double pickStart = pick.GetPosition();
-            double pinStart = pin.GetPosition();
+            double pickStart = pickZ.GetPosition();
+            double pinStart = Niddlepin.GetPosition();
             double pickTarget = pickStart + pickZOffset;
             double pinTarget = pinStart + pinZOffset;
 
@@ -1131,8 +1124,8 @@ namespace QMC.LCP_280.Process.Unit
             //ex) Offset값이 양수로 300 이면 Z축이 위로 300 이동
             // 두 개의 축 전부 300이면 동일하게 위로 올라간다.
             int rc = 0;
-            rc |= pick.MoveRel(pickZOffset, vPick, aPick, dPick, pick.Config.AccJerkPercent);
-            rc |= pin.MoveRel(pinZOffset, vPin, aPin, dPin, pin.Config.AccJerkPercent);
+            rc |= pickZ.MoveRel(pickZOffset, vPick, aPick, dPick, pickZ.Config.AccJerkPercent);
+            rc |= Niddlepin.MoveRel(pinZOffset, vPin, aPin, dPin, Niddlepin.Config.AccJerkPercent);
             if (rc != 0)
             {
                 Log.Write(UnitName, "[MovePickZAndPinZByOffset] MoveRel start failed rc=" + rc);
@@ -1143,22 +1136,22 @@ namespace QMC.LCP_280.Process.Unit
             while (true)
             {
                 // 1) 드라이브 Done (완전 정지)
-                bool pickMoving = pick.IsMoveDone();
-                bool pinMoving = pin.IsMoveDone();
+                bool pickMoving = pickZ.IsMoveDone();
+                bool pinMoving = Niddlepin.IsMoveDone();
 
                 // 2) InPosition (목표 위치 정밀 도달)
                 bool pickInPos = false;
                 bool pinInPos = false;
                 try
                 {
-                    pickInPos = pick.InPosition(pickTarget);
-                    pinInPos = pin.InPosition(pinTarget);
+                    pickInPos = pickZ.InPosition(pickTarget);
+                    pinInPos = Niddlepin.InPosition(pinTarget);
                 }
                 catch (Exception ex)
                 {
                     Log.Write(ex);
-                    pick.EmgStop();
-                    pin.EmgStop();
+                    pickZ.EmgStop();
+                    Niddlepin.EmgStop();
                     return -1;
                 }
 
@@ -1167,48 +1160,17 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     break;
                 }
-                //if (pickMoving && pinMoving)
-                //{
-                //    break;
-                //}
-
-                // 이게 필요한가? 이걸 한다는거 자체가 문제인데.
-                // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
-                //if (InputStage != null && InputStage.IsAnyAxisMoving())
-                //{
-                //    pick.EmgStop(); pin.EmgStop();
-                //    AxisToolT.EmgStop();
-                //    AxisPickZ.EmgStop();
-                //    AxisPlaceZ.EmgStop();
-                //    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStage");
-                //    return -1;
-                //}
-
-                //// Ejector 다른 축(EjectorZ) 움직임 감시
-                //if (InputStageEjector != null &&
-                //    InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
-                //{
-                //    pick.EmgStop(); pin.EmgStop();
-                //    AxisToolT.EmgStop();
-                //    AxisPickZ.EmgStop();
-                //    AxisPlaceZ.EmgStop();
-                //    PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
-                //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStageEjector");
-                //    return -1;
-                //}
-
                 // 타임아웃
                 if (sw != null && sw.ElapsedMilliseconds > timeoutMs)
                 {
-                    pick.EmgStop();
-                    pin.EmgStop();
+                    pickZ.EmgStop();
+                    Niddlepin.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputDieTransferReleaseVacuumAndPlaceUp);
                     Log.Write(UnitName, "[MovePickZAndPinZByOffset] Timeout");
                     return -1;
                 }
 
-                //Thread.Sleep(1); //???
+                Thread.Sleep(2);
             }
 
             return 0;
@@ -2071,26 +2033,26 @@ namespace QMC.LCP_280.Process.Unit
                     TaktEnd("PickUp_Wait");
                 }
 
-                TaktStart("PositionToolTPickup");
-                try
-                {
-                    if (IsPositionToolTPickup() == false)
-                    {
-                        nRet = MovePositionPickDown(true, PickDownMoveMode.ToolTOnly);
-                        if (nRet != 0)
-                        {
-                            AxisPickZ?.EmgStop();
-                            AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferChipPickDown);
-                            Log.Write(UnitName, nameof(InputTrDiePick), "[InputTrDiePick] MovePositionPickDown failed");
-                            return -1;
-                        }
-                    }
-                }
-                finally
-                {
-                    TaktEnd("PositionToolTPickup");
-                }
+                //TaktStart("PositionToolTPickup");
+                //try
+                //{
+                //    if (IsPositionToolTPickup() == false)
+                //    {
+                //        nRet = MovePositionPickDown(true, PickDownMoveMode.ToolTOnly);
+                //        if (nRet != 0)
+                //        {
+                //            AxisPickZ?.EmgStop();
+                //            AxisToolT?.EmgStop();
+                //            PostAlarm((int)AlarmKeys.eInputDieTransferChipPickDown);
+                //            Log.Write(UnitName, nameof(InputTrDiePick), "[InputTrDiePick] MovePositionPickDown failed");
+                //            return -1;
+                //        }
+                //    }
+                //}
+                //finally
+                //{
+                //    TaktEnd("PositionToolTPickup");
+                //}
 
                 TaktStart("PrepareNextDie");
                 try
@@ -2853,6 +2815,9 @@ namespace QMC.LCP_280.Process.Unit
             int nArmIndex = GetInputTrArmIndex();
 
             SetVacuum(nArmIndex, true, false);
+
+            Thread.Sleep(Config.nBeforePickUpWaitTime);
+
             nRet = MovePositionPickDown(bFineSpeed);
             if (nRet != 0)
             {
@@ -2877,22 +2842,8 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             int nRet = 0;
-            double pickZOffset = Config.dPickUpOffset;
-            double pinZOffset = InputStageEjector.Config.dPickUpOffset;
-            double velPinZ = InputStageEjector.Config.dPickUpSpeed;
-            double velPickZ = velPinZ; // 필요 시 예: (InputDieTransferUnit.AxisPickZ.Config.MaxVelocity * 0.8);
-            double acc = InputStageEjector.Config.dPickUpAcc;
-            double dec = InputStageEjector.Config.dPickUpAcc;
             int timeoutMs = 5000;   // 필요 시 예: 5000;
-            nRet = MovePickZAndPinZByOffset(
-                    pickZOffset,
-                    pinZOffset,
-                    velPickZ,
-                    velPinZ,
-                    acc,
-                    dec,
-                    timeoutMs,
-                    bFineSpeed);
+            nRet = MovePickZAndPinZByOffset(timeoutMs, bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[SyncPickPinDown] MovePickZAndPinZByOffset failed");
@@ -2915,7 +2866,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            this.WaitByTime(Config.nPickUpWaitTime, 1);
+            this.WaitByTime(Config.nAfterPickUpWaitTime, 1);
             // PickZ Safety 이동
             double dZPos = GetTP(InputDieTransferRecipe.TeachingPositionName.SafetyZone.ToString(),
                                  AxisNames.LeftPickZ);
@@ -3345,35 +3296,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, nameof(PlaceDie_ToolT), "StartAlignAfterPlaceAsync failed");
                 return -1;
             }
-
-            //// 3. 카메라 촬영/Align 작업 (Arm 이동 상태를 보며 실행)
-            //Task<int> taskAlign = Task.Run(() =>
-            //{
-            //    // [핵심] Arm이 카메라 시야를 벗어날 때까지 대기.
-            //    // 예: ToolT 축이 10도 이상 돌아가면 촬영 가능하다고 가정 (실제 각도는 장비에 맞게 조정 필요)
-            //    double currentPos = AxisToolT.GetPosition();
-            //    double clearPos = -100.0; // ★ 카메라 시야가 확보되는 안전 각도 설정 필요
-
-            //    // 이동 중인지 확인하고, 아직 안전 위치에 도달하지 않았다면 대기
-            //    // (타임아웃 설정 추천: 예: 1000ms)
-            //    Stopwatch sw = Stopwatch.StartNew();
-            //    while (sw.ElapsedMilliseconds < 1000)
-            //    {
-            //        currentPos = AxisToolT.GetPosition();
-            //        // 목표 방향에 따라 조건이 다를 수 있음 (예: 0 -> 90도 이동이면 > 10)
-            //        // 여기서는 절대값 크기로 예시를 들거나, 이동 방향을 고려해야 함.
-            //        if (Math.Abs(currentPos) > clearPos)
-            //        {
-            //            Thread.Sleep(50); //30->50ms 간격으로 체크 (너무 짧으면 CPU 점유율 상승, 너무 길면 반응 늦어짐)
-            //            break; // 촬영 가능 위치 도달! 루프 탈출
-            //        }
-            //        Thread.Sleep(1);
-            //    }
-
-            //    //Thread.Sleep(50); // 이거 무조건 필요한디? // <- 이건 필요혀..
-            //    // 안전 위치 도달 후 촬영 시작
-            //    return RecheckDieAndAlign();
-            //});
 
             try
             {

@@ -887,43 +887,23 @@ namespace QMC.LCP_280.Process.Unit
                     timeoutMs = 15000;
 
                 var sw = Stopwatch.StartNew();
-                double tolDeg = AxisIndexT.Config?.InposTolerance ?? 0.005;
-                while (sw.ElapsedMilliseconds <= timeoutMs)
+                while (true)
                 {
-                    // 핵심: -1(사실상 장시간 블로킹) 금지
-                    // MotionAxis.WaitMoveDone 내부에서 Done + 위치 보조 판단 수행
-                    int rc = AxisIndexT.WaitMoveDone(pollMs);
-                    if (rc == 0)
+                    if(IsIndexReadyForUnitAction(reason: out string readyReason))
                     {
-                        bool positionOk = true;
-                        if (TryGetPendingMoveTarget(out double targetDeg))
-                        {
-                            double cur = NormalizeAngle(GetAxisDeg());
-                            double err = GetAngularErrorDeg(cur, targetDeg);
-                            positionOk = err <= tolDeg;
-
-                            if (!positionOk)
-                            {
-                                Log.Write(UnitName, nameof(WaitIndexMoveDone),
-                                    $"MoveDone but target error. Cur={cur:F4}, Target={targetDeg:F4}, Err={err:F4}, Tol={tolDeg:F4}");
-                            }
-                        }
-
-                        if (positionOk)
-                        {
-                            ClearPendingMoveTarget();
-                            OnLoadIndexChanged(GetLoadIndexNo());
-                            return 0;
-                        }
+                        OnLoadIndexChanged(GetLoadIndexNo());
+                        break; // 이동 완료 및 위치 안정화 확인
                     }
+
+                    if(sw.ElapsedMilliseconds > timeoutMs)
+                    {
+                        Log.Write("Rotary", $"WaitIndexMoveDone Timeout after {sw.ElapsedMilliseconds} ms. Last reason: {readyReason}");
+                        return -1; // 타임아웃
+                    }
+
                     Thread.Sleep(pollMs);
                 }
-
-                Log.Write(UnitName, nameof(WaitIndexMoveDone),
-                    $"Timeout ({timeoutMs}ms) axis={AxisIndexT?.Name}");
-                ClearPendingMoveTarget();
-
-                return -1;
+                return 0;
             }
             catch (Exception ex)
             {
@@ -2644,7 +2624,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
-            if (WaitIndexReadyStable(300, 30, out string reason) == false)
+            if (WaitIndexReadyStable(5000, 30, out string reason) == false)
             {
                 Log.Write(UnitName, nameof(Rotate), $"Index not stable after rotate. {reason}");
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
@@ -2656,11 +2636,9 @@ namespace QMC.LCP_280.Process.Unit
         public bool WaitIndexReadyStable(int timeoutMs, int stableMs, out string reason)
         {
             reason = string.Empty;
-
             var sw = Stopwatch.StartNew();
             var stable = Stopwatch.StartNew();
             stable.Reset();
-
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
                 if (IsIndexReadyForUnitAction(out reason))

@@ -92,7 +92,7 @@ namespace QMC.Common.Motions
         public int MoveAbsPosition(int axisNo, double targetPulse, double vel, double acc, double dec, double jerk)
         {
             // 속도/가감속 단위 변환 (필요 시)
-            double v = vel, a = acc, d = dec;
+            //double v = vel, a = acc, d = dec;
             //if (_useLogicalUnits)
             //{
             //    // vel: unit/s → pulse/s
@@ -101,7 +101,6 @@ namespace QMC.Common.Motions
             //    a = acc * _pulsesPerUnit;
             //    d = dec * _pulsesPerUnit;
             //}
-
             // 프로파일 설정 (Trapezoid / S-Curve)
             //int rc = 0;
             //switch (ProfileMode)
@@ -189,23 +188,7 @@ namespace QMC.Common.Motions
             return AjinApi.SStop(axisNo);
         }
 
-
-
-
-
-
-
-
         // ===== 내부 유틸 =====
-
-        private static int MapJerk01ToDriver(double jerk01)
-        {
-            // Ajin이 0~1000 범위를 쓴다고 가정 — 실제 스펙에 맞게 조정
-            if (jerk01 < 0) jerk01 = 0;
-            if (jerk01 > 1) jerk01 = 1;
-            return (int)Math.Round(jerk01 * 1000.0);
-        }
-
         public double ReadCommandPulse(int axisNo) { return AjinApi.GetCommandPositionPulse(axisNo); }
         public double ReadErrorPulse(int axisNo) { return AjinApi.GetErrorPositionPulse(axisNo); }
         public double ReadCommandVelPulsePerSec(int axisNo) { return AjinApi.GetCommandVelocityPps(axisNo); }
@@ -224,7 +207,6 @@ namespace QMC.Common.Motions
         public bool ReadHomeEnd(int axisNo) { return AjinApi.GetHomeEnd(axisNo); }
         public bool ReadHomeTimeout(int axisNo) { return AjinApi.GetHomeTimeout(axisNo); }
 
-        // AjinDriver.cs
         public int ConfigureFromSetupAndConfig(int axisNo, MotionAxisSetup setup, MotionAxisConfig cfg)
         {
             // 최근 설정 캐시 (Home에서 재사용)
