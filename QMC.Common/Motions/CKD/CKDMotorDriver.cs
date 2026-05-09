@@ -494,8 +494,8 @@ namespace QMC.Common.Motions.CKD
 
         private const int BoardNo = 0;
         private const uint StartBitOffset = 1320;
-        private const int PdoWriteDelay = 9; // ms //25
-        private const int ReadPeriod = 3; // ms //20
+        private const int PdoWriteDelay = 25; // ms //25
+        private const int ReadPeriod = 20; // ms //20
         private const double Resolution = 540672; // 펄스수 (1회전 당)
 
         // Bulk constants
@@ -800,11 +800,6 @@ namespace QMC.Common.Motions.CKD
                 cts?.Dispose();
                 cts = null;
             }
-            //lock (gate)
-            //{
-            //    cts?.Cancel();
-            //}
-            //try { readInputTask?.Wait(); } catch { /* ignore */ }
         }
         private async Task RunReadInputDataMonitoring(CancellationToken ct)
         {
@@ -843,30 +838,6 @@ namespace QMC.Common.Motions.CKD
                 RequestMonitorExecution(false);
             }
 
-            //SendSetMonitorCodeCommand();
-            //RequestMonitorExecution(true);
-            //while (!ct.IsCancellationRequested)
-            //{
-            //    //sw.Restart();
-            //    try
-            //    {
-            //        ReadAllTxPdoInputData();
-            //        OnMotorStateUpdated?.Invoke(this, EventArgs.Empty);
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //    }
-
-            //    var wait = 1;// ReadPeriod;
-            //    try 
-            //    { 
-            //        await Task.Delay(wait, ct);
-            //    } 
-            //    catch 
-            //    { /* canceled */ }
-
-            //}
-            //RequestMonitorExecution(false);
         }
         #endregion
 
@@ -974,12 +945,12 @@ namespace QMC.Common.Motions.CKD
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
                     return ret;
-                //Thread.Sleep(PdoWriteDelay);
+                Thread.Sleep(PdoWriteDelay);
                 // Set 1
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, true);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
                     return ret;
-                //Thread.Sleep(PdoWriteDelay);
+                Thread.Sleep(PdoWriteDelay);
                 // Bit Reset
                 SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
@@ -1183,12 +1154,12 @@ namespace QMC.Common.Motions.CKD
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
                     return ret;
-                //Thread.Sleep(PdoWriteDelay);
+                Thread.Sleep(PdoWriteDelay);
                 // Set 1
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, true);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
                     return ret;
-                //Thread.Sleep(PdoWriteDelay);
+                Thread.Sleep(PdoWriteDelay);
                 // Bit Reset
                 SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
                 if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
@@ -1206,21 +1177,12 @@ namespace QMC.Common.Motions.CKD
         {
             // 기존 구현 유지 가능. 여기선 최소 변경으로 직접 set/write만 수행.
             var data = rxPdoData.OutputSignal2;
-            if (on) data[0] |= 0x01; else data[0] &= 0xFE;
-            return AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, data);
+            if (on) 
+                data[0] |= 0x01; 
+            else 
+                data[0] &= 0xFE;
 
-            //int ret = 0;
-            //try
-            //{
-            //    if ((ret = SendOutputSignal2SetBit(OutputSignal2Mapping.MonitorOutputExecutionRequest, on)) != 0)
-            //        return ret;
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //    ret = -1;
-            //}
-            //return ret;
+            return AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, data);
         }
         private int RequestInstructionCodeExecution()
         {

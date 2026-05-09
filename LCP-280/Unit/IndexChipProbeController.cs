@@ -306,13 +306,12 @@ namespace QMC.LCP_280.Process.Unit
         public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
         {
             bool bRet = base.IsInterlockOK(baseComponent, e);
-
             if (baseComponent == this.AxisProbeCardZ || baseComponent == this.AxisProbeZ)
             {
                 if (_isSafetyMoving)
                     return true;
 
-                if (Rotary.IsIndexMoving())
+                if (IsRotaryReadyStable(3, 5) == false)
                 {
                     AxisProbeCardZ?.EmgStop();
                     AxisProbeZ?.EmgStop();
@@ -366,6 +365,21 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
+        public bool IsRotaryReadyStable(int checkCount = 3, int pollMs = 5)
+        {
+            if (Rotary == null) return true;
+
+            for (int i = 0; i < checkCount; i++)
+            {
+                if (!Rotary.IsIndexReadyForAction(out _))
+                    return false;
+
+                if (i < checkCount - 1)
+                    Thread.Sleep(pollMs);
+            }
+            return true;
+        }
+
 
         public int MovePositionSafetyZ(bool isFine = false)
         {
@@ -406,7 +420,7 @@ namespace QMC.LCP_280.Process.Unit
                     //TaktStart("ProbeCardZSafety");
                     {
                         dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-                        nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                        nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
                         if (nRet != 0)
                         {
                             Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed tp={tpName} posZ={dZPos}");
@@ -419,7 +433,7 @@ namespace QMC.LCP_280.Process.Unit
                     //TaktStart("GripperXReady");
                     //if (IsPositionGripperXClamp()) //걍 무조건 Ready 보냄.
                     {
-                        nRet &= MovePositionGripperXReady();
+                        nRet = MovePositionGripperXReady();
                         if (nRet != 0)
                         {
                             Log.Write(UnitName, $"[OnMovePositionSafetyZ] move failed: MovePositionGripperXReady");
@@ -437,7 +451,7 @@ namespace QMC.LCP_280.Process.Unit
                     //if (IsPositionProbeZSafety() == false) //무조건 움직이자.
                     {
                         dZPos = GetTP(tpName, AxisNames.ProbeZ);
-                        nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
+                        nRet = OnMoveAxisPositionOne(AxisProbeZ, dZPos);
                         if (nRet != 0)
                         {
                             Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeZ move failed tp={tpName} posZ={dZPos}");
@@ -461,7 +475,7 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             // Safety 로 동작 중에 아래 인터락이 필요한가?
             // 
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -513,7 +527,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (IsPositionProbeCardZSafety() == false) //무조건 움직이자.
                 {
                     dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-                    nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                    nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed tp={tpName} posZ={dZPos}");
@@ -524,7 +538,7 @@ namespace QMC.LCP_280.Process.Unit
                 //Gripper Ready로 하고 내려야함.
                 if (IsPositionGripperXClamp())
                 {
-                    nRet &= MovePositionGripperXReady();
+                    nRet = MovePositionGripperXReady();
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, $"[OnMovePositionSafetyZ] move failed: MovePositionGripperXReady");
@@ -535,7 +549,7 @@ namespace QMC.LCP_280.Process.Unit
                 //if (IsPositionProbeZSafety() == false) //무조건 움직이자.
                 {
                     dZPos = GetTP(tpName, AxisNames.ProbeZ);
-                    nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
+                    nRet = OnMoveAxisPositionOne(AxisProbeZ, dZPos);
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeZ move failed tp={tpName} posZ={dZPos}");
@@ -554,7 +568,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -605,7 +619,7 @@ namespace QMC.LCP_280.Process.Unit
                 //if (IsPositionProbeCardZSafety() == false) //무조건 움직이자.
                 {
                     dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-                    nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                    nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, $"[OnMovePositionSafetyZ] ProbeCardZ move failed tp={tpName} posZ={dZPos}");
@@ -624,7 +638,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -665,7 +679,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -706,7 +720,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -809,7 +823,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -876,7 +890,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -953,7 +967,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsBottomContactIndexZUp(nIndex))
             {
                 dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -971,11 +985,15 @@ namespace QMC.LCP_280.Process.Unit
 
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
+            nRet = OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] ToolT move failed tp={tpName} posX={dXPos}");
+                return -1;
+            }
+            nRet = OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
+            if (nRet != 0)
+            {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] ToolT move failed tp={tpName} posY={dYPos}");
                 return -1;
             }
@@ -996,13 +1014,12 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 double dDistToTarget = Math.Abs(dZPos + overdriveDist);
-                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dDistToTarget);
+                nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dDistToTarget);
             }
             else
             {
-                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
             }
-
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Up] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1015,7 +1032,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1093,7 +1110,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsBottomContactIndexZUp(nIndex))
             {
                 dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-                nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+                nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1111,17 +1128,21 @@ namespace QMC.LCP_280.Process.Unit
             }
             double dXPos = GetTP(tpName, AxisNames.ProbeCardX);
             double dYPos = GetTP(tpName, AxisNames.ProbeCardY);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
+            nRet = OnMoveAxisPositionOne(AxisProbeCardX, dXPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posX={dXPos}");
+                return -1;
+            }
+            nRet = OnMoveAxisPositionOne(AxisProbeCardY, dYPos);
+            if (nRet != 0)
+            {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posY={dYPos}");
                 return -1;
             }
 
             dZPos = GetTP(tpName, AxisNames.ProbeCardZ);
-            nRet &= OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
+            nRet = OnMoveAxisPositionOne(AxisProbeCardZ, dZPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionBottomContact_Index_Ready] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1134,7 +1155,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1214,7 +1235,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1263,7 +1284,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1392,7 +1413,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 사전 Interlock 감시
-            if (Rotary != null && Rotary.IsIndexMoving())
+            if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
             {
                 probeZ.EmgStop();
                 probeCardZ.EmgStop();
@@ -1441,7 +1462,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 진행 중 Interlock 감시
-                if (Rotary != null && Rotary.IsIndexMoving())
+                if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
                 {
                     probeZ.EmgStop();
                     probeCardZ.EmgStop();
@@ -1531,7 +1552,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsPositionProbeZGripperIndexUp(nIndex))
             {
                 dZPos = GetTP(tpName, AxisNames.ProbeZ);
-                nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
+                nRet = OnMoveAxisPositionOne(AxisProbeZ, dZPos);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, $"[OnMovePositionProbeZGripperIndexUp] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1548,7 +1569,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             dZPos = GetTP(tpName, AxisNames.ProbeZ);
-            nRet &= OnMoveAxisPositionOne(AxisProbeZ, dZPos);
+            nRet = OnMoveAxisPositionOne(AxisProbeZ, dZPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionProbeZGripperIndexUp] ToolT move failed tp={tpName} posZ={dZPos}");
@@ -1562,7 +1583,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary.IsIndexMoving())
+            if (IsRotaryReadyStable(3, 5) == false)
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -2088,17 +2109,6 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
-        public int IsRotaryIdle()
-        {
-            if (Rotary.IsIndexMoving())
-            {
-                Log.Write(UnitName, nameof(IsRotaryIdle), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
-                return -1;
-            }
-
-            return 0;
-        }
-
         // [ADD] 마지막 측정 결과의 BinType을 die에서 읽는다.
         // 주: PopulateDieWithTesterResult(die)에서 die.TesterResult / MeasureValues / Rank 등을 채운다고 되어있으므로
         //     여기서는 die.TesterResult.BinningResult를 우선으로 본다.
@@ -2362,7 +2372,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = -1;
 
-            while (IsRotaryIdle() != 0)
+            while (IsRotaryReadyStable(3, 5) == false)
             {
                 if (IsStop)
                 {
@@ -2534,7 +2544,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 검사 시작 전에 Rotary가 완전히 멈췄는지 확인 (안 멈췄으면 대기)
-                while (IsRotaryIdle() != 0)
+                while (IsRotaryReadyStable(3, 5) == false)
                 {
                     if (IsStop)
                     {
@@ -2790,7 +2800,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 검사 시작 전에 Rotary가 완전히 멈췄는지 확인 (안 멈췄으면 대기)
-                while (IsRotaryIdle() != 0)
+                while (IsRotaryReadyStable(3, 5) == false)
                 {
                     if (IsStop)
                     {
@@ -2817,7 +2827,9 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if (Rotary.IsLoadSocketEmpty() == false || Rotary.IsIndexMoving())
+                    //if(!IsRotaryReadyStable(3,5))
+                    //if (Rotary.IsLoadSocketEmpty() == false || Rotary.IsIndexReadyForAction(out string reason))
+                    if (Rotary.IsLoadSocketEmpty() == false || IsRotaryReadyStable(3, 5))
                     {
                         Log.Write(UnitName, nameof(RunInspection),
                             $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
@@ -3021,83 +3033,22 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        // 클래스 내부 적절한 위치(예: IsRotaryIdle 아래)에 추가
-        private bool WaitRotaryIdleStable(int timeoutMs, int stableMs, int pollMs, out string reason)
-        {
-            reason = string.Empty;
-
-            if (Rotary == null)
-            {
-                reason = "Rotary is null";
-                return false;
-            }
-
-            if (pollMs < 1)
-                pollMs = 1;
-
-            if (stableMs < 0)
-                stableMs = 0;
-
-            var sw = Stopwatch.StartNew();
-            var swStable = Stopwatch.StartNew();
-            swStable.Reset();
-
-            while (sw.ElapsedMilliseconds <= timeoutMs)
-            {
-                if (IsStop)
-                {
-                    reason = "Stop requested";
-                    return false;
-                }
-
-                bool moving = Rotary.IsIndexMoving();
-                if (!moving)
-                {
-                    if (!swStable.IsRunning)
-                        swStable.Start();
-
-                    if (swStable.ElapsedMilliseconds >= stableMs)
-                        return true;
-                }
-                else
-                {
-                    swStable.Reset();
-                }
-
-                Thread.Sleep(pollMs);
-            }
-
-            reason = Rotary.GetIndexMovingDebugText();
-            return false;
-        }
-
-        // 기존 TopContactAndMeasureOnce 전체 교체
         public int TopContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
             try
             {
                 this.CurrentFunc = TopContactAndMeasureOnce;
-
-                while (IsRotaryIdle() != 0)
+                while (IsRotaryReadyStable(3, 5) == false)
                 {
                     if (IsStop)
                     {
                         return 0;
                     }
-                    Thread.Sleep(5);
-                }
-
-                string idleReason;
-                if (!WaitRotaryIdleStable(1500, 30, 2, out idleReason))
-                {
-                    Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
-                        $"Rotary idle stable check failed. reason={idleReason}");
-                    return -1;
+                    Thread.Sleep(2);
                 }
 
                 LogSequence("Start");
-
                 int nIndex = GetProbeIndexNo();
                 int nIndexNow = GetProbeIndexNo();
                 if (nIndexNow != nIndex)
@@ -3107,37 +3058,12 @@ namespace QMC.LCP_280.Process.Unit
                     nIndex = nIndexNow;
                 }
 
-                bool movingBeforeMove = Rotary != null && Rotary.IsIndexMoving();
-                Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
-                    $"Before MovePositionTopContact_Index_Up: idx={nIndex}, moving={movingBeforeMove}, dbg={Rotary?.GetIndexMovingDebugText()}");
-
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
                         $"[TopContactOnce] OnMovePositionTopContact_Index_Up failed. idx={nIndex}, dbg={Rotary?.GetIndexMovingDebugText()}");
-
-                    // Rotary moving race로 판단되면 1회 재시도
-                    if (Rotary != null && Rotary.IsIndexMoving())
-                    {
-                        string retryReason;
-                        if (WaitRotaryIdleStable(1000, 30, 2, out retryReason))
-                        {
-                            int retryIdx = GetProbeIndexNo();
-                            Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
-                                $"Retry MovePositionTopContact_Index_Up. idx={retryIdx}");
-
-                            nRet = MovePositionTopContact_Index_Up(retryIdx, bFineSpeed);
-                        }
-                        else
-                        {
-                            Log.Write(UnitName, nameof(TopContactAndMeasureOnce),
-                                $"Retry skipped. Rotary not stable. reason={retryReason}");
-                        }
-                    }
-
-                    if (nRet != 0)
-                        nRet = -1;
+                    nRet = -1;
                 }
 
                 WaitByTime(Config.UpperWaitTime);
@@ -3174,66 +3100,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        //public int TopContactAndMeasureOnce(bool bFineSpeed = false)
-        //{
-        //    int nRet = 0;
-        //    try
-        //    {
-        //        this.CurrentFunc = TopContactAndMeasureOnce;
-        //        while (IsRotaryIdle() != 0)
-        //        {
-        //            if (IsStop)
-        //            {
-        //                return 0;
-        //            }
-        //            Thread.Sleep(5);
-        //        }
-
-        //        LogSequence("Start");
-        //        int nIndex = GetProbeIndexNo();
-        //        nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
-        //        if (nRet != 0)
-        //        {
-        //            Log.Write(UnitName, "TopContactAndMeasureOnce", "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
-        //            nRet = -1; //return -1;
-        //        }
-
-        //        WaitByTime(Config.UpperWaitTime);
-
-        //        // 6) 검사 요구 동기 처리
-        //        // [CHG] NG면 Retry
-        //        var die = Rotary != null ? Rotary.GetProbeSocketMaterial() : null;
-        //        nRet = MeasureChipWithNgRetry(die, maxRetry: 0, retryDelayMs: 50);
-        //        if (nRet != 0)
-        //        {
-        //            Log.Write(UnitName, "[TopContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
-        //            nRet = -1; //return - 1;
-        //        }
-
-        //        if (nRet == 0)
-        //        {
-        //            long c = _contactCounter.Increase();
-        //            Log.Write(UnitName, nameof(TopContactAndMeasureOnce), $"ContactCount++ => {c}");
-        //        }
-
-        //        if (Config.ViewMode)
-        //        {
-        //            // [ADD] 검사 완료 후 결과 이미지 저장
-        //            SaveResultImage(nIndex, nRet == 0 ? "Good" : "NG");
-        //        }
-        //        return nRet;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //        return -1;
-        //    }
-        //    finally
-        //    {
-        //        LogSequence("End");
-        //    }
-        //}
-
         /// <summary>
         /// Bottom Contact 1개 소켓 검사 시컨스
         /// 순서:
@@ -3250,22 +3116,20 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int BottomContactAndMeasureOnce(bool bFineSpeed = false)
         {
+            this.CurrentFunc = BottomContactAndMeasureOnce;
             int nRet = 0;
             int nIndex = GetProbeIndexNo();
             try
             {
-                this.CurrentFunc = BottomContactAndMeasureOnce;
-                LogSequence("Start");
-
-                while (IsRotaryIdle() != 0)
+                while (IsRotaryReadyStable(3, 5) == false)
                 {
                     if (IsStop)
-                    {
                         return 0;
-                    }
+
                     Thread.Sleep(1);
                 }
 
+                LogSequence("Start");
                 SetProbeVac(true);
                 nRet = MovePositionGripperXReady(bFineSpeed);
                 if (nRet != 0)
@@ -3286,58 +3150,8 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     TaktEnd("SyncProbeZUpAndBottomProbeZReady");
                 }
-                else
-                {
-                    //기존 순차 방식.
-                    //TaktStart("MovePositionProbeZGripperIndexUp");
-                    //nRet = MovePositionProbeZGripperIndexUp(bFineSpeed);
-                    //if (nRet != 0)
-                    //{
-                    //    Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
-                    //    return -1;
-                    //}
-                    //TaktEnd("MovePositionProbeZGripperIndexUp");
-
-                    //TaktStart("MovePositionBottomContact_Index_Ready");
-                    //nRet = MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
-                    //if (nRet != 0)
-                    //{
-                    //    Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
-                    //    return -1;
-                    //}
-                    //TaktEnd("MovePositionBottomContact_Index_Ready");
-                }
-
-                if (false) //순차 방식
-                {
-                    if (Config.GripperMode)
-                    {
-                        TaktStart("GripperXClamp");
-                        nRet = MovePositionGripperXClamp(bFineSpeed);
-                        if (nRet != 0)
-                        {
-                            Log.Write(UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
-                            return -1;
-                        }
-                        TaktEnd("GripperXClamp");
-                    }
-
-                    if (IsPositionProbeZGripperIndexUp(nIndex) == false)
-                    {
-                        Log.Write(UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
-                        return -1;
-                    }
-
-                    TaktStart("BottomProbeZUp");
-                    nRet = MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
-                        return -1;
-                    }
-                    TaktEnd("BottomProbeZUp");
-                }
-                else // 병렬 방식
+                
+                // 병렬 방식
                 {
                     Task<int> taskClamp = null;
                     if (Config.GripperMode)
@@ -3435,22 +3249,14 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     Log.Write(UnitName, "[BottomContactOnce] MeasureChipWithNgRetry failed (or NG after retries)");
                     TaktEnd("Measure");
-
-                    //MoveToSafetyZSync(ref nRet);
-                    //우선 그냥 정상적으로 처리해 보자.
-                    //return 0; //return -2;  //검사 NG는 -2로 바꿔서 처리하자.
                 }
                 else
                 {
                     TaktEnd("Measure");
                 }
 
-                //if (nRet == 0)
-                {
-                    long c = _contactCounter.Increase();
-                    Log.Write(UnitName, nameof(BottomContactAndMeasureOnce), $"ContactCount++ => {c}");
-                }
-
+                long c = _contactCounter.Increase();
+                Log.Write(UnitName, nameof(BottomContactAndMeasureOnce), $"ContactCount++ => {c}");
                 if (Config.ViewMode)
                 {
                     // [ADD] 검사 완료 후 결과 이미지 저장
@@ -4059,7 +3865,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 try
                 {
-                    while (IsRotaryIdle() != 0)
+                    while (IsRotaryReadyStable(3, 5) == false)
                     {
                         if (IsStop)
                         {

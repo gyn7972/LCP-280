@@ -242,7 +242,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_isSafetyMoving)
                     return true;
-                if (this.Rotary.IsIndexMoving())
+                if (IsRotaryReadyStable(3, 5) == false)
                 {
                     AxisOutputPickZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
@@ -290,6 +290,20 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             return bRet;
+        }
+        private bool IsRotaryReadyStable(int checkCount = 3, int pollMs = 5)
+        {
+            if (Rotary == null) return true;
+
+            for (int i = 0; i < checkCount; i++)
+            {
+                if (!Rotary.IsIndexReadyForAction(out _))
+                    return false;
+
+                if (i < checkCount - 1)
+                    Thread.Sleep(pollMs);
+            }
+            return true;
         }
 
         private volatile bool _pickUpRequest = false;
@@ -366,7 +380,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (axis == AxisOutputPickZ)
                 {
-                    if (this.Rotary.IsIndexMoving())
+                    if (IsRotaryReadyStable(3, 5) == false)
                     {
                         AxisOutputToolT.EmgStop();
                         AxisOutputPickZ.EmgStop();
@@ -718,7 +732,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int IsMoveInterLockPickUp_Index(int nIndex = 0)
         {
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
             {
                 AxisOutputToolT?.EmgStop();
                 AxisOutputPickZ?.EmgStop();
@@ -835,7 +849,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int IsMoveInterLockPickUpPickZ_Index(int nIndex = 0)
         {
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
             {
                 AxisOutputToolT?.EmgStop();
                 AxisOutputPickZ?.EmgStop();
@@ -1912,7 +1926,7 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             sw = Stopwatch.StartNew();
                             timeoutMs = 1000;
-                            while (Rotary.IsIndexMoving())
+                            while (IsRotaryReadyStable(3, 5) == false)
                             {
                                 if (IsStop)
                                     return 0;
@@ -2213,6 +2227,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRet = 0;
+                string reason = string.Empty;
                 try
                 {
                     if(this.RunUnitStatus == UnitStatus.ManualRunning)
@@ -2231,8 +2246,7 @@ namespace QMC.LCP_280.Process.Unit
                                 $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
                             return -1;
                         }
-
-                        if (Rotary.IsIndexMoving())
+                        if (IsRotaryReadyStable(3, 5))
                         {
                             Log.Write(UnitName, nameof(OutputTrDiePick),
                                 $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
@@ -2263,7 +2277,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     // 0. Rotary Index 동작 중인지 확인 - 이건 무조건.
-                    if (Rotary != null && this.Rotary.IsIndexMoving())
+                    if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
                     {
                         return 0;
                     }

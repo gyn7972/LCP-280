@@ -457,8 +457,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             //이건 확인이 필요한데. 언로딩할수도있는건데 로딩만 확인한다...
-            isOK &= this.InputCassetteLifterUnit.IsWaferReadyForLoading();
-            
+            isOK = this.InputCassetteLifterUnit.IsWaferReadyForLoading();
             return isOK;
         }
 

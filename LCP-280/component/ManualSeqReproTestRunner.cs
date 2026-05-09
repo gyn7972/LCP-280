@@ -218,7 +218,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                                 if (_rotary.IsStop)
                                                     return;
 
-                                                if (_rotary.IsIndexReadyForUnitAction(out string reason))
+                                                if (_rotary.IsIndexReadyForAction(out string reason))
                                                 {
                                                     int idx = _dieTransfer.GetLoadIndexNo(); // 0~7
                                                     if (currentSocket == idx)
@@ -273,13 +273,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     if (_rotary.IsStop)
                                         return;
 
-                                    if (_rotary.IsIndexReadyForUnitAction(out string reason))
+                                    if (_rotary.IsIndexReadyForAction(out string reason))
                                     {
                                         break;
                                     }
                                     else
                                     {
-                                        Log.Write("ReproTest", "Start", $"IsIndexReadyForUnitAction skipped. {reason}");
+                                        Log.Write("ReproTest", "Start", $"IsIndexReadyForAction skipped. {reason}");
                                     }
 
                                     Thread.Sleep(2);
@@ -410,7 +410,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                         if (_rotary.IsStop)
                                             return;
 
-                                        if (_rotary.IsIndexReadyForUnitAction(out string reason))
+                                        if (_rotary.IsIndexReadyForAction(out string reason))
                                         {
                                             int idx = _dieTransfer.GetLoadIndexNo(); // 0~7
                                             if (currentSocket == idx)
@@ -452,7 +452,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork.Repro
                                     var sw = System.Diagnostics.Stopwatch.StartNew();
                                     while(true)
                                     {
-                                        if (_rotary.IsIndexReadyForUnitAction(out string reason))
+                                        if (_rotary.IsIndexReadyForAction(out string reason))
                                             break;
 
                                         if (_rotary.IsStop || ct.IsCancellationRequested || sw.ElapsedMilliseconds > timeoutMs)

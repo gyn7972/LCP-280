@@ -1167,145 +1167,96 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     Log.Write("Operator_Main", failureSummary);
                 }
 
-                async Task<(string Name, int Rc, Exception Ex)> RunActionAsync(string name, Func<int> action)
+                int RunStep(string step, string target, Func<int> action)
                 {
+                    token.ThrowIfCancellationRequested();
                     try
                     {
-                        var rc = await Task.Run(action, token).ConfigureAwait(false);
-                        return (name, rc, null);
+                        int rc = action();
+                        if (rc != 0)
+                        {
+                            SetFailure(step, target, rc);
+                            return -1;
+                        }
+
+                        return 0;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
-                        return (name, -9999, ex);
+                        SetFailure(step, target, -9999, ex);
+                        return -1;
                     }
                 }
 
                 try
                 {
-                    // 1) InputDieTransfer + OutputDieTransfer (동시)
+                    // 1) InputDieTransfer -> OutputDieTransfer (순차)
+                    if (InputDieTransfer != null)
                     {
-                        token.ThrowIfCancellationRequested();
-
-                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
-
-                        if (InputDieTransfer != null)
-                            tasks.Add(RunActionAsync("InputDieTransfer.EnsureReady", () => InputDieTransfer.EnsureReady()));
-
-                        if (OutputDieTransfer != null)
-                            tasks.Add(RunActionAsync("OutputDieTransfer.EnsureReady", () => OutputDieTransfer.EnsureReady()));
-
-                        if (tasks.Count > 0)
-                        {
-                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            foreach (var r in results)
-                            {
-                                if (r.Ex != null) { SetFailure("Step1", r.Name, r.Rc, r.Ex); return -1; }
-                                if (r.Rc != 0) { SetFailure("Step1", r.Name, r.Rc); return -1; }
-                            }
-                        }
+                        if (RunStep("Step1", "InputDieTransfer.EnsureReady", () => InputDieTransfer.EnsureReady()) != 0)
+                            return -1;
                     }
 
-                    // 2) Rotary (단독)
+                    if (OutputDieTransfer != null)
+                    {
+                        if (RunStep("Step1", "OutputDieTransfer.EnsureReady", () => OutputDieTransfer.EnsureReady()) != 0)
+                            return -1;
+                    }
+
+                    // 2) Rotary (순차)
                     if (Rotary != null)
                     {
-                        token.ThrowIfCancellationRequested();
-
-                        var rc = await Task.Run(() => Rotary.ExecuteUnitActionReady(), token).ConfigureAwait(false);
-                        if (rc != 0)
-                        {
-                            SetFailure("Step2", "Rotary.ExecuteUnitActionReady", rc);
+                        if (RunStep("Step2", "Rotary.ExecuteUnitActionReady", () => Rotary.ExecuteUnitActionReady()) != 0)
                             return -1;
-                        }
                     }
 
-                    // 3) IndexChipProbeController
+                    // 3) IndexChipProbeController (순차)
                     if (IndexChipProbeController != null)
                     {
-                        token.ThrowIfCancellationRequested();
-
-                        try
-                        {
-                            var rc = await IndexChipProbeController
-                                .MovePositionAsyncBottomContact_Index_Ready_XYOnly(0)
-                                .ConfigureAwait(false);
-
-                            if (rc != 0)
-                            {
-                                SetFailure("Step3", "IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready_XYOnly", rc);
-                                return -1;
-                            }
-
-                            rc = await Task.Run(() => IndexChipProbeController.MovePositionSafetyZ(), token).ConfigureAwait(false);
-                            if (rc != 0)
-                            {
-                                SetFailure("Step3", "IndexChipProbeController.MovePositionSafetyZ", rc);
-                                return -1;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            SetFailure("Step3", "IndexChipProbeController", -9999, ex);
+                        if (RunStep("Step3", "IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready_XYOnly",
+                            () => IndexChipProbeController.MovePositionAsyncBottomContact_Index_Ready_XYOnly(0).GetAwaiter().GetResult()) != 0)
                             return -1;
-                        }
+
+                        if (RunStep("Step3", "IndexChipProbeController.MovePositionSafetyZ",
+                            () => IndexChipProbeController.MovePositionSafetyZ()) != 0)
+                            return -1;
                     }
 
-                    // 4) InputStageEjector (단독)
+                    // 4) InputStageEjector (순차)
                     if (InputStageEjector != null)
                     {
-                        token.ThrowIfCancellationRequested();
-
-                        var rc = await Task.Run(() => InputStageEjector.CheckReady(), token).ConfigureAwait(false);
-                        if (rc != 0)
-                        {
-                            SetFailure("Step4", "InputStageEjector.CheckReady", rc);
+                        if (RunStep("Step4", "InputStageEjector.CheckReady", () => InputStageEjector.CheckReady()) != 0)
                             return -1;
-                        }
                     }
 
-                    // 5) InputFeeder + OutputFeeder (동시)
+                    // 5) InputFeeder -> OutputFeeder (순차)
+                    if (InputFeeder != null)
                     {
-                        token.ThrowIfCancellationRequested();
-
-                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
-
-                        if (InputFeeder != null)
-                            tasks.Add(RunActionAsync("InputFeeder.EnsureReady", () => InputFeeder.EnsureReady()));
-
-                        if (OutputFeeder != null)
-                            tasks.Add(RunActionAsync("OutputFeeder.EnsureReady", () => OutputFeeder.EnsureReady()));
-
-                        if (tasks.Count > 0)
-                        {
-                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            foreach (var r in results)
-                            {
-                                if (r.Ex != null) { SetFailure("Step5", r.Name, r.Rc, r.Ex); return -1; }
-                                if (r.Rc != 0) { SetFailure("Step5", r.Name, r.Rc); return -1; }
-                            }
-                        }
+                        if (RunStep("Step5", "InputFeeder.EnsureReady", () => InputFeeder.EnsureReady()) != 0)
+                            return -1;
                     }
 
-                    // 6) InputStage + OutputStage (동시)
+                    if (OutputFeeder != null)
                     {
-                        token.ThrowIfCancellationRequested();
+                        if (RunStep("Step5", "OutputFeeder.EnsureReady", () => OutputFeeder.EnsureReady()) != 0)
+                            return -1;
+                    }
 
-                        var tasks = new List<Task<(string Name, int Rc, Exception Ex)>>();
+                    // 6) InputStage -> OutputStage (순차)
+                    if (InputStage != null)
+                    {
+                        if (RunStep("Step6", "InputStage.MoveToStageReadyPosition", () => InputStage.MoveToStageReadyPosition()) != 0)
+                            return -1;
+                    }
 
-                        if (InputStage != null)
-                            tasks.Add(RunActionAsync("InputStage.MoveToStageReadyPosition", () => InputStage.MoveToStageReadyPosition()));
-
-                        if (OutputStage != null)
-                            tasks.Add(RunActionAsync("OutputStage.MoveToStageReadyPosition", () => OutputStage.MoveToStageReadyPosition()));
-
-                        if (tasks.Count > 0)
-                        {
-                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                            foreach (var r in results)
-                            {
-                                if (r.Ex != null) { SetFailure("Step6", r.Name, r.Rc, r.Ex); return -1; }
-                                if (r.Rc != 0) { SetFailure("Step6", r.Name, r.Rc); return -1; }
-                            }
-                        }
+                    if (OutputStage != null)
+                    {
+                        if (RunStep("Step6", "OutputStage.MoveToStageReadyPosition", () => OutputStage.MoveToStageReadyPosition()) != 0)
+                            return -1;
                     }
 
                     return 0;

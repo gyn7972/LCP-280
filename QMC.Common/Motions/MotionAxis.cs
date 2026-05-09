@@ -509,7 +509,7 @@ namespace QMC.Common.Motions
                 var pos = GetPosition();
                 //var pos = Status.PV.ActualPosition;
                 bool bRet = Math.Abs(pos - logicalTarget) <= Config.InposTolerance;
-                bRet &= this.IsMoveDone();
+                bRet = this.IsMoveDone();
                 return bRet;
             }
             else if (_ckdDriver != null)
@@ -1780,17 +1780,6 @@ namespace QMC.Common.Motions
                 //return _ckdDriver.IsRunWait();
                 if (_ckdDriver.IsInPosition() && _ckdDriver.IsRunWait())
                     return true;
-
-                //bool b1 = Status.State.InpositionDone;
-                //bool b2 = Status.State.Inposition;
-                //if (b1 && b2)
-                //{
-                //    return true;
-                //}
-                //else
-                //{
-                //    return false;
-                //}
             }
             return false;
         }

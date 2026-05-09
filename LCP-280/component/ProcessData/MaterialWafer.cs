@@ -932,7 +932,6 @@ namespace QMC.LCP_280.Process.Component
 
                         bool bAllok = int.TryParse(strvalues[0].Trim(), out nIndexX);
                         bAllok &= int.TryParse(strvalues[1].Trim(), out nIndexY);
-
                         if (bAllok)
                         {
                             MaterialDie die = new MaterialDie();
@@ -970,7 +969,6 @@ namespace QMC.LCP_280.Process.Component
                             bool bAllok = int.TryParse(strvalues[0], out nIndexX);
                             bAllok &= int.TryParse(strvalues[1], out nIndexY);
                             bAllok &= int.TryParse(strvalues[2], out nBinCode);
-
                             if (bAllok)
                             {
                                 MaterialDie die = new MaterialDie();
@@ -990,46 +988,6 @@ namespace QMC.LCP_280.Process.Component
 
             return dies;
         }
-
-        //기존 코드
-        //public List<MaterialDie> ReadFileOnline(string path, MapTyp mapTyp)
-        //{
-        //    List<MaterialDie> dies = new List<MaterialDie>();
-
-        //    string[] strLines = System.IO.File.ReadAllLines(path);
-        //    if (strLines.Length > 3)
-        //    {
-        //        for (int iter = 3; iter < strLines.Length; iter++)
-        //        {
-        //            string[] strvalues = strLines[iter].Split(' ', ',', '\t');
-        //            int nIndexX = 0;
-        //            int nIndexY = 0;
-        //            int nBinCode = 0;
-
-        //            bool bAllok = int.TryParse(strvalues[0], out nIndexX);
-        //            bAllok &= int.TryParse(strvalues[1], out nIndexY);
-        //            bAllok &= int.TryParse(strvalues[2], out nBinCode);
-
-        //            if (bAllok)
-        //            {
-        //                MaterialDie die = new MaterialDie();
-        //                die.MapX = nIndexX;
-        //                die.MapY = nIndexY;
-        //                //die.Rank = nBinCode;
-        //                die.PreRank = nBinCode;
-
-        //                // [FIX] Map 파일에서 읽힌 다이는 존재로 간주
-        //                die.Presence = MaterialPresence.Exist;
-        //                die.State = DieProcessState.Mapped; // 필요하면
-
-        //                dies.Add(die);
-        //            }
-        //        }
-        //    }
-        //    return dies;
-        //}
-
-        // LCP-280\component\ProcessData\MaterialWafer.cs
 
         public double Mapmatch(string strFileName, MapTyp mapTyp)
         {

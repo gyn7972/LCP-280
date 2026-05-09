@@ -338,7 +338,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     // 2) Measure Chip
-                    bRet &= Measure();
+                    bRet = Measure();
                     if (bRet != 0)
                     {
                         Log.Write(UnitName, "MeasureChip", "Measure() Fail");
@@ -348,7 +348,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    bRet &= Measure();
+                    bRet = Measure();
                 }
 
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
@@ -362,13 +362,12 @@ namespace QMC.LCP_280.Process.Unit
 
                 if(this.RunUnitStatus != UnitStatus.AutoRunning)
                 {
-                    bRet &= AssignDataToMaterialObject();
+                    bRet = AssignDataToMaterialObject();
                     if (bRet != 0)
                     {
                         PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
                         Log.Write(UnitName, "MeasureChip", "Fiel Open Error.");
-                        bRet = -1;
-                        return bRet;
+                        return -1;
                     }
                 }
 

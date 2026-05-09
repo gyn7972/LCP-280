@@ -196,13 +196,14 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_isSafetyMoving)
                     return true;
-                if (this.Rotary.IsIndexMoving())
+                if (!IsRotaryReadyStable(3, 5)) //if (Rotary.IsIndexReadyForAction(out string reason) == false)
                 {
                     AxisIndexZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                     Log.Write(UnitName, nameof(IsInterlockOK), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                     return false;
                 }
+
                 if (this.IsAlignTReady() == false)
                 {
                     AxisIndexZ?.EmgStop();
@@ -265,7 +266,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && !IsRotaryReadyStable(3, 5)) //if (Rotary != null && Rotary.IsIndexReadyForAction(out string reason) == false)
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -389,23 +390,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary != null)
             {
-                // [수정] 단순히 Moving 신호만 보는 것이 아니라, 
-                // "현재 위치가 정위치(Index) 허용 범위 밖인가?"를 확인합니다.
-                // 이동 중이라도 목표 위치에 거의 도달했다면(InPosition 범위 내), Z축 상승은 안전하다고 판단합니다.
-
-                bool isMoving = this.Rotary.IsIndexMoving();
-
-                // 1. 움직이지 않으면 OK
-                if (!isMoving)
-                    return nRet;
-
-                // 2. 움직인다면, 정말 위험한지 확인 (Auto Run 중 미세 흔들림 방지)
-                // Rotary 클래스에 IsIndexInPosition() 같은 함수가 없다면 아래 로직을 참고하세요.
-                // (Rotary.IsIndexMoving 내부 로직과 유사하게, "현재 위치가 Index 위치인지" 판별)
-
-                // 시뮬레이션 환경 등을 고려해 10ms 대기 후 재확인 (노이즈 필터)
-                Thread.Sleep(1);
-                if (this.Rotary.IsIndexMoving())
+                if (!IsRotaryReadyStable(3, 5)) //if (Rotary.IsIndexReadyForAction(out string reason) == false)
                 {
                     // 정말로 계속 움직이고 있다면, 위치가 틀어졌을 가능성이 높음 -> 정지
                     AxisIndexZ.EmgStop();
@@ -418,6 +403,22 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+        private bool IsRotaryReadyStable(int checkCount = 3, int pollMs = 5)
+        {
+            if (Rotary == null) return true;
+
+            for (int i = 0; i < checkCount; i++)
+            {
+                if (!Rotary.IsIndexReadyForAction(out _))
+                    return false;
+
+                if (i < checkCount - 1)
+                    Thread.Sleep(pollMs);
+            }
+            return true;
+        }
+
         public Task<int> MovePositionAsyncSafeAlignUp(int nIndex = 0, bool isFine = false, CancellationToken ct = default(CancellationToken))
         {
             return Task.Run(() =>
@@ -512,7 +513,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && !IsRotaryReadyStable(3, 5)) //if (Rotary != null && Rotary.IsIndexReadyForAction(out string reason) == false)
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -599,7 +600,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTForward()
         {
             int nRet = 0;
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && !IsRotaryReadyStable(3, 5)) //if (Rotary != null && Rotary.IsIndexReadyForAction(out string reason) == false)
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -675,7 +676,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTBackward()
         {
             int nRet = 0;
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && !IsRotaryReadyStable(3, 5)) //if (Rotary != null && Rotary.IsIndexReadyForAction(out string reason) == false)
             {
                 Log.Write(UnitName, nameof(IsMoveInterLockAlignTBackward),
                     $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
@@ -748,7 +749,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTReady()
         {
             int nRet = 0;
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && !IsRotaryReadyStable(3, 5)) //if (Rotary != null && Rotary.IsIndexReadyForAction(out string reason) == false)
             {
                 Log.Write(UnitName, nameof(IsMoveInterLockAlignTReady), $"Rotary moving interlock. {Rotary.GetIndexMovingDebugText()}");
                 AxisIndexZ?.EmgStop();
@@ -1014,35 +1015,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Seq 단위 동작 함수
-        
-        /// <summary>
-        /// Rotary(인덱스) 정지까지 대기. 
-        /// - 성공: 0, 타임아웃/오류: -1, Auto 중 Stop 신호: 0
-        /// </summary>
-        private int WaitForRotaryIdle(int timeoutMs = -1, int pollMs = 1)
-        {
-            var sw = Stopwatch.StartNew();
-            while (true)
-            {
-                // Auto 모드에서 Stop 신호 시 즉시 반환
-                if (RunMode == UnitRunMode.Auto && IsStop)
-                    return 0;
-
-                // 즉시 확인 API 사용(알람 미발행)
-                if(this.Rotary.IsIndexMoving() == false)
-                {
-                    return 0;
-                }
-
-                if (timeoutMs >= 0 && sw.ElapsedMilliseconds >= timeoutMs)
-                {
-                    Log.Write(UnitName, nameof(WaitForRotaryIdle), $"Timeout waiting Rotary idle ({timeoutMs} ms)");
-                    return -1;
-                }
-                Thread.Sleep(pollMs);
-            }
-        }
-
         public int RunAlignSocketOnceReady(bool bFineSpeed = false)
         {
             int bRtn = 0;
@@ -1050,8 +1022,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.CurrentFunc = RunAlignSocketOnceReady;
                 LogSequence("Start");
-               
-                while (this.Rotary.IsIndexMoving())
+                                                                  
+                while (!IsRotaryReadyStable(3, 5))  //while (this.Rotary.IsIndexReadyForAction(out string reason) == false)
                 {
                     if (IsStop)
                     {
@@ -1123,7 +1095,7 @@ namespace QMC.LCP_280.Process.Unit
                     $"SocketState={socket?.State}, " +
                     $"DieNull={(die == null)}, " +
                     $"Presence={die?.Presence}, DieState={die?.State}, ProcState={die?.ProcessSatate}, " +
-                    $"RotaryMoving={Rotary.IsIndexMoving()}");
+                    $"RotaryMoveDone={Rotary.IsIndexReadyForAction(out string reason)}");
 
                 if (bUseSocket == false)
                 {
@@ -1155,7 +1127,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                while (this.Rotary.IsIndexMoving())
+                while (!IsRotaryReadyStable(3, 5)) //while (this.Rotary.IsIndexReadyForAction(out reason) == false)
                 {
                     if (IsStop)
                     {
@@ -1172,7 +1144,7 @@ namespace QMC.LCP_280.Process.Unit
                 TaktStart("AlignTReady");
                 if (IsAlignTReady() == false)
                 {
-                    nRet &= MovePositionAlignTReady(bFineSpeed);
+                    nRet = MovePositionAlignTReady(bFineSpeed);
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
@@ -1527,7 +1499,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 try
                 {
-                    while (this.Rotary.IsIndexMoving())
+                    while (!IsRotaryReadyStable(3, 5)) //while (this.Rotary.IsIndexReadyForAction(out string reason) == false)
                     {
                         if (IsStop)
                         {

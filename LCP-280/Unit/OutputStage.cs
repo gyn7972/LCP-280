@@ -2198,11 +2198,22 @@ namespace QMC.LCP_280.Process.Unit
         public bool CanPlaceDie()
         {
             bool bRet = true;
-            bRet &= this.AxisX.IsMoveDone();
-            bRet &= this.AxisY.IsMoveDone();
-            bRet &= this.AxisT.IsMoveDone();
-            bRet &= HasNextDie();
-
+            bool bMoveDoneAxisX = false;
+            bool bMoveDoneAxisY = false;
+            bool bMoveDoneAxisT = false;
+            bool bHasnexDie = false;
+            bMoveDoneAxisX = this.AxisX.IsMoveDone();
+            bMoveDoneAxisY = this.AxisY.IsMoveDone();
+            bMoveDoneAxisT = this.AxisT.IsMoveDone();
+            bHasnexDie = HasNextDie();
+            if(bMoveDoneAxisX && bMoveDoneAxisY && bMoveDoneAxisT && bHasnexDie)
+            {
+                bRet = true;
+            }
+            else
+            {
+                bRet = false;
+            }
             return bRet;
         }
 

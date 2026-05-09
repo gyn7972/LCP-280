@@ -771,138 +771,110 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             int nRet = 0;
 
-            if (isTop)
+            try
             {
-                if (controller.IsContactTop() == false)
+                while (controller.IsRotaryReadyStable(3, 5) == false)
                 {
-                    if (controller.SetContectTop(true) == false)
+                    return -1;
+                }
+
+                if (isTop)
+                {
+                    if (controller.IsContactTop() == false)
                     {
-                        Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Top) failed");
+                        if (controller.SetContectTop(true) == false)
+                        {
+                            Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Top) failed");
+                            return -1;
+                        }
+                    }
+
+                    nRet = controller.TopContactAndMeasureOnce();
+                    if (nRet != 0)
+                    {
+                        Log.Write(controller.UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
                         return -1;
                     }
                 }
-
-                //Log.Write("kkkkkkProb", "Start3");
-                nRet = controller.TopContactAndMeasureOnce();
-                if (nRet != 0)
+                else
                 {
-                    Log.Write(controller.UnitName, "[RunInspection] TopContactAndMeasureOnce failed");
-                    return -1;
-                }
-            }
-            else
-            {
-                if (controller.IsContactProbe() == false)
-                {
-                    if (controller.SetContectTop(false) == false)
+                    if (controller.IsContactProbe() == false)
                     {
-                        Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Bottom) failed");
-                        return -1;
+                        if (controller.SetContectTop(false) == false)
+                        {
+                            Log.Write(controller.UnitName, "[RunInspection] SetContectTop(Bottom) failed");
+                            return -1;
+                        }
                     }
-                }
 
-                while (controller.IsRotaryIdle() != 0)
-                {
-                    return -1;
-                }
+                    bool bFineSpeed = true;
+                    int nIndex = controller.GetProbeIndexNo();
+                    controller.SetProbeVac(true);
 
-                bool bFineSpeed = true;
-                int nIndex = controller.GetProbeIndexNo();
-                controller.SetProbeVac(true);
-
-                nRet = controller.MovePositionGripperXReady(bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
-                    return -1;
-                }
-
-                nRet = controller.MovePositionProbeZGripperIndexUp(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
-                    return -1;
-                }
-
-                nRet = controller.MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
-                    return -1;
-                }
-
-                if (controller.Config.GripperMode)
-                {
-                    nRet = controller.MovePositionGripperXClamp(bFineSpeed);
+                    nRet = controller.MovePositionGripperXReady(bFineSpeed);
                     if (nRet != 0)
                     {
                         Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
                         return -1;
                     }
+
+                    nRet = controller.MovePositionProbeZGripperIndexUp(nIndex, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXIndexUp failed");
+                        return -1;
+                    }
+
+                    nRet = controller.MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
+                        return -1;
+                    }
+
+                    if (controller.Config.GripperMode)
+                    {
+                        nRet = controller.MovePositionGripperXClamp(bFineSpeed);
+                        if (nRet != 0)
+                        {
+                            Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionGripperXReady failed");
+                            return -1;
+                        }
+                    }
+
+                    if (controller.IsPositionProbeZGripperIndexUp(nIndex) == false)
+                    {
+                        Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
+                        return -1;
+                    }
+                    //if (controller.IsPositionProbeZGripperIndexUp() == false)
+                    //{
+                    //    Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
+                    //    return -1;
+                    //}
+
+                    nRet = controller.MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
+                        return -1;
+                    }
+
+                    controller.WaitByTime(controller.Config.UpperWaitTime);
+
+                    //nRet = controller.BottomContactAndMeasureOnce();
+                    //if (nRet != 0)
+                    //{
+                    //    Log.Write(controller.UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
+                    //    return -1;
+                    //}
                 }
-
-                if (controller.IsPositionProbeZGripperIndexUp(nIndex) == false)
-                {
-                    Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
-                    return -1;
-                }
-                //if (controller.IsPositionProbeZGripperIndexUp() == false)
-                //{
-                //    Log.Write(controller.UnitName, "[BottomContactOnce] IsPositionProbeZGripperIndexUp failed");
-                //    return -1;
-                //}
-
-                nRet = controller.MovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(controller.UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
-                    return -1;
-                }
-
-                controller.WaitByTime(controller.Config.UpperWaitTime);
-
-                //nRet = controller.BottomContactAndMeasureOnce();
-                //if (nRet != 0)
-                //{
-                //    Log.Write(controller.UnitName, "[RunInspection] BottomContactAndMeasureOnce failed");
-                //    return -1;
-                //}
             }
-
-
-            //if (isTop)
-            //{
-            //    rc = controller.MovePositionTopContact_Index_Ready(selectedProbeIndex);
-            //    if (rc != 0) 
-            //        return -1;
-
-            //    rc = controller.MovePositionTopContact_Index_Up(selectedProbeIndex);
-            //    if (rc != 0) 
-            //        return -1;
-
-            //    return 0;
-            //}
-
-            //rc = controller.BottomContactAndMeasureOnce();
-            //if (rc != 0)
-            //    return -1;
-
-            // Bottom
-            //if (controller.SetProbeVac(true) == false)
-            //    return -1;
-
-            //rc = controller.MovePositionProbeZGripperIndexUp();
-            //if (rc != 0) 
-            //    return -1;
-
-            //rc = controller.MovePositionBottomContact_Index_Ready(selectedProbeIndex);
-            //if (rc != 0) 
-            //    return -1;
-
-            //rc = controller.MovePositionBottomContact_Index_Up(selectedProbeIndex);
-            //if (rc != 0) 
-            //    return -1;
-
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
             return 0;
         }
 

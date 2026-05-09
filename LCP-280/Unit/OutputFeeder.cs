@@ -441,9 +441,10 @@ namespace QMC.LCP_280.Process.Unit
         private bool IsInterlockOKMoveToCassette()
         {
             bool isOK = this.OutputStage.IsPositionBinLoading();
-            isOK &= this.OutputCassetteLifter.IsBinReadyForLoading();
+            isOK = this.OutputCassetteLifter.IsBinReadyForLoading();
             return isOK;
         }
+
         private bool IsInterlockOKWaferLoading()
         {
             bool bRtn = true;

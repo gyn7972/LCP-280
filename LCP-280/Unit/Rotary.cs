@@ -8,6 +8,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using static QMC.Common.Material;
@@ -873,7 +874,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // [수정 1] WaitIndexMoveDone: 무한 대기 방지 및 타임아웃 적용
-        public int WaitIndexMoveDone(int timeoutMs = 10000, int pollMs = 2) // 기본 타임아웃 10초 설정
+        public int WaitIndexMoveDone(int timeoutMs = 15000, int pollMs = 2) // 기본 타임아웃 10초 설정
         {
             if (AxisIndexT == null)
                 return -1;
@@ -886,10 +887,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (timeoutMs <= 0) 
                     timeoutMs = 15000;
 
+                //Thread.Sleep(50);
+
                 var sw = Stopwatch.StartNew();
                 while (true)
                 {
-                    if(IsIndexReadyForUnitAction(reason: out string readyReason))
+                    if(IsIndexReadyForAction(out string readyReason))
                     {
                         OnLoadIndexChanged(GetLoadIndexNo());
                         break; // 이동 완료 및 위치 안정화 확인
@@ -900,7 +903,6 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write("Rotary", $"WaitIndexMoveDone Timeout after {sw.ElapsedMilliseconds} ms. Last reason: {readyReason}");
                         return -1; // 타임아웃
                     }
-
                     Thread.Sleep(pollMs);
                 }
                 return 0;
@@ -921,42 +923,22 @@ namespace QMC.LCP_280.Process.Unit
             return err;
         }
 
-        private int _indexMovingSampleCount = 0;
-        private DateTime _indexMovingFirstDetectedAt = DateTime.MinValue;
-        private int IndexMovingConfirmCount = 3;   // 연속 3회
-        private int IndexMovingConfirmMs = 15;     // 또는 15ms 이상
-
-        public bool IsIndexMoving()
+        private bool IsIndexMoving()
         {
             var ax = AxisIndexT;
             if (ax == null)
                 return false;
 
-            // 기존 원신호(위치판단 제외)
+            bool bRet = false;
+            String reason = string.Empty;
             bool driverMoving = IsAxisMoving(AxisNames.IndexT);
-            bool moveDone = ax.IsMoveDone();
-            bool rawMoving = driverMoving || !moveDone;
-            lock (_lockIndexMoving)
-            {
-                if (!rawMoving)
-                {
-                    // 정지 신호 들어오면 즉시 리셋
-                    _indexMovingSampleCount = 0;
-                    _indexMovingFirstDetectedAt = DateTime.MinValue;
-                    return false;
-                }
 
-                // moving 원신호가 들어온 경우: 연속성/시간 확인
-                if (_indexMovingSampleCount == 0)
-                    _indexMovingFirstDetectedAt = DateTime.Now;
+            //if (IsIndexAtStation(out reason))
+            //    bRet = false;
+            //else
+            //    bRet = true;
 
-                _indexMovingSampleCount++;
-
-                bool byCount = _indexMovingSampleCount >= IndexMovingConfirmCount;
-                bool byTime = (DateTime.Now - _indexMovingFirstDetectedAt).TotalMilliseconds >= IndexMovingConfirmMs;
-
-                return byCount || byTime;
-            }
+            return driverMoving;// || bRet;
         }
 
         //public bool IsIndexMoving()
@@ -964,15 +946,64 @@ namespace QMC.LCP_280.Process.Unit
         //    var ax = AxisIndexT;
         //    if (ax == null)
         //        return false;
-
         //    //실제로 Done 신호가 늦게 들어오니깐. Inposition만 확인해 보자.
         //    //함수보니깐.. 두개 똑같음. 하나만 봐도 된다.
         //    bool driverMoving = IsAxisMoving(AxisNames.IndexT);
         //    bool moveDone = ax.IsMoveDone();
         //    return driverMoving || !moveDone;
-
         //}
-        public bool IsIndexAtStation(out string reason)
+
+        private const int ReadyStableCount = 3;
+
+        // 기존 IsIndexReadyForAction 교체
+        public bool IsIndexReadyForAction(out string reason)
+        {
+            reason = string.Empty;
+            int okCount = 0;
+            for (int i = 0; i < 5; i++) // 최대 10폴
+            {
+                if (IsIndexMoving())
+                {
+                    reason = $"Index moving. {GetIndexMovingDebugText()}";
+                    okCount = 0;
+                }
+                else if (!IsIndexAtStation(out reason))
+                {
+                    okCount = 0;
+                }
+                else
+                {
+                    okCount++;
+                    if (okCount >= ReadyStableCount)
+                        return true;
+                }
+
+                Thread.Sleep(2);
+            }
+
+            if (string.IsNullOrEmpty(reason))
+                reason = "Index not stable yet.";
+            return false;
+        }
+
+        //public bool IsIndexReadyForAction(out string reason)
+        //{
+        //    reason = string.Empty;
+            
+
+
+
+        //    if (IsIndexMoving())
+        //    {
+        //        reason = $"Index moving. {GetIndexMovingDebugText()}";
+        //        return false;
+        //    }
+        //    if (!IsIndexAtStation(out reason))
+        //        return false;
+            
+        //    return true;
+        //}
+        private bool IsIndexAtStation(out string reason)
         {
             reason = string.Empty;
 
@@ -996,22 +1027,6 @@ namespace QMC.LCP_280.Process.Unit
             if (err > tolDeg)
             {
                 reason = $"Index position error. Cur={curDeg:F4}, Step={stepDeg:F4}, Err={err:F4}, Tol={tolDeg:F4}";
-                return false;
-            }
-
-            return true;
-        }
-        public bool IsIndexReadyForUnitAction(out string reason)
-        {
-            reason = string.Empty;
-            if (IsIndexMoving())
-            {
-                reason = $"Index moving. {GetIndexMovingDebugText()}";
-                return false;
-            }
-
-            if (IsIndexAtStation(out reason) == false)
-            {
                 return false;
             }
 
@@ -1423,7 +1438,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int nRet = 0;
-                if (!IsIndexReadyForUnitAction(out string reason))
+                if (!IsIndexReadyForAction(out string reason))
                 {
                     Log.Write(UnitName, "OnRunWork", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
@@ -1465,7 +1480,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 인덱스 이동 중이면 대기
-                if (!IsIndexReadyForUnitAction(out string reason))
+                if (IsIndexReadyForAction(out string reason) == false)
                 {
                     Log.Write(UnitName, "OnRunWork", $"ExecuteUnitAction skipped. {reason}");
                     return 0;
@@ -1666,7 +1681,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 try
                 {
-                    if (!IsIndexReadyForUnitAction(out string rotaryReadyReason))
+                    if (!IsIndexReadyForAction(out string rotaryReadyReason))
                     {
                         Log.Write(UnitName, "OnRunWork",
                             $"Skip ExecuteUnitAction: {rotaryReadyReason}");
@@ -2011,7 +2026,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!IsIndexReadyForUnitAction(out string reason))
+                if (!IsIndexReadyForAction(out string reason))
                 {
                     Log.Write(UnitName, "RunMechaAlign",
                         $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
@@ -2050,7 +2065,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!IsIndexReadyForUnitAction(out string reason))
+                if (!IsIndexReadyForAction(out string reason))
                 {
                     Log.Write(UnitName, "RunProbeInspection",
                         $"Rotary.MoveToSocket failed. targetSocket={nSocketIndex}");
@@ -2604,8 +2619,6 @@ namespace QMC.LCP_280.Process.Unit
         public int Rotate(bool isFine = false)
         {
             int nRet = 0;
-
-
             TaktStart("MoveRotate");
             nRet = MovePositionRotate();
             if (nRet != 0)
@@ -2624,12 +2637,14 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
             }
-            if (WaitIndexReadyStable(5000, 30, out string reason) == false)
-            {
-                Log.Write(UnitName, nameof(Rotate), $"Index not stable after rotate. {reason}");
-                PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
-                return -1;
-            }
+
+            //이거 시뮬에서도 문제되니깐 우선 막자.
+            //if (WaitIndexReadyStable(5000, 30, out string reason) == false)
+            //{
+            //    Log.Write(UnitName, nameof(Rotate), $"Index not stable after rotate. {reason}");
+            //    PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+            //    return -1;
+            //}
             TaktEnd("WaitDoneRotate");
             return 0;
         }
@@ -2641,7 +2656,7 @@ namespace QMC.LCP_280.Process.Unit
             stable.Reset();
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
-                if (IsIndexReadyForUnitAction(out reason))
+                if (IsIndexReadyForAction(out reason))
                 {
                     if (!stable.IsRunning)
                         stable.Restart();

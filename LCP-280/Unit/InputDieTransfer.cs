@@ -460,7 +460,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_isSafetyMoving)
                     return true;
-                if (this.Rotary.IsIndexMoving())
+                if (IsRotaryReadyStable(3, 5) == false)
                 {
                     AxisPlaceZ?.EmgStop();
                     PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
@@ -482,6 +482,20 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             return bRet;
+        }
+        public bool IsRotaryReadyStable(int checkCount = 3, int pollMs = 5)
+        {
+            if (Rotary == null) return true;
+
+            for (int i = 0; i < checkCount; i++)
+            {
+                if (!Rotary.IsIndexReadyForAction(out _))
+                    return false;
+
+                if (i < checkCount - 1)
+                    Thread.Sleep(pollMs);
+            }
+            return true;
         }
         public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
@@ -506,7 +520,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (this.Rotary.IsIndexMoving())
+                    if (IsRotaryReadyStable(3, 5) == false)
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -1049,7 +1063,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && this.Rotary.IsIndexMoving())
+            if (Rotary != null && IsRotaryReadyStable(3, 5) == false)
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -2365,7 +2379,7 @@ namespace QMC.LCP_280.Process.Unit
                         // 아직 Place 조건 미충족: One Cycle 유지
                         return 0;
                     }
-                    if (Rotary.IsLoadSocketEmpty() == false || Rotary.IsIndexMoving())
+                    if (Rotary.IsLoadSocketEmpty() == false || IsRotaryReadyStable(3, 5) == false)
                     {
                         // 아직 Place 조건 미충족: One Cycle 유지
                         return 0;

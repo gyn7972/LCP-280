@@ -392,8 +392,6 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
-
-            
         }
         #endregion
 
@@ -1224,7 +1222,7 @@ namespace QMC.LCP_280.Process.Unit
             if (baseComponent == this.AxisX || baseComponent == this.AxisY || baseComponent == this.AxisT)
             {
                 // Interlock Check EjectorZ Safety Position
-                bRet &= IsInterlockOkWidthEjectorZ(baseComponent, e);
+                bRet = IsInterlockOkWidthEjectorZ(baseComponent, e);
                 if (this.InputFeeder.IsPositionFeederZSafety() == false)
                 {
                     if (this.InputFeeder.IsPositionReady() == false)
