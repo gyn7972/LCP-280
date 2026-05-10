@@ -385,10 +385,20 @@ namespace QMC.Common.VisionPart
                 return -101;
             }
 
-            // 최고 Score를 낸 TrainImage로 한 번 더 실행하여 결과를 최종 저장
-            m_MultiPatternMatchingTool.SubTools.InputImage = bestTrainImage;
-            m_MultiPatternMatchingTool.InputImage = m_RoiInspect.OutputImage;
+            // 2차 확정 실행 직전 ROI 재보장
+            m_RoiInspect.InputImage = visionImage;
+            m_RoiInspect.Parameter.IsFull = false;
+            m_RoiInspect.Parameter.StartLocation = startRoiPoint;
+            m_RoiInspect.Parameter.EndLocation = endRoiPoint;
+            if ((ret = m_RoiInspect.Run()) != 0)
+                return ret;
 
+            var inspectImg = m_RoiInspect.OutputImage;
+            if (inspectImg == null || inspectImg.GetImage() == null)
+                return -103;
+
+            m_MultiPatternMatchingTool.SubTools.InputImage = bestTrainImage;
+            m_MultiPatternMatchingTool.InputImage = inspectImg;
             if ((ret = m_MultiPatternMatchingTool.Run()) != 0)
                 return ret;
 
@@ -428,21 +438,34 @@ namespace QMC.Common.VisionPart
                             minX >= -2 && minY >= -2 &&
                             maxX <= roiW + 2 && maxY <= roiH + 2;
 
-                        if (insideRelativeBox && res.ResultOverlays != null)
+                        if (insideRelativeBox)
                         {
-                            foreach (var ov in res.ResultOverlays)
+                            // 1) Values를 절대좌표로 변환
+                            for (int i = 0; i < values.Count; i++)
                             {
-                                try
+                                var vv = values[i];
+                                vv.X += startRoiPoint.X;
+                                vv.Y += startRoiPoint.Y;
+                                values[i] = vv;
+                            }
+
+                            // 2) Overlay도 같은 오프셋 적용
+                            if (res.ResultOverlays != null)
+                            {
+                                foreach (var ov in res.ResultOverlays)
                                 {
-                                    var f = ov as FrameVisionImageOverlay;
-                                    if (f != null)
+                                    try
                                     {
-                                        f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
-                                        f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
-                                        f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+                                        var f = ov as FrameVisionImageOverlay;
+                                        if (f != null)
+                                        {
+                                            f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
+                                            f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
+                                            f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+                                        }
                                     }
+                                    catch { }
                                 }
-                                catch { }
                             }
                         }
                     }

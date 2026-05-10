@@ -288,24 +288,23 @@ namespace QMC.LCP_280.Process
         private readonly Dictionary<ProcessMode, ModeRuntimeOptions> _modeOptions
             = new Dictionary<ProcessMode, ModeRuntimeOptions>
         {
-            { ProcessMode.Prealign,  new ModeRuntimeOptions 
-                { SearchMode = SearchMode.First, 
-                PreferCenterMostMatch = true,  
-                RoiSourceMode = RoiSourceMode.Profile, 
-                ProfileMode = RunnerProfileMode.Normal } 
-                },
-            { ProcessMode.MapMatching,new ModeRuntimeOptions 
-                { SearchMode = SearchMode.All,   
-                PreferCenterMostMatch = false, 
-                RoiSourceMode = RoiSourceMode.Profile, 
-                ProfileMode = RunnerProfileMode.Normal } 
-                },
-            { ProcessMode.SecondAlign,new ModeRuntimeOptions 
-                { SearchMode = SearchMode.All,   
-                PreferCenterMostMatch = false, 
-                RoiSourceMode = RoiSourceMode.Profile, 
-                ProfileMode = RunnerProfileMode.Recheck } 
-                },
+            { ProcessMode.Prealign,  new ModeRuntimeOptions
+                { SearchMode = SearchMode.First,
+                  PreferCenterMostMatch = true,
+                  RoiSourceMode = RoiSourceMode.Profile,
+                  ProfileMode = RunnerProfileMode.Normal } },
+
+            { ProcessMode.MapMatching, new ModeRuntimeOptions
+                { SearchMode = SearchMode.All,
+                  PreferCenterMostMatch = false,
+                  RoiSourceMode = RoiSourceMode.Profile,
+                  ProfileMode = RunnerProfileMode.Normal } },
+
+            { ProcessMode.SecondAlign, new ModeRuntimeOptions
+                { SearchMode = SearchMode.All,
+                  PreferCenterMostMatch = false,
+                  RoiSourceMode = RoiSourceMode.Profile,
+                  ProfileMode = RunnerProfileMode.Normal } } // [CHG]
         };
 
         #endregion
@@ -335,7 +334,7 @@ namespace QMC.LCP_280.Process
             catch { return (0, 0); }
         }
 
-
+        
 
 
         #region Ctor
@@ -432,13 +431,11 @@ namespace QMC.LCP_280.Process
             {
                 try
                 {
-                    // 1) RecipeName 항상 최신 정규화
                     string normalizedRecipe;
                     try { normalizedRecipe = PatternMatchingRecipeStore.NormalizeRecipeName(_opt.RecipeName); }
                     catch { normalizedRecipe = string.IsNullOrWhiteSpace(_opt.RecipeName) ? "Default" : _opt.RecipeName.Trim(); }
                     _opt.RecipeName = normalizedRecipe;
 
-                    // 2) Root 정책 강제 (Configs/PatternMatching 절대 쓰지 않음)
                     _opt.RecipeRootDirectory = Path.Combine(
                         AppDomain.CurrentDomain.BaseDirectory,
                         "Recipes",
@@ -453,16 +450,15 @@ namespace QMC.LCP_280.Process
                         normalizedRecipe,
                         createDirectoryForSave: false);
 
-                    //var container = PatternMatchingRecipeStore.Load(path);
-                    var container = PatternMatchingRecipeStore.Load(path) ?? new PatternMatchingRecipeJson();
+                    // [CHG] 모드키 기반 로드
+                    var container = PatternMatchingRecipeStore.Load(path, _processMode.ToString(), fallbackLegacy: true);
                     if (container == null)
                     {
-                        _lastFailReason = $"Recipe 없음. camera={camName}, recipe={normalizedRecipe}, path={path}";
+                        _lastFailReason = $"Recipe 없음. camera={camName}, recipe={normalizedRecipe}, mode={_processMode}, path={path}";
                         _recipeLoaded = false;
                         return false;
                     }
 
-                    // 정규화된 이름을 runner 옵션에 반영(로그/저장 파일명도 일관)
                     _opt.RecipeName = normalizedRecipe;
 
                     _parameters = container.Parameters?.Clone();
@@ -476,6 +472,7 @@ namespace QMC.LCP_280.Process
                     }
 
                     _part.SetPatternMatchingParameters(_parameters);
+
                     if (container.Roi != null)
                     {
                         try
@@ -499,6 +496,79 @@ namespace QMC.LCP_280.Process
                 }
             }
         }
+        //public bool LoadRecipe()
+        //{
+        //    lock (_sync)
+        //    {
+        //        try
+        //        {
+        //            // 1) RecipeName 항상 최신 정규화
+        //            string normalizedRecipe;
+        //            try { normalizedRecipe = PatternMatchingRecipeStore.NormalizeRecipeName(_opt.RecipeName); }
+        //            catch { normalizedRecipe = string.IsNullOrWhiteSpace(_opt.RecipeName) ? "Default" : _opt.RecipeName.Trim(); }
+        //            _opt.RecipeName = normalizedRecipe;
+
+        //            // 2) Root 정책 강제 (Configs/PatternMatching 절대 쓰지 않음)
+        //            _opt.RecipeRootDirectory = Path.Combine(
+        //                AppDomain.CurrentDomain.BaseDirectory,
+        //                "Recipes",
+        //                normalizedRecipe,
+        //                "PatternMatching");
+
+        //            string camName = _camera?.Name ?? "NoCamera";
+
+        //            string path = PatternMatchingRecipeStore.ResolveRecipePath(
+        //                _opt.RecipeRootDirectory,
+        //                camName,
+        //                normalizedRecipe,
+        //                createDirectoryForSave: false);
+
+        //            //var container = PatternMatchingRecipeStore.Load(path);
+        //            var container = PatternMatchingRecipeStore.Load(path) ?? new PatternMatchingRecipeJson();
+        //            if (container == null)
+        //            {
+        //                _lastFailReason = $"Recipe 없음. camera={camName}, recipe={normalizedRecipe}, path={path}";
+        //                _recipeLoaded = false;
+        //                return false;
+        //            }
+
+        //            // 정규화된 이름을 runner 옵션에 반영(로그/저장 파일명도 일관)
+        //            _opt.RecipeName = normalizedRecipe;
+
+        //            _parameters = container.Parameters?.Clone();
+        //            _Roi = container.Roi;
+
+        //            if (_parameters == null)
+        //            {
+        //                _lastFailReason = "Recipe 파라미터 없음";
+        //                _recipeLoaded = false;
+        //                return false;
+        //            }
+
+        //            _part.SetPatternMatchingParameters(_parameters);
+        //            if (container.Roi != null)
+        //            {
+        //                try
+        //                {
+        //                    _part.SetTrainStartPoint(container.Roi.TrainStart);
+        //                    _part.SetTrainEndPoint(container.Roi.TrainEnd);
+        //                    _part.SetInspectStartPoint(container.Roi.InspectStart);
+        //                    _part.SetInspectEndPoint(container.Roi.InspectEnd);
+        //                }
+        //                catch { }
+        //            }
+
+        //            _recipeLoaded = true;
+        //            return true;
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            _lastFailReason = "LoadRecipe 예외: " + ex.Message;
+        //            _recipeLoaded = false;
+        //            return false;
+        //        }
+        //    }
+        //}
 
         public void SetPreferCenterMostMatchMode(bool bOn)
         {
@@ -541,6 +611,9 @@ namespace QMC.LCP_280.Process
                     _profileMode = opt.ProfileMode;
                     _opt.ProfileMode = opt.ProfileMode;
                 }
+
+                // [ADD] 모드가 바뀌면 모드별 레시피를 다시 읽도록 강제
+                _recipeLoaded = false;
             }
         }
         public ProcessMode GetProcessMode()
@@ -1401,7 +1474,12 @@ namespace QMC.LCP_280.Process
 
                         Point searchStart;
                         Point searchEnd;
-                        TryResolveSearchRoi(src, out searchStart, out searchEnd);
+                        if (!TryResolveSearchRoi(src, out searchStart, out searchEnd))
+                        {
+                            result.Success = false;
+                            result.FailReason = _lastFailReason ?? "Inspect ROI invalid";
+                            return FinalizeResult(result, src, forceSave);
+                        }
 
                         int ret = _part.OnSearch(searchStart, searchEnd, _parameters, null, src);
                         if (ret != 0)
@@ -1523,7 +1601,10 @@ namespace QMC.LCP_280.Process
             searchEnd = new Point(src.Header.Width - 1, src.Header.Height - 1);
 
             if (_opt.UseInspectRoi == false)
+            {
+                _lastFailReason = "UseInspectRoi=false (full frame)";
                 return true;
+            }
 
             // 1) Profile ROI 우선
             if (_opt.InspectRoiSourceMode == RoiSourceMode.Profile)
@@ -1540,6 +1621,7 @@ namespace QMC.LCP_280.Process
                     {
                         searchStart = s;
                         searchEnd = e;
+                        try { Log.Write("PatternMatchingRunner", $"ROI(Profile:{_profileMode})=({s.X},{s.Y})-({e.X},{e.Y})"); } catch { }
                         return true;
                     }
                 }
@@ -1558,21 +1640,75 @@ namespace QMC.LCP_280.Process
                 {
                     searchStart = s;
                     searchEnd = e;
+                    try { Log.Write("PatternMatchingRunner", $"ROI(Recipe)=({s.X},{s.Y})-({e.X},{e.Y})"); } catch { }
+                    return true;
                 }
             }
-            catch
-            {
-                // full frame 유지
-            }
+            catch { }
 
-            return true;
+            // [CHG] ROI 사용 모드인데 ROI가 유효하지 않으면 전체 검색 금지
+            _lastFailReason = $"Inspect ROI invalid. Mode={_processMode}, RoiSource={_opt.InspectRoiSourceMode}";
+            return false;
         }
+
+        //private bool TryResolveSearchRoi(VisionImage src, out Point searchStart, out Point searchEnd)
+        //{
+        //    searchStart = new Point(0, 0);
+        //    searchEnd = new Point(src.Header.Width - 1, src.Header.Height - 1);
+
+        //    if (_opt.UseInspectRoi == false)
+        //        return true;
+
+        //    // 1) Profile ROI 우선
+        //    if (_opt.InspectRoiSourceMode == RoiSourceMode.Profile)
+        //    {
+        //        ProfileRoiSetting cfg;
+        //        if (_profileRoiSettings.TryGetValue(_profileMode, out cfg) && cfg != null && cfg.Enabled)
+        //        {
+        //            var s = cfg.InspectStart;
+        //            var e = cfg.InspectEnd;
+        //            ClampPointToImage(ref s, src.Header.Width, src.Header.Height);
+        //            ClampPointToImage(ref e, src.Header.Width, src.Header.Height);
+
+        //            if (IsValidRoi(s, e))
+        //            {
+        //                searchStart = s;
+        //                searchEnd = e;
+        //                return true;
+        //            }
+        //        }
+        //    }
+
+        //    // 2) Recipe ROI fallback
+        //    try
+        //    {
+        //        var s = _part.GetInspectStartPoint();
+        //        var e = _part.GetInspectEndPoint();
+
+        //        ClampPointToImage(ref s, src.Header.Width, src.Header.Height);
+        //        ClampPointToImage(ref e, src.Header.Width, src.Header.Height);
+
+        //        if (IsValidRoi(s, e))
+        //        {
+        //            searchStart = s;
+        //            searchEnd = e;
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        // full frame 유지
+        //    }
+
+        //    return true;
+        //}
 
         // Public API 영역에 추가 (GUI에서 현재값 확인용)
         public bool TryGetProfileInspectRoi(RunnerProfileMode mode, out Point inspectStart, out Point inspectEnd, out bool enabled)
         {
             lock (_sync)
             {
+                mode = NormalizeProfileMode(mode); // [ADD]
+
                 ProfileRoiSetting cfg;
                 if (_profileRoiSettings.TryGetValue(mode, out cfg) && cfg != null)
                 {
@@ -1619,11 +1755,20 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        // [ADD] helper
+        private static RunnerProfileMode NormalizeProfileMode(RunnerProfileMode mode)
+        {
+            // Recheck 제거 정책: Recheck == Normal
+            return mode == RunnerProfileMode.Recheck
+                ? RunnerProfileMode.Normal
+                : mode;
+        }
         // #region Public API 내부 적절한 위치에 추가
         public void SetProfileMode(RunnerProfileMode mode)
         {
             lock (_sync)
             {
+                mode = NormalizeProfileMode(mode); // [ADD]
                 _profileMode = mode;
                 _opt.ProfileMode = mode;
             }
@@ -1653,6 +1798,8 @@ namespace QMC.LCP_280.Process
         {
             lock (_sync)
             {
+                mode = NormalizeProfileMode(mode); // [ADD]
+
                 var s = new Point(Math.Min(inspectStart.X, inspectEnd.X), Math.Min(inspectStart.Y, inspectEnd.Y));
                 var e = new Point(Math.Max(inspectStart.X, inspectEnd.X), Math.Max(inspectStart.Y, inspectEnd.Y));
 
@@ -1669,6 +1816,8 @@ namespace QMC.LCP_280.Process
         {
             lock (_sync)
             {
+                mode = NormalizeProfileMode(mode); // [ADD]
+
                 ProfileRoiSetting cfg;
                 if (_profileRoiSettings.TryGetValue(mode, out cfg) == false || cfg == null)
                 {

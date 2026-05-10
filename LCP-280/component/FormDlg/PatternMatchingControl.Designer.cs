@@ -111,7 +111,9 @@ namespace QMC.LCP_280.Process
             this.groupBoxdieInputControl = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this._btnClose = new System.Windows.Forms.Button();
+            this.tableLayoutPanel19 = new System.Windows.Forms.TableLayoutPanel();
+            this.label1 = new System.Windows.Forms.Label();
+            this.cmbMode = new System.Windows.Forms.ComboBox();
             this.tabControl_Vision.SuspendLayout();
             this.tabPageROI.SuspendLayout();
             this.tabPageParam.SuspendLayout();
@@ -139,6 +141,7 @@ namespace QMC.LCP_280.Process
             this.groupBoxdieInputControl.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
+            this.tableLayoutPanel19.SuspendLayout();
             this.SuspendLayout();
             // 
             // _btnSearch
@@ -169,13 +172,12 @@ namespace QMC.LCP_280.Process
             // 
             this.tabControl_Vision.Controls.Add(this.tabPageROI);
             this.tabControl_Vision.Controls.Add(this.tabPageParam);
-            this.tabControl_Vision.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl_Vision.Font = new System.Drawing.Font("¸¼Àº °íµñ", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.tabControl_Vision.Location = new System.Drawing.Point(2, 23);
             this.tabControl_Vision.Margin = new System.Windows.Forms.Padding(2);
             this.tabControl_Vision.Name = "tabControl_Vision";
             this.tabControl_Vision.SelectedIndex = 0;
-            this.tabControl_Vision.Size = new System.Drawing.Size(769, 965);
+            this.tabControl_Vision.Size = new System.Drawing.Size(769, 854);
             this.tabControl_Vision.TabIndex = 4;
             // 
             // tabPageROI
@@ -185,7 +187,7 @@ namespace QMC.LCP_280.Process
             this.tabPageROI.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageROI.Name = "tabPageROI";
             this.tabPageROI.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPageROI.Size = new System.Drawing.Size(761, 924);
+            this.tabPageROI.Size = new System.Drawing.Size(761, 813);
             this.tabPageROI.TabIndex = 0;
             this.tabPageROI.Text = "ROI";
             this.tabPageROI.UseVisualStyleBackColor = true;
@@ -196,7 +198,7 @@ namespace QMC.LCP_280.Process
             this.maintROIControl.Location = new System.Drawing.Point(2, 2);
             this.maintROIControl.Margin = new System.Windows.Forms.Padding(2, 5, 2, 5);
             this.maintROIControl.Name = "maintROIControl";
-            this.maintROIControl.Size = new System.Drawing.Size(757, 920);
+            this.maintROIControl.Size = new System.Drawing.Size(757, 809);
             this.maintROIControl.TabIndex = 0;
             // 
             // tabPageParam
@@ -206,7 +208,7 @@ namespace QMC.LCP_280.Process
             this.tabPageParam.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageParam.Name = "tabPageParam";
             this.tabPageParam.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPageParam.Size = new System.Drawing.Size(761, 924);
+            this.tabPageParam.Size = new System.Drawing.Size(761, 813);
             this.tabPageParam.TabIndex = 1;
             this.tabPageParam.Text = "Parameter";
             this.tabPageParam.UseVisualStyleBackColor = true;
@@ -834,12 +836,11 @@ namespace QMC.LCP_280.Process
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.tabControl_Vision);
-            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox2.Location = new System.Drawing.Point(2, 2);
+            this.groupBox2.Location = new System.Drawing.Point(2, 58);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox2.Size = new System.Drawing.Size(773, 990);
+            this.groupBox2.Size = new System.Drawing.Size(773, 869);
             this.groupBox2.TabIndex = 20;
             this.groupBox2.TabStop = false;
             // 
@@ -890,18 +891,17 @@ namespace QMC.LCP_280.Process
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Controls.Add(this.groupBox2, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 1);
-            this.tableLayoutPanel2.Controls.Add(this._btnClose, 0, 2);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 2);
+            this.tableLayoutPanel2.Controls.Add(this.groupBox2, 0, 1);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel19, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(948, 5);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 3;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 91.57895F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.421053F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5.017921F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 86.11111F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.870968F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(777, 1116);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
@@ -912,8 +912,7 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel3.Controls.Add(this._btnLoadParam, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this._btnSaveParam, 1, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(5, 999);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(5, 1022);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(5);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
@@ -921,16 +920,48 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel3.Size = new System.Drawing.Size(767, 81);
             this.tableLayoutPanel3.TabIndex = 21;
             // 
-            // _btnClose
+            // tableLayoutPanel19
             // 
-            this._btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnClose.Location = new System.Drawing.Point(691, 1087);
-            this._btnClose.Margin = new System.Windows.Forms.Padding(2);
-            this._btnClose.Name = "_btnClose";
-            this._btnClose.Size = new System.Drawing.Size(84, 25);
-            this._btnClose.TabIndex = 2;
-            this._btnClose.Text = "Close";
-            this._btnClose.Click += new System.EventHandler(this._btnClose_Click);
+            this.tableLayoutPanel19.ColumnCount = 2;
+            this.tableLayoutPanel19.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel19.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel19.Controls.Add(this.cmbMode, 1, 0);
+            this.tableLayoutPanel19.Controls.Add(this.label1, 0, 0);
+            this.tableLayoutPanel19.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel19.Name = "tableLayoutPanel19";
+            this.tableLayoutPanel19.RowCount = 1;
+            this.tableLayoutPanel19.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel19.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel19.Size = new System.Drawing.Size(747, 50);
+            this.tableLayoutPanel19.TabIndex = 22;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label1.Font = new System.Drawing.Font("¸¼Àº °íµñ", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Location = new System.Drawing.Point(3, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(367, 50);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "Mark Type";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // cmbMode
+            // 
+            this.cmbMode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cmbMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbMode.Font = new System.Drawing.Font("¸¼Àº °íµñ", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.cmbMode.FormattingEnabled = true;
+            this.cmbMode.Items.AddRange(new object[] {
+            "Prealign",
+            "MapMatching",
+            "SecondAlign"});
+            this.cmbMode.Location = new System.Drawing.Point(376, 3);
+            this.cmbMode.Name = "cmbMode";
+            this.cmbMode.Size = new System.Drawing.Size(368, 38);
+            this.cmbMode.TabIndex = 1;
+            this.cmbMode.SelectedIndexChanged += new System.EventHandler(this.cmbMode_SelectedIndexChanged);
             // 
             // PatternMatchingControl
             // 
@@ -976,6 +1007,8 @@ namespace QMC.LCP_280.Process
             this.groupBoxdieInputControl.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel19.ResumeLayout(false);
+            this.tableLayoutPanel19.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1002,7 +1035,9 @@ namespace QMC.LCP_280.Process
         private TableLayoutPanel tableLayoutPanel17;
         private TableLayoutPanel tableLayoutPanel16;
         private TableLayoutPanel tableLayoutPanel15;
-        private Button _btnClose;
         private Button _btnSearchOnce;
+        private TableLayoutPanel tableLayoutPanel19;
+        private ComboBox cmbMode;
+        private Label label1;
     }
 }

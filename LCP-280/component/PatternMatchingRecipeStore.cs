@@ -104,9 +104,8 @@ namespace QMC.LCP_280.Process
             if (string.IsNullOrWhiteSpace(filePath))
                 throw new ArgumentNullException(nameof(filePath));
 
-            if (string.IsNullOrWhiteSpace(modeKey))
-                modeKey = "DefaultMode";
-
+            if (string.IsNullOrWhiteSpace(modeKey)) modeKey = "Prealign";
+            if (data == null) data = new PatternMatchingRecipeJson();
             if (data.Modes == null)
                 data.Modes = new Dictionary<string, PatternMatchingModeRecipeJson>(StringComparer.OrdinalIgnoreCase);
 
@@ -275,19 +274,20 @@ namespace QMC.LCP_280.Process
             if (container == null) 
                 return null;
 
-            if (string.IsNullOrWhiteSpace(modeKey))
-                modeKey = "DefaultMode";
+            if (string.IsNullOrWhiteSpace(modeKey)) modeKey = "Prealign";
 
-            if (container.Modes != null && container.Modes.TryGetValue(modeKey, out var mode))
+            if (container.Modes != null && container.Modes.TryGetValue(modeKey, out var slot) && slot != null)
             {
-                container.Parameters = mode.Parameters?.Clone();
-                container.Roi = mode.Roi ?? new PatternMatchingRoiJson();
-                container.TrainImages = mode.TrainImages?.ToList() ?? new List<SerializedTrainImage>();
+                container.Parameters = slot.Parameters?.Clone();
+                container.Roi = slot.Roi ?? new PatternMatchingRoiJson();
                 return container;
             }
 
             if (fallbackLegacy)
             {
+                if (container.Modes == null)
+                    container.Modes = new Dictionary<string, PatternMatchingModeRecipeJson>(StringComparer.OrdinalIgnoreCase);
+
                 // 기존 단일 파라미터를 mode로 승격(자동 마이그레이션)
                 if (container.Parameters != null || (container.TrainImages?.Count > 0))
                 {

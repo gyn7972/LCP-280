@@ -48,7 +48,7 @@ namespace QMC.LCP_280.Process
 
         //private string _currentMode = "DefaultMode";
         private PatternMatchingRunner.ProcessMode _currentMode = PatternMatchingRunner.ProcessMode.Prealign;
-
+        private string CurrentModeKey => _currentMode.ToString();
         #endregion
 
         // =========================
@@ -94,6 +94,9 @@ namespace QMC.LCP_280.Process
             // 혹시 카메라 초기화 전에 한번도 LoadRecipeForCurrentCamera가 안 탔다면 대비
             // (NoCamera면 내부에서 처리됨)
             SafeLoadUiRecipeForCurrentCamera();
+
+            cmbMode.SelectedIndex = 0; // Prealign 기본 선택
+
 
             UpdateStatus("Ready");
         }
@@ -885,9 +888,11 @@ namespace QMC.LCP_280.Process
             {
                 maintROIControl?.CommitCurrentRoi();
                 SyncParametersFromUI();
-                if (string.IsNullOrEmpty(cameraName)) cameraName = GetCurrentCameraName();
-                var path = GetRecipePath(cameraName, recipeName);
 
+                if (string.IsNullOrEmpty(cameraName)) 
+                    cameraName = GetCurrentCameraName();
+
+                var path = GetRecipePath(cameraName, recipeName);
                 var roi = new PatternMatchingRoiJson();
                 try
                 {
@@ -898,21 +903,22 @@ namespace QMC.LCP_280.Process
                 }
                 catch { }
 
-                if (_parameters == null) _parameters = _visionPart.GetPatternMatchingParameters();
+                if (_parameters == null) 
+                    _parameters = _visionPart.GetPatternMatchingParameters();
 
-                var container = PatternMatchingRecipeStore.Load(path, _currentMode, true) ?? new PatternMatchingRecipeJson();
+                var container = PatternMatchingRecipeStore.Load(path, CurrentModeKey, true) ?? new PatternMatchingRecipeJson();
                 container.LastCameraName = cameraName;
-
                 container.Parameters = _parameters?.Clone();
                 container.Roi = roi;
 
-                PatternMatchingRecipeStore.Save(path, container, _currentMode);
+                PatternMatchingRecipeStore.Save(path, container, CurrentModeKey);
                 UpdateStatus($"Recipe saved: {path}");
             }
             catch (Exception ex)
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", "Recipe 저장 실패: " + ex.Message);
+                Log.Write(ex);
             }
         }
 
@@ -924,8 +930,12 @@ namespace QMC.LCP_280.Process
                     cameraName = GetCurrentCameraName();
 
                 var path = GetRecipePath(cameraName, recipeName);
-                var container = PatternMatchingRecipeStore.Load(path, _currentMode, fallbackLegacy: true);
-                if (container == null) { UpdateStatus("Recipe 파일 없음. 새로 생성 예정."); return; }
+                var container = PatternMatchingRecipeStore.Load(path, CurrentModeKey, fallbackLegacy: true);
+                if (container == null) 
+                { 
+                    UpdateStatus("Recipe 파일 없음. 새로 생성 예정."); 
+                    return; 
+                }
 
                 if (container.Parameters != null)
                 {
@@ -953,6 +963,7 @@ namespace QMC.LCP_280.Process
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", "Recipe 로드 실패: " + ex.Message);
+                Log.Write(ex);
             }
         }
         #endregion
@@ -988,13 +999,22 @@ namespace QMC.LCP_280.Process
             return src;
         }
 
+        private PatternMatchingRunner.PatternMatchRunResult SearchWithCurrentMode(VisionImage testImage, bool save = false)
+        {
+            if (_runner == null)
+                return null;
+
+            // 핵심: 현재 컨트롤 모드를 runner에 강제 적용
+            _runner.SetProcessMode(_currentMode);
+            // 핵심: 모드별 검색 엔트리 사용
+            return _runner.SearchByCurrentMode(testImage, save);
+        }
+
         private void BtnSearch_Click(object sender, EventArgs e)
         {
             try
             {
-                // 1. 전체 소요 시간 측정 시작
                 var totalWatch = System.Diagnostics.Stopwatch.StartNew();
-
                 SyncParametersFromUI();
 
                 if (_parameters == null)
@@ -1020,10 +1040,6 @@ namespace QMC.LCP_280.Process
 
                 maintROIControl?.CommitCurrentRoi();
 
-                // [최적화] 1. 매 검색마다 발생하는 불필요한 레시피 디스크 저장(I/O) 제외
-                // 파라미터 저장은 별도의 "저장" 버튼 클릭 시에만 수행하도록 유도합니다.
-                // SaveRecipeForCurrentCamera(); 
-
                 if (_runner == null)
                     AttachRunnerForCurrentViewer();
 
@@ -1034,22 +1050,21 @@ namespace QMC.LCP_280.Process
                     return;
                 }
 
-                // [최적화] 2. 러너에 레시피 파라미터를 강제 업데이트 (파일 저장을 안했으므로 메모리 갱신만)
-                if (_runner.Parameters != null && _parameters != null)
-                {
-                    //_runner.Parameters.CopyFrom(_parameters); // 구현된 파라미터 복사 메서드 사용(또는 참조 업데이트)
-                    _runner.LoadRecipe();
-                }
-
-                UpdateRunnerModeFromUI();
-
-                // ----------------------------------------
-                // 2. 순수 비전 알고리즘(Search) 소요 시간 측정
-                // ----------------------------------------
+                // [ADD] 현재 모드/카메라의 ROI/파라미터를 먼저 파일에 반영
+                SaveRecipeForCurrentCamera();
+                _runner.SetProcessMode(_currentMode);
+                _runner.LoadRecipe();
+                // [FIX] searchWatch 선언/측정 추가
                 var searchWatch = System.Diagnostics.Stopwatch.StartNew();
-                var res = _runner.Search(testImage, save: false);
+                var res = _runner.SearchByCurrentMode(testImage, save: false);
                 searchWatch.Stop();
-                // ----------------------------------------
+
+                if (res == null)
+                {
+                    totalWatch.Stop();
+                    UpdateStatus($"Search Fail: runner returned null. (Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms)");
+                    return;
+                }
 
                 _lastRunResult = res;
 
@@ -1088,8 +1103,11 @@ namespace QMC.LCP_280.Process
                 }
                 else
                 {
-                    txtResultX.Clear(); txtResultY.Clear(); txtResultT.Clear();
-                    _lastResultPoint = Point.Empty; _lastResultAngle = 0;
+                    txtResultX.Clear();
+                    txtResultY.Clear();
+                    txtResultT.Clear();
+                    _lastResultPoint = Point.Empty;
+                    _lastResultAngle = 0;
                 }
 
                 _viewer?.Invalidate();
@@ -1105,21 +1123,17 @@ namespace QMC.LCP_280.Process
                     }
                     else
                     {
-                        txtAvgX.Clear(); txtAvgY.Clear(); txtAvgT.Clear();
+                        txtAvgX.Clear();
+                        txtAvgY.Clear();
+                        txtAvgT.Clear();
                     }
                 }
 
-                ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+                ApplyMarksFoundOverlaysFromLastRun();
 
-                // 3. 전체 소요 시간 측정 종료
                 totalWatch.Stop();
-
-                // 결과 출력 포맷 (예: "Total: 150ms, Search: 120ms")
                 string timeMsg = $"Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms";
-
                 UpdateStatus($"Search Success. ({timeMsg})");
-
-                // 필요시 로그에도 기록
                 try { Log.Write("PatternMatchingControl", $"Tact Time -> {timeMsg}"); } catch { }
             }
             catch (Exception ex)
@@ -1129,10 +1143,14 @@ namespace QMC.LCP_280.Process
                 UpdateStatus("Search exception");
             }
         }
+
         //private void BtnSearch_Click(object sender, EventArgs e)
         //{
         //    try
         //    {
+        //        // 1. 전체 소요 시간 측정 시작
+        //        var totalWatch = System.Diagnostics.Stopwatch.StartNew();
+
         //        SyncParametersFromUI();
 
         //        if (_parameters == null)
@@ -1157,7 +1175,10 @@ namespace QMC.LCP_280.Process
         //        }
 
         //        maintROIControl?.CommitCurrentRoi();
-        //        SaveRecipeForCurrentCamera();
+
+        //        // [최적화] 1. 매 검색마다 발생하는 불필요한 레시피 디스크 저장(I/O) 제외
+        //        // 파라미터 저장은 별도의 "저장" 버튼 클릭 시에만 수행하도록 유도합니다.
+        //        // SaveRecipeForCurrentCamera(); 
 
         //        if (_runner == null)
         //            AttachRunnerForCurrentViewer();
@@ -1169,18 +1190,34 @@ namespace QMC.LCP_280.Process
         //            return;
         //        }
 
-        //        _runner.LoadRecipe();
+        //        // [최적화] 2. 러너에 레시피 파라미터를 강제 업데이트 (파일 저장을 안했으므로 메모리 갱신만)
+        //        if (_runner.Parameters != null && _parameters != null)
+        //        {
+        //            //_runner.Parameters.CopyFrom(_parameters); // 구현된 파라미터 복사 메서드 사용(또는 참조 업데이트)
+        //            _runner.LoadRecipe();
+        //        }
+
         //        UpdateRunnerModeFromUI();
 
+        //        // ----------------------------------------
+        //        // 2. 순수 비전 알고리즘(Search) 소요 시간 측정
+        //        // ----------------------------------------
+        //        var searchWatch = System.Diagnostics.Stopwatch.StartNew();
         //        var res = _runner.Search(testImage, save: false);
+        //        searchWatch.Stop();
+        //        // ----------------------------------------
+
         //        _lastRunResult = res;
 
         //        if (!res.Success || res.RawResult == null)
         //        {
-        //            UpdateStatus("Search Fail: " + res.FailReason);
+        //            totalWatch.Stop();
+        //            string failTimeMsg = $"Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms";
+
+        //            UpdateStatus($"Search Fail: {res.FailReason} ({failTimeMsg})");
 
         //            var mb = new MessageBoxOk();
-        //            mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}");
+        //            mb.ShowDialog("Notification!", $"Search 실패: {res.FailReason}\n소요시간: {searchWatch.ElapsedMilliseconds}ms");
 
         //            listViewResults.Items.Clear();
         //            _lastValues.Clear();
@@ -1212,7 +1249,6 @@ namespace QMC.LCP_280.Process
         //        }
 
         //        _viewer?.Invalidate();
-        //        UpdateStatus(res.Success ? "Search Success." : "Search Fail.");
 
         //        if (txtAvgX != null && txtAvgY != null && txtAvgT != null)
         //        {
@@ -1230,6 +1266,17 @@ namespace QMC.LCP_280.Process
         //        }
 
         //        ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+
+        //        // 3. 전체 소요 시간 측정 종료
+        //        totalWatch.Stop();
+
+        //        // 결과 출력 포맷 (예: "Total: 150ms, Search: 120ms")
+        //        string timeMsg = $"Total: {totalWatch.ElapsedMilliseconds}ms, Search: {searchWatch.ElapsedMilliseconds}ms";
+
+        //        UpdateStatus($"Search Success. ({timeMsg})");
+
+        //        // 필요시 로그에도 기록
+        //        try { Log.Write("PatternMatchingControl", $"Tact Time -> {timeMsg}"); } catch { }
         //    }
         //    catch (Exception ex)
         //    {
@@ -1550,23 +1597,37 @@ namespace QMC.LCP_280.Process
                 maintROIControl?.CommitCurrentRoi();
                 SaveRecipeForCurrentCamera();
 
-                _runner.LoadRecipe();
-                var res = _runner.SearchCenterMark(testImage, save: false);
-                _lastRunResult = res;
+                if (_runner == null)
+                    AttachRunnerForCurrentViewer();
 
-                if (!res.Success || res.RawResult == null)
+                if (_runner == null)
                 {
-                    UpdateStatus("CenterMark Search Fail: " + res.FailReason);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", "Runner 초기화 실패 (카메라 없음/Hub 실패)");
+                    return;
+                }
+
+                _runner.SetProcessMode(_currentMode);
+                _runner.LoadRecipe();
+                var res = _runner.SearchByCurrentMode(testImage, save: false);
+
+                //_runner.LoadRecipe();
+                //var res = SearchWithCurrentMode(testImage, save: false);
+                
+                _lastRunResult = res;
+                if (res == null || !res.Success || res.RawResult == null)
+                {
+                    UpdateStatus("Search Fail: " + (res?.FailReason ?? "runner returned null"));
 
                     var mb = new MessageBoxOk();
-                    mb.ShowDialog("Notification!", $"CenterMark Search 실패: {res.FailReason}");
+                    mb.ShowDialog("Notification!", $"Search 실패: {res?.FailReason}");
 
                     listViewResults.Items.Clear();
                     _lastValues.Clear();
                     txtResultX.Clear();
                     txtResultY.Clear();
                     txtResultT.Clear();
-                     
+
                     _lastResultPoint = Point.Empty;
                     _lastResultAngle = 0;
 
@@ -1614,18 +1675,124 @@ namespace QMC.LCP_280.Process
                     _lastResultAngle = 0;
                 }
 
-                UpdateStatus("CenterMark Search Success.");
+                UpdateStatus("Search Success.");
                 _viewer?.Invalidate();
-                ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+                ApplyMarksFoundOverlaysFromLastRun();
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
                 var mb = new MessageBoxOk();
-                mb.ShowDialog("Error!", "CenterMark Search 예외: " + ex.Message);
-                UpdateStatus("CenterMark Search exception");
+                mb.ShowDialog("Error!", "Search 예외: " + ex.Message);
+                UpdateStatus("Search exception");
             }
         }
+        //private void _btnSearchOnce_Click(object sender, EventArgs e)
+        //{
+        //    try
+        //    {
+        //        SyncParametersFromUI();
+
+        //        if (_parameters == null)
+        //            _parameters = _visionPart.GetPatternMatchingParameters();
+
+        //        if (_parameters == null
+        //            || _parameters.TrainImages == null
+        //            || _parameters.TrainImages.Count == 0
+        //            || _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", "최소 1개 이상의 Train Image가 필요합니다.");
+        //            return;
+        //        }
+
+        //        var testImage = AcquireCurrentSearchImage();
+        //        if (testImage == null || testImage.GetImage() == null)
+        //        {
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.");
+        //            return;
+        //        }
+
+        //        maintROIControl?.CommitCurrentRoi();
+        //        SaveRecipeForCurrentCamera();
+
+        //        _runner.LoadRecipe();
+        //        var res = _runner.SearchCenterMark(testImage, save: false);
+        //        _lastRunResult = res;
+
+        //        if (!res.Success || res.RawResult == null)
+        //        {
+        //            UpdateStatus("CenterMark Search Fail: " + res.FailReason);
+
+        //            var mb = new MessageBoxOk();
+        //            mb.ShowDialog("Notification!", $"CenterMark Search 실패: {res.FailReason}");
+
+        //            listViewResults.Items.Clear();
+        //            _lastValues.Clear();
+        //            txtResultX.Clear();
+        //            txtResultY.Clear();
+        //            txtResultT.Clear();
+
+        //            _lastResultPoint = Point.Empty;
+        //            _lastResultAngle = 0;
+
+        //            _viewer?.Invalidate();
+        //            return;
+        //        }
+
+        //        var raw = res.RawResult;
+        //        _lastValues = raw.Values != null
+        //            ? new List<PatternMatchingResult.PatternMatchingResultValue>(raw.Values)
+        //            : new List<PatternMatchingResult.PatternMatchingResultValue>();
+
+        //        PopulateResultList();
+
+        //        if (_lastValues.Count > 0)
+        //        {
+        //            int idx = (res.ReferenceIndex >= 0 && res.ReferenceIndex < _lastValues.Count) ? res.ReferenceIndex : 0;
+        //            var centerMost = _lastValues[idx];
+
+        //            _lastResultPoint = new Point((int)centerMost.X, (int)centerMost.Y);
+        //            _lastResultAngle = centerMost.R;
+
+        //            txtResultX.Text = centerMost.X.ToString("0.000");
+        //            txtResultY.Text = centerMost.Y.ToString("0.000");
+        //            txtResultT.Text = centerMost.R.ToString("0.000");
+
+        //            try
+        //            {
+        //                listViewResults.SelectedItems.Clear();
+        //                if (idx >= 0 && idx < listViewResults.Items.Count)
+        //                {
+        //                    listViewResults.Items[idx].Selected = true;
+        //                    listViewResults.Items[idx].Focused = true;
+        //                    listViewResults.EnsureVisible(idx);
+        //                }
+        //            }
+        //            catch { }
+        //        }
+        //        else
+        //        {
+        //            txtResultX.Clear();
+        //            txtResultY.Clear();
+        //            txtResultT.Clear();
+        //            _lastResultPoint = Point.Empty;
+        //            _lastResultAngle = 0;
+        //        }
+
+        //        UpdateStatus("CenterMark Search Success.");
+        //        _viewer?.Invalidate();
+        //        ApplyMarksFoundOverlaysFromLastRun();//RebuildResultOverlays();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //        var mb = new MessageBoxOk();
+        //        mb.ShowDialog("Error!", "CenterMark Search 예외: " + ex.Message);
+        //        UpdateStatus("CenterMark Search exception");
+        //    }
+        //}
 
         private void BtnSaveParam_Click(object sender, EventArgs e)
         {
@@ -1797,11 +1964,34 @@ namespace QMC.LCP_280.Process
             catch { }
         }
 
+        private void cmbMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch (cmbMode.SelectedItem?.ToString())
+            {
+                case "Prealign": SetMode(PatternMatchingRunner.ProcessMode.Prealign); break;
+                case "MapMatching": SetMode(PatternMatchingRunner.ProcessMode.MapMatching); break;
+                case "SecondAlign": SetMode(PatternMatchingRunner.ProcessMode.SecondAlign); break;
+            }
+        }
+
         public void SetMode(PatternMatchingRunner.ProcessMode mode)
         {
             _currentMode = mode;
+            // Runner 동작 모드 반영
             _runner?.SetProcessMode(mode);
+
+            // UI 라디오 동기화 (디자이너 컨트롤 그대로 사용)
+            if (mode == PatternMatchingRunner.ProcessMode.Prealign)
+            {
+                if (radioSingle != null) radioSingle.Checked = true;
+            }
+            else
+            {
+                if (radioMulti != null) radioMulti.Checked = true;
+            }
+
             LoadRecipeForCurrentCamera(); // mode별 데이터 로드
+            UpdateStatus($"Mode changed: {mode}");
         }
     }
 }
