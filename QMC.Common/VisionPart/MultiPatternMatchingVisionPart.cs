@@ -299,6 +299,7 @@ namespace QMC.Common.VisionPart
             return ret;
         }
 
+        //이 함수 사용 중. GUI에서?
         public int OnSearch(Point startRoiPoint, Point endRoiPoint, MultiPatternMatchingParameters parameter, IlluminationDataSet illuminationData, VisionImage visionImage)
         {
             int ret = 0;

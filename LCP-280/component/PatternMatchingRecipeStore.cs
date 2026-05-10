@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using static QMC.LCP_280.Process.PatternMatchingRunner;
 
 namespace QMC.LCP_280.Process
 {
@@ -37,17 +38,34 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
+    /// Mode 별 Pattern Matching 파라미터 + ROI를 JSON으로 저장/로드하는 컨테이너
+    /// </summary>
+    [Serializable]
+    public class PatternMatchingModeRecipeJson
+    {
+        public MultiPatternMatchingParameters Parameters { get; set; }
+        public PatternMatchingRoiJson Roi { get; set; } = new PatternMatchingRoiJson();
+        public List<SerializedTrainImage> TrainImages { get; set; } = new List<SerializedTrainImage>();
+    }
+
+    /// <summary>
     /// Pattern Matching 전체 파라미터 + ROI를 JSON으로 저장/로드하는 컨테이너
     /// </summary>
     [Serializable]
     public class PatternMatchingRecipeJson
     {
-        public string Version { get; set; } = "1.2"; // 1.2 : TrainImage 외부 PNG 분리 저장
+        public string Version { get; set; } = "2.0"; // mode 지원
         public DateTime SavedAt { get; set; } = DateTime.Now;
+        public string LastCameraName { get; set; }
+
+        // [Legacy]
         public MultiPatternMatchingParameters Parameters { get; set; }
         public PatternMatchingRoiJson Roi { get; set; } = new PatternMatchingRoiJson();
-        public string LastCameraName { get; set; }
         public List<SerializedTrainImage> TrainImages { get; set; } = new List<SerializedTrainImage>();
+
+        // [NEW] Camera 내 Mode별 데이터
+        public Dictionary<string, PatternMatchingModeRecipeJson> Modes { get; set; }
+            = new Dictionary<string, PatternMatchingModeRecipeJson>(StringComparer.OrdinalIgnoreCase);
     }
 
     internal static class PatternMatchingRecipeStore
@@ -62,77 +80,120 @@ namespace QMC.LCP_280.Process
         };
 
         #region Public API
-        public static void Save(string filePath, PatternMatchingRecipeJson data)
+        private static string NormalizeModeKey(string modeKey)
+        {
+            return string.IsNullOrWhiteSpace(modeKey) ? "Prealign" : modeKey.Trim();
+        }
+
+        private static string NormalizeModeKey(ProcessMode mode)
+        {
+            return mode.ToString(); // "Prealign", "MapMatching", "SecondAlign"
+        }
+
+        public static void Save(string filePath, PatternMatchingRecipeJson data, ProcessMode mode)
+        {
+            Save(filePath, data, NormalizeModeKey(mode));
+        }
+        public static PatternMatchingRecipeJson Load(string filePath, ProcessMode mode, bool fallbackLegacy = true)
+        {
+            return Load(filePath, NormalizeModeKey(mode), fallbackLegacy);
+        }
+
+        public static void Save(string filePath, PatternMatchingRecipeJson data, string modeKey)
         {
             if (string.IsNullOrWhiteSpace(filePath))
                 throw new ArgumentNullException(nameof(filePath));
 
-            if (data != null && data.Parameters != null)
+            if (string.IsNullOrWhiteSpace(modeKey))
+                modeKey = "DefaultMode";
+
+            if (data.Modes == null)
+                data.Modes = new Dictionary<string, PatternMatchingModeRecipeJson>(StringComparer.OrdinalIgnoreCase);
+
+            if (!data.Modes.TryGetValue(modeKey, out var mode))
             {
-                data.TrainImages.Clear();
+                mode = new PatternMatchingModeRecipeJson();
+                data.Modes[modeKey] = mode;
+            }
 
-                try
+            mode.Parameters = data.Parameters?.Clone();
+            mode.Roi = data.Roi ?? new PatternMatchingRoiJson();
+
+            // mode.TrainImages 직렬화는 기존 로직 재사용해서 mode 기준으로 채움
+            mode.TrainImages.Clear();
+            if (mode.Parameters?.TrainImages != null)
+            {
+                // 기존 Save 이미지 파일 분리 로직 그대로 재사용하되
+                // 경로: {recipeFileName}/{modeKey}/...
+                // (또는 현재처럼 같은 폴더 사용)
+            }
+
+            // legacy도 유지(하위 호환)
+            data.Parameters = mode.Parameters?.Clone();
+            data.Roi = mode.Roi;
+            data.TrainImages = mode.TrainImages.ToList();
+
+            try
+            {
+                if (data.Parameters.TrainImages != null)
                 {
-                    if (data.Parameters.TrainImages != null)
+                    string recipeDir = Path.GetDirectoryName(filePath);
+
+                    // 폴더명 = 레시피 파일명(확장자 제외) 그대로
+                    // ex) 레시피 파일: ABC_Vision.json  --> 이미지 폴더: ABC_Vision
+                    string imageDirName = Path.GetFileNameWithoutExtension(filePath);
+                    string imageDir = Path.Combine(recipeDir, imageDirName);
+
+                    if (Directory.Exists(imageDir))
                     {
-                        string recipeDir = Path.GetDirectoryName(filePath);
+                        try { Directory.Delete(imageDir, true); } catch { }
+                    }
+                    Directory.CreateDirectory(imageDir);
 
-                        // 폴더명 = 레시피 파일명(확장자 제외) 그대로
-                        // ex) 레시피 파일: ABC_Vision.json  --> 이미지 폴더: ABC_Vision
-                        string imageDirName = Path.GetFileNameWithoutExtension(filePath);
-                        string imageDir = Path.Combine(recipeDir, imageDirName);
+                    for (int i = 0; i < data.Parameters.TrainImages.Count; i++)
+                    {
+                        var v = data.Parameters.TrainImages[i];
+                        if (v == null || v.GetImage() == null) continue;
 
-                        if (Directory.Exists(imageDir))
+                        var serialized = ToSerialized(v);
+
+                        string safeTag = SanitizeFileName(serialized.Tag ?? $"Train{i}");
+                        string fileName = $"{i}_{safeTag}.png";
+                        string saveFullPath = Path.Combine(imageDir, fileName);
+
+                        try
                         {
-                            try { Directory.Delete(imageDir, true); } catch { }
+                            var bmp = v.GetImage();
+                            bmp.Save(saveFullPath, ImageFormat.Png);
+
+                            // 상대경로: "{레시피명}_Vision/0_Train0.png"
+                            serialized.FilePath = Path.Combine(imageDirName, fileName).Replace('\\', '/');
+                            serialized.ImageBase64 = null;
                         }
-                        Directory.CreateDirectory(imageDir);
-
-                        for (int i = 0; i < data.Parameters.TrainImages.Count; i++)
+                        catch (Exception ex)
                         {
-                            var v = data.Parameters.TrainImages[i];
-                            if (v == null || v.GetImage() == null) continue;
-
-                            var serialized = ToSerialized(v);
-
-                            string safeTag = SanitizeFileName(serialized.Tag ?? $"Train{i}");
-                            string fileName = $"{i}_{safeTag}.png";
-                            string saveFullPath = Path.Combine(imageDir, fileName);
-
+                            // 파일 저장 실패 시 Base64 fallback
                             try
                             {
                                 var bmp = v.GetImage();
-                                bmp.Save(saveFullPath, ImageFormat.Png);
-
-                                // 상대경로: "{레시피명}_Vision/0_Train0.png"
-                                serialized.FilePath = Path.Combine(imageDirName, fileName).Replace('\\', '/');
-                                serialized.ImageBase64 = null;
-                            }
-                            catch (Exception ex)
-                            {
-                                // 파일 저장 실패 시 Base64 fallback
-                                try
+                                using (var ms = new MemoryStream())
                                 {
-                                    var bmp = v.GetImage();
-                                    using (var ms = new MemoryStream())
-                                    {
-                                        bmp.Save(ms, ImageFormat.Png);
-                                        serialized.ImageBase64 = Convert.ToBase64String(ms.ToArray());
-                                    }
+                                    bmp.Save(ms, ImageFormat.Png);
+                                    serialized.ImageBase64 = Convert.ToBase64String(ms.ToArray());
                                 }
-                                catch { }
-
-                                Log.Write("PatternMatchingRecipeStore", "Save image file failed: " + ex.Message);
                             }
+                            catch { }
 
-                            data.TrainImages.Add(serialized);
+                            Log.Write("PatternMatchingRecipeStore", "Save image file failed: " + ex.Message);
                         }
+
+                        data.TrainImages.Add(serialized);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Log.Write("PatternMatchingRecipeStore", "Serialize Train Images failed: " + ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("PatternMatchingRecipeStore", "Serialize Train Images failed: " + ex.Message);
             }
 
             try { Directory.CreateDirectory(Path.GetDirectoryName(filePath)); } catch { }
@@ -206,6 +267,41 @@ namespace QMC.LCP_280.Process
                 Log.Write("PatternMatchingRecipeStore", "Load failed: " + ex.Message);
                 return null;
             }
+        }
+
+        public static PatternMatchingRecipeJson Load(string filePath, string modeKey, bool fallbackLegacy = true)
+        {
+            var container = Load(filePath); // 기존 Load
+            if (container == null) 
+                return null;
+
+            if (string.IsNullOrWhiteSpace(modeKey))
+                modeKey = "DefaultMode";
+
+            if (container.Modes != null && container.Modes.TryGetValue(modeKey, out var mode))
+            {
+                container.Parameters = mode.Parameters?.Clone();
+                container.Roi = mode.Roi ?? new PatternMatchingRoiJson();
+                container.TrainImages = mode.TrainImages?.ToList() ?? new List<SerializedTrainImage>();
+                return container;
+            }
+
+            if (fallbackLegacy)
+            {
+                // 기존 단일 파라미터를 mode로 승격(자동 마이그레이션)
+                if (container.Parameters != null || (container.TrainImages?.Count > 0))
+                {
+                    container.Modes[modeKey] = new PatternMatchingModeRecipeJson
+                    {
+                        Parameters = container.Parameters?.Clone(),
+                        Roi = container.Roi ?? new PatternMatchingRoiJson(),
+                        TrainImages = container.TrainImages?.ToList() ?? new List<SerializedTrainImage>()
+                    };
+                }
+                return container;
+            }
+
+            return null;
         }
         #endregion
 

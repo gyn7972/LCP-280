@@ -27,6 +27,12 @@ namespace QMC.LCP_280.Process
         #region Enums / Options
         public enum SaveMode { None, OkOnly, NgOnly, All }
         public enum SearchMode { First, All }
+        public enum ProcessMode
+        {
+            Prealign,      // 1개(센터 우선)
+            MapMatching,   // 전체
+            SecondAlign    // 전체
+        }
 
         // [ADD] GUI 제어용 ROI 모드
         public enum RoiSourceMode
@@ -40,6 +46,14 @@ namespace QMC.LCP_280.Process
         {
             Normal,
             Recheck
+        }
+
+        public class ModeRuntimeOptions
+        {
+            public SearchMode SearchMode;
+            public bool PreferCenterMostMatch;
+            public RoiSourceMode RoiSourceMode;
+            public RunnerProfileMode ProfileMode;
         }
 
         public class RunnerOptions
@@ -268,6 +282,32 @@ namespace QMC.LCP_280.Process
         private RunnerProfileMode _profileMode;
         private readonly Dictionary<RunnerProfileMode, ProfileRoiSetting> _profileRoiSettings
             = new Dictionary<RunnerProfileMode, ProfileRoiSetting>();
+
+
+        private ProcessMode _processMode = ProcessMode.Prealign;
+        private readonly Dictionary<ProcessMode, ModeRuntimeOptions> _modeOptions
+            = new Dictionary<ProcessMode, ModeRuntimeOptions>
+        {
+            { ProcessMode.Prealign,  new ModeRuntimeOptions 
+                { SearchMode = SearchMode.First, 
+                PreferCenterMostMatch = true,  
+                RoiSourceMode = RoiSourceMode.Profile, 
+                ProfileMode = RunnerProfileMode.Normal } 
+                },
+            { ProcessMode.MapMatching,new ModeRuntimeOptions 
+                { SearchMode = SearchMode.All,   
+                PreferCenterMostMatch = false, 
+                RoiSourceMode = RoiSourceMode.Profile, 
+                ProfileMode = RunnerProfileMode.Normal } 
+                },
+            { ProcessMode.SecondAlign,new ModeRuntimeOptions 
+                { SearchMode = SearchMode.All,   
+                PreferCenterMostMatch = false, 
+                RoiSourceMode = RoiSourceMode.Profile, 
+                ProfileMode = RunnerProfileMode.Recheck } 
+                },
+        };
+
         #endregion
 
         public MultiPatternMatchingParameters Parameters
@@ -413,7 +453,8 @@ namespace QMC.LCP_280.Process
                         normalizedRecipe,
                         createDirectoryForSave: false);
 
-                    var container = PatternMatchingRecipeStore.Load(path);
+                    //var container = PatternMatchingRecipeStore.Load(path);
+                    var container = PatternMatchingRecipeStore.Load(path) ?? new PatternMatchingRecipeJson();
                     if (container == null)
                     {
                         _lastFailReason = $"Recipe 없음. camera={camName}, recipe={normalizedRecipe}, path={path}";
@@ -484,6 +525,37 @@ namespace QMC.LCP_280.Process
         {
             if (_lastRawResult == null) return;
             UpdateViewerOverlays(_lastRawResult); // now iterates all viewers
+        }
+
+
+        public void SetProcessMode(ProcessMode mode)
+        {
+            lock (_sync)
+            {
+                _processMode = mode;
+                if (_modeOptions.TryGetValue(mode, out var opt))
+                {
+                    _opt.Mode = opt.SearchMode;
+                    _opt.PreferCenterMostMatch = opt.PreferCenterMostMatch;
+                    _opt.InspectRoiSourceMode = opt.RoiSourceMode;
+                    _profileMode = opt.ProfileMode;
+                    _opt.ProfileMode = opt.ProfileMode;
+                }
+            }
+        }
+        public ProcessMode GetProcessMode()
+        {
+            lock (_sync) return _processMode;
+        }
+        public PatternMatchRunResult SearchByCurrentMode(VisionImage externalImage = null, bool save = false, CancellationToken ct = default)
+        {
+            lock (_sync)
+            {
+                if (_processMode == ProcessMode.Prealign)
+                    return SearchCenterMark(externalImage, save, ct);
+
+                return InternalSearchCore(externalImage, save, ct); // MapMatching/SecondAlign
+            }
         }
 
         public PatternMatchRunResult Search(bool save = false) => InternalSearchCore(null, save);

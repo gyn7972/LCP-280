@@ -497,6 +497,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             return true;
         }
+
+        private InputStageEjectorConfig.PickupSeqType GetPickupSeqType()
+        {
+            try
+            {
+                return (InputStageEjectorConfig.PickupSeqType)InputStageEjector.Config.nPickupSeqType;
+            }
+            catch
+            {
+                return InputStageEjectorConfig.PickupSeqType.PickUp;
+            }
+        }
+
         public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null)
@@ -2129,91 +2142,149 @@ namespace QMC.LCP_280.Process.Unit
                                             && waferDie.State != DieProcessState.Picked;
                     if (shouldPickFromStage)
                     {
-                        TaktStart("RaiseEjectorForPick");
-                        try
+                        var seqType = GetPickupSeqType();
+                        if (seqType == InputStageEjectorConfig.PickupSeqType.PickUp)
                         {
-                            nRet = RaiseEjectorForPick();
-                        }
-                        finally
-                        {
-                            TaktEnd("RaiseEjectorForPick");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisPickZ?.EmgStop();
-                            AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferRaiseEjector);
-                            return -1;
-                        }
+                            // 기존 코드 그대로
+                            TaktStart("RaiseEjectorForPick");
+                            try
+                            {
+                                nRet = RaiseEjectorForPick();
+                            }
+                            finally
+                            {
+                                TaktEnd("RaiseEjectorForPick");
+                            }
+                            if (nRet != 0)
+                            {
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferRaiseEjector);
+                                return -1;
+                            }
 
-                        if (IsStop)
-                            return 0;
+                            if (IsStop)
+                                return 0;
 
-                        TaktStart("PickDownDie");
-                        try
-                        {
-                            nRet = PickDownDie();
-                        }
-                        finally
-                        {
-                            TaktEnd("PickDownDie");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisPickZ?.EmgStop();
-                            AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferChipPickDown);
-                            return -1;
-                        }
+                            TaktStart("PickDownDie");
+                            try
+                            {
+                                nRet = PickDownDie();
+                            }
+                            finally
+                            {
+                                TaktEnd("PickDownDie");
+                            }
+                            if (nRet != 0)
+                            {
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferChipPickDown);
+                                return -1;
+                            }
 
-                        TaktStart("SyncPickUpDie");
-                        try
-                        {
-                            nRet = SyncPickUpDie();
-                        }
-                        finally
-                        {
-                            TaktEnd("SyncPickUpDie");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisPickZ?.EmgStop();
-                            AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinUp);
-                            return -1;
-                        }
+                            TaktStart("SyncPickUpDie");
+                            try
+                            {
+                                nRet = SyncPickUpDie();
+                            }
+                            finally
+                            {
+                                TaktEnd("SyncPickUpDie");
+                            }
+                            if (nRet != 0)
+                            {
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinUp);
+                                return -1;
+                            }
 
-                        TaktStart("SyncPickDieRetreat");
-                        try
-                        {
-                            nRet = SyncPickDieRetreat();
-                        }
-                        finally
-                        {
-                            TaktEnd("SyncPickDieRetreat");
-                        }
-                        if (nRet != 0)
-                        {
-                            AxisPickZ?.EmgStop();
-                            AxisToolT?.EmgStop();
-                            PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinRetreat);
-                            return -1;
-                        }
+                            TaktStart("SyncPickDieRetreat");
+                            try
+                            {
+                                nRet = SyncPickDieRetreat();
+                            }
+                            finally
+                            {
+                                TaktEnd("SyncPickDieRetreat");
+                            }
+                            if (nRet != 0)
+                            {
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinRetreat);
+                                return -1;
+                            }
 
-                        bool bRet;
-                        TaktStart("AfterPick_EjectorVacuumOff");
-                        try
-                        {
-                            bRet = EjectorVaccumOff();
+                            bool bRet;
+                            TaktStart("AfterPick_EjectorVacuumOff");
+                            try
+                            {
+                                bRet = EjectorVaccumOff();
+                            }
+                            finally
+                            {
+                                TaktEnd("AfterPick_EjectorVacuumOff");
+                            }
+                            if (bRet == false)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                                return -1;
+                            }
                         }
-                        finally
+                        else
                         {
-                            TaktEnd("AfterPick_EjectorVacuumOff");
-                        }
-                        if (bRet == false)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                            return -1;
+                            TaktStart("SyncType2");
+                            try
+                            {
+                                nRet = RunPickupSequenceByType(seqType);
+                            }
+                            finally
+                            {
+                                TaktEnd("SyncType2");
+                            }
+                            if (nRet != 0)
+                            {
+                                Log.Write(UnitName, nameof(InputTrDiePick), $"[InputTrDiePick] RunPickupSequenceByType failed. SeqType={seqType}");
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                                return -1;
+                            }
+
+                            TaktStart("SyncPickDieRetreat");
+                            try
+                            {
+                                nRet = SyncPickDieRetreat();
+                            }
+                            finally
+                            {
+                                TaktEnd("SyncPickDieRetreat");
+                            }
+                            if (nRet != 0)
+                            {
+                                AxisPickZ?.EmgStop();
+                                AxisToolT?.EmgStop();
+                                PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinRetreat);
+                                return -1;
+                            }
+
+                            bool bRet;
+                            TaktStart("AfterPick_EjectorVacuumOff");
+                            try
+                            {
+                                bRet = EjectorVaccumOff();
+                            }
+                            finally
+                            {
+                                TaktEnd("AfterPick_EjectorVacuumOff");
+                            }
+                            if (bRet == false)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                                return -1;
+                            }
                         }
 
                         TaktStart("AfterPick_VacuumCheck_Commit");
@@ -2628,9 +2699,373 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Sequence Use Functions
+        private int RunPickupSequenceByType(InputStageEjectorConfig.PickupSeqType seqType)
+        {
+            int nRet = 0;
 
+            // 1) 암이 웨이퍼 로딩 위치 도착 (기존 함수 재사용)
+            // ToolT/PickZ 위치 보장
+            nRet = MovePositionPickDown(true, PickDownMoveMode.Sequential);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "RunPickupSequenceByType", "MovePositionPickDown failed");
+                return -1;
+            }
 
+            // 2) 이젝터Z Up (칩이 소켓에 붙는 확인: 소켓 Vacuum ON 확인)
+            nRet = MoveEjectorZUp();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "RunPickupSequenceByType", "MoveEjectorZUp failed");
+                return -1;
+            }
 
+            Thread.Sleep(Config.nBeforePickUpWaitTime);
+
+            // 3) 웨이퍼 Vacuum ON
+            if (EjectorVacuumOn() == false)   // 명칭상 EjectorVacuumOn이지만 실제 InputStage.SetVacuum(true)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                Log.Write(UnitName, "RunPickupSequenceByType", "EjectorVacuumOn failed");
+                return -1;
+            }
+            // 4) 이젝터Z Down + 이젝터핀Z Up 동시
+            nRet = MoveEjectorZDownAndPinZUpSimultaneous();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "RunPickupSequenceByType", "MoveEjectorZDownAndPinZUpSimultaneous failed");
+                return -1;
+            }
+            if (seqType == InputStageEjectorConfig.PickupSeqType.EjectorPickUp_A)
+            {
+                // 기존 방식 유지.
+                // 소켓Z Up -> 니들Z Down.
+                // 5) 소켓Z Up + 니들Z Down 동시 (테스트)
+                //nRet = MoveSocketZUpAndNeedleZDownSimultaneous();
+                //if (nRet != 0) return -1;
+            }
+            else if (seqType == InputStageEjectorConfig.PickupSeqType.EjectorPickUp_B)
+            {
+                // 6) 핀Z만 내리고 웨이퍼 Vacuum Off 테스트
+                nRet = MoveOnlyPinZDownAndWaferVacuumOff();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "RunPickupSequenceByType", "MoveOnlyPinZDownAndWaferVacuumOff failed");
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
+        private int MoveEjectorZUp()
+        {
+            if (InputStageEjector == null || Rotary == null)
+            {
+                Log.Write(this.UnitName, "MoveEjectorZUp", "InputStageEjector == null || Rotary == null");
+                return -1;
+            }
+
+            int nIndexSocket = GetInputTrArmIndex();
+            int idx = GetLoadIndexNo();
+            Rotary.SetVacuum(idx, true);
+            Thread.Sleep(1);
+
+            int rc = InputStageEjector.MovePositionEjectBlockUp(false);
+            if (rc != 0)
+            {
+                Log.Write(this.UnitName, "MoveEjectorZUp", "Faild: MovePositionEjectBlockUp");
+                return -1;
+            }
+
+            // 소켓 vacuum 확인 가능하면 추가
+            bool bRet = this.IsVacuumOK(nIndexSocket);
+            if(Config.IsSimulation == false && Config.IsDryRun == false)
+            {
+                if (bRet)
+                {
+                    Log.Write(this.UnitName, "MoveEjectorZUp", "Faild: this.IsVacuumOK");
+                    return -1;
+                }
+            }
+            
+
+            return 0;
+        }
+        private int MoveEjectorZDownAndPinZUpSimultaneous(int timeoutMs = 5000, bool isFine = false)
+        {
+            var ejectorZ = InputStageEjector != null ? InputStageEjector.AxisEjectorZ : null; // 실제 프로퍼티명 확인 필요
+            var pinZ = InputStageEjector != null ? InputStageEjector.AxisPinZ : null;
+
+            if (ejectorZ == null || pinZ == null)
+            {
+                Log.Write(UnitName, "[MoveEjectorZDownAndPinZUpSimultaneous] Axis null");
+                return -1;
+            }
+
+            // 사전 인터락
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AxisToolT?.EmgStop();
+                AxisPickZ?.EmgStop();
+                AxisPlaceZ?.EmgStop();
+                ejectorZ?.EmgStop();
+                pinZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+
+            // 여기서는 "이젝터 Z Down + Pin Z Up" 상대 이동값을 Config에서 받는 걸 권장
+            // (기존 dPickUpOffset 재사용하면 의미 충돌 가능)
+            double ejectorZOffset = InputStageEjector.Config.dEjectBlockDownOffset; // 음수(Down) 권장
+            double vEject = InputStageEjector.Config.dEjectBlockSpeed;
+            double aEject = InputStageEjector.Config.dEjectBlockAcc;
+            double dEject = InputStageEjector.Config.dEjectBlockDec;
+
+            double pinZOffset = InputStageEjector.Config.dEjectPinUpOffset; // 양수(Up) 권장
+            double vPin = InputStageEjector.Config.dPickUpSpeed;
+            double aPin = InputStageEjector.Config.dPickUpAcc;
+            double dPin = InputStageEjector.Config.dPickUpDec;
+
+            double ejectStart = ejectorZ.GetPosition();
+            double pinStart = pinZ.GetPosition();
+
+            double ejectTarget = ejectStart + ejectorZOffset;
+            double pinTarget = pinStart + pinZOffset;
+
+            int rc = 0;
+            rc |= ejectorZ.MoveRel(ejectorZOffset, vEject, aEject, dEject, ejectorZ.Config.AccJerkPercent);
+            rc |= pinZ.MoveRel(pinZOffset, vPin, aPin, dPin, pinZ.Config.AccJerkPercent);
+
+            if (rc != 0)
+            {
+                Log.Write(UnitName, "[MoveEjectorZDownAndPinZUpSimultaneous] MoveRel start failed rc=" + rc);
+                return -1;
+            }
+
+            var sw = timeoutMs > 0 ? Stopwatch.StartNew() : null;
+            while (true)
+            {
+                // 운전 완료
+                bool doneEject = ejectorZ.IsMoveDone();
+                bool donePin = pinZ.IsMoveDone();
+
+                // 목표 위치 도달
+                bool inPosEject = false;
+                bool inPosPin = false;
+                try
+                {
+                    inPosEject = ejectorZ.InPosition(ejectTarget);
+                    inPosPin = pinZ.InPosition(pinTarget);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    ejectorZ.EmgStop();
+                    pinZ.EmgStop();
+                    return -1;
+                }
+
+                if (doneEject && donePin && inPosEject && inPosPin)
+                    break;
+
+                // 진행 중 인터락 감시
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                {
+                    ejectorZ.EmgStop();
+                    pinZ.EmgStop();
+                    AxisToolT?.EmgStop();
+                    AxisPickZ?.EmgStop();
+                    AxisPlaceZ?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
+                if (sw != null && sw.ElapsedMilliseconds > timeoutMs)
+                {
+                    ejectorZ.EmgStop();
+                    pinZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputDieTransferSyncPickPinRetreat);
+                    Log.Write(UnitName, "[MoveEjectorZDownAndPinZUpSimultaneous] Timeout");
+                    return -1;
+                }
+
+                Thread.Sleep(2);
+            }
+
+            return 0;
+        }
+        // 5) 소켓 Z축 상승 + 니들(Pin) Z축 하강 동시 테스트
+        // 추 후에 적용하자.
+        //private int MoveSocketZUpAndNeedleZDownSimultaneous(bool bFineSpeed = false, int timeoutMs = 5000)
+        //{
+        //    var socketZ = AxisPickZ; 
+        //    var pinZ = InputStageEjector != null ? InputStageEjector.AxisPinZ : null;
+
+        //    if (socketZ == null || pinZ == null)
+        //    {
+        //        Log.Write(UnitName, nameof(MoveSocketZUpAndNeedleZDownSimultaneous), "Axis null");
+        //        return -1;
+        //    }
+
+        //    // 사전 인터락
+        //    if (InputStage != null && InputStage.IsAnyAxisMoving())
+        //    {
+        //        AxisToolT?.EmgStop();
+        //        AxisPickZ?.EmgStop();
+        //        AxisPlaceZ?.EmgStop();
+        //        pinZ?.EmgStop();
+        //        PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+        //        return -1;
+        //    }
+        //    if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+        //    {
+        //        AxisToolT?.EmgStop();
+        //        AxisPickZ?.EmgStop();
+        //        AxisPlaceZ?.EmgStop();
+        //        pinZ?.EmgStop();
+        //        PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
+        //        return -1;
+        //    }
+
+        //    // 상대이동 파라미터 (권장: Config로 분리)
+        //    // socketZOffset: +면 Up, pinZOffset: -면 Down 되도록 셋업
+        //    double socketZOffset = Config.dPlaceUpOffset; // 없으면 별도 변수 추가 권장
+        //    double vSocket = Config.dPlaceUpSpeed;
+        //    double aSocket = Config.dPlaceUpAcc;
+        //    double dSocket = Config.dPlaceUpDec;
+
+        //    double pinZOffset = InputStageEjector.Config.dEjectPinDownOffset; // 음수(Down) 권장
+        //    double vPin = InputStageEjector.Config.dEjectPinDownSpeed;
+        //    double aPin = InputStageEjector.Config.dEjectPinDownAcc;
+        //    double dPin = InputStageEjector.Config.dEjectPinDownDec;
+
+        //    double socketStart = socketZ.GetPosition();
+        //    double pinStart = pinZ.GetPosition();
+
+        //    double socketTarget = socketStart + socketZOffset;
+        //    double pinTarget = pinStart + pinZOffset;
+
+        //    int rc = 0;
+        //    rc |= socketZ.MoveRel(socketZOffset, vSocket, aSocket, dSocket, socketZ.Config.AccJerkPercent);
+        //    rc |= pinZ.MoveRel(pinZOffset, vPin, aPin, dPin, pinZ.Config.AccJerkPercent);
+
+        //    if (rc != 0)
+        //    {
+        //        Log.Write(UnitName, nameof(MoveSocketZUpAndNeedleZDownSimultaneous), $"MoveRel start failed rc={rc}");
+        //        return -1;
+        //    }
+
+        //    var sw = timeoutMs > 0 ? Stopwatch.StartNew() : null;
+        //    while (true)
+        //    {
+        //        bool doneSocket = socketZ.IsMoveDone();
+        //        bool donePin = pinZ.IsMoveDone();
+
+        //        bool inPosSocket = false;
+        //        bool inPosPin = false;
+
+        //        try
+        //        {
+        //            inPosSocket = socketZ.InPosition(socketTarget);
+        //            inPosPin = pinZ.InPosition(pinTarget);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Log.Write(ex);
+        //            socketZ.EmgStop();
+        //            pinZ.EmgStop();
+        //            return -1;
+        //        }
+
+        //        if (doneSocket && donePin && inPosSocket && inPosPin)
+        //            break;
+
+        //        // 진행 중 인터락 감시
+        //        if (InputStage != null && InputStage.IsAnyAxisMoving())
+        //        {
+        //            socketZ.EmgStop();
+        //            pinZ.EmgStop();
+        //            AxisToolT?.EmgStop();
+        //            AxisPickZ?.EmgStop();
+        //            AxisPlaceZ?.EmgStop();
+        //            PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+        //            return -1;
+        //        }
+
+        //        if (sw != null && sw.ElapsedMilliseconds > timeoutMs)
+        //        {
+        //            socketZ.EmgStop();
+        //            pinZ.EmgStop();
+        //            PostAlarm((int)AlarmKeys.eInputDieTransferReleaseVacuumAndPlaceUp);
+        //            Log.Write(UnitName, nameof(MoveSocketZUpAndNeedleZDownSimultaneous), "Timeout");
+        //            return -1;
+        //        }
+
+        //        Thread.Sleep(2);
+        //    }
+
+        //    return 0;
+        //}
+
+        // 6) 이젝터핀Z만 하강 + 웨이퍼 진공 OFF 테스트
+        private int MoveOnlyPinZDownAndWaferVacuumOff(bool bFineSpeed = false, int timeoutMs = 3000)
+        {
+            int nRet = 0;
+            this.WaitByTime(Config.nAfterPickUpWaitTime, 1);
+            // PickZ Safety 이동
+            double dZPos = GetTP(InputDieTransferRecipe.TeachingPositionName.SafetyZone.ToString(),
+                                 AxisNames.LeftPickZ);
+            if (true)
+            {
+                // 안전 위치에 있어야 한다고 생각하고 바로 PinZ만 이동 + 웨이퍼 진공 OFF
+                //nRet = MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
+                //if (nRet != 0)
+                //{
+                //    AxisToolT.EmgStop();
+                //    AxisPickZ.EmgStop();
+                //    AxisPlaceZ.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                //    Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
+                //    return -1;
+                //}
+
+                nRet = InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                    Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
+                    return -1;
+                }
+
+                if (IsPositionPickZSafety() == false)
+                {
+                    // PinZ 이동 후 PickZ가 Safety 위치에 있지 않다면, PinZ만 이동한 상태로 간주하고 PickZ도 Safety로 이동 시도
+                    nRet = MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        AxisToolT.EmgStop();
+                        AxisPickZ.EmgStop();
+                        AxisPlaceZ.EmgStop();
+                        PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                        Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
+                        return -1;
+                    }
+                }
+
+                bool bRet = EjectorVaccumOff();
+                if (bRet == false)
+                {
+                    PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                    Log.Write(UnitName, "OnRunWork", "[OnRunWork] EjectorVacuumOff failed");
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
         #endregion
 
         #region Sequence 등록
@@ -2830,14 +3265,14 @@ namespace QMC.LCP_280.Process.Unit
 
             SetVacuum(nArmIndex, true, false);
 
-            Thread.Sleep(Config.nBeforePickUpWaitTime);
-
             nRet = MovePositionPickDown(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp failed");
                 return -1;
             }
+
+            Thread.Sleep(Config.nBeforePickUpWaitTime);
 
             return nRet;
         }
@@ -2884,7 +3319,7 @@ namespace QMC.LCP_280.Process.Unit
             // PickZ Safety 이동
             double dZPos = GetTP(InputDieTransferRecipe.TeachingPositionName.SafetyZone.ToString(),
                                  AxisNames.LeftPickZ);
-            if (true) //병렬
+            if (true) 
             {
                 nRet = MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
                 if (nRet != 0)
@@ -2908,7 +3343,16 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                
+                nRet = InputStageEjector.MovePositionEjectBlockReady(bFineSpeed);
+                if (nRet != 0)
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputDieTransferError);
+                    Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
+                    return -1;
+                }
 
                 bool bRet = EjectorVaccumOff();
                 if (bRet == false)
@@ -2917,33 +3361,6 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "OnRunWork", "[OnRunWork] EjectorVacuumOff failed");
                     return -1;
                 }
-
-                //// 각 모션을 Task로 병렬화
-                ////var taskZ = Task.Run(() => MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed));
-                //var taskPin = Task.Run(() => InputStageEjector.MovePositionEjectPinReady(bFineSpeed));
-                //var taskBlock = Task.Run(() => InputStageEjector.MovePositionEjectBlockReady(bFineSpeed));
-                ////Task.WaitAll(taskZ, taskPin, taskBlock);
-                //Task.WaitAll(taskPin, taskBlock);
-                //if (taskPin.Result != 0 || taskBlock.Result != 0)
-                //{
-                //    AxisToolT.EmgStop();
-                //    AxisPickZ.EmgStop();
-                //    AxisPlaceZ.EmgStop();
-
-                //    // ... 알람 처리
-                //    if (taskPin.Result != 0)
-                //    {
-                //        PostAlarm((int)AlarmKeys.eInputDieTransferError);
-                //        Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
-                //    }
-
-                //    if (taskBlock.Result != 0)
-                //    {
-                //        PostAlarm((int)AlarmKeys.eInputDieTransferError);
-                //        Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
-                //    }
-                //    return -1;
-                //}
             }
             return nRet;
         }

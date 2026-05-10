@@ -20,6 +20,14 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStageEjectorConfig : BaseConfig, IPropertyOrderProvider
     {
+        public enum PickupSeqType
+        {
+            PickUp = 0,        // PIckUp만 활성
+            EjectorPickUp_A = 1, // EjectorPickUp_A만 활성
+            EjectorPickUp_B = 2, // EjectorPickUp_B만 활성
+            //All = 3            // 둘 다 활성
+        }
+
         /// <summary>
         /// Teaching Position 이름 (기존 이름 유지 - 호환성)
         /// </summary>
@@ -83,9 +91,23 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
 
-        [Category("PIckUp"), DisplayName("SeqType")]
+        [ConfigIgnore]
         [DefaultValue(0)]
         public int nPickupSeqType { get; set; } = 0;
+
+        [JsonIgnore]
+        [Category("SetupConfig"), DisplayName("SeqType")]
+        [DefaultValue(PickupSeqType.PickUp)]
+        public PickupSeqType SelectedPickupSeqType
+        {
+            get
+            {
+                if (Enum.IsDefined(typeof(PickupSeqType), nPickupSeqType) == false)
+                    return PickupSeqType.PickUp;
+                return (PickupSeqType)nPickupSeqType;
+            }
+            set => nPickupSeqType = (int)value;
+        }
 
         [Category("PIckUp"), DisplayName("Up Offset (mm)")]
         [DefaultValue(0.0)]
@@ -99,6 +121,40 @@ namespace QMC.LCP_280.Process.Unit
         [Category("PIckUp"), DisplayName("Up Dec (mm/sec2)")]
         [DefaultValue(0.0)]
         public double dPickUpDec { get; set; } = 0.0;
+
+        // Ejector PickUp (Z Down + Pin Z Up) 전용 파라미터
+        [Category("EjectorPickUp"), DisplayName("EjectBlock Down Offset (mm)")]
+        [DefaultValue(0.0)]
+        public double dEjectBlockDownOffset { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectBlock Speed (mm/sec)")]
+        [DefaultValue(0.0)]
+        public double dEjectBlockSpeed { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectBlock Acc (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dEjectBlockAcc { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectBlock Dec (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dEjectBlockDec { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectPin Up Offset (mm)")]
+        [DefaultValue(0.0)]
+        public double dEjectPinUpOffset { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectPin Up Speed (mm/sec)")]
+        [DefaultValue(0.0)]
+        public double dEjectPinUpSpeed { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectPin Up Acc (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dEjectPinUpAcc { get; set; } = 0.0;
+
+        [Category("EjectorPickUp"), DisplayName("EjectPin Up Dec (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dEjectPinUpDec { get; set; } = 0.0;
+
         #endregion
 
         public InputStageEjectorConfig() : base("InputStageEjectorConfig") { }
@@ -272,7 +328,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
-                { "PIckUp", 2 }
+                { "SetupConfig", 2 },
+                { "PIckUp", 3 },
+                { "EjectorPickUp", 4 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -287,7 +345,16 @@ namespace QMC.LCP_280.Process.Unit
                 "Up Offset (mm)",
                 "Up Speed (mm/sec)",
                 "Up Acc (mm/sec2)",
-                "Up Dec (mm/sec2)"
+                "Up Dec (mm/sec2)",
+
+                "EjectBlock Down Offset (mm)",
+                "EjectBlock Speed (mm/sec)",
+                "EjectBlock Acc (mm/sec2)",
+                "EjectBlock Dec (mm/sec2)",
+                "EjectPin Up Offset (mm)",
+                "EjectPin Up Speed (mm/sec)",
+                "EjectPin Up Acc (mm/sec2)",
+                "EjectPin Up Dec (mm/sec2)"
             };
         #endregion
     }

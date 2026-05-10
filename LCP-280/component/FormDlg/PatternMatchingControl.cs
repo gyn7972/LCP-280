@@ -45,6 +45,10 @@ namespace QMC.LCP_280.Process
 
         // 디자인 타임 가드
         private readonly bool _designMode;
+
+        //private string _currentMode = "DefaultMode";
+        private PatternMatchingRunner.ProcessMode _currentMode = PatternMatchingRunner.ProcessMode.Prealign;
+
         #endregion
 
         // =========================
@@ -826,6 +830,7 @@ namespace QMC.LCP_280.Process
 
 
 
+
         #endregion
         // =========================
         #region Recipe Save / Load
@@ -881,6 +886,7 @@ namespace QMC.LCP_280.Process
                 maintROIControl?.CommitCurrentRoi();
                 SyncParametersFromUI();
                 if (string.IsNullOrEmpty(cameraName)) cameraName = GetCurrentCameraName();
+                var path = GetRecipePath(cameraName, recipeName);
 
                 var roi = new PatternMatchingRoiJson();
                 try
@@ -894,15 +900,13 @@ namespace QMC.LCP_280.Process
 
                 if (_parameters == null) _parameters = _visionPart.GetPatternMatchingParameters();
 
-                var container = new PatternMatchingRecipeJson
-                {
-                    Parameters = _parameters?.Clone(),
-                    Roi = roi,
-                    LastCameraName = cameraName
-                };
+                var container = PatternMatchingRecipeStore.Load(path, _currentMode, true) ?? new PatternMatchingRecipeJson();
+                container.LastCameraName = cameraName;
 
-                var path = GetRecipePath(cameraName, recipeName);
-                PatternMatchingRecipeStore.Save(path, container);
+                container.Parameters = _parameters?.Clone();
+                container.Roi = roi;
+
+                PatternMatchingRecipeStore.Save(path, container, _currentMode);
                 UpdateStatus($"Recipe saved: {path}");
             }
             catch (Exception ex)
@@ -920,14 +924,8 @@ namespace QMC.LCP_280.Process
                     cameraName = GetCurrentCameraName();
 
                 var path = GetRecipePath(cameraName, recipeName);
-                var container = PatternMatchingRecipeStore.Load(path);
-
-                // [CHG] Legacy migrate 제거: 경로 정책이 PatternMatchingRecipeStore.ResolveRecipePath()로 통일됨
-                if (container == null)
-                {
-                    UpdateStatus("Recipe 파일 없음. 새로 생성 예정.");
-                    return;
-                }
+                var container = PatternMatchingRecipeStore.Load(path, _currentMode, fallbackLegacy: true);
+                if (container == null) { UpdateStatus("Recipe 파일 없음. 새로 생성 예정."); return; }
 
                 if (container.Parameters != null)
                 {
@@ -938,15 +936,11 @@ namespace QMC.LCP_280.Process
 
                 if (container.Roi != null)
                 {
-                    try
-                    {
-                        _visionPart.SetTrainStartPoint(container.Roi.TrainStart);
-                        _visionPart.SetTrainEndPoint(container.Roi.TrainEnd);
-                        _visionPart.SetInspectStartPoint(container.Roi.InspectStart);
-                        _visionPart.SetInspectEndPoint(container.Roi.InspectEnd);
-                        maintROIControl?.ReloadRoiFromPart();
-                    }
-                    catch { }
+                    _visionPart.SetTrainStartPoint(container.Roi.TrainStart);
+                    _visionPart.SetTrainEndPoint(container.Roi.TrainEnd);
+                    _visionPart.SetInspectStartPoint(container.Roi.InspectStart);
+                    _visionPart.SetInspectEndPoint(container.Roi.InspectEnd);
+                    maintROIControl?.ReloadRoiFromPart();
                 }
 
                 maintROIControl.SetOwner(_visionPart);
@@ -1801,6 +1795,13 @@ namespace QMC.LCP_280.Process
                 }
             }
             catch { }
+        }
+
+        public void SetMode(PatternMatchingRunner.ProcessMode mode)
+        {
+            _currentMode = mode;
+            _runner?.SetProcessMode(mode);
+            LoadRecipeForCurrentCamera(); // mode별 데이터 로드
         }
     }
 }

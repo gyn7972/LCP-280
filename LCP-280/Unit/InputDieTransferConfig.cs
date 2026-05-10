@@ -73,9 +73,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
        
-        [Category("PIckUp"), DisplayName("SeqType")]
-        [DefaultValue(0)]
-        public int nPickupSeqType { get; set; } = 0;
+        //[Category("PIckUp"), DisplayName("SeqType")]
+        //[DefaultValue(0)]
+        //public int nPickupSeqType { get; set; } = 0;
 
         [Category("PIckUp"), DisplayName("Up Offset (mm)")]
         [DefaultValue(0.0)]

@@ -10,6 +10,7 @@ namespace QMC.Common
         public ComboBoxProperty(string title, string selectedValue, List<string> options) : base(title, selectedValue)
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
+
         }
 
         public override void SetValue(string text)

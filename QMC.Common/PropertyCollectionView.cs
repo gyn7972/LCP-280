@@ -13,6 +13,20 @@ namespace QMC.Common
     [DefaultProperty("TextBoxFontSize")]
     public partial class PropertyCollectionView : UserControl
     {
+        public sealed class PropertyComboChangedEventArgs : EventArgs
+        {
+            public string Title { get; }
+            public string Value { get; }
+
+            public PropertyComboChangedEventArgs(string title, string value)
+            {
+                Title = title;
+                Value = value;
+            }
+        }
+
+        public event EventHandler<PropertyComboChangedEventArgs> ComboSelectionChanged;
+
         // [ADD] 마우스 휠 스크롤 방지용 커스텀 콤보박스(내부 클래스로 정의)
         private class NoScrollComboBox : ComboBox
         {
@@ -339,7 +353,13 @@ namespace QMC.Common
                         comboBox.SelectedIndex = idx >= 0 ? idx : 0;
                     }
                     else comboBox.SelectedIndex = 0;
-                    comboBox.SelectedIndexChanged += (sender, args) => comboBoxProperty.SetValue(comboBox.SelectedItem?.ToString());
+                    //comboBox.SelectedIndexChanged += (sender, args) => comboBoxProperty.SetValue(comboBox.SelectedItem?.ToString());
+                    comboBox.SelectedIndexChanged += (sender, args) =>
+                    {
+                        var selected = comboBox.SelectedItem?.ToString();
+                        comboBoxProperty.SetValue(selected);
+                        ComboSelectionChanged?.Invoke(this, new PropertyComboChangedEventArgs(prop.Title, selected));
+                    };
 
                     controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
                     controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));

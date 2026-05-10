@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Component;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using static QMC.Common.PropertyCollectionView;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -21,7 +23,8 @@ namespace QMC.LCP_280.Process.Component
         public UnitConfig()
         {
             InitializeComponent();
-            this.VisibleChanged += UnitConfig_VisibleChanged;
+            this.VisibleChanged += UnitConfig_VisibleChanged; 
+            configurationPropertyView.ComboSelectionChanged += ConfigurationPropertyView_ComboSelectionChanged;
         }
 
         public void BindConfig(object config)
@@ -362,6 +365,73 @@ namespace QMC.LCP_280.Process.Component
 
             configurationPropertyView.GroupName = type.Name;
             configurationPropertyView.SetProperties(pc);
+            ApplyInputStageEjectorSeqTypeLock();
+        }
+
+        private static readonly string[] _pickUpTitles =
+        {
+            "Up Offset (mm)",
+            "Up Speed (mm/sec)",
+            "Up Acc (mm/sec2)",
+            "Up Dec (mm/sec2)"
+        };
+
+        private static readonly string[] _ejectorPickUpTitles =
+        {
+            "EjectBlock Down Offset (mm)",
+            "EjectBlock Speed (mm/sec)",
+            "EjectBlock Acc (mm/sec2)",
+            "EjectBlock Dec (mm/sec2)",
+            "EjectPin Up Offset (mm)",
+            "EjectPin Up Speed (mm/sec)",
+            "EjectPin Up Acc (mm/sec2)",
+            "EjectPin Up Dec (mm/sec2)"
+        };
+
+        private void ConfigurationPropertyView_ComboSelectionChanged(object sender, PropertyComboChangedEventArgs e)
+        {
+            if (string.Equals(e.Title, "SeqType", StringComparison.OrdinalIgnoreCase) == false)
+                return;
+
+            ApplyInputStageEjectorSeqTypeLock(e.Value);
+        }
+
+        private void ApplyInputStageEjectorSeqTypeLock(string seqTypeText = null)
+        {
+            if (!(_config is InputStageEjectorConfig cfg))
+            {
+                configurationPropertyView.SetReadOnlyTitles();
+                return;
+            }
+
+            InputStageEjectorConfig.PickupSeqType seqType = cfg.SelectedPickupSeqType;
+            if (string.IsNullOrWhiteSpace(seqTypeText) == false &&
+                Enum.TryParse(seqTypeText, true, out InputStageEjectorConfig.PickupSeqType parsed))
+            {
+                seqType = parsed;
+            }
+
+            var readOnlyTitles = new List<string>();
+
+            switch (seqType)
+            {
+                case InputStageEjectorConfig.PickupSeqType.PickUp:
+                    readOnlyTitles.AddRange(_ejectorPickUpTitles);
+                    break;
+
+                case InputStageEjectorConfig.PickupSeqType.EjectorPickUp_A:
+                    readOnlyTitles.AddRange(_pickUpTitles);
+                    break;
+
+                case InputStageEjectorConfig.PickupSeqType.EjectorPickUp_B:
+                    readOnlyTitles.AddRange(_pickUpTitles);
+                    break;
+
+                default:
+                    break;
+            }
+
+            configurationPropertyView.SetReadOnlyTitles(readOnlyTitles.ToArray());
         }
     }
 }
